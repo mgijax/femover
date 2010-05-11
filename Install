@@ -1,0 +1,41 @@
+#!/bin/sh
+
+# remember the top-level directory (piped through sed to trip any final slash)
+
+cd `dirname $0`
+TOP=`pwd`
+
+# check to ensure we have a config file in the top-level directory
+
+CONFIG=${TOP}/config.py
+
+if [ ! -f ${CONFIG} ]; then
+	echo "Cannot find config file: ${CONFIG}"
+	exit 1
+fi
+
+# add links to config module wherever necessary
+
+for dir in ${TOP}/lib/python ${TOP}/gather ${TOP}/control ${TOP}/populate ${TOP}/schema
+do
+	# if there's already a config link in this directory, remove it first
+	cd ${dir}
+	if [ -h config.py ]; then
+		rm config.py
+	fi
+	ln -s ${CONFIG} config.py
+done
+
+# back to top level...
+
+cd ${TOP}
+
+# if we don't have a data and a logs directory, make them
+
+if [ ! -d data ]; then
+	mkdir data
+fi
+
+if [ ! -d logs ]; then
+	mkdir logs
+fi
