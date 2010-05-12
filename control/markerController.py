@@ -11,7 +11,7 @@ import Controller
 # list of MySQL tables to be updated
 tables = [ 'marker', 'markerID', 'markerSynonym', 'markerOrthology',
 	'markerToReference', 'markerCounts', 'markerAnnotation',
-	'markerToSequence',
+	'markerToSequence', 'markerSequenceNum',
 	]
 
 # global Controller object for the marker tables
