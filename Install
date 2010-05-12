@@ -43,3 +43,5 @@ fi
 # update permissions on gatherers, populators, and controllers
 
 chmod ug+x gather/*Gatherer.py populate/*Populator.py control/*Controller.py
+
+echo "Finished"
