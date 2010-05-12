@@ -39,3 +39,7 @@ fi
 if [ ! -d logs ]; then
 	mkdir logs
 fi
+
+# update permissions on gatherers, populators, and controllers
+
+chmod ug+x gather/*Gatherer.py populate/*Populator.py control/*Controller.py
