@@ -10,7 +10,7 @@ import Controller
 
 # list of MySQL tables to be updated
 tables = [ 'reference', 'referenceID', 'referenceBook', 'referenceAbstract',
-	'referenceCounts', ]
+	'referenceCounts', 'referenceSequenceNum', ]
 
 # global Controller object for the reference tables
 controller = Controller.Controller (tables)

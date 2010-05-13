@@ -8,6 +8,7 @@ import logger
 import markerController
 import referenceController
 import sequenceController
+import alleleController
 
 tables = []		# list of strings; tables populated so far
 
@@ -15,7 +16,8 @@ tables = []		# list of strings; tables populated so far
 for package in [
     markerController, 
     referenceController, 
-    sequenceController 
+    sequenceController,
+    alleleController
     ]:
 	controller = package.controller
 

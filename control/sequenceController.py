@@ -10,7 +10,9 @@ import Controller
 
 # list of MySQL tables to be updated
 tables = [ 'sequence', 'sequenceLocation', 'sequenceID', 'sequenceGeneTrap',
-		'sequenceGeneModel', 'markerToSequence', 'sequenceCounts', ]
+		'sequenceGeneModel', 'markerToSequence', 'sequenceCounts',
+#		'sequenceSequenceNum',
+		]
 
 # global Controller object for the sequence tables
 controller = Controller.Controller (tables)
