@@ -67,7 +67,7 @@ def getConnection (
 
 	try:
 		connection = MySQLdb.connect (host=host, user=user,
-			passwd=password, db=database)
+			passwd=password, db=database, local_infile=1)
 	except:
 		raise Exception (Error,
 			'Cannot get connection to %s:%s as %s' % (host,
