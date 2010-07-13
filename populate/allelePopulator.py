@@ -45,7 +45,7 @@ class AllelePopulator (Populator.Populator):
 ###--- Globals ---###
 
 # global instance of a AllelePopulator
-populator = AllelePopulator (allele.table)
+populator = AllelePopulator (alleleTable.table)
 
 ###--- main program ---###
 
