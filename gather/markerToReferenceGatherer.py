@@ -25,7 +25,8 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
-cmds = [ '''select _Marker_key, _Refs_key from MRK_Reference %s''', ]
+cmds = [ '''select distinct mr._Marker_key, mr._Refs_key from MRK_Reference mr, MRK_Marker m 
+	where mr._Marker_key = m._Marker_key and m._Marker_Status_key != 2 %s''', ]
 
 # order of fields (from the Sybase query results) to be written to the
 # output file
