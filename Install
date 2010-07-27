@@ -16,7 +16,7 @@ fi
 
 # add links to config module wherever necessary
 
-for dir in ${TOP}/lib/python ${TOP}/gather ${TOP}/control ${TOP}/populate ${TOP}/schema
+for dir in ${TOP}/lib/python ${TOP}/gather ${TOP}/control ${TOP}/schema
 do
 	# if there's already a config link in this directory, remove it first
 	cd ${dir}
@@ -40,8 +40,8 @@ if [ ! -d logs ]; then
 	mkdir logs
 fi
 
-# update permissions on gatherers, populators, and controllers
+# update permissions on gatherers and controllers
 
-chmod ug+x gather/*Gatherer.py populate/*Populator.py control/*Controller.py
+chmod ug+x gather/*Gatherer.py control/*
 
 echo "Finished"
