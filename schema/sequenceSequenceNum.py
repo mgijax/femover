@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the sequenceSequenceNum table
@@ -9,12 +11,12 @@ tableName = 'sequenceSequenceNum'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey	int(11)		not null,
-	byLength	int(11)		not null,
-	bySequenceType	int(11)		not null,
-	byDescription	int(11)		not null,
-	byPrimaryID	int(11)		not null,
-	byLocation	int(11)		not null,
+	sequenceKey	int		not null,
+	byLength	int		not null,
+	bySequenceType	int		not null,
+	byDescription	int		not null,
+	byPrimaryID	int		not null,
+	byLocation	int		not null,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

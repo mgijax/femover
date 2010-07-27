@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the referenceBook table
@@ -9,7 +11,7 @@ tableName = 'referenceBook'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int(11) NOT NULL,
+	referenceKey	int NOT NULL,
 	editor    	varchar(160) NULL,
 	bookTitle  	varchar(200) NULL,
 	edition  	varchar(50) NULL,

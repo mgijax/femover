@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the referenceSequenceNum table
@@ -9,11 +11,11 @@ tableName = 'referenceSequenceNum'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int(11)		not null,
-	byDate		int(11)		not null,
-	byAuthor	int(11)		not null,
-	byPrimaryID	int(11)		not null,
-	byTitle		int(11)		not null,
+	referenceKey	int		not null,
+	byDate		int		not null,
+	byAuthor	int		not null,
+	byPrimaryID	int		not null,
+	byTitle		int		not null,
 	PRIMARY KEY(referenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

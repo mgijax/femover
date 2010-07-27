@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the referenceAbstract table
@@ -9,7 +11,7 @@ tableName = 'referenceAbstract'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int(11) NOT NULL,
+	referenceKey	int NOT NULL,
 	abstract	text NULL,
 	PRIMARY KEY(referenceKey))''' % tableName
 

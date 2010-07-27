@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the referenceID table
@@ -9,12 +11,12 @@ tableName = 'referenceID'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int(11) NOT NULL,
-	referenceKey 	int(11) NOT NULL,
+	uniqueKey	int NOT NULL,
+	referenceKey 	int NOT NULL,
 	logicalDB    	varchar(80) NULL,
 	accID	  	varchar(30) NULL,
-	preferred	int(1) NOT NULL,
-	private		int(1) NOT NULL,
+	preferred	int NOT NULL,
+	private		int NOT NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

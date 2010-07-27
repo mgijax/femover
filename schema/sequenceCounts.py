@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the sequenceCounts table
@@ -9,8 +11,8 @@ tableName = 'sequenceCounts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey	int(11)	NOT NULL,
-	markerCount	int(11) NULL,
+	sequenceKey	int	NOT NULL,
+	markerCount	int NULL,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

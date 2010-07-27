@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the sequenceLocation table
@@ -9,9 +11,9 @@ tableName = 'sequenceLocation'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey		int(11)		NOT NULL,
-	sequenceKey		int(11)		NOT NULL,
-	sequenceNum		int(11)		NOT NULL,
+	uniqueKey		int		NOT NULL,
+	sequenceKey		int		NOT NULL,
+	sequenceNum		int		NOT NULL,
 	chromosome		varchar(8)	NULL,
 	startCoordinate		float		NULL,
 	endCoordinate		float		NULL,

@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the referenceCounts table
@@ -9,8 +11,16 @@ tableName = 'referenceCounts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int(11)	NOT NULL,
-	markerCount	int(11) NULL,
+	referenceKey		int	NOT NULL,
+	markerCount		int 	NULL,
+	probeCount		int	NULL,
+	mappingExptCount	int	NULL,
+	gxdIndexCount		int	NULL,
+	gxdResultCount		int	NULL,
+	gxdStructureCount	int	NULL,
+	gxdAssayCount		int	NULL,
+	alleleCount		int	NULL,
+	sequenceCount		int	NULL,
 	PRIMARY KEY(referenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the sequenceGeneModel table
@@ -9,11 +11,11 @@ tableName = 'sequenceGeneModel'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey		int(11)		NOT NULL,
+	sequenceKey		int		NOT NULL,
 	markerType		varchar(80)	NOT NULL,
 	biotype			varchar(255)	NOT NULL,
-	exonCount		int(11)		NOT NULL,
-	transcriptCount		int(11)		NULL,
+	exonCount		int		NOT NULL,
+	transcriptCount		int		NULL,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

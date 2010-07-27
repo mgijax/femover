@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the reference table
@@ -9,7 +11,7 @@ tableName = 'reference'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey   	int(11) NOT NULL,
+	referenceKey   	int NOT NULL,
 	referenceType  	varchar(4) NULL,
 	primaryAuthor  	varchar(60) NULL,
 	authors		varchar(510) NULL,
@@ -18,10 +20,10 @@ createStatement = '''CREATE TABLE %s  (
 	vol       	varchar(20) NULL,
 	issue       	varchar(25) NULL,
 	pubDate       	varchar(30) NULL,
-	year       	int(11) NULL,
+	year       	int NULL,
 	pages       	varchar(30) NULL,
 	jnumID       	varchar(30) NULL,
-	jnumNumeric    	int(11) NULL,
+	jnumNumeric    	int NULL,
 	citation    	varchar(255) NULL,
 	shortCitation 	varchar(255) NULL,
 	PRIMARY KEY(referenceKey))''' % tableName

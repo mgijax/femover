@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the sequenceGeneTrap table
@@ -9,11 +11,11 @@ tableName = 'sequenceGeneTrap'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey		int(11)		NOT NULL,
+	sequenceKey		int		NOT NULL,
 	tagMethod		varchar(40)	NOT NULL,
 	vectorEnd		varchar(40)	NOT NULL,
 	reverseComplement	varchar(40)	NOT NULL,
-	goodHitCount		int(11)		NULL,
+	goodHitCount		int		NULL,
 	pointCoordinate		float		NULL,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
