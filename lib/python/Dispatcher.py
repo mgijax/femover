@@ -188,6 +188,16 @@ class Dispatcher:
 				message))
 		return
 
+	def getActiveProcessCount (self):
+		return len(self.activeProcesses)
+
+	def getWaitingProcessCount (self):
+		i = 0
+		for v in self.status.values():
+			if v == WAITING:
+				i = i + 1
+		return i
+
 	def schedule (self,
 		argv		# list or string; the command to be executed
 				# ...(if a list, it should contain separate
@@ -331,6 +341,9 @@ class Dispatcher:
 		while (self.nextID > (self.lastStartedID + 1)) and \
 			(len(self.activeProcesses) < self.maxProcesses):
 
+				self.debug ('starting command: %s' % \
+				    self.commandString[self.lastStartedID + 1])
+
 				# move on to the next command to be started,
 				# then start a new subprocess for it
 
@@ -362,7 +375,11 @@ class Dispatcher:
 			dispatcher.__manageSubprocesses()
 		return
 
-	def wait (self):
+	def wait (self,
+		callback = None		# function/method to be called
+					# ...periodically while waiting (to
+					# ...enable reporting)
+		):
 		# Purpose: wait for all subprocesses of this Dispatcher to
 		#	finish
 		# Returns: nothing
@@ -383,6 +400,8 @@ class Dispatcher:
 		while self.activeProcesses:
 			time.sleep(0.5)
 			self.__manageDispatchers()
+			if callback:
+				callback()
 
 		self.debug ('all commands finished')
 		return
