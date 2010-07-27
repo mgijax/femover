@@ -1,0 +1,620 @@
+#!/usr/local/bin/python
+
+# Name: buildDatabase.py
+# Purpose: to build all or sections of a front-end database
+# Notes:  The rough outline for this script is:
+#	1. drop existing tables
+#	2. create new tables
+#	3. gather data into files (extract it from the source database)
+#	4. convert the files into an appropriate format for the target table
+#	5. load the data files into the new tables
+#	6. create indexes on the data in the new tables
+#    Steps 3-6 run in parallel.  Once data has been gathered for a table, its
+#    conversion is started.  Once its file conversion finishes, its bulk
+#    load is started.  Once its load completes, its indexing process is begun.
+#    Each table's indexes are created in parallel as well.  The number of
+#    concurrent gatherers, concurrent data loads, and concurrent indexing
+#    opeartions are configurable values to allow for performance tuning.
+
+import config
+import sys
+import Dispatcher
+import logger
+import dbManager
+import time
+import os
+
+###--- Globals ---###
+
+USAGE = '''Usage: %s [-c|-m|-r|-s]
+    Data sets to (re)generate:
+	-c : Cre
+	-m : Markers
+	-q : Sequences
+	-r : References
+	-s : SNPs
+    If no data sets are specified, the whole front-end database will be
+    (re)generated.  Any existing contents of the database will be wiped.
+''' % sys.argv[0]
+
+###--- Globals ---###
+
+# float; time in seconds of last call to dispatcherReport()
+REPORT_TIME = time.time()
+
+# values for the GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, and INDEX_STATUS
+# global variables
+NOTYET = 0		# this piece has not started yet
+WORKING = 1		# this piece is running
+ENDED = 2		# this piece has finished
+
+# Dispatcher objects, for controlling the various sections running in parallel
+GATHER_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_GATHERER)
+CONVERT_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_CONVERT)
+BCPIN_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_BCPIN)
+INDEX_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_INDEX)
+
+# lists of not-yet-finished processes for each type of operation.  Each list
+# item is a tuple of (descriptive string, dispatcher process id).
+GATHER_IDS = []
+CONVERT_IDS = []
+BCPIN_IDS = []
+INDEX_IDS = []
+
+# integer status values for each type of operation.
+GATHER_STATUS = NOTYET
+CONVERT_STATUS = NOTYET
+BCPIN_STATUS = NOTYET
+INDEX_STATUS = NOTYET
+
+# lists of strings, each of which is a table to be created for that
+# particular data type:
+REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
+		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
+		'referenceToSequence',
+		]
+CRE = []
+MARKERS = []
+SNPS = []
+SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
+		'sequenceGeneTrap', 'sequenceID', 'sequenceLocation',
+		# 'sequenceSequenceNum',
+	]
+
+# dictionary mapping each command-line flag to the list of tables that it
+# would regenerate
+FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
+	'-s' : SNPS,		'-q' : SEQUENCES,
+	}
+
+# boolean; are we doing a build of the complete front-end database?
+FULL_BUILD = True
+
+# standard exception thrown by this script
+error = 'buildDatabase.error'
+
+# get the correct dbManager, depending on the type of target database
+if config.TARGET_TYPE == 'mysql':
+	DBM = dbManager.mysqlManager (config.TARGET_HOST,
+		config.TARGET_DATABASE, config.TARGET_USER,
+		config.TARGET_PASSWORD)
+elif config.TARGET_TYPE == 'postgres':
+	DBM = dbManager.postgresManager (config.TARGET_HOST,
+		config.TARGET_DATABASE, config.TARGET_USER,
+		config.TARGET_PASSWORD)
+else:
+	raise error, 'Unknown value for config.TARGET_TYPE'
+
+###--- Functions ---###
+
+def bailout (s,			# string; error message to print
+	showUsage = True	# boolean; show the Usage statement?
+	):
+	# Purpose: give an error message on stderr and exit the script
+	# Returns: does not return; exits to OS
+	# Assumes: we can write to stderr
+	# Modifies: writes to stderr
+	# Throws: SystemExit to exit to the OS
+
+	if showUsage:
+		sys.stderr.write (USAGE)
+	sys.stderr.write ('Error: %s\n' % s)
+	sys.exit(1)
+
+def processCommandLine():
+	# Purpose: process the command-line to extract necessary data on how
+	#	the script should run
+	# Returns: list of tables to be generated, sorted alphabetically
+	# Assumes: nothing
+	# Modifies: nothing
+	# Throws: propagates SystemExit from bailout() in case of errors
+
+	global FULL_BUILD
+
+	# list of table names (strings), allowing for duplicate table names
+	tablesWithDuplicates = []
+
+	# if there were any command-line flags, process them
+
+	if len(sys.argv) > 1:
+		badFlags = []
+
+		for flag in sys.argv[1:]:
+			if not FLAGS.has_key (flag):
+				badFlags.append (flag)
+			else:
+				tablesWithDuplicates = tablesWithDuplicates \
+					+ FLAGS[flag]
+	
+		FULL_BUILD = False
+		if badFlags:
+			bailout ('Unknown command-line flag(s): %s' % \
+				' '.join (badFlags))
+
+		logger.info ('Processed command-line with %d flags' % \
+			(len(sys.argv) - 1) )
+	else:
+		# no flags -- do a full build of all tables
+
+		FULL_BUILD = True
+		for tables in FLAGS.values():
+			tablesWithDuplicates = tablesWithDuplicates + tables
+		logger.info ('No command-line flags; building full db')
+	
+	# list of table names, with no duplicates allowed
+	uniqueTables = []
+
+	# collapse the list of potentially-duplicated tables into a list of
+	# unique table names
+
+	for table in tablesWithDuplicates:
+		if table not in uniqueTables:
+			uniqueTables.append (table)
+
+	uniqueTables.sort()
+	logger.info ('Found %d tables to generate' % len(uniqueTables))
+	return uniqueTables
+
+def dropTables (
+	tables		# list of table names (strings) to be regenerated
+	):
+	# Purpose: to drop the tables that need to be recreated
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: drops tables from the database
+	# Throws: 'error' if problems are detected
+
+	# We will drop the tables in parallel, handling up to CONCURRENT_DROP
+	# operations at a time.
+
+	dropDispatcher = Dispatcher.Dispatcher (config.CONCURRENT_DROP)
+
+	# integer; number of tables to be dropped, for reporting
+	tableCount = len(tables)
+
+	items = []	# list of outstanding drop operations, each
+			# ...a tuple of (table name, integer id)
+
+	# if we are doing a full build, then we need to drop all tables from
+	# the target database.
+
+	if FULL_BUILD:
+		# get the list of all tables from the target database
+
+		if config.TARGET_TYPE == 'mysql':
+			cmd = 'show tables'
+		elif config.TARGET_TYPE == 'postgres':
+			cmd = "select TABLE_NAME from information_schema.tables where table_type='BASE TABLE' and table_schema='public'"
+		else:
+			raise error, 'Unknown value for TARGET_TYPE'
+
+		(columns, rows) = DBM.execute (cmd)
+
+		# schedule the 'drop' operation for each table
+
+		dropDispatcher = Dispatcher.Dispatcher(config.CONCURRENT_DROP)
+
+		dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
+		for row in rows:
+			id = dropDispatcher.schedule (
+				"%s 'drop table %s'" % (dbExecute, row[0]))
+			items.append ( (row[0], id) )
+
+		# for a full build, report the number of tables we actually
+		# found and deleted
+		tableCount = len(rows)
+	else:
+		# specific tables were specified, so just delete them
+		for table in tables:
+			script = os.path.join (config.SCHEMA_DIR, '%s.py' % \
+				table)
+			id = dropDispatcher.schedule ('%s --dt' % script)
+			items.append ( (table, id) )
+
+	# wait for all the 'drop' operations to finish
+	dropDispatcher.wait()
+
+	# look for any tables that were not dropped correctly; if any,
+	# report and bail out
+
+	for (table, id) in items:
+		if dropDispatcher.getReturnCode(id):
+			print '\n'.join (dropDispatcher.getStderr(id))
+			raise error, 'Failed to drop %s table %s' % (
+				config.TARGET_TYPE, table)
+
+	# report how many tables were dropped
+	logger.info ('Dropped %d tables' % tableCount)
+	return
+
+def createTables (
+	tables		# list of table names (string)
+	):
+	# Purpose: create table in the database for each of the given tables
+	# Returns: nothing
+	# Assumes: we can create tables in the database
+	# Modifies: creates tables in the database
+	# Throws: global 'error' if an error occurs
+
+	# 'create table' operations are processed in parallel
+
+	createDispatcher = Dispatcher.Dispatcher (config.CONCURRENT_CREATE)
+
+	items = []
+	for table in tables:
+		script = os.path.join (config.SCHEMA_DIR, '%s.py' % table)
+		id = createDispatcher.schedule ('%s --ct' % script)
+		items.append ( (table, id) )
+
+	# wait for all the operations to finish
+
+	createDispatcher.wait()
+
+	# look for and report errors; if one is found, exit
+
+	for (table, id) in items:
+		if createDispatcher.getReturnCode(id):
+			print '\n'.join (createDispatcher.getStderr(id))
+			raise error, 'Failed to create %s table %s' % (
+				config.TARGET_TYPE, table)
+
+	logger.info ('Created %d tables' % len(tables))
+	return
+
+def dispatcherReport():
+	# Purpose: periodically produce a report of activity for the various
+	#	Dispatchers
+	# Returns: nothing
+	# Assumes: we can write to stderr
+	# Modifies: updates global REPORT_TIME, writes to stderr
+	# Throws: nothing
+
+	global REPORT_TIME
+
+	# if we are not writing debug output, skip it
+	if not config.LOG_DEBUG:
+		return
+
+	# only produce a report every 60 seconds
+	if (time.time() - 60) <= REPORT_TIME:
+		return
+
+	# produce reports for the three concurrent processes
+
+	dispatchers = [ ('gather', GATHER_DISPATCHER),
+			('convert', CONVERT_DISPATCHER),
+			('load', BCPIN_DISPATCHER),
+			('index', INDEX_DISPATCHER) ]
+
+	for (name, dispatcher) in dispatchers:
+		logger.debug ('%s : %d active : %d waiting' % (name,
+			dispatcher.getActiveProcessCount(),
+			dispatcher.getWaitingProcessCount() ) )
+
+	REPORT_TIME = time.time() 	# update time of last report
+	return
+
+def scheduleGatherers (
+	tables		# list of table names (strings)
+	):
+	# Purpose: to begin the data gathering stage for the various 'tables'
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: uses a Dispatcher to fire off multiple subprocesses
+	# Throws: nothing
+
+	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS
+
+	for table in tables:
+		script = os.path.join (config.GATHER_DIR, '%sGatherer.py' % \
+			table)
+		id = GATHER_DISPATCHER.schedule (script)
+		GATHER_IDS.append ( (table, id) )
+
+	GATHER_STATUS = WORKING
+	logger.info ('Scheduled %d gatherers' % len(tables)) 
+	return
+
+def scheduleConversion (
+	table,		# string; table name for which to schedule load for
+	path		# string; path to file to load
+	):
+	global CONVERT_DISPATCHER, CONVERT_IDS, CONVERT_STATUS
+
+	# if this is our first conversion process, report it
+	if CONVERT_STATUS == NOTYET:
+		CONVERT_STATUS = WORKING
+		logger.debug ('Began converting files')
+
+	if config.TARGET_TYPE == 'postgres':
+		script = os.path.join (config.CONTROL_DIR, 
+			'postgresConverter.sh')
+	elif config.TARGET_TYPE == 'mysql':
+		script = os.path.join (config.CONTROL_DIR,
+			'mysqlConverter.sh')
+
+	id = CONVERT_DISPATCHER.schedule ('%s %s' % (script, path))
+	CONVERT_IDS.append ( (table, path, id) )
+	return
+
+def checkForFinishedGathering():
+	# Purpose: look for finished data gatherers and schedule the data
+	#	load for any that have finished
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: updates globals listed below; uses a Dispatcher to
+	#	schedule execution of data loads as subprocesses
+	# Throws: nothing
+
+	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS
+
+	# walk backward through the list of unfinished gathering processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(GATHER_IDS) - 1
+	while (i >= 0):
+		(table, id) = GATHER_IDS[i]
+
+		# if we find a finished gatherer, then we remove it from the
+		# unfinished list and schedule its file conversion
+
+		if GATHER_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del GATHER_IDS[i]
+			if GATHER_DISPATCHER.getReturnCode(id) == 0:
+				scheduleConversion (table,
+				    GATHER_DISPATCHER.getStdout(id)[0].strip())
+			else:
+				# an error occurred in gathering, so bail out
+				print '\n'.join (
+					GATHER_DISPATCHER.getStderr(id) )
+				raise error, 'Gathering failed for %s' % table
+		i = i - 1
+
+	# if the last gatherer finished, then report that our gathering stage
+	# has completed
+
+	if not GATHER_IDS:
+		GATHER_STATUS = ENDED
+		logger.debug ('Last gatherer finished')
+	return
+
+def scheduleLoad (
+	table,		# string; table name for which to schedule load for
+	path		# string; path to file to load
+	):
+	# Purpose: to schedule the data load for the given 'table'
+	# Returns: nothing
+	# Assumes: the data file for 'table' is ready
+	# Modifies: uses a Dispatcher to fire off a subprocess; updates
+	#	globals listed below
+	# Throws: nothing
+
+	global BCPIN_DISPATCHER, BCPIN_IDS, BCPIN_STATUS
+
+	# if this is our first load process, report it
+	if BCPIN_STATUS == NOTYET:
+		BCPIN_STATUS = WORKING
+		logger.debug ('Began bulk loading')
+
+	script = os.path.join (config.SCHEMA_DIR, table + '.py')
+
+	id = BCPIN_DISPATCHER.schedule ('%s --lf %s' % (script, path))
+	BCPIN_IDS.append ( (table, path, id) )
+	return
+
+def checkForFinishedConversion():
+	# Purpose: look for finished data loads
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: alters globals listed below; schedules index creation
+	# Throws: 'error' if a table failed to load
+
+	global CONVERT_DISPATCHER, CONVERT_STATUS, CONVERT_IDS
+
+	# walk backward through the list of unfinished file conversion
+	# processes, so as we delete some the loop is not disturbed
+
+	i = len(CONVERT_IDS) - 1
+	while (i >= 0):
+		(table, path, id) = CONVERT_IDS[i]
+
+		# if a file conversion operation finished, then remove it from
+		# the list of unfinished processes, schedule the file to be
+		# loaded
+
+		if CONVERT_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del CONVERT_IDS[i]
+			if CONVERT_DISPATCHER.getReturnCode(id) == 0:
+				scheduleLoad(table, path)
+			else:
+				# conversion failed, so report it and bail out
+
+				print '\n'.join (
+					CONVERT_DISPATCHER.getStderr(id))
+				raise error, 'Conversion failed for %s' % \
+					table
+		i = i - 1
+
+	# if the gathering stage finished and there are no more unfinished
+	# conversions, then the conversion stage has finished -- report it
+
+	if (GATHER_STATUS == ENDED) and (not CONVERT_IDS):
+		CONVERT_STATUS = ENDED
+		logger.debug ('Last file conversion finished')
+	return
+
+def scheduleIndexes (
+	table		# string; name of database table
+	):
+	# Purpose: to schedule the creation of the indexes on the given table
+	# Returns: nothing
+	# Assumes: the data has been loaded into the database for 'table'
+	# Modifies: creates indexes on 'table'; updates globals listed below
+	# Throws: 'error' if we cannot discover what indexes to create
+
+	global INDEX_IDS, INDEX_STATUS, INDEX_DISPATCHER
+
+	# ask the table's script for its list of indexes
+
+	script = os.path.join (config.SCHEMA_DIR, table + '.py')
+	indexDispatcher = Dispatcher.Dispatcher()
+	id = indexDispatcher.schedule ('%s --si' % script)
+	indexDispatcher.wait()
+
+	if indexDispatcher.getReturnCode(id):
+		print '\n'.join (indexDispatcher.getStderr(id))
+		raise error, 'Failed to get index creation scripts for %s' % \
+			table
+
+	# each index creation statement will appear on a separate line; as we
+	# find them, schedule execution of that 'create index' command
+
+	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
+
+	for stmt in indexDispatcher.getStdout(id):
+		id = INDEX_DISPATCHER.schedule ("%s '%s'" % (dbExecute,
+			stmt.strip() ) )
+		INDEX_IDS.append ( (stmt.strip(), id) )
+
+	# if this is our first index creation, report it
+
+	if INDEX_STATUS != WORKING:
+		INDEX_STATUS = WORKING
+		logger.debug ('Began indexing')
+	return
+
+def checkForFinishedLoad():
+	# Purpose: look for finished data loads
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: alters globals listed below; schedules index creation
+	# Throws: 'error' if a table failed to load
+
+	global BCPIN_DISPATCHER, BCPIN_STATUS, BCPIN_IDS
+
+	# walk backward through the list of unfinished load processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(BCPIN_IDS) - 1
+	while (i >= 0):
+		(table, path, id) = BCPIN_IDS[i]
+
+		# if a load operation finished, then remove it from the list
+		# of unfinished processes, schedule creation of that
+		# table's indexes, and remove the data file that was loaded
+
+		if BCPIN_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del BCPIN_IDS[i]
+			if BCPIN_DISPATCHER.getReturnCode(id) == 0:
+				scheduleIndexes(table)
+				os.remove(path)
+			else:
+				# the load failed, so report it and bail out
+
+				print '\n'.join (
+					BCPIN_DISPATCHER.getStderr(id))
+				raise error, 'Load failed for %s' % table
+
+		i = i - 1
+
+	# if the file conversion stage finished and there are no more
+	# unfinished loads, then the load stage has finished -- report it
+
+	if (CONVERT_STATUS == ENDED) and (not BCPIN_IDS):
+		BCPIN_STATUS = ENDED
+		logger.debug ('Last bulk load finished')
+	return
+
+def checkForFinishedIndexes():
+	# Purpose: look for any index creation processes that have finished
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed index
+
+	global INDEX_IDS, INDEX_DISPATCHER, INDEX_STATUS
+
+	# walk backward through the list of unfinished indexing processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(INDEX_IDS) - 1
+	while (i >= 0):
+		(cmd, id) = INDEX_IDS[i]
+
+		# if we detect a finished indexing process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then report it and bail out
+
+		if INDEX_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del INDEX_IDS[i]
+			if INDEX_DISPATCHER.getReturnCode(id) != 0:
+				print '\n'.join ( \
+					INDEX_DISPATCHER.getStderr(id))
+				raise error, 'Indexing failed on: %s' % cmd
+		i = i - 1
+
+	# if the load processes have all finished and there are no unfinished
+	# indexing processes, then the indexing stage is done -- report it
+
+	if (BCPIN_STATUS == ENDED) and (not INDEX_IDS) and (INDEX_STATUS != ENDED):
+		INDEX_STATUS = ENDED
+		logger.debug ('Last index finished')
+	return
+
+def main():
+	# Purpose: main program (main logic of the script)
+	# Returns: nothing
+	# Assumes: we can read from the source database, write to the target
+	#	database, write to the file system, etc.
+	# Modifies: the target database, writes files to the file system
+	# Throws: propagates 'error' if problems occur
+
+	logger.info ('Beginning %s script' % sys.argv[0])
+	tables = processCommandLine()
+	dropTables(tables)
+	createTables(tables)
+	scheduleGatherers(tables)
+
+	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS):
+		if GATHER_STATUS != ENDED:
+			checkForFinishedGathering()
+		if CONVERT_STATUS != ENDED:
+			checkForFinishedConversion()
+		if BCPIN_STATUS != ENDED:
+			checkForFinishedLoad()
+		checkForFinishedIndexes()
+		dispatcherReport()
+		time.sleep(0.5)
+
+	GATHER_DISPATCHER.wait()
+	CONVERT_DISPATCHER.wait()
+	BCPIN_DISPATCHER.wait()
+	INDEX_DISPATCHER.wait(dispatcherReport)
+	checkForFinishedIndexes()		# do final reporting
+	logger.close()
+	return
+
+###--- Main program ---###
+
+if __name__ == '__main__':
+	main()
