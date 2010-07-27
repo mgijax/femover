@@ -20,18 +20,9 @@ MarkerCount = 'markerCount'
 
 class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the sequenceCounts table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for sequence counts,
+	# Has: queries to execute against the source database
+	# Does: queries for primary data for sequence counts,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single sequence,
-		#	rather than for all sequences
-
-		if self.keyField == 'sequenceKey':
-			return 'm._Sequence_key = %s' % self.keyValue
-		return ''
 
 	def collateResults (self):
 		# Purpose: to combine the results of the various queries into
@@ -41,18 +32,24 @@ class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 		# list of count types (like field names)
 		counts = []
 
+		seqKeyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Sequence_key')
+
 		# initialize dictionary for collecting data per sequence
 		#	d[sequence key] = { count type : count }
 		d = {}
-		for row in self.results[0]:
-			sequenceKey = row['_Sequence_key']
-			d[sequenceKey] = {}
+		for row in self.results[0][1]:
+			sequenceKey = row[seqKeyCol]
+			d[row[0]] = {}
 
-		# sequence counts
+		# count of markers per sequence
 		counts.append (MarkerCount)
-		for row in self.results[1]:
-			sequenceKey = row['_Sequence_key']
-			d[sequenceKey][MarkerCount] = row['']
+		mrkCol = Gatherer.columnNumber (self.results[1][0],
+			'mrkCount')
+
+		for row in self.results[1][1]:
+			sequenceKey = row[seqKeyCol]
+			d[sequenceKey][MarkerCount] = row[mrkCol]
 
 
 		# add other counts here...
@@ -67,46 +64,41 @@ class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 		sequenceKeys = d.keys()
 		sequenceKeys.sort()
 
+		self.finalColumns = [ '_Sequence_key' ] + counts
+
 		for sequenceKey in sequenceKeys:
-			# get the data we collected for this sequence so far
-			row = d[sequenceKey]
+			row = [ sequenceKey ]
+			for count in counts:
+				if d[sequenceKey].has_key(count):
+					row.append (d[sequenceKey][count])
+				else:
+					row.append (0)
 
-			# add the sequence key itself as a field in the row
-			row['_Sequence_key'] = sequenceKey
-
-			# for any count types which had no results for this
-			# sequence, add a zero count
-			for col in counts:
-				if not row.has_key(col):
-					row[col] = 0
 			self.finalResults.append (row)
 		return
 
 	def getMinKeyQuery (self):
-		return 'select min(_Sequence_key) from SEQ_Sequence'
+		return 'select min(_Sequence_key) from seq_sequence'
 
 	def getMaxKeyQuery (self):
-		return 'select max(_Sequence_key) from SEQ_Sequence'
-
-	def getKeyRangeClause (self):
-		return 'm._Sequence_key >= %d and m._Sequence_key < %d'
+		return 'select max(_Sequence_key) from seq_sequence'
 
 ###--- globals ---###
 
-# remember the %s at the end of each query, so we can do update-by-key when
-# needed
 cmds = [
 	# all sequences
 	'''select m._Sequence_key
-		from SEQ_Sequence m %s''',
+		from seq_sequence m
+		where m._Sequence_key >= %d and m._Sequence_key < %d''',
 
 	# count of markers for each sequence
-	'''select m._Sequence_key, count(1)
-		from SEQ_Marker_Cache m %s
+	'''select m._Sequence_key, count(1) as mrkCount
+		from seq_marker_cache m
+		where m._Sequence_key >= %d and m._Sequence_key < %d
 		group by m._Sequence_key''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Sequence_key', MarkerCount, ]
 

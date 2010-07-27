@@ -6,27 +6,18 @@ import Gatherer
 
 ###--- Classes ---###
 
-class ReferenceBookGatherer (Gatherer.Gatherer):
+ReferenceBookGatherer = Gatherer.Gatherer
 	# Is: a data gatherer for the referenceBook table
 	# Has: queries to execute against Sybase
 	# Does: queries Sybase for primary data for books,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single reference,
-		#	rather than for all references
-
-		if self.keyField == 'referenceKey':
-			return '_Refs_key = %s' % self.keyValue
-		return ''
 
 ###--- globals ---###
 
 cmds = [
 	'''select _Refs_key as referenceKey,
 		book_au, book_title, place, publisher, series_ed
-	from BIB_Books %s''',
+	from bib_books''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the

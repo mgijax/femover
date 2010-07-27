@@ -12,34 +12,37 @@ class ReferenceGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for references,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single reference,
-		#	rather than for all references
-
-		if self.keyField == 'referenceKey':
-			return 'r._Refs_key = %s' % \
-				self.keyValue
-		return ''
-
 	def postprocessResults (self):
 		# Purpose: override to combine certain fields
 
+		self.convertFinalResultsToList()
+
+		authorsCol = Gatherer.columnNumber (self.finalColumns,
+			'authors')
+		authors2Col = Gatherer.columnNumber (self.finalColumns,
+			'authors2')
+		titleCol = Gatherer.columnNumber (self.finalColumns, 'title')
+		title2Col = Gatherer.columnNumber (self.finalColumns,
+			'title2')
+
 		for r in self.finalResults:
 			longAuthors = None
-			if r['authors'] != None:
-				longAuthors = r['authors']
-				if r['authors2'] != None:
+			if r[authorsCol] != None:
+				longAuthors = r[authorsCol]
+				if r[authors2Col] != None:
 					longAuthors = longAuthors + \
-						r['authors2']
-			r['longAuthors'] = longAuthors
+						r[authors2Col]
+			self.addColumn ('longAuthors', longAuthors, r,
+				self.finalColumns)
 
 			longTitle = None
-			if r['title'] != None:
-				longTitle = r['title']
-				if r['title2'] != None:
-					longTitle = longTitle + r['title2']
-			r['longTitle'] = longTitle
+			if r[titleCol] != None:
+				longTitle = r[titleCol]
+				if r[title2Col] != None:
+					longTitle = longTitle + r[title2Col]
+			self.addColumn ('longTitle', longTitle, r,
+				self.finalColumns)
+		return
 
 ###--- globals ---###
 
@@ -60,12 +63,12 @@ cmds = [ '''select r._Refs_key as referenceKey,
 		c.numericPart,
 		c.citation,
 		c.short_citation
-	from BIB_Refs r,
-		BIB_Citation_Cache c
-	where r._Refs_key = c._Refs_key %s''',
+	from bib_refs r,
+		bib_citation_cache c
+	where r._Refs_key = c._Refs_key''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'referenceKey', 'referenceType', 'primaryAuthor',

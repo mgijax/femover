@@ -7,26 +7,17 @@ import Gatherer
 
 ###--- Classes ---###
 
-class ReferenceToSequenceGatherer (Gatherer.Gatherer):
+ReferenceToSequenceGatherer = Gatherer.Gatherer
 	# Is: a data gatherer for the Template table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for Templates,
+	# Has: queries to execute against source db
+	# Does: queries source db for primary data for Templates,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single Template,
-		#	rather than for all Templates
-
-		if self.keyField == 'referenceKey':
-			return 'referenceToSequence.referenceKey = %s' % \
-				self.keyValue
-		return ''
 
 ###--- globals ---###
 
-cmds = [''' select _Refs_key, _Object_key, '' as qualifier from MGI_Reference_Assoc
-		where _MGIType_key = 19''']
+cmds = [''' select _Refs_key, _Object_key, '' as qualifier
+	from mgi_reference_assoc
+	where _MGIType_key = 19''']
 
 # order of fields (from the Sybase query results) to be written to the
 # output file

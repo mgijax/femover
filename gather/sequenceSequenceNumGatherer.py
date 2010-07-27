@@ -13,15 +13,6 @@ class SequenceSequenceNumGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for sequences,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single sequence,
-		#	rather than for all sequences
-
-		if self.keyField == 'sequenceKey':
-			return 'm._Sequence_key = %s' % self.keyValue
-		return ''
-
 	def collateResults (self):
 		dict = {}
 
@@ -79,6 +70,12 @@ class SequenceSequenceNumGatherer (Gatherer.Gatherer):
 		self.finalResults = dict.values() 
 		return
 
+	def getMinKeyQuery (self):
+		return 'select min(_Sequence_key) from seq_sequence'
+
+	def getMaxKeyQuery (self):
+		return 'select max(_Sequence_key) from seq_sequence'
+
 ###--- globals ---###
 
 cmds = [
@@ -93,13 +90,13 @@ cmds = [
 	from SEQ_Sequence m, ACC_Accession a
 	where m._Sequence_key = a._Object_key
 		and a.preferred = 1
-		and a._MGIType_key = 19 %s''',
+		and a._MGIType_key = 19''',
 
 	'''select m.sequenceNum, m.startCoord, m._Sequence_key
 	from SEQ_Sequence m, SEQ_Coord_Cache c, MRK_Chromosome mc
 	where m._Sequence_key = c._Sequence_key
 		and m._Organism_key = mc._Organism_key
-		and c.chromosome = mc.chromosome %s''',
+		and c.chromosome = mc.chromosome''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the

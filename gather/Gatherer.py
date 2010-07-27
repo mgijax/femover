@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
 # 
-# base table gatherer for the Mover suite -- queries Sybase, writes text
-#	files.
+# base table gatherer for the Mover suite -- queries Sybase, MySQL, or
+#	Postgres as a source database, and writes text files.
 
 import os
 import tempfile
@@ -10,14 +10,112 @@ import sys
 import config
 import logger
 import types
-import mysqlUtil
-import sybaseUtil
+import dbManager
+try:
+	import freedb
+	db = freedb
+except:
+	import db
+	db.set_sqlLogin (config.SOURCE_USER, config.SOURCE_PASSWORD,
+		config.SOURCE_HOST, config.SOURCE_DATABASE)
 
 ###--- Globals ---###
 
 Error = 'Gatherer.error'	# exception raised by this module
-
 AUTO = 'Gatherer.AUTO'		# special fieldname for auto-incremented field
+SOURCE_DB = config.SOURCE_TYPE	# either sybase, mysql, or postgres
+DBM = None			# dbManager object for postgres/mysql access
+
+# cache of terms already looked up
+resolveCache = {}		# resolveCache[table][keyField][key] = term
+
+if SOURCE_DB == 'postgres':
+	DBM = dbManager.postgresManager (config.SOURCE_HOST,
+		config.SOURCE_DATABASE, config.SOURCE_USER,
+		config.SOURCE_PASSWORD)
+elif SOURCE_DB == 'mysql':
+	DBM = dbManager.mysqlManager (config.SOURCE_HOST,
+		config.SOURCE_DATABASE, config.SOURCE_USER,
+		config.SOURCE_PASSWORD)
+elif SOURCE_DB == 'sybase':
+	db.useOneConnection(1)
+else:
+	raise Error, 'Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB
+
+###--- Functions ---###
+
+def execute (cmd):
+	if DBM:
+		return DBM.execute(cmd)
+
+	# if not using a dbManager (ie- we are querying Sybase), then convert
+	# the Sybase-style return to the dbManager-style return
+
+	results = db.sql (cmd, 'auto')
+	columns = []
+	rows = []
+
+	if results:
+		columns = results[0].keys()
+		columns.sort()
+
+		for sybRow in results:
+			row = []
+			for col in columns:
+				row.append (sybRow[col])
+			rows.append (row)
+	return columns, rows
+
+def resolve (key,		# integer; key value to look up
+	table = "voc_term",	# string; table in which to look up key
+	keyField = "_Term_key",	# string; field in which to look up key
+	stringField = "term"	# string; field with text correponding to key
+	):
+	# Purpose: to look up the string associated with 'key' in 'table'.
+	#	'keyField' specifies the fieldname containing the 'key', while
+	#	'stringField' identifies the field with its corresponding
+	#	string value
+	# Returns: string (or None if no matching key can be found)
+	# Assumes: we can query our source database
+	# Modifies: adds entries to global 'resolveCache' to cache values as
+	#	they are looked up
+	# Throws: propagates any exceptions from db.sql() or dbManager.execute()
+
+	global resolveCache
+
+	tableDict = None
+	fieldDict = None
+	term = None
+
+	if resolveCache.has_key(table):
+		tableDict = resolveCache[table]
+		if tableDict.has_key(keyField):
+			fieldDict = tableDict[keyField]
+			if fieldDict.has_key(key):
+				return fieldDict[key]
+
+	cmd = 'select %s from %s where %s = %d' % (stringField, table,
+		keyField, key)
+
+	columns, rows = execute(cmd)
+	if len(rows) > 0:
+		term = rows[0][0]
+
+	if tableDict == None:
+		tableDict = {}
+		resolveCache[table] = tableDict
+		
+	if fieldDict == None:
+		fieldDict = {}
+		tableDict[keyField] = fieldDict
+
+	fieldDict[key] = term
+	return term
+
+def columnNumber (columns, columnName):
+	if columnName in columns:
+		return columns.index(columnName)
+	return columns.index(columnName.lower())
 
 ###--- Classes ---###
 
@@ -25,7 +123,7 @@ class Gatherer:
 	# Is: a data gatherer
 	# Has: information about queries to execute, fields to retrieve, how
 	#	to write data files, etc.
-	# Does: queries Sybase for data, collates result sets, and writes
+	# Does: queries source db for data, collates result sets, and writes
 	#	out a single text file of results
 
 	def __init__ (self,
@@ -33,7 +131,7 @@ class Gatherer:
 		fieldOrder = None, 	# list of strings; ordering of field-
 					# ...names in output file
 		cmds = None		# list of strings; queries to execute
-					# ...against the Sybase database to
+					# ...against the source database to
 					# ...extract data
 		):
 		self.filenamePrefix = filenamePrefix
@@ -42,103 +140,20 @@ class Gatherer:
 
 		self.results = []	# list of lists of query results
 		self.finalResults = []	# list of collated query results
-
-		# We keep a copy of the 'cmds' as originally submitted in
-		# self.baseCmds.  For single-key refreshes, we need to know
-		# which fieldname has the key (self.keyField) and what its
-		# value should be (self.keyValue).  The latter two are set by
-		# self.setKeyRestriction().
-
-		self.keyField = None
-		self.keyValue = None
-		self.baseCmds = self.cmds[:]
+		self.finalColumns = []	# list of strings (column names) found
+					# ...in self.finalResults
 
 		self.nextAutoKey = None		# integer; auto-increment key
 		return
 
-	def setKeyRestriction (self,
-		keyField, 	# string; fieldname for restriction by key
-				# ...(may use a table prefix if the cmds use
-				# ...multiple tables)
-		keyValue	# integer; value for that field
-		):
-		# Purpose: to restrict our data gathering to be a refresh of
-		#	data associated with a single database key
-		# Returns: nothing
-		# Assumes: 'keyField' is a valid database fieldname
-		# Modifies: nothing
-		# Throws: nothing
-
-		self.keyField = keyField
-		self.keyValue = keyValue
-		return
-
-	def getKeyClause (self):
-		# Purpose: to retrieve the appropriate WHERE clause which
-		#	needs to be added to gather only for a single
-		#	database key
-		# Returns: string (including the ' and ' at the beginning)
-		# Assumes: nothing
-		# Modifies: nothing
-		# Throws: nothing
-		# Notes: This should be defined in subclasses, which know the
-		#	supported keyFields and the clauses which would
-		#	correspond to them.
-
-		return ''
-
 	def preprocessCommands (self):
 		# Purpose: to do any necessary pre-processing of the SQL
-		#	queries, such as adding clauses necessary for
-		#	retrieving rows for only a single database key
+		#	queries
 		# Returns: nothing
 		# Assumes: nothing
 		# Modifies: nothing
 		# Throws: nothing
 
-		# The commands to be updated initially live in self.baseCmds.
-		# For any which include a '%s', then we fill in the keyClause
-		# in its place.  Updated commands are placed in self.cmds.
-
-		self.cmds = []
-		keyClause = self.getKeyClause()
-		if keyClause:
-			if cmd.lower().find('where') < 0:
-				keyClause = ' where ' + keyClause
-			else:
-				keyClause = ' and ' + keyClause
-
-		for cmd in self.baseCmds:
-			if '%s' in cmd:
-				self.cmds.append (cmd % keyClause)
-			else:
-				self.cmds.append (cmd)
-		return
-
-	def gatherByKey (self,
-		keyField,	# string; name of field to restrict value
-		keyValue	# integer; value desired for 'keyField'
-		):
-		# Purpose: to do the gathering for a single database key (in
-		#	a certain database field)
-		# Returns: nothing
-		# Assumes: nothing
-		# Modifies: queries the database, writes to the file system
-		# Throws: propagates any exceptions
-
-		self.setKeyRestriction (keyField, keyValue)
-		self.go()
-		return
-
-	def gatherAll (self):
-		# Purpose: to do all gathering without restriction by key
-		# Returns: nothing
-		# Assumes: nothing
-		# Modifies: queries the database, writes to the file system
-		# Throws: propagates any exceptions
-
-		self.setKeyRestriction (None, None)
-		self.go()
 		return
 
 	def go (self):
@@ -151,23 +166,23 @@ class Gatherer:
 
 		self.preprocessCommands()
 		logger.info ('Pre-processed queries')
-		self.querySybase()
-		logger.info ('Finished Sybase queries')
+		self.querySource()
+		logger.info ('Finished queries of source %s db' % SOURCE_DB)
 		self.collateResults()
 		logger.info ('Built final result set (%d rows)' % \
 			len(self.finalResults))
 		self.postprocessResults()
 		logger.info ('Post-processed result set')
 		path, fd = self.createFile()
-		logger.info ('Created output file: %s' % path)
+		logger.info ('Opened output file: %s' % path)
 		self.writeFile(fd)
 		self.closeFile(fd)
 		logger.info ('Wrote and closed output file: %s' % path)
 		print path
 		return
 
-	def querySybase (self):
-		# Purpose: to issue the Sybase queries and add the results
+	def querySource (self):
+		# Purpose: to issue the queries and add the results
 		#	to self.results
 		# Returns: nothing
 		# Assumes: nothing
@@ -182,7 +197,7 @@ class Gatherer:
 
 		i = 0
 		for cmd in self.cmds:
-			self.results.append (sybaseUtil.sql (cmd, 'auto'))
+			self.results.append (execute (cmd))
 			logger.debug ('Finished query %d' % i)
 			i = i + 1
 		return
@@ -190,13 +205,31 @@ class Gatherer:
 	def collateResults (self):
 		# Purpose: to do any necessary slicing and dicing of
 		#	self.results to produce a final set of results to be
-		#	written in self.finalResults
+		#	written in self.finalResults and self.finalColumns
 		# Returns: nothing
 		# Assumes: nothing
 		# Modifies: nothing
 		# Throws: nothing
 
-		self.finalResults = self.results[-1]
+		self.finalColumns = self.results[-1][0]
+		self.finalResults = self.results[-1][1]
+		return
+
+	def convertFinalResultsToList (self):
+		self.finalResults = map (list, self.finalResults)
+		logger.debug ('Converted %d tuples to lists' % \
+			len(self.finalResults))
+		return
+
+	def addColumn (self,
+		columnName,
+		columnValue,
+		row,
+		columnSet
+		):
+		if columnName not in columnSet:
+			columnSet.append (columnName)
+		row.append (columnValue)
 		return
 
 	def postprocessResults (self):
@@ -218,19 +251,12 @@ class Gatherer:
 		# Throws: propagates all exceptions
 
 		# each file will be named with a specified prefix, a period,
-		# then either the database key or 'all', then a dot, then
-		# a generated unique identifier, and a '.rpt' suffix
+		# then a generated unique identifier, and a '.rpt' suffix
 
 		prefix = self.filenamePrefix + '.'
-		if self.keyValue:
-			prefix = prefix + str(self.keyValue) + '.'
-		else:
-			prefix = prefix + 'all.'
-
-		dataDir = config.DATA_DIR
 
 		(fd, path) = tempfile.mkstemp (suffix = '.rpt',
-			prefix = prefix, dir = dataDir, text = True)
+			prefix = prefix, dir = config.DATA_DIR, text = True)
 
 		return path, fd
 
@@ -248,24 +274,16 @@ class Gatherer:
 		# Returns: None
 		# Assumes: 1. the unique field in petal tables is named
 		#	uniqueKey; 2. the table we are building is the same
-		#	as self.filenamePrefix; 3. we are not running this
-		#	script concurrently for two different unique keys
+		#	as self.filenamePrefix
 		# Modifies: writes to the file system
 		# Throws: propagates all exceptions
 
 		# For petal tables, we need to manage auto-incrementing of a
-		# uniqueKey field.  If this is a full gathering, then we can
-		# just start over at 1.  If this is a key-based gathering,
-		# then we need to start at one more than the current max for
-		# the table we're building.
+		# uniqueKey field.  Sice we always do a full refresh of the
+		# table, then this can just start over at 1.
 
 		if self.nextAutoKey == None:
 			self.nextAutoKey = 1
-			if (self.keyField != None) and (self.keyValue != None):
-				if AUTO in self.fieldOrder:
-					self.nextAutoKey = 1 + \
-						mysqlUtil.findMaxKey (
-							self.filenamePrefix)
 
 		for row in self.finalResults:
 			columns = []
@@ -273,26 +291,46 @@ class Gatherer:
 				if col == AUTO:
 					columns.append (str(self.nextAutoKey))
 					self.nextAutoKey = 1 + self.nextAutoKey
-				elif row[col] != None:
-					columns.append (str(row[col]))
 				else:
-					columns.append ('')
-			os.write (fd, '\t'.join(columns) + '\n')
+					colNum = columnNumber (
+						self.finalColumns, col)
+					fieldVal = row[colNum]
+
+					if fieldVal == None:
+						columns.append ('') 
+					else:
+						columns.append (str(fieldVal))
+
+			os.write (fd, '&=&'.join(columns) + '#=#\n')
 		return
 
 class ChunkGatherer (Gatherer):
 	# Is: a Gatherer for large data sets -- retrieves and processes data
 	#	in chunks, rather than with the whole data set at once
+	# Notes: Any query that must be restricted by key must contain two
+	#	'%d' fields in it.  (So, for example, loading a slice of rows
+	#	into a temp table might have those '%d' fields, and later
+	#	queries to process the temp table rows might not.)  The first
+	#	'%d' should be for the low end of the range, inclusive: 
+	#	(eg- "x >= %d").  The second '%d' should be for the upper end
+	#	of the range, exclusive:  (eg- "x < %d")
+
+	def __init__ (self,
+		filenamePrefix, 	# string; prefix of filename to write
+		fieldOrder = None, 	# list of strings; ordering of field-
+					# ...names in output file
+		cmds = None		# list of strings; queries to execute
+					# ...against the source database to
+					# ...extract data
+		):
+		Gatherer.__init__ (self, filenamePrefix, fieldOrder, cmds)
+		self.baseCmds = cmds[:]
+		return
 
 	def go (self):
 		# We can just let key-based processing go in the traditional
 		# manner.  We only need to process chunks of results if we
 		# have no restriction by key.
-
-		if self.keyField != None:
-			logger.debug ('Single key-based update')
-			Gatherer.go (self)
-			return
 
 		logger.debug ('Chunk-based update')
 
@@ -304,8 +342,8 @@ class ChunkGatherer (Gatherer):
 		if (minCmd == None) or (maxCmd == None):
 			raise Error, 'Required methods not implemented'
 
-		minKey = sybaseUtil.sql(minCmd)[0]['']
-		maxKey = sybaseUtil.sql(maxCmd)[0]['']
+		minKey = execute(minCmd)[1][0][0]
+		maxKey = execute(maxCmd)[1][0][0]
 
 		if (minKey == None) or (maxKey == None):
 			raise Error, 'No data found'
@@ -326,11 +364,12 @@ class ChunkGatherer (Gatherer):
 			self.finalResults = []
 
 			self.preprocessCommandsByChunk (lowKey, highKey)
-			self.querySybase()
+			self.querySource()
 			self.collateResults()
 			self.postprocessResults()
+			logger.debug ('Post-processed results')
 			self.writeFile(fd)
-			logger.debug ('Processed and wrote keys %d..%d' % (
+			logger.debug ('Wrote keys %d..%d' % (
 				lowKey, highKey - 1))
 
 			lowKey = highKey
@@ -353,35 +392,17 @@ class ChunkGatherer (Gatherer):
 		highKey
 		):
 		# The commands to be updated initially live in self.baseCmds.
-		# For any which include a '%s', then we fill in the keyClause
-		# in its place.  Updated commands are placed in self.cmds.
+		# For any which include a '%d', then we fill in the lowKey and
+		# highKey in their places.  Updated commands are placed in
+		# self.cmds.
 
 		self.cmds = []
-		keyClause = self.getKeyRangeClause()
-		if keyClause:
-			keyClause = keyClause % (lowKey, highKey)
 
 		for cmd in self.baseCmds:
-			if keyClause:
-				if cmd.lower().find('where') < 0:
-					kc = ' where ' + keyClause
-				else:
-					kc = ' and ' + keyClause
-			else:
-				kc = ''
-
-			if '%s' in cmd:
-				self.cmds.append (cmd % kc)
+			if '%d' in cmd:
+				self.cmds.append (cmd % (lowKey, highKey))
 			else:
 				self.cmds.append (cmd)
-		return
-
-	def getKeyRangeClause (self):
-		# Returns: string with two %d arguments, the first being the
-		#	lower end of keys to return (inclusive), and the
-		#	second being the upper end of keys to return 
-		#	(exclusive)
-
 		return
 
 ###--- Functions ---###
@@ -401,9 +422,9 @@ def main (
 	#	an integer keyValue; we then do gathering only for that
 	#	particular database key.
 
-	logger.info (' '.join(sys.argv))
 	if len(sys.argv) > 1:
-		gatherer.gatherByKey (sys.argv[1], int(sys.argv[2]))
-	else:
-		gatherer.gatherAll()
+		raise Error, 'Command-line arguments not supported'
+	logger.info ('Begin %s' % sys.argv[0])
+	gatherer.go()
+	logger.close()
 	return

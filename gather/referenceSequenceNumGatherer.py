@@ -9,28 +9,32 @@ import logger
 
 class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the referenceSequenceNum table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for references,
+	# Has: queries to execute against the source database
+	# Does: queries source db for sorting data for references,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single reference,
-		#	rather than for all references
-
-		if self.keyField == 'referenceKey':
-			return 'm._Reference_key = %s' % self.keyValue
-		return ''
 
 	def collateResults (self):
 		dict = {}
+
+		refsKeyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Refs_key')
+		authorsCol = Gatherer.columnNumber (self.results[0][0],
+			'authors')
+		authors2Col = Gatherer.columnNumber (self.results[0][0],
+			'authors2')
+		titleCol = Gatherer.columnNumber (self.results[0][0], 'title')
+		title2Col = Gatherer.columnNumber (self.results[0][0],
+			'title2')
+		yearCol = Gatherer.columnNumber (self.results[0][0], 'year')
+		numericPartCol = Gatherer.columnNumber (self.results[0][0],
+			'numericPart')
 
 		byDate = []
 		byAuthor = []
 		byTitle = []
 		byID = []
-		for row in self.results[0]:
-			referenceKey = row['_Refs_key']
+		for row in self.results[0][1]:
+			referenceKey = row[refsKeyCol]
 			d = { '_Refs_key' : referenceKey,
 				'byDate' : 0,
 				'byAuthor' : 0,
@@ -38,28 +42,27 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 				'byPrimaryID' : 0 }
 			dict[referenceKey] = d
 
-			if row['authors']:
-				author = row['authors']
-				if row['authors2']:
-					author = author + row['authors2']
+			if row[authorsCol]:
+				author = row[authorsCol]
+				if row[authors2Col]:
+					author = author + row[authors2Col]
 				author = author.lower()
 			else:
 				author = None
 
-			if row['title']:
-				title = row['title']
-				if row['title2']:
-					title = title + row['title2']
+			if row[titleCol]:
+				title = row[titleCol]
+				if row[title2Col]:
+					title = title + row[title2Col]
 				title = title.lower()
 			else:
 				title = None
 
-			byDate.append ( (int(row['year']),
-				int(row['numericPart']), referenceKey) )
+			byDate.append ( (int(row[yearCol]),
+				int(row[numericPartCol]), referenceKey) )
 			byAuthor.append ( (author, referenceKey) )
 			byTitle.append ( (title, referenceKey) )
-			byID.append ( (row['numericPart'],
-				referenceKey) )
+			byID.append ( (row[numericPartCol], referenceKey) )
 
 		logger.debug ('Pulled out data to sort')
 
@@ -79,7 +82,18 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 					dict[referenceKey][field] = i
 					i = i + 1
 
-		self.finalResults = dict.values() 
+		self.finalColumns = [ '_Refs_key', 'byDate', 'byAuthor',
+			'byTitle', 'byPrimaryID' ]
+
+		self.finalResults = []
+		for refDict in dict.values():
+			row = [ refDict['_Refs_key'],
+				refDict['byDate'],
+				refDict['byAuthor'],
+				refDict['byTitle'],
+				refDict['byPrimaryID'],
+				]
+			self.finalResults.append (row)
 		return
 
 ###--- globals ---###
@@ -87,8 +101,8 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 cmds = [
 	'''select m._Refs_key, m.authors, m.authors2, m.year, 
 		c.numericPart, c.jnumID, m.title, m.title2
-	from BIB_Refs m, BIB_Citation_Cache c
-	where m._Refs_key = c._Refs_key %s''',
+	from bib_refs m, bib_citation_cache c
+	where m._Refs_key = c._Refs_key''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the

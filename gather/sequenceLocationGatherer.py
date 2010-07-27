@@ -3,33 +3,34 @@
 # gathers data for the 'sequenceLocation' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
-class SequenceLocationGatherer (Gatherer.Gatherer):
+class SequenceLocationGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the sequenceLocation table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for sequence locations,
-	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single sequence,
-		#	rather than for all sequences
-
-		if self.keyField == 'sequenceKey':
-			return 's._Sequence_key = %s' % self.keyValue
-		return ''
+	# Has: queries to execute against the source database
+	# Does: queries the source database for primary data for sequence
+	#	locations, collates results, writes tab-delimited text file
 
 	def postprocessResults (self):
 		# Purpose: override to provide key-based lookups
 
+		self.convertFinalResultsToList()
+
+		mapCol = Gatherer.columnNumber (self.finalColumns, '_Map_key')
+
 		for r in self.finalResults:
-			r['buildIdentifier'] = sybaseUtil.resolve (
-				r['_Map_key'], 'MAP_Coordinate',
-				'_Map_key', 'name')
+			self.addColumn ('buildIdentifier',
+				Gatherer.resolve (r[mapCol], 'map_coordinate',
+				'_Map_key', 'name'),
+				r, self.finalColumns)
 		return
+
+	def getMinKeyQuery (self):
+		return 'select min(_Sequence_key) from seq_coord_cache'
+
+	def getMaxKeyQuery (self):
+		return 'select max(_Sequence_key) from seq_coord_cache'
 
 ###--- globals ---###
 
@@ -44,10 +45,11 @@ cmds = [
 		s.mapUnits,
 		s.provider,
 		s.version
-	from SEQ_Coord_Cache s %s''',
+	from seq_coord_cache s
+	where s._Sequence_key >= %d and s._Sequence_key < %d''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	Gatherer.AUTO, '_Sequence_key', 'sequenceNum', 'chromosome',

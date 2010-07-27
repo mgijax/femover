@@ -3,44 +3,47 @@
 # gathers data for the 'sequenceID' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
-class SequenceIDGatherer (Gatherer.Gatherer):
+class SequenceIDGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the sequenceID table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for sequence IDs,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for primary data for sequence IDs,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single sequence,
-		#	rather than for all sequences
-
-		if self.keyField == 'sequenceKey':
-			return 'a._Object_key = %s' % self.keyValue
-		return ''
 
 	def postprocessResults (self):
 		# Purpose: override to provide key-based lookups
 
+		self.convertFinalResultsToList()
+
+		ldbCol = Gatherer.columnNumber (self.finalColumns,
+			'_LogicalDB_key')
+
 		for r in self.finalResults:
-			r['logicalDB'] = sybaseUtil.resolve (
-				r['_LogicalDB_key'], 'ACC_LogicalDB',
-				'_LogicalDB_key', 'name')
+			self.addColumn ('logicalDB', Gatherer.resolve (
+				r[ldbCol], 'acc_logicaldb',
+				'_LogicalDB_key', 'name'),
+				r, self.finalColumns)
 		return
+
+	def getMinKeyQuery (self):
+		return 'select min(_Sequence_key) from seq_sequence'
+
+	def getMaxKeyQuery (self):
+		return 'select max(_Sequence_key) from seq_sequence'
 
 ###--- globals ---###
 
 cmds = [
 	'''select a._Object_key as sequenceKey, a._LogicalDB_key,
 		a.accID, a.preferred, a.private
-	from ACC_Accession a
-	where a._MGIType_key = 19 %s'''
+	from acc_accession a
+	where a._MGIType_key = 19
+		and a._Object_key >= %d and a._Object_key < %d''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, 'sequenceKey', 'logicalDB', 'accID', 'preferred',
 	'private' ]

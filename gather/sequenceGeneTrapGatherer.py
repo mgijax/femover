@@ -3,36 +3,42 @@
 # gathers data for the 'sequenceGeneTrap' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
-class SequenceGeneTrapGatherer (Gatherer.Gatherer):
+class SequenceGeneTrapGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the sequenceGeneTrap table
 	# Has: queries to execute against Sybase
 	# Does: queries Sybase for primary data for gene trap sequences,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single sequence,
-		#	rather than for all sequences
-
-		if self.keyField == 'sequenceKey':
-			return 's._Sequence_key = %s' % self.keyValue
-		return ''
-
 	def postprocessResults (self):
 		# Purpose: override to provide key-based lookups
 
+		self.convertFinalResultsToList()
+
+		tmCol = Gatherer.columnNumber (self.finalColumns,
+			'_TagMethod_key')
+		veCol = Gatherer.columnNumber (self.finalColumns,
+			'_VectorEnd_key')
+		rcCol = Gatherer.columnNumber (self.finalColumns,
+			'_ReverseComp_key')
+
 		for r in self.finalResults:
-			r['tagMethod'] = sybaseUtil.resolve (
-				r['_TagMethod_key'])
-			r['vectorEnd'] = sybaseUtil.resolve (
-				r['_VectorEnd_key'])
-			r['reverseComplement'] = sybaseUtil.resolve (
-				r['_ReverseComp_key'])
-		return
+			self.addColumn ('tagMethod', Gatherer.resolve (
+				r[tmCol]), r, self.finalColumns)
+			self.addColumn ('vectorEnd', Gatherer.resolve (
+				r[veCol]), r, self.finalColumns)
+			self.addColumn ('reverseComplement',
+				Gatherer.resolve (r[rcCol]),
+				r, self.finalColumns)
+		return 
+
+	def getMinKeyQuery (self):
+		return 'select min(_Sequence_key) from seq_genetrap'
+
+	def getMaxKeyQuery (self):
+		return 'select max(_Sequence_key) from seq_genetrap'
 
 ###--- globals ---###
 
@@ -43,7 +49,8 @@ cmds = [
 		s._ReverseComp_key,
 		s.goodHitCount,
 		s.pointCoordinate
-	from SEQ_GeneTrap s %s''',
+	from seq_genetrap s
+	where s._Sequence_key >= %d and s._Sequence_key < %d''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the
