@@ -12,27 +12,70 @@ LOG_DIR = INSTALL_DIR + 'logs/'
 
 ###--- general ---###
 
-MAX_SUBPROCESSES = 3		# maximum number of simultaneous subprocesses
 CHUNK_SIZE = 100000		# number of records to process per chunk
+				# (for large tables we don't want in memory)
 
-###--- Sybase connection data (read-only) ---###
+###--- parallelization options ---###
 
-SYBASE_SERVER = 'DEV_MGI'
-SYBASE_DATABASE = 'mgd'
-SYBASE_USER = 'mgd_public'
-SYBASE_PASSWORD = 'mgdpub'
+# These CONCURRENT_* parameters define how many of each type of operation are
+# allowed to run in parallel.
 
-###--- MySQL connection data (read-write) ---###
+CONCURRENT_CREATE = 5		# 'create table' statements
+CONCURRENT_DROP = 5		# 'drop table' statements
+CONCURRENT_GATHERER = 3		# data gathering scripts (1 per target table)
+CONCURRENT_CONVERT = 4		# file conversion scripts (1 per target table)
+CONCURRENT_BCPIN = 3		# bulk load statements (1 per target table)
+CONCURRENT_INDEX = 6		# 'create index' statements (many per table)
 
-MYSQL_HOST = 'localhost'
-MYSQL_DATABASE = 'fe'
-MYSQL_USER = 'root'
-MYSQL_PASSWORD = 'mysqlr00t'
+###--- source database connection (read-only) ---###
+
+# SOURCE_TYPE may be either 'mysql', 'postgres', or 'sybase'
+
+# sybase example:
+# SOURCE_TYPE = 'sybase'
+# SOURCE_HOST = 'DEV2_MGI'
+# SOURCE_DATABASE = 'mgd'
+# SOURCE_USER = 'mgd_public'
+# SOURCE_PASSWORD = 'mgdpub'
+
+# mysql example:
+# SOURCE_TYPE = 'mysql'   # mysql, postgres, or sybase
+# SOURCE_HOST = 'cardolan'
+# SOURCE_DATABASE = 'mgd_dev2'
+# SOURCE_USER = 'mgddbo'
+# SOURCE_PASSWORD = 'mgddbo'
+ 
+# postgres example:
+SOURCE_TYPE = 'postgres'
+SOURCE_HOST = 'localhost'
+SOURCE_DATABASE = 'mgd'
+SOURCE_USER = 'mgddbo'
+SOURCE_PASSWORD = 'mgddbo'
+
+###--- target database connection (read-write) ---###
+
+# TARGET_TYPE may be either 'mysql' or 'postgres'
+
+# mysql example:
+# TARGET_TYPE = 'mysql'
+# TARGET_HOST = 'cardolan'
+# TARGET_DATABASE = 'mgd_proto'
+# TARGET_USER = 'mgddbo'
+# TARGET_PASSWORD = 'mgddbo'
+
+# postgres example:
+TARGET_TYPE = 'postgres'        # mysql or postgres
+TARGET_HOST = 'localhost'
+TARGET_DATABASE = 'fe'
+TARGET_USER = 'mgddbo'
+TARGET_PASSWORD = 'mgddbo'
 
 ###--- Logging Levels ---###
 
-LOG_DEBUG = True
-LOG_INFO = True
+# logging is currently done to stderr
+
+LOG_DEBUG = True		# log debugging info?
+LOG_INFO = True			# log informational messages?
 
 ###--- automatically adjust Python library path ---###
 
