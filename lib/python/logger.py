@@ -7,8 +7,11 @@ import config
 
 DEBUG = config.LOG_DEBUG		# boolean; log debug messages?
 INFO = config.LOG_INFO			# boolean; log informational messages?
-LAST_TIME = time.time()			# float; time of last logged message
+START_TIME = None			# float; time of first logged message
 NAME = os.path.basename (sys.argv[0])	# string; name to pre-pend to messages
+LOGFILE = os.path.join (config.LOG_DIR,
+	os.path.basename(sys.argv[0]).replace ('.py', '') + '.log')
+LOG = open (LOGFILE, 'w')
 
 ###--- Functions ---###
 
@@ -120,6 +123,10 @@ def error (
 	__output ('error', message)
 	return
 
+def close():
+	LOG.close()
+	return
+
 def __output (
 	messageType,		# string; type of message being logged
 	message			# string; message to be logged
@@ -127,16 +134,21 @@ def __output (
 	# Purpose: write 'message' of the given 'messageType' to stderr
 	# Returns: nothing
 	# Assumes: We can write to stderr.
-	# Modifies: writes to stderr; updates global LAST_TIME
+	# Modifies: writes to stderr; updates global START_TIME
 	# Throws: nothing
 
-	global LAST_TIME
+	global START_TIME
+
+	if not START_TIME:
+		START_TIME = time.time()
 
 	now = time.time()
-	elapsed = now - LAST_TIME
-	LAST_TIME = now
+	elapsed = now - START_TIME
 
-	sys.stderr.write ('%s : %s : %6.3f sec : %s\n' % (
+#	sys.stderr.write ('%s : %s : %6.3f sec : %s\n' % (
+#		NAME, messageType, elapsed, message))
+	LOG.write ('%s : %s : %6.3f sec : %s\n' % (
 		NAME, messageType, elapsed, message))
+	LOG.flush()
 	return
 
