@@ -24,6 +24,7 @@ createStatement = '''CREATE TABLE %s  (
 	pages       	varchar(30) NULL,
 	jnumID       	varchar(30) NULL,
 	jnumNumeric    	int NULL,
+	pubmedID	varchar(30) NULL,
 	citation    	varchar(255) NULL,
 	shortCitation 	varchar(255) NULL,
 	PRIMARY KEY(referenceKey))''' % tableName
