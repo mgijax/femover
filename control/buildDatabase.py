@@ -71,13 +71,14 @@ INDEX_STATUS = NOTYET
 # particular data type:
 REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
 		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
-		'referenceToSequence',
+		'referenceToSequence', 'referenceIndividualAuthors',
 		]
 CRE = []
 MARKERS = []
 SNPS = []
 SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
 		'sequenceGeneTrap', 'sequenceID', 'sequenceLocation',
+		'sequenceSource', 
 		# 'sequenceSequenceNum',
 	]
 
