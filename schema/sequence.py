@@ -17,8 +17,8 @@ createStatement = '''CREATE TABLE %s  (
 	status		varchar(30)	NOT NULL,
 	provider	varchar(255)	NOT NULL,
 	organism	varchar(50)	NOT NULL,
-	length		int		NOT NULL,
-	description	varchar(255)	NOT NULL,
+	length		int		NULL,
+	description	varchar(255)	NULL,
 	version		varchar(15)	NULL,
 	division	varchar(3)	NULL,
 	isVirtual	int		NOT NULL,
@@ -26,12 +26,7 @@ createStatement = '''CREATE TABLE %s  (
 	recordDate	varchar(12)	NULL,
 	primaryID	varchar(30)	NULL,
 	logicalDB	varchar(80)	NULL,
-	strain		varchar(255)	NULL,
-	tissue		varchar(80)	NULL,
-	age		varchar(50)	NULL,
-	sex		varchar(100)	NULL,
 	library		varchar(255)	NULL,
-	cellLine	varchar(100)	NULL,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
