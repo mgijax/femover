@@ -12,9 +12,9 @@ tableName = 'sequenceGeneModel'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	sequenceKey		int		NOT NULL,
-	markerType		varchar(80)	NOT NULL,
-	biotype			varchar(255)	NOT NULL,
-	exonCount		int		NOT NULL,
+	markerType		varchar(80)	NULL,
+	biotype			varchar(255)	NULL,
+	exonCount		int		NULL,
 	transcriptCount		int		NULL,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
