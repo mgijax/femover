@@ -61,6 +61,7 @@ cmds = [ '''select r._Refs_key as referenceKey,
 		r.pgs as pages,
 		c.jnumID,
 		c.numericPart,
+		c.pubmedID,
 		c.citation,
 		c.short_citation
 	from bib_refs r,
@@ -74,7 +75,7 @@ fieldOrder = [
 	'referenceKey', 'referenceType', 'primaryAuthor',
 	'longAuthors', 'longTitle',
 	'journal', 'vol', 'issue', 'pubDate', 'year', 'pages',
-	'jnumID', 'numericPart', 'citation', 'short_citation',
+	'jnumID', 'numericPart', 'pubmedID', 'citation', 'short_citation',
 	]
 
 # prefix for the filename of the output file
