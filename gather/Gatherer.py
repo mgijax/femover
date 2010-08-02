@@ -115,7 +115,16 @@ def resolve (key,		# integer; key value to look up
 def columnNumber (columns, columnName):
 	if columnName in columns:
 		return columns.index(columnName)
-	return columns.index(columnName.lower())
+
+	# Postgres returns lowercase fieldnames, so check for that
+
+	c = columnName.lower()
+	if c not in columns:
+		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
+			', '.join (columns) ) )
+		raise Error, 'Unknown column name: %s' % columnName
+
+	return columns.index(c)
 
 ###--- Classes ---###
 
