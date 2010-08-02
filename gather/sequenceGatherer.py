@@ -2,6 +2,7 @@
 # 
 # gathers data for the 'sequence' table in the front-end database
 
+import config
 import Gatherer
 
 ###--- Classes ---###
@@ -12,11 +13,69 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 	# Does: queries source database for primary data for sequences,
 	#	collates results, writes tab-delimited text file
 
+	def collateResults (self):
+		# build a dictionary of library info
+
+		seqKeyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Sequence_key')
+		libraryCol = Gatherer.columnNumber (self.results[0][0],
+			'rawLibrary')
+
+		libraryDict = {}
+		for row in self.results[0][1]:
+			libraryDict[row[seqKeyCol]] = row[libraryCol]
+
+		# build a dictionary of accession info
+
+		seqKeyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Sequence_key')
+		accCol = Gatherer.columnNumber (self.results[1][0],
+			'accID')
+		ldbCol = Gatherer.columnNumber (self.results[1][0],
+			'_LogicalDB_key')
+
+		accDict = {}
+		for row in self.results[1][1]:
+			ldb = Gatherer.resolve (row[ldbCol], 'acc_logicaldb',
+				'_LogicalDB_key', 'name')
+			accDict[row[seqKeyCol]] = (row[accCol], ldb)
+
+		# merge into a final results set
+
+		self.finalColumns = self.results[-1][0]
+		self.finalResults = self.results[-1][1]
+
+		self.convertFinalResultsToList()
+
+		seqKeyCol = Gatherer.columnNumber (self.finalColumns,
+			'_Sequence_key')
+
+		for row in self.finalResults:
+			seqKey = row[seqKeyCol]
+
+			if libraryDict.has_key(seqKey):
+				library = libraryDict[seqKey]
+			else:
+				library = None
+
+			self.addColumn ('rawLibrary', library,
+				row, self.finalColumns)
+
+			if accDict.has_key(seqKey):
+				accID, ldb = accDict[seqKey]
+			else:
+				accID = None
+				ldb = None
+
+			self.addColumn ('accID', accID, row, 
+				self.finalColumns)
+			self.addColumn ('logicalDB', ldb, row,
+				self.finalColumns)
+		return
+
 	def postprocessResults (self):
 		# Purpose: we override this method to provide cached key
 		#	lookups, to attempt to give a performance boost
-
-		self.convertFinalResultsToList()
 
 		seqTypeCol = Gatherer.columnNumber (self.finalColumns,
 			'_SequenceType_key')
@@ -26,18 +85,8 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 			'_SequenceStatus_key')
 		providerCol = Gatherer.columnNumber (self.finalColumns,
 			'_SequenceProvider_key')
-		tissueCol = Gatherer.columnNumber (self.finalColumns,
-			'_Tissue_key')
-		sexCol = Gatherer.columnNumber (self.finalColumns,
-			'_Gender_key')
 		organismCol = Gatherer.columnNumber (self.finalColumns,
 			'_Organism_key')
-		ldbCol = Gatherer.columnNumber (self.finalColumns,
-			'_LogicalDB_key')
-		cellCol = Gatherer.columnNumber (self.finalColumns,
-			'_CellLine_key')
-		strainCol = Gatherer.columnNumber (self.finalColumns,
-			'_Strain_key')
 
 		for r in self.finalResults:
 
@@ -51,10 +100,6 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				r[statusCol]), r, self.finalColumns)
 			self.addColumn ('provider', Gatherer.resolve(
 				r[providerCol]), r, self.finalColumns)
-			self.addColumn ('tissue', Gatherer.resolve(
-				r[tissueCol]), r, self.finalColumns)
-			self.addColumn ('sex', Gatherer.resolve(
-				r[sexCol]), r, self.finalColumns)
 
 			# lookups from other tables
 
@@ -62,15 +107,6 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				r[organismCol], 'mgi_organism',
 				'_Organism_key', 'commonName'),
 				r, self.finalColumns)
-			self.addColumn ('logicalDB', Gatherer.resolve(
-				r[ldbCol], 'acc_logicaldb', '_LogicalDB_key',
-				'name'), r, self.finalColumns)
-			self.addColumn ('cellLine', Gatherer.resolve(
-				r[cellCol], 'all_cellline', '_CellLine_key',
-				'cellLine'), r, self.finalColumns)
-			self.addColumn ('strain', Gatherer.resolve(
-				r[strainCol], 'prb_strain', '_Strain_key',
-				'strain'), r, self.finalColumns)
 		return
 
 	def getMinKeyQuery (self):
@@ -81,7 +117,33 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
+if config.TARGET_TYPE == 'sybase':
+	sd = 'convert(varchar(10), s.sequence_date, 101)'
+	srd = 'convert(varchar(10), s.seqrecord_date, 101)'
+elif config.TARGET_TYPE == 'mysql':
+	sd = "date_format(s.sequence_date, '%m/%d/%Y')"
+	srd = "date_format(s.seqrecord_date, '%m/%d/%Y')"
+elif config.TARGET_TYPE == 'postgres':
+	sd = "to_char(s.sequence_date, 'MM/DD/YYYY')"
+	srd = "to_char(s.seqrecord_date, 'MM/DD/YYYY')"
+
 cmds = [
+	# in an attempt to improve efficiency, we just do multiple one-table
+	# queries and will then join the results in code
+
+	'''select _Sequence_key,
+		rawLibrary
+	from seq_sequence_raw
+	where _Sequence_key >= %d and _Sequence_key < %d''',
+
+	'''select _Object_key as _Sequence_key,
+		accID,
+		_LogicalDB_key
+	from acc_accession
+	where _MGIType_key = 19
+		and preferred = 1
+		and _Object_key >= %d and _Object_key < %d''',
+
 	'''select s._Sequence_key,
 		s._SequenceType_key,
 		s._SequenceQuality_key,
@@ -93,28 +155,11 @@ cmds = [
 		s.version,
 		s.division,
 		s.virtual as isVirtual,
-		s.sequence_date,
-		s.seqrecord_date,
-		a.accID,
-		a._LogicalDB_key,
-		ps._Strain_key,
-		ps._Tissue_key,
-		ps._Gender_key,
-		ssr.rawLibrary,
-		ps.age,
-		ps._CellLine_key
-	from seq_sequence s,
-		acc_accession a,
-		seq_source_assoc ssa,
-		prb_source ps,
-		seq_sequence_raw ssr
-	where s._Sequence_key = ssa._Sequence_key
-		and s._Sequence_key >= %d and s._Sequence_key < %d
-		and ssa._Source_key = ps._Source_key
-		and s._Sequence_key = a._Object_key
-		and a._MGIType_key = 19
-		and a.preferred = 1
-		and s._Sequence_key = ssr._Sequence_key''',
+		%s as sequenceDate,
+		%s as seqrecordDate
+	from seq_sequence s
+	where s._Sequence_key >= %s and s._Sequence_key < %s''' % (
+			sd, srd, '%d', '%d'),
 	]
 
 # order of fields (from the query results) to be written to the
@@ -122,9 +167,8 @@ cmds = [
 fieldOrder = [
 	'_Sequence_key', 'sequenceType', 'quality', 'status', 'provider',
 	'organism', 'length', 'description', 'version', 'division',
-	'isVirtual', 'sequence_date', 'seqrecord_date', 'accID',
-	'logicalDB', 'strain', 'tissue', 'age', 'sex', 'rawLibrary',
-	'cellLine',
+	'isVirtual', 'sequenceDate', 'seqrecordDate', 'accID',
+	'logicalDB', 'rawLibrary',
 	]
 
 # prefix for the filename of the output file
