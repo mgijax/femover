@@ -45,8 +45,8 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ Gatherer.AUTO, 'sequenceKey', 'logicalDB', 'accID', 'preferred',
-	'private' ]
+fieldOrder = [ Gatherer.AUTO, 'sequenceKey', 'logicalDB', 'accID',
+	'preferred', 'private' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'sequenceID'
