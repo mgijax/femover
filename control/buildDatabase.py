@@ -70,15 +70,13 @@ INDEX_STATUS = NOTYET
 # lists of strings, each of which is a table to be created for that
 # particular data type:
 ALLELES = [ 'allele', 'alleleID', 'alleleCounts', 'alleleNote',
-		'alleleSequenceNum',
-		# 'alleleAnnotation',
+		'alleleSequenceNum', 'alleleAnnotation', 'alleleToReference',
 	]
 CRE = []
 MARKERS = [ 'marker', 'markerID', 'markerSynonym', 'markerToAllele',
 		'markerToSequence', 'markerToReference', 'markerOrthology',
 		'markerLocation', 'markerCounts', 'markerNote',
-		'markerSequenceNum',
-		# 'markerAnnotation',
+		'markerSequenceNum', 'markerAnnotation',
 	]
 REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
 		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
