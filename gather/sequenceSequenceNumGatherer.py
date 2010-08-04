@@ -5,106 +5,107 @@
 import Gatherer
 import logger
 
+###--- Globals ---###
+
+LENGTH = 'byLength'
+TYPE = 'byType'
+PROVIDER = 'byProvider'
+
 ###--- Classes ---###
 
 class SequenceSequenceNumGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the sequenceSequenceNum table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for sequences,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for ordering data for sequences,
 	#	collates results, writes tab-delimited text file
 
 	def collateResults (self):
-		dict = {}
 
-		typeSeq = {}
-		i = 1
-		for row in self.results[0]:
-			typeSeq[row['_Term_key']] = i
+		# compute and cache the ordering for sequence types
+
+		typeOrder = {}		# typeOrder[type key] = seq num
+		i = 0
+		keyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Term_key')
+		for row in self.results[0][1]:
 			i = i + 1
+			typeOrder[row[keyCol]] = i
 
-		byType = []
-		byDescription = []
-		byLength = []
-		byID = []
-		byLocation = []
-		for row in self.results[1]:
-			sequenceKey = row['_Refs_key']
-			d = { '_Refs_key' : sequenceKey,
-				'byLength' : 0,
-				'byDescription' : 0,
-				'byLocation' : 0,
-				'bySequenceType' : 0,
-				'byPrimaryID' : 0 }
-			dict[sequenceKey] = d
+		logger.debug ('Ordered the %d types' % len(typeOrder))
 
-			byLength.append ( (row['length'], sequenceKey) )
-			byID.append ( (row['accID'], sequenceKey) )
-			byDescription.append ( (row['description'].lower(),
-				sequenceKey) )
-			byType.append ( (typeSeq[row['_SequenceType_key']],
-				sequenceKey) )
+		# compute and cache the ordering for sequence providers
 
-		for row in self.results[2]:
-			byLocation.append ( (row['sequenceNum'],
-				row['startCoord'], sequenceKey) )
+		providerOrder = {}	# providerOrder[provider key] =seq num
+		i = 0
+		keyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Term_key')
+		for row in self.results[1][1]:
+			i = i + 1
+			providerOrder[row[keyCol]] = i
 
-		logger.debug ('Pulled out data to sort')
+		logger.debug ('Ordered the %d providers' % len(providerOrder))
 
-		byLength.sort()
-		byDescription.sort()
-		byType.sort()
-		byID.sort()
-		byLocation.sort()
+		# ordering by length is done by taking the maximum sequence
+		# length and subtracting the individual sequence's length.
+		# for an ascending sort, we will then get the longest
+		# sequences first
 
-		logger.debug ('Sorted data')
+		maxLength = self.results[2][1][0][0]
 
-		for (lst, field) in [ (byDescription, 'byDescription'),
-			(byLength, 'byLength'), (byType, 'byType'),
-			(byID, 'byPrimaryID'), (byLocation, 'byLocation') ]:
-				i = 1
-				for t in lst:
-					sequenceKey = t[-1]
-					dict[sequenceKey][field] = i
-					i = i + 1
+		columns = self.results[3][0]
+		keyCol = Gatherer.columnNumber (columns, '_Sequence_key')
+		typeCol = Gatherer.columnNumber (columns, '_SequenceType_key')
+		provCol = Gatherer.columnNumber (columns,
+			'_SequenceProvider_key')
+		lenCol = Gatherer.columnNumber (columns, 'length')
 
-		self.finalResults = dict.values() 
+		self.finalColumns = [ '_Sequence_key', LENGTH, TYPE, PROVIDER]
+		self.finalResults = []
+
+		for row in self.results[3][1]:
+			if row[lenCol]:
+				r = [ row[keyCol],
+					maxLength - row[lenCol],
+					typeOrder[row[typeCol]],
+					providerOrder[row[provCol]], ]
+			else:
+				# sort seq with unknown length to the end
+				r = [ row[keyCol],
+					maxLength,
+					typeOrder[row[typeCol]],
+					providerOrder[row[provCol]], ]
+
+			self.finalResults.append (r)
+
+		logger.debug ('Ordered %d by length' % len(self.finalResults))
 		return
-
-	def getMinKeyQuery (self):
-		return 'select min(_Sequence_key) from seq_sequence'
-
-	def getMaxKeyQuery (self):
-		return 'select max(_Sequence_key) from seq_sequence'
 
 ###--- globals ---###
 
 cmds = [
-	'''select t.term, t._Term_key
-	from VOC_Term t, VOC_Vocab v
+	'''select t._Term_key
+	from voc_term t, voc_vocab v
 	where t._Vocab_key = v._Vocab_key
-		and v.name = "Sequence Type"
-	order by t.term''',
+		and v.name = 'Sequence Type'
+	order by t.sequenceNum''',
 
-	'''select m._Sequence_key, m.length, m._SequenceType_key,
-		m.description, a.accID
-	from SEQ_Sequence m, ACC_Accession a
-	where m._Sequence_key = a._Object_key
-		and a.preferred = 1
-		and a._MGIType_key = 19''',
+	'''select t._Term_key
+	from voc_term t, voc_vocab v
+	where t._Vocab_key = v._Vocab_key
+		and v.name = 'Sequence Provider'
+	order by t.sequenceNum''',
 
-	'''select m.sequenceNum, m.startCoord, m._Sequence_key
-	from SEQ_Sequence m, SEQ_Coord_Cache c, MRK_Chromosome mc
-	where m._Sequence_key = c._Sequence_key
-		and m._Organism_key = mc._Organism_key
-		and c.chromosome = mc.chromosome''',
+	'''select max(length) as maxLength
+		from seq_sequence''',
+
+	'''select _Sequence_key, _SequenceType_key, _SequenceProvider_key,
+			length
+		from seq_sequence''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [
-	'_Sequence_key', 'byLength', 'bySequenceType', 'byDescription',
-	'byPrimaryID', 'byLocation',
-	]
+fieldOrder = [ '_Sequence_key', LENGTH, TYPE, PROVIDER, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'sequenceSequenceNum'

@@ -19,18 +19,9 @@ MarkerCount = 'markerCount'
 
 class AlleleCountsGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the alleleCounts table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for allele counts,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for allele counts,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single allele,
-		#	rather than for all alleles
-
-		if self.keyField == 'alleleKey':
-			return 'm._Allele_key = %s' % self.keyValue
-		return ''
 
 	def collateResults (self):
 		# Purpose: to combine the results of the various queries into
@@ -43,19 +34,25 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 		# initialize dictionary for collecting data per allele
 		#	d[allele key] = { count type : count }
 		d = {}
-		for row in self.results[0]:
-			alleleKey = row['_Allele_key']
-			d[alleleKey] = {}
+		keyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Allele_key')
+		for row in self.results[0][1]:
+			d[row[keyCol]] = {}
 
 		# marker counts
 		counts.append (MarkerCount)
-		for row in self.results[1]:
-			alleleKey = row['_Allele_key']
-			d[alleleKey][MarkerCount] = row['']
+
+		keyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Allele_key')
+		ctCol = Gatherer.columnNumber (self.results[1][0],
+			'mrkCount')
+
+		for row in self.results[1][1]:
+			d[row[keyCol]][MarkerCount] = row[ctCol]
 
 		# add other counts here...
 
-
+		# (see referenceCountsGatherer for a nice pattern to use)
 
 
 
@@ -65,18 +62,16 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 		alleleKeys = d.keys()
 		alleleKeys.sort()
 
+		self.finalColumns = [ '_Allele_key' ] + counts
+
 		for alleleKey in alleleKeys:
-			# get the data we collected for this allele so far
-			row = d[alleleKey]
+			row = [ alleleKey ]
+			for count in counts:
+				if d[alleleKey].has_key(count):
+					row.append (d[alleleKey][count])
+				else:
+					row.append (0)
 
-			# add the allele key itself as a field in the row
-			row['_Allele_key'] = alleleKey
-
-			# for any count types which had no results for this
-			# allele, add a zero count
-			for col in counts:
-				if not row.has_key(col):
-					row[col] = 0
 			self.finalResults.append (row)
 		return
 
@@ -86,16 +81,15 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 # needed
 cmds = [
 	# all alleles
-	'''select m._Allele_key
-		from ALL_Allele m %s''',
+	'''select _Allele_key from all_allele''',
 
 	# count of markers for each allele
-	'''select m._Allele_key, count(1)
-		from ALL_Marker_Assoc m %s
+	'''select m._Allele_key, count(1) as mrkCount
+		from all_marker_assoc m
 		group by m._Allele_key''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Allele_key', MarkerCount, ]
 

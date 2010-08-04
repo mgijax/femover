@@ -3,93 +3,81 @@
 # gathers data for the 'markerLocation' table in the front-end database
 
 import Gatherer
-import copy
+import config
+
+###--- Globals ---###
+
+if config.SOURCE_TYPE == 'sybase':
+	offset = 'offset'
+else:
+	offset = 'cmOffset'
 
 ###--- Classes ---###
 
 class MarkerLocationGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the markerLocation table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for marker locations,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for marker locations,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single marker,
-		#	rather than for all markers
-
-		if self.keyField == 'markerKey':
-			return '_Marker_key = %s' % self.keyValue
-		return ''
 
 	def collateResults (self):
 		# Purpose: go through the set of query results and assemble
 		#	the necessary records in self.finalResults
 
+		self.finalColumns = [ 'markerKey', 'sequenceNum',
+			'chromosome', 'cmOffset', 'cytogeneticOffset',
+			'startCoordinate', 'endCoordinate', 'buildIdentifier',
+			'locationType', 'mapUnits', 'provider' ]
 		self.finalResults = []
 
-		for row in self.results[0]:
-			startCoordinate = row['startCoordinate']
-			cm = row['offset']
-			cyto = row['cytogeneticOffset']
+		cols = self.results[0][0]
+		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		chrCol = Gatherer.columnNumber (cols, 'chromosome')
+		cmCol = Gatherer.columnNumber (cols, offset)
+		cytoCol = Gatherer.columnNumber (cols, 'cytogeneticOffset')
+		startCol = Gatherer.columnNumber (cols, 'startCoordinate')
+		endCol = Gatherer.columnNumber (cols, 'endCoordinate')
+		buildCol = Gatherer.columnNumber (cols, 'version')
+
+		for row in self.results[0][1]:
+			startCoordinate = row[startCol]
+			cm = row[cmCol]
+			cyto = row[cytoCol]
+			key = row[keyCol]
+			chrom = row[chrCol]
 
 			seqNum = 0
 
-			template = {
-				'markerKey' : row['_Marker_key'],
-				'sequenceNum' : None,
-				'chromosome' : None,
-				'cmOffset' : None,
-				'cytogeneticOffset' : None,
-				'startCoordinate' : None,
-				'endCoordinate' : None,
-				'buildIdentifier' : None,
-				'locationType' : None,
-				'mapUnits' : None,
-				'provider' : None,
-				}
-
 			if startCoordinate:
 				seqNum = seqNum + 1
-				r1 = copy.deepcopy (template)
-				r1['chromosome'] = row['chromosome']
-				r1['startCoordiante'] = int(startCoordinate)
-				r1['endCoordinate'] = \
-					int(row['endCoordinate'])
-				r1['buildIdentifier'] = row['version']
-				r1['sequenceNum'] = seqNum
-				r1['locationType'] = 'coordinates'
-				r1['mapUnits'] = 'bp'
-				self.finalResults.append (r1)
-
+				self.finalResults.append ( [ key, seqNum,
+					chrom, None, None,
+					int(startCoordinate),
+					int(row[endCol]), row[buildCol],
+					'coordinates', 'bp', None ] )
 			if cm:
 				seqNum = seqNum + 1
-				r2 = copy.deepcopy (template)
-				r2['chromosome'] = row['chromosome']
-				r2['cmOffset'] = '%0.1f' % cm
-				r2['locationType'] = 'centimorgans'
-				r2['sequenceNum'] = seqNum
-				self.finalResults.append (r2)
-
+				self.finalResults.append ( [ key, seqNum,
+					chrom, '%0.1f' % cm, None,
+					None, None, None,
+					'centimorgans', 'cM', None ] )
 			if cyto:
 				seqNum = seqNum + 1
-				r3 = copy.deepcopy (template)
-				r3['chromosome'] = row['chromosome']
-				r3['cytogeneticOffset'] = cyto
-				r3['locationType'] = 'cytogenetic'
-				r3['sequenceNum'] = seqNum
-				self.finalResults.append (r3)
+				self.finalResults.append ( [ key, seqNum,
+					chrom, None, cyto,
+					None, None, None,
+					'cytogenetic', None, None ] )
 		return
 
 ###--- globals ---###
 
 cmds = [
-	'''select distinct _Marker_key, chromosome, offset, 
+	'''select distinct _Marker_key, chromosome, %s,
 		cytogeneticOffset, startCoordinate, endCoordinate, version
-	from MRK_Location_Cache %s''',
+	from mrk_location_cache''' % offset,
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	Gatherer.AUTO, 'markerKey', 'sequenceNum', 'chromosome', 'cmOffset',

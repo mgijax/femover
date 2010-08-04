@@ -3,7 +3,6 @@
 # gathers data for the 'marker' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
@@ -13,45 +12,41 @@ class MarkerGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for markers, collates results,
 	#	writes tab-delimited text file
 
-	def collateResults (self):
-		# Purpose: we override this method because we need to
-		#	concatenate two result sets into a single, final set
-		#	of results
-
-		self.finalResults = self.results[0] + self.results[1]
-		return
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single marker, rather
-		#	than for all markers
-
-		if self.keyField == 'markerKey':
-			return 'm._Marker_key = %s' % self.keyValue
-		return ''
-
 	def postprocessResults (self):
 		# Purpose: override method to provide key-based lookups
 
+		self.convertFinalResultsToList()
+
+		statusCol = Gatherer.columnNumber (self.finalColumns,
+			'_Marker_Status_key')
+		ldbCol = Gatherer.columnNumber (self.finalColumns,
+			'_LogicalDB_key')
+		typeCol = Gatherer.columnNumber (self.finalColumns,
+			'_Marker_Type_key')
+		orgCol = Gatherer.columnNumber (self.finalColumns,
+			'_Organism_key')
+
 		for r in self.finalResults:
-			r['status'] = sybaseUtil.resolve (
-				r['_Marker_Status_key'], 'MRK_Status',
-				'_Marker_Status_key', 'status')
-			r['logicalDB'] = sybaseUtil.resolve (
-				r['_LogicalDB_key'], 'ACC_LogicalDB',
-				'_LogicalDB_key', 'name')
-			r['markerType'] = sybaseUtil.resolve (
-				r['_Marker_Type_key'], 'MRK_Types',
-				'_Marker_Type_key', 'name')
-			r['organism'] = sybaseUtil.resolve (
-				r['_Organism_key'], 'MGI_Organism',
-				'_Organism_key', 'commonName')
+			self.addColumn ('status', Gatherer.resolve (
+				r[statusCol], 'mrk_status',
+				'_Marker_Status_key', 'status'),
+				r, self.finalColumns)
+			self.addColumn ('logicalDB', Gatherer.resolve (
+				r[ldbCol], 'acc_logicaldb', '_LogicalDB_key',
+				'name'), r, self.finalColumns)
+			self.addColumn ('markerType', Gatherer.resolve (
+				r[typeCol], 'mrk_types', '_Marker_Type_key',
+				'name'), r, self.finalColumns)
+			self.addColumn ('organism', Gatherer.resolve (
+				r[orgCol], 'mgi_organism', '_Organism_key',
+				'commonName'), r, self.finalColumns)
 		return
 
 ###--- globals ---###
 
 cmds = [
 	# Gather the list of valid mouse markers for this report
+	# (mouse markers on the top of the union, non-mouse markers below)
 	'''select m._Marker_key,
 		m.symbol,
 		m.name, 
@@ -59,35 +54,37 @@ cmds = [
 		m._Organism_key,
 		a.accID, 
 		a._LogicalDB_key,
-		"" as subtype,
+		'None' as subtype,
 		m._Marker_Status_key
-	from MRK_Marker m,
-		ACC_Accession a
+	from mrk_marker m,
+		acc_accession a
 	where m._Marker_key = a._Object_key
 		and a._MGIType_key = 2
 		and a._LogicalDB_key = 1
 		and a.preferred = 1
-		and m._Organism_key = 1 %s''',
-
-	# and non-mouse markers 
-	'''select m._Marker_key,
+		and m._Organism_key = 1
+	union
+	select m._Marker_key,
 		m.symbol,
 		m.name, 
 		m._Marker_Type_key,
 		m._Organism_key,
 		a.accID, 
 		a._LogicalDB_key,
-		"" as subtype,
+		'None' as subtype,
 		m._Marker_Status_key
-	from MRK_Marker m,
-		ACC_Accession a,
-		ACC_LogicalDB ldb
+	from mrk_marker m,
+		acc_accession a,
+		acc_logicaldb ldb
 	where m._Marker_key = a._Object_key
 		and a._MGIType_key = 2
 		and m._Organism_key != 1
 		and a.preferred = 1
+		and a._LogicalDB_key != 4
 		and a._LogicalDB_key = ldb._LogicalDB_key
-		and ldb._Organism_key = m._Organism_key %s''',
+		and ldb._Organism_key = m._Organism_key''',
+	# exclude RapMap from rat marker IDs (logical database 4)
+	# There are 15 rat markers that will be excluded because of this.
 	]
 
 # order of fields (from the Sybase query results) to be written to the

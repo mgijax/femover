@@ -5,164 +5,224 @@
 import Gatherer
 import logger
 import symbolsort
+import config
+
+###--- Globals ---###
+
+if config.SOURCE_TYPE == 'sybase':
+	offset = 'offset'
+else:
+	offset = 'cmOffset'
 
 ###--- Classes ---###
 
+SYMBOL = 'bySymbol'
+TYPE = 'byMarkerType'
+ORGANISM = 'byOrganism'
+ID = 'byPrimaryID'
+LOCATION = 'byLocation'
+
 class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the markerSequenceNum table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for markers,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for ordering data for markers,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single marker,
-		#	rather than for all markers
-
-		if self.keyField == 'markerKey':
-			return 'm._Marker_key = %s' % \
-				self.keyValue
-		return ''
-
 	def collateResults (self):
+
+		# compute and cache the ordering for marker types
+
+		typeOrder = {}		# typeOrder[type key] = seq num
+		i = 0
+		keyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Marker_Type_key')
+		for row in self.results[1][1]:
+			i = i + 1
+			typeOrder[row[keyCol]] = i
+
+		logger.debug ('Ordered the %d marker types' % len(typeOrder))
+
+		# compute and cache the ordering for organisms
+
+		organismOrder = {}	# organismOrder[org key] = seq num
+		i = 0
+		orgCol = Gatherer.columnNumber (self.results[2][0],
+			'_Organism_key')
+		for row in self.results[2][1]:
+			i = i + 1
+			organismOrder[row[orgCol]] = i
+
+		logger.debug ('Ordered the %d organisms' % len(organismOrder))
+
+		# start collecting the actual data to be sorted...
+
+		# dict[marker key] = [ marker key, sort 1, ... sort n ]
 		dict = {}
 
-		# marker symbol
-		items = []
-		for row in self.results[0]:
-			markerKey = row['_Marker_key']
-			d = { '_Marker_key' : markerKey,
-				'byOrganism' : 0,
-				'bySymbol' : 0,
-				'byLocation' : 0,
-				'byMarkerType' : 0,
-				'byPrimaryID' : 0 }
-			dict[markerKey] = d
+		# marker symbol (assumes all markers are in this query)
 
-			items.append ( (row['symbol'].lower(), markerKey) )
+		symbols = []	# list of (lowercase symbol, marker key,
+				# marker type key, organism key)
 
-		items.sort (lambda a, b : symbolsort.nomenCompare(a[0], b[0]))
-		i = 1
-		for (symbol, markerKey) in items:
-			dict[markerKey]['bySymbol'] = i
-			i = i + 1
-		logger.debug ('Collated symbol data')
+		keyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Marker_key')
+		typeCol = Gatherer.columnNumber (self.results[0][0],
+			'_Marker_Type_key')
+		orgCol = Gatherer.columnNumber (self.results[0][0],
+			'_Organism_key')
+		symCol = Gatherer.columnNumber (self.results[0][0], 'symbol')
 
-		# marker type
-		items = []
-		for row in self.results[1]:
-			items.append ( (row['name'].lower(),
-				row['_Marker_Type_key']))
-		items.sort()
+		for row in self.results[0][1]:
+			# symbol sorting will be case-insensitive
+			symbols.append ( (row[symCol].lower(), row[keyCol],
+				row[typeCol], row[orgCol]) )
 
-		byTypeKey = {}
-		i = 1
-		for (name, key) in items:
-			byTypeKey[key] = i
-			i = i + 1
-
-		for row in self.results[2]:
-			markerKey = row['_Marker_key']
-			dict[markerKey]['byMarkerType'] = \
-				byTypeKey[row['_Marker_Type_key']]
-		logger.debug ('Collated type data')
-
-		# organism
-		items = []
-		for row in self.results[3]:
-			items.append ( (row['commonName'].lower(),
-				row['_Organism_key']))
-		items.sort()
-
-		byOrganismKey = {}
-		i = 1
-		for (name, key) in items:
-			byOrganismKey[key] = i
-			i = i + 1
-
-		for row in self.results[4]:
-			markerKey = row['_Marker_key']
-			dict[markerKey]['byOrganism'] = \
-				byOrganismKey[row['_Organism_key']]
-		logger.debug ('Collated organism data')
-
-		# primary ID
-		items = []
-		for row in self.results[5]:
-			items.append ( (row['prefixPart'], row['numericPart'],
-				row['_Marker_key']) )
-		items.sort()
+		# sort the tuples by comparing the nomenclature using our
+		# special nomen-comparison function (and ignoring the other
+		# tuple items)
+		symbols.sort (lambda a, b : \
+			symbolsort.nomenCompare(a[0], b[0]))
 
 		i = 1
-		for (prefixPart, numericPart, markerKey) in items:
-			dict[markerKey]['byPrimaryID'] = i
+		for (symbol, markerKey, t, o) in symbols:
+			dict[markerKey] = [ markerKey, i, typeOrder[t],
+				organismOrder[o] ]
 			i = i + 1
-		logger.debug ('Collated primary IDs')
 
-		# location
-		maxCoord = self.results[6][0][''] + 1
-		maxOffset = 99999999
-		maxCytoband = 'ZZZZ'
+		self.finalColumns = [ '_Marker_key', SYMBOL, TYPE, ORGANISM ]
 
-		items = []
-		for row in self.results[7]:
-			startCoord = row['startCoordinate']
-			offset = row['offset']
-			cytoband = row['cytogeneticOffset']
+		logger.debug ('Sorted %d by symbol' % len(dict))
+
+		# primary ID (assumes sorted results with earlier rows taking
+		# precedence)
+
+		allKeys = {}
+		for key in dict.keys():
+			allKeys[key] = 1
+
+		i = 0
+		keyCol = Gatherer.columnNumber (self.results[3][0],
+			'_Marker_key')
+		for row in self.results[3][1]:
+			key = row[keyCol]
+			if allKeys.has_key (key):
+				i = i + 1
+				del allKeys[key]
+				dict[key].append (i)
+
+		logger.debug ('Sorted %d by ID' % i)
+
+		# if any markers did not have an ID, then sort to the bottom
+		if allKeys:
+			i = i + 1
+			for key in allKeys.keys():
+				dict[key].append (i)
+
+		self.finalColumns.append (ID)
+
+		logger.debug ('Handled %d markers with no ID' % len(allKeys))
+
+		# location (assume we first sort markers with coordinates,
+		# then cM offsets, then cytobands.  within coordinates, we
+		# sort by chromosome then start coordinate.  likewise for
+		# cM offset and cytoband.)
+
+		# to sort markers without coordinates to the end, we need to
+		# know 1 more bp than the maximum start coordinate
+		maxCoord = self.results[4][1][0][0] + 1
+
+		maxOffset = 99999999	# bigger than any cM offset
+		maxCytoband = 'ZZZZ'	# bigger than any cytoband
+
+		locations = []		# list of (chrom seq num, start coord,
+					# cM offset, cytoband, marker key)
+
+		columns = self.results[5][0]
+		keyCol = Gatherer.columnNumber (columns, '_Marker_key')
+		startCol = Gatherer.columnNumber (columns, 'startCoordinate')
+		cmCol = Gatherer.columnNumber (columns, offset)
+		cytoCol = Gatherer.columnNumber (columns, 'cytogeneticOffset')
+		chrCol = Gatherer.columnNumber (columns, 'sequenceNum')
+
+		for row in self.results[5][1]:
+			startCoord = row[startCol]
+			cmOffset = row[cmCol]
+			cytoband = row[cytoCol]
 
 			if startCoord == None:
 				startCoord = maxCoord
-			if offset == None:
-				offset = maxOffset
+			if (cmOffset == None) or (cmOffset <= 0):
+				cmOffset = maxOffset
 			if cytoband == None:
 				cytoband == maxCytoband
 
-			items.append ( (row['sequenceNum'], startCoord,
-				offset, cytoband, row['_Marker_key']) )
-		items.sort()	
+			locations.append ( (row[chrCol], startCoord,
+				cmOffset, cytoband, row[keyCol]) )
+		locations.sort()	
 
-		i = 1
-		for (a,b,c,d, markerKey) in items:
-			dict[markerKey]['byLocation'] = i
+		allKeys = {}
+		for key in dict.keys():
+			allKeys[key] = 1
+
+		i = 0
+		for (a,b,c,d, markerKey) in locations:
+			if allKeys.has_key (markerKey):
+				i = i + 1
+				del allKeys[markerKey]
+				dict[markerKey].append (i)
+
+		logger.debug ('Sorted %d by location' % i)
+
+		# if any markers did not have a location, then sort to the
+		# bottom
+		if allKeys:
 			i = i + 1
-		logger.debug ('Collated locations')
+			for key in allKeys.keys():
+				dict[key].append (i)
 
+		logger.debug ('Handled %d without locations' % len(allKeys))
+
+		self.finalColumns.append (LOCATION)
 		self.finalResults = dict.values() 
 		return
 
 ###--- globals ---###
 
 cmds = [
-	'select m._Marker_key, m.symbol from MRK_Marker m %s',
+	'''select _Marker_key, symbol, _Marker_Type_key,
+			_Organism_key
+		from mrk_marker''',
 
-	'select t._Marker_Type_key, t.name from MRK_Types t',
+	'''select _Marker_Type_key, name
+		from mrk_types
+		order by name''',
 
-	'select m._Marker_key, m._Marker_Type_key from MRK_Marker m %s',
+	'''select _Organism_key, commonName
+		from mgi_organism
+		order by commonName''',
 
-	'select o._Organism_key, o.commonName from MGI_Organism o',
-
-	'select m._Marker_key, m._Organism_key from MRK_Marker m %s',
-
-	'''select m._Marker_key, a.prefixPart, a.numericPart
-		from ACC_Accession a, ACC_LogicalDB ldb, MRK_Marker m
+	'''select m._Marker_key, a._LogicalDB_key, a.prefixPart, a.numericPart
+		from acc_accession a, acc_logicaldb ldb, mrk_marker m
 		where a._MGIType_key = 2
 			and a._LogicalDB_key = ldb._LogicalDB_key
 			and a.preferred = 1
 			and m._Marker_key = a._Object_key
-			and ldb._Organism_key = m._Organism_key %s''',
+			and ldb._Organism_key = m._Organism_key
+		order by m._Marker_key, a._LogicalDB_key, a.prefixPart,
+			a.numericPart''',
 
-	'select max(m.startCoordinate) from MRK_Location_Cache m',
+	'''select max(startCoordinate) as maxStart
+		from mrk_location_cache''',
 
-	'''select m._Marker_key, m.chromosome, m.startCoordinate,
-			m.offset, m.cytogeneticOffset, m.sequenceNum
-		from MRK_Location_Cache m %s''',
+	'''select _Marker_key, chromosome, startCoordinate,
+			%s, cytogeneticOffset, sequenceNum
+		from mrk_location_cache''' % offset,
 	]
 
 # order of fields (from the Sybase query results) to be written to the
 # output file
 fieldOrder = [
-	'_Marker_key', 'bySymbol', 'byMarkerType', 'byOrganism',
-	'byPrimaryID', 'byLocation',
+	'_Marker_key', SYMBOL, TYPE, ORGANISM, ID, LOCATION,
 	]
 
 # prefix for the filename of the output file

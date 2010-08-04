@@ -2,72 +2,53 @@
 # 
 # gathers data for the 'alleleNote' table in the front-end database
 
-import re
 import Gatherer
-import sybaseUtil
-
-###--- Functions ---###
-
-def clean (s):
-	# Purpose: convert tabs and newlines in 's' to be blank spaces
-
-	s = re.sub('\t', ' ', s)
-	s = re.sub('\n', ' ', s)
-	s = re.sub('\r', ' ', s)
-	return s
 
 ###--- Classes ---###
 
 class AlleleNoteGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the alleleNote table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for allele notes,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for primary data for allele notes,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single allele,
-		#	rather than for all alleles
-
-		if self.keyField == 'alleleKey':
-			return 'mn._Object_key = %s' % self.keyValue
-		return ''
-
 	def collateResults (self):
-		self.finalResults = []
-
+		# m[alleleKey] = { noteType : note }
 		m = {}
 
-		for row in self.results[0]:
-			alleleKey = row['_Object_key']
-			noteType = sybaseUtil.resolve (row['_NoteType_key'],
-				'MGI_NoteType', '_NoteType_key', 'noteType')
-			note = clean(row['note'])
-			noteKey = row['_Note_key']
+		keyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Object_key')
+		typeCol = Gatherer.columnNumber (self.results[0][0],
+			'_NoteType_key')
+		noteCol = Gatherer.columnNumber (self.results[0][0], 'note')
 
-			r = { 'alleleKey' : alleleKey,
-				'noteType' : noteType,
-				'note' : note,
-				}
+		for row in self.results[0][1]:
+			alleleKey = row[keyCol]
+			noteType = Gatherer.resolve (row[typeCol],
+				'mgi_notetype', '_NoteType_key', 'noteType')
+			note = row[noteCol]
 
 			if not m.has_key(alleleKey):
-				m[alleleKey] = { noteType : r }
+				m[alleleKey] = { noteType : note }
 			elif not m[alleleKey].has_key(noteType):
-				m[alleleKey][noteType] = r
+				m[alleleKey][noteType] = note
 			else:
-				m[alleleKey][noteType]['note'] = \
-					m[alleleKey][noteType]['note'] + note 
+				m[alleleKey][noteType] = \
+					m[alleleKey][noteType] + note 
+
+		self.finalColumns = [ 'alleleKey', 'noteType', 'note' ]
+		self.finalResults = []
 
 		alleleKeys = m.keys()
 		alleleKeys.sort()
 
 		for alleleKey in alleleKeys:
-			notes = m[alleleKey]
-			noteTypes = notes.keys()
+			noteTypes = m[alleleKey].keys()
 			noteTypes.sort()
 
 			for noteType in noteTypes:
-				row = m[alleleKey][noteType]
+				row = [ alleleKey, noteType,
+					m[alleleKey][noteType] ]
 				self.finalResults.append (row)
 		return
 
@@ -75,13 +56,13 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-	from MGI_Note mn, MGI_NoteChunk mnc
+	from mgi_note mn, mgi_notechunk mnc
 	where mn._MGIType_key = 11
-		and mn._Note_key = mnc._Note_key %s
+		and mn._Note_key = mnc._Note_key
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, 'alleleKey', 'noteType', 'note', ]
 

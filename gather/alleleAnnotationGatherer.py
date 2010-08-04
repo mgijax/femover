@@ -3,7 +3,6 @@
 # gathers data for the 'alleleAnnotation' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
@@ -13,28 +12,19 @@ class AlleleAnnotationGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for allele annotations,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single allele,
-		#	rather than for all alleles
-
-		if self.keyField == 'alleleKey':
-			return 'va._Object_key = %s' % self.keyValue
-		return ''
-
 	def postprocessResults (self):
 		# Purpose: override of standard method for key-based lookups
 
 		for r in self.finalResults:
-			r['vocab'] = sybaseUtil.resolve (r['_Vocab_key'],
+			r['vocab'] = Gatherer.resolve (r['_Vocab_key'],
 				'VOC_Vocab', '_Vocab_key', 'name')
-			r['evidenceTerm'] = sybaseUtil.resolve (
+			r['evidenceTerm'] = Gatherer.resolve (
 				r['_EvidenceTerm_key'])
-			r['annotQualifier'] = sybaseUtil.resolve (
+			r['annotQualifier'] = Gatherer.resolve (
 				r['_Qualifier_key'])
-			r['jnumID'] = sybaseUtil.resolve (r['_Refs_key'],
+			r['jnumID'] = Gatherer.resolve (r['_Refs_key'],
 				'BIB_Citation_Cache', '_Refs_key', 'jnumID')
-			r['headerTerm'] = sybaseUtil.resolve (
+			r['headerTerm'] = Gatherer.resolve (
 				r['_AncestorObject_key'])
 		return
 

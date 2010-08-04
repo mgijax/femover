@@ -2,72 +2,53 @@
 # 
 # gathers data for the 'markerNote' table in the front-end database
 
-import re
 import Gatherer
-import sybaseUtil
-
-###--- Functions ---###
-
-def clean (s):
-	# Purpose: convert tabs and newlines in 's' to be blank spaces
-
-	s = re.sub('\t', ' ', s)
-	s = re.sub('\n', ' ', s)
-	s = re.sub('\r', ' ', s)
-	return s
 
 ###--- Classes ---###
 
 class MarkerNoteGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the markerNote table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for marker notes,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for primary data for marker notes,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single marker,
-		#	rather than for all markers
-
-		if self.keyField == 'markerKey':
-			return 'mn._Object_key = %s' % self.keyValue
-		return ''
-
 	def collateResults (self):
-		self.finalResults = []
-
+		# m[marker key] = { note type : note }
 		m = {}
 
-		for row in self.results[0]:
-			markerKey = row['_Object_key']
-			noteType = sybaseUtil.resolve (row['_NoteType_key'],
-				'MGI_NoteType', '_NoteType_key', 'noteType')
-			note = clean(row['note'])
-			noteKey = row['_Note_key']
+		keyCol = Gatherer.columnNumber (self.results[0][0],
+			'_Object_key')
+		typeCol = Gatherer.columnNumber (self.results[0][0],
+			'_NoteType_key')
+		noteCol = Gatherer.columnNumber (self.results[0][0], 'note') 
 
-			r = { 'markerKey' : markerKey,
-				'noteType' : noteType,
-				'note' : note,
-				}
+		for row in self.results[0][1]:
+			markerKey = row[keyCol]
+			noteType = Gatherer.resolve (row[typeCol],
+				'mgi_notetype', '_NoteType_key', 'noteType')
+			note = row[noteCol]
 
 			if not m.has_key(markerKey):
-				m[markerKey] = { noteType : r }
+				m[markerKey] = { noteType : note }
 			elif not m[markerKey].has_key(noteType):
-				m[markerKey][noteType] = r
+				m[markerKey][noteType] = note
 			else:
-				m[markerKey][noteType]['note'] = \
-					m[markerKey][noteType]['note'] + note 
+				m[markerKey][noteType] = \
+					m[markerKey][noteType] + note 
+
+		self.finalResults = []
+		self.finalColumns = [ 'markerKey', 'noteType', 'note' ]
 
 		markerKeys = m.keys()
 		markerKeys.sort()
 
 		for markerKey in markerKeys:
-			notes = m[markerKey]
-			noteTypes = notes.keys()
+			noteTypes = m[markerKey].keys()
 			noteTypes.sort()
 
 			for noteType in noteTypes:
-				row = m[markerKey][noteType]
+				row = [ markerKey, noteType,
+					m[markerKey][noteType] ]
 				self.finalResults.append (row)
 		return
 
@@ -77,11 +58,11 @@ cmds = [
 	'''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
 	from MGI_Note mn, MGI_NoteChunk mnc
 	where mn._MGIType_key = 2
-		and mn._Note_key = mnc._Note_key %s
+		and mn._Note_key = mnc._Note_key
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, 'markerKey', 'noteType', 'note', ]
 
