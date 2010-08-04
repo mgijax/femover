@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerNote table
@@ -9,10 +11,10 @@ tableName = 'markerNote'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int(11)	NOT NULL,
-	markerKey	int(11) NOT NULL,
+	uniqueKey	int	NOT NULL,
+	markerKey	int	NOT NULL,
 	noteType	varchar(255)	NOT NULL,
-	note		varchar(32000)	NULL,
+	note		varchar(64000)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
