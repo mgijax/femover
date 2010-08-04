@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerToAllele table
@@ -9,10 +11,10 @@ tableName = 'markerToAllele'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int(11)		NOT NULL,
-	markerKey	int(11)		NOT NULL,
-	alleleKey	int(11) 	NOT NULL,
-	referenceKey	int(11)		NOT NULL,
+	uniqueKey	int		NOT NULL,
+	markerKey	int		NOT NULL,
+	alleleKey	int 		NOT NULL,
+	referenceKey	int		NULL,
 	qualifier	varchar(80)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
 
