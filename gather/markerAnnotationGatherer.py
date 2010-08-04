@@ -3,7 +3,6 @@
 # gathers data for the 'markerAnnotation' table in the front-end database
 
 import Gatherer
-import sybaseUtil
 
 ###--- Classes ---###
 
@@ -13,25 +12,26 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for marker annotations,
 	#	collates results, writes tab-delimited text file
 
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single marker,
-		#	rather than for all markers
-
-		if self.keyField == 'markerKey':
-			return 'va._Object_key = %s' % self.keyValue
-		return ''
-
 	def postprocessResults (self):
 		# Purpose: override of standard method for key-based lookups
 
+		self.convertFinalResultsToList()
+
+		vocCol = Gatherer.columnNumber (self.finalColumns,
+			'_Vocab_key')
+		etCol = Gatherer.columnNumber (self.finalColumns,
+			'_EvidenceTerm_key')
+		aqCol = Gatherer.columnNumber (self.finalColumns,
+			'_Qualifier_key')
+
 		for r in self.finalResults:
-			r['vocab'] = sybaseUtil.resolve (r['_Vocab_key'],
-				'VOC_Vocab', '_Vocab_key', 'name')
-			r['evidenceTerm'] = sybaseUtil.resolve (
-				r['_EvidenceTerm_key'])
-			r['annotQualifier'] = sybaseUtil.resolve (
-				r['_Qualifier_key'])
+			self.addColumn ('vocab', Gatherer.resolve (
+				r[vocCol], 'voc_vocab', '_Vocab_key', 'name'),
+				r, self.finalColumns)
+			self.addColumn ('evidenceTerm', Gatherer.resolve (
+				r[etCol]), r, self.finalColumns)
+			self.addColumn ('annotQualifier', Gatherer.resolve (
+				r[aqCol]), r, self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -46,12 +46,12 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			  va._Qualifier_key,
 			  ve._Refs_key,
 			  bc.jnumID
-			from VOC_AnnotType vat,
-			  VOC_Annot va,
-			  VOC_Evidence ve,
-			  VOC_Term vt,
-			  ACC_Accession aa,
-			  BIB_Citation_Cache bc
+			from voc_annottype vat,
+			  voc_annot va,
+			  voc_evidence ve,
+			  voc_term vt,
+			  acc_accession aa,
+			  bib_citation_cache bc
 			where vat._MGIType_key = 2
 			  and vat._AnnotType_key = va._AnnotType_key
 			  and va._Term_key = vt._Term_key
@@ -59,7 +59,7 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			  and aa._MGIType_key = 13
 			  and aa.preferred = 1
 			  and va._Annot_key = ve._Annot_key
-			  and ve._Refs_key = bc._Refs_key %s''',
+			  and ve._Refs_key = bc._Refs_key''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the
