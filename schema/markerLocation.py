@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerLocation table
@@ -9,16 +11,16 @@ tableName = 'markerLocation'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey		int(11)		NOT NULL,
-	markerKey		int(11)		NOT NULL,
-	sequenceNum		int(11)		NOT NULL,
+	uniqueKey		int		NOT NULL,
+	markerKey		int		NOT NULL,
+	sequenceNum		int		NOT NULL,
 	chromosome		varchar(8)	NULL,
 	cmOffset		float		NULL,
 	cytogeneticOffset	varchar(20)	NULL,
 	startCoordinate		float		NULL,
 	endCoordinate		float		NULL,
 	buildIdentifier		varchar(30)	NULL,
-	locationType		varchar(20)	NULL,
+	locationType		varchar(20)	NOT NULL,
 	mapUnits		varchar(50)	NULL,
 	provider		varchar(255)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
