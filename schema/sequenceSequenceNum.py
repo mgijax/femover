@@ -14,9 +14,7 @@ createStatement = '''CREATE TABLE %s  (
 	sequenceKey	int		not null,
 	byLength	int		not null,
 	bySequenceType	int		not null,
-	byDescription	int		not null,
-	byPrimaryID	int		not null,
-	byLocation	int		not null,
+	byProvider	int		not null,
 	PRIMARY KEY(sequenceKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
