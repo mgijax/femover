@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the alleleSequenceNum table
@@ -9,10 +11,10 @@ tableName = 'alleleSequenceNum'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	alleleKey	int(11)		not null,
-	bySymbol	int(11)		not null,
-	byAlleleType	int(11)		not null,
-	byPrimaryID	int(11)		not null,
+	alleleKey	int		not null,
+	bySymbol	int		not null,
+	byAlleleType	int		not null,
+	byPrimaryID	int		not null,
 	PRIMARY KEY(alleleKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

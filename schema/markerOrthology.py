@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerOrthology table
@@ -9,9 +11,9 @@ tableName = 'markerOrthology'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int(11)	NOT NULL,
-	mouseMarkerKey	int(11) NOT NULL,
-	otherMarkerKey	int(11)	NOT NULL,
+	uniqueKey	int	NOT NULL,
+	mouseMarkerKey	int	NOT NULL,
+	otherMarkerKey	int	NOT NULL,
 	otherSymbol	varchar(50)	NULL,
 	otherOrganism	varchar(50)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName

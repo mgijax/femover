@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerAnnotation table
@@ -9,16 +11,16 @@ tableName = 'markerAnnotation'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey		int(11)		NOT NULL,
-	markerKey		int(11)		NOT NULL,
+	uniqueKey		int		NOT NULL,
+	markerKey		int		NOT NULL,
 	annotationType		varchar(255)	NOT NULL,
 	vocabName		varchar(255)	NOT NULL,
 	term			varchar(255)	NOT NULL,
 	termID			varchar(30)	NULL,
-	annotationKey		int(11)		NULL,
+	annotationKey		int		NULL,
 	qualifier		varchar(50)	NULL,
 	evidenceTerm		varchar(255)	NULL,
-	referenceKey		int(11)		NULL,
+	referenceKey		int		NULL,
 	jnumID			varchar(30)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
 

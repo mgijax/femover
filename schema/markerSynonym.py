@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerSynonym table
@@ -9,8 +11,8 @@ tableName = 'markerSynonym'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int(11)	NOT NULL,
-	markerKey	int(11) NOT NULL,
+	uniqueKey	int	NOT NULL,
+	markerKey	int	NOT NULL,
 	synonym		varchar(255)	NULL,
 	synonymType	varchar(255)	NULL,
 	jnumID		varchar(30)	NULL,

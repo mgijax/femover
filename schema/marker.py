@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 ###--- Globals ---###
@@ -7,7 +9,7 @@ tableName = 'marker'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	markerKey    	int(11) NOT NULL,
+	markerKey    	int	NOT NULL,
 	symbol        	varchar(50) NULL,
 	name          	varchar(255) NULL,
 	markerType	varchar(80) NULL,

@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the alleleCounts table
@@ -9,8 +11,8 @@ tableName = 'alleleCounts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	alleleKey	int(11)	NOT NULL,
-	markerCount	int(11) NULL,
+	alleleKey	int	NOT NULL,
+	markerCount	int	NULL,
 	PRIMARY KEY(alleleKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

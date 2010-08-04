@@ -1,3 +1,5 @@
+#!/usr/local/bin/python
+
 import Table
 
 # contains data definition information for the markerSequenceNum table
@@ -9,12 +11,12 @@ tableName = 'markerSequenceNum'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	markerKey	int(11)		not null,
-	bySymbol	int(11)		not null,
-	byMarkerType	int(11)		not null,
-	byOrganism	int(11)		not null,
-	byPrimaryID	int(11)		not null,
-	byLocation	int(11)		not null,
+	markerKey	int		not null,
+	bySymbol	int		not null,
+	byMarkerType	int		not null,
+	byOrganism	int		not null,
+	byPrimaryID	int		not null,
+	byLocation	int		not null,
 	PRIMARY KEY(markerKey))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
