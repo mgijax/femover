@@ -26,13 +26,13 @@ import os
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-c|-m|-r|-s]
+USAGE = '''Usage: %s [-a|-c|-m|-r|-s]
     Data sets to (re)generate:
+	-a : Alleles
 	-c : Cre
 	-m : Markers
-	-q : Sequences
+	-s : Sequences
 	-r : References
-	-s : SNPs
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
@@ -69,23 +69,30 @@ INDEX_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
+ALLELES = [ 'allele', 'alleleID', 'alleleCounts', 'alleleNote',
+		'alleleSequenceNum',
+		# 'alleleAnnotation',
+	]
+CRE = []
+MARKERS = [ 'marker', 'markerID', 'markerSynonym', 'markerToAllele',
+		'markerToSequence', 'markerToReference', 'markerOrthology',
+		'markerLocation', 'markerCounts', 'markerNote',
+		'markerSequenceNum',
+		# 'markerAnnotation',
+	]
 REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
 		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
 		'referenceToSequence', 'referenceIndividualAuthors',
-		]
-CRE = []
-MARKERS = []
-SNPS = []
+	]
 SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
 		'sequenceGeneTrap', 'sequenceID', 'sequenceLocation',
-		'sequenceSource', 
-		# 'sequenceSequenceNum',
+		'sequenceSource', 'sequenceSequenceNum',
 	]
 
 # dictionary mapping each command-line flag to the list of tables that it
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
-	'-s' : SNPS,		'-q' : SEQUENCES,
+	'-s' : SEQUENCES,	'-a' : ALLELES,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
