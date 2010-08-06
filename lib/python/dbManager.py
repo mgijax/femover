@@ -3,6 +3,8 @@
 #	with MySQL and Postgres database connections
 
 import os
+import traceback
+import sys
 
 ###--- Globals ---###
 
@@ -13,6 +15,18 @@ MYSQL = 'MySQL'			# constant; identifies type of dbManager
 POSTGRES = 'Postgres'		# constant; identifies type of dbManager
 
 Error = 'dbManager.Error'    # string; exception to be raised in this module
+
+try:
+	import MySQLdb
+	LOADED_MYSQL_DRIVER = True
+except:
+	pass
+
+try:
+	import psycopg2
+	LOADED_POSTGRES_DRIVER = True
+except:
+	pass
 
 ###--- Classes ---###
 
@@ -75,6 +89,8 @@ class dbManager:
 	try:	
 		connection = self._getConnection()
 	except:
+		(excType, excValue, excTraceback) = sys.exc_info()
+		traceback.printException (excType, excValue, excTraceback)
 		raise Exception (Error,
 			'Cannot get connection to %s:%s as %s' % (self.host,
 				self.database, self.user) )
@@ -249,15 +265,12 @@ class mysqlManager (dbManager):
 	# Purpose: to get a connection to a MySQL database
 	# Returns: connection object
 	# Assumes: nothing
-	# Modifies: 1. global LOADED_MYSQL_DRIVER; 2. if not already loaded,
-	#	this method will load the MySQLdb Python module
+	# Modifies: nothing
 	# Throws: propagates any exceptions from MySQLdb.connect() method
 
-	global LOADED_MYSQL_DRIVER
-
 	if not LOADED_MYSQL_DRIVER:
-		import MySQLdb
-		LOADED_MYSQL_DRIVER = True
+		raise Error, \
+		    'Cannot get connection; MySQLdb driver was not loaded'
 
 	return MySQLdb.connect (host=self.host, user=self.user,
 		passwd=self.password, db=self.database, local_infile=1)
@@ -278,15 +291,13 @@ class postgresManager (dbManager):
 	# Purpose: to get a connection to a Postgres database
 	# Returns: connection object
 	# Assumes: nothing
-	# Modifies: 1. global LOADED_POSTGRES_DRIVER; 2. if not already
-	#	loaded, this method will load the psycopg2 Python module
+	# Modifies: nothing
 	# Throws: propagates any exceptions from psycopg2.connect() method
 
-	global LOADED_POSTGRES_DRIVER
-
 	if not LOADED_POSTGRES_DRIVER:
-		import psycopg2
-		LOADED_POSTGRES_DRIVER = True
+		raise Error, \
+		    'Cannot get connection; psycopg2 driver was not loaded'
+
 	return psycopg2.connect (host=self.host, user=self.user,
 		password=self.password, database=self.database)
 
