@@ -83,9 +83,9 @@ CRE = []
 MARKERS = [ 'marker', 'markerID', 'markerSynonym', 'markerToAllele',
 		'markerToSequence', 'markerToReference', 'markerOrthology',
 		'markerLocation', 'markerCounts', 'markerNote',
-		'markerSequenceNum', 'markerAnnotation',
+		'markerSequenceNum', 'markerAnnotation', 'markerToProbe',
 	]
-PROBES = [ 'probe', 'probeCloneCollection',
+PROBES = [ 'probe', 'probeCloneCollection', 'probeToSequence',
 	]
 REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
 		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
@@ -100,7 +100,7 @@ SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
 # list of high priority tables, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
-HIGH_PRIORITY_TABLES = [ 'sequence', 'sequenceSequeneNum', 'sequenceID', ]
+HIGH_PRIORITY_TABLES = [ 'sequence', 'sequenceSequenceNum', 'sequenceID', ]
 
 # dictionary mapping each command-line flag to the list of tables that it
 # would regenerate
@@ -655,6 +655,7 @@ def main():
 
 	createTables(tables)
 	scheduleGatherers(tables)
+	dbInfoTable.setInfo ('status', 'gathering data')
 
 	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS):
 		if GATHER_STATUS != ENDED:
