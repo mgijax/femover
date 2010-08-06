@@ -23,21 +23,28 @@ import logger
 import dbManager
 import time
 import os
+import traceback
+import databaseInfo
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-m|-r|-s]
+USAGE = '''Usage: %s [-a|-c|-m|-p|-r|-s]
     Data sets to (re)generate:
 	-a : Alleles
 	-c : Cre
 	-m : Markers
+	-p : Probes
 	-s : Sequences
 	-r : References
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
 
-###--- Globals ---###
+# databaseInfoTable object
+dbInfoTable = databaseInfo.table
+
+# time (in seconds) at which we start the build
+START_TIME = time.time()
 
 # float; time in seconds of last call to dispatcherReport()
 REPORT_TIME = time.time()
@@ -78,6 +85,8 @@ MARKERS = [ 'marker', 'markerID', 'markerSynonym', 'markerToAllele',
 		'markerLocation', 'markerCounts', 'markerNote',
 		'markerSequenceNum', 'markerAnnotation',
 	]
+PROBES = [ 'probe', 'probeCloneCollection',
+	]
 REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
 		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
 		'referenceToSequence', 'referenceIndividualAuthors',
@@ -85,12 +94,18 @@ REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook',
 SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
 		'sequenceGeneTrap', 'sequenceID', 'sequenceLocation',
 		'sequenceSource', 'sequenceSequenceNum',
+		'sequenceCloneCollection',
 	]
+
+# list of high priority tables, in order of precedence
+# (these will be moved up in the queue of to-do items, as they are the
+# critical path)
+HIGH_PRIORITY_TABLES = [ 'sequence', 'sequenceSequeneNum', 'sequenceID', ]
 
 # dictionary mapping each command-line flag to the list of tables that it
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
-	'-s' : SEQUENCES,	'-a' : ALLELES,
+	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
@@ -195,9 +210,6 @@ def dropTables (
 
 	dropDispatcher = Dispatcher.Dispatcher (config.CONCURRENT_DROP)
 
-	# integer; number of tables to be dropped, for reporting
-	tableCount = len(tables)
-
 	items = []	# list of outstanding drop operations, each
 			# ...a tuple of (table name, integer id)
 
@@ -225,10 +237,6 @@ def dropTables (
 			id = dropDispatcher.schedule (
 				"%s 'drop table %s'" % (dbExecute, row[0]))
 			items.append ( (row[0], id) )
-
-		# for a full build, report the number of tables we actually
-		# found and deleted
-		tableCount = len(rows)
 	else:
 		# specific tables were specified, so just delete them
 		for table in tables:
@@ -250,7 +258,7 @@ def dropTables (
 				config.TARGET_TYPE, table)
 
 	# report how many tables were dropped
-	logger.info ('Dropped %d tables' % tableCount)
+	logger.info ('Dropped %d tables' % len(items))
 	return
 
 def createTables (
@@ -267,6 +275,7 @@ def createTables (
 	createDispatcher = Dispatcher.Dispatcher (config.CONCURRENT_CREATE)
 
 	items = []
+
 	for table in tables:
 		script = os.path.join (config.SCHEMA_DIR, '%s.py' % table)
 		id = createDispatcher.schedule ('%s --ct' % script)
@@ -284,7 +293,7 @@ def createTables (
 			raise error, 'Failed to create %s table %s' % (
 				config.TARGET_TYPE, table)
 
-	logger.info ('Created %d tables' % len(tables))
+	logger.info ('Created %d tables' % len(items))
 	return
 
 def dispatcherReport():
@@ -319,6 +328,26 @@ def dispatcherReport():
 
 	REPORT_TIME = time.time() 	# update time of last report
 	return
+
+def shuffle (
+	tables		# list of table names (strings)
+	):
+	# Purpose: to shuffle the 'tables' to bring any high priority ones to
+	#	the front of the list
+	# Returns: a re-ordered copy of 'tables'
+	# Assumes: nothing
+	# Modifies: nothing
+	# Throws: nothing
+
+	toDo = []
+	for table in HIGH_PRIORITY_TABLES:
+		if table in tables:
+			toDo.append(table)
+
+	for table in tables:
+		if table not in toDo:
+			toDo.append(table)
+	return toDo 
 
 def scheduleGatherers (
 	tables		# list of table names (strings)
@@ -401,6 +430,7 @@ def checkForFinishedGathering():
 
 	if not GATHER_IDS:
 		GATHER_STATUS = ENDED
+		dbInfoTable.setInfo ('status', 'finished gathering')
 		logger.debug ('Last gatherer finished')
 	return
 
@@ -466,6 +496,8 @@ def checkForFinishedConversion():
 
 	if (GATHER_STATUS == ENDED) and (not CONVERT_IDS):
 		CONVERT_STATUS = ENDED
+		dbInfoTable.setInfo ('status',
+			'finished file conversions')
 		logger.debug ('Last file conversion finished')
 	return
 
@@ -549,6 +581,7 @@ def checkForFinishedLoad():
 	if (CONVERT_STATUS == ENDED) and (not BCPIN_IDS):
 		BCPIN_STATUS = ENDED
 		logger.debug ('Last bulk load finished')
+		dbInfoTable.setInfo ('status', 'finished loading data')
 	return
 
 def checkForFinishedIndexes():
@@ -585,6 +618,7 @@ def checkForFinishedIndexes():
 	if (BCPIN_STATUS == ENDED) and (not INDEX_IDS) and (INDEX_STATUS != ENDED):
 		INDEX_STATUS = ENDED
 		logger.debug ('Last index finished')
+		dbInfoTable.setInfo ('status', 'finished indexing')
 	return
 
 def main():
@@ -596,8 +630,29 @@ def main():
 	# Throws: propagates 'error' if problems occur
 
 	logger.info ('Beginning %s script' % sys.argv[0])
-	tables = processCommandLine()
+	tables = shuffle(processCommandLine())
+	dbInfoTable.dropTable()
 	dropTables(tables)
+
+	dbInfoTable.createTable()
+	dbInfoTable.setInfo ('status', 'starting')
+	dbInfoTable.setInfo ('source', '%s:%s:%s' % (config.SOURCE_TYPE,
+		config.SOURCE_HOST, config.SOURCE_DATABASE))
+	dbInfoTable.setInfo ('target', '%s:%s:%s' % (config.TARGET_TYPE,
+		config.TARGET_HOST, config.TARGET_DATABASE))
+	dbInfoTable.setInfo ('log directory', config.LOG_DIR)
+
+	if FULL_BUILD:
+		dbInfoTable.setInfo ('build type', 'full build')
+	else:
+		dbInfoTable.setInfo ('build type',
+			'partial build, options: %s' % \
+			', '.join (sys.argv[1:]))
+
+	dbInfoTable.setInfo ('build started', time.strftime (
+		'%m/%d/%Y %H:%M:%S', time.localtime(START_TIME)) )
+	dbInfoTable.setInfo ('status', 'creating tables')
+
 	createTables(tables)
 	scheduleGatherers(tables)
 
@@ -617,10 +672,42 @@ def main():
 	BCPIN_DISPATCHER.wait()
 	INDEX_DISPATCHER.wait(dispatcherReport)
 	checkForFinishedIndexes()		# do final reporting
-	logger.close()
 	return
 
+def hms (x):
+	# Purpose: convert x seconds into hh:mm:ss notation
+
+	x = int(x)
+	h = x / 3600
+	m = (x % 3600) / 60
+	s = x % 60
+	return '%0.2d:%0.2d:%0.2d' % (h, m, s)
+	
 ###--- Main program ---###
 
 if __name__ == '__main__':
-	main()
+	excType = None
+	excValue = None
+	excTraceback = None
+
+	try:
+		main()
+		status = 'succeeded'
+	except:
+		(excType, excValue, excTraceback) = sys.exc_info()
+		status = 'failed'
+
+	elapsed = hms(time.time() - START_TIME)
+	dbInfoTable.setInfo ('status', status)
+	dbInfoTable.setInfo ('build ended', time.strftime (
+		'%m/%d/%Y %H:%M:%S', time.localtime()) )
+	dbInfoTable.setInfo ('build total time', elapsed)
+
+	report = 'Build %s in %s' % (status, elapsed)
+	print report
+	logger.info (report)
+
+	if excType != None:
+		traceback.print_exception (excType, excValue, excTraceback)
+		raise excType, excValue
+	logger.close()
