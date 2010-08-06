@@ -17,6 +17,9 @@ import logger
 ReferenceCount = 'referenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
+GOCount = 'goTermCount'
+AssayCount = 'gxdAssayCount'
+OrthologCount = 'orthologCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -48,6 +51,9 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		toAdd = [ (self.results[1], ReferenceCount, 'numRef'),
 			(self.results[2], SequenceCount, 'numSeq'),
 			(self.results[3], AlleleCount, 'numAll'),
+			(self.results[4], GOCount, 'numGO'),
+			(self.results[5], AssayCount, 'numAssay'),
+			(self.results[6], OrthologCount, 'numOrtho'),
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -90,29 +96,52 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 cmds = [
 	# all markers
 	'''select _Marker_key
-		from MRK_Marker''',
+		from mrk_marker''',
 
 	# count of references for each marker
 	'''select _Marker_key, count(1) as numRef
-		from MRK_Reference
+		from mrk_reference
 		group by _Marker_key''',
 
 	# count of sequences for each marker
 	'''select _Marker_key, count(1) as numSeq
-		from SEQ_Marker_Cache
+		from seq_marker_cache
 		group by _Marker_key''',
 
 	# count of alleles for each marker
 	'''select m._Marker_key, count(1) as numAll
-		from ALL_Marker_Assoc m, VOC_Term t
+		from all_marker_assoc m, voc_term t, all_allele a
 		where m._Status_key = t._Term_key
 			and t.term != 'deleted'
+			and m._Allele_key = a._Allele_key
+			and a.isWildType != 1
+		group by m._Marker_key''',
+
+	# count of GO terms for each marker
+	'''select _Object_key as _Marker_key, count(1) as numGO
+		from voc_annot
+		where _AnnotType_key = 1000
+		group by _Object_key''',
+
+	# count of expression assays for each marker
+	'''select _Marker_key, count(_Assay_key) as numAssay
+		from gxd_assay
 		group by _Marker_key''',
+
+	# count of orthologs for each marker
+	'''select h1._Marker_key, count(distinct h2._Organism_key) as numOrtho
+		from mrk_homology_cache h1,
+			mrk_homology_cache h2
+		where h1._Class_key = h2._Class_key
+			and h1._Organism_key = 1
+			and h2._Organism_key != 1
+		group by h1._Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount, AlleleCount ]
+fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount, AlleleCount,
+	GOCount, AssayCount, OrthologCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'markerCounts'
