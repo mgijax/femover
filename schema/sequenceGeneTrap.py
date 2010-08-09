@@ -2,22 +2,22 @@
 
 import Table
 
-# contains data definition information for the sequenceGeneTrap table
+# contains data definition information for the sequence_gene_trap table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceGeneTrap'
+tableName = 'sequence_gene_trap'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey		int		NOT NULL,
-	tagMethod		varchar(40)	NOT NULL,
-	vectorEnd		varchar(40)	NOT NULL,
-	reverseComplement	varchar(40)	NOT NULL,
-	goodHitCount		int		NULL,
-	pointCoordinate		float		NULL,
-	PRIMARY KEY(sequenceKey))''' % tableName
+	sequence_key		int		NOT NULL,
+	tag_method		varchar(40)	NOT NULL,
+	vector_end		varchar(40)	NOT NULL,
+	reverse_complement	varchar(40)	NOT NULL,
+	good_hit_count		int		NULL,
+	point_coordinate	float		NULL,
+	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

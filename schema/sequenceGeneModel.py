@@ -2,21 +2,21 @@
 
 import Table
 
-# contains data definition information for the sequenceGeneModel table
+# contains data definition information for the sequence_gene_model table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceGeneModel'
+tableName = 'sequence_gene_model'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey		int		NOT NULL,
-	markerType		varchar(80)	NULL,
+	sequence_key		int		NOT NULL,
+	marker_type		varchar(80)	NULL,
 	biotype			varchar(255)	NULL,
-	exonCount		int		NULL,
-	transcriptCount		int		NULL,
-	PRIMARY KEY(sequenceKey))''' % tableName
+	exon_count		int		NULL,
+	transcript_count	int		NULL,
+	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

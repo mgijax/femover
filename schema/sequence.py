@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the Sequence table
+# contains data definition information for the sequence table
 
 ###--- Globals ---###
 
@@ -11,8 +11,8 @@ tableName = 'sequence'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey	int		NOT NULL,
-	sequenceType	varchar(30)	NOT NULL,
+	sequence_key	int		NOT NULL,
+	sequence_type	varchar(30)	NOT NULL,
 	quality		varchar(30)	NULL,
 	status		varchar(30)	NOT NULL,
 	provider	varchar(255)	NOT NULL,
@@ -21,19 +21,19 @@ createStatement = '''CREATE TABLE %s  (
 	description	varchar(255)	NULL,
 	version		varchar(15)	NULL,
 	division	varchar(3)	NULL,
-	isVirtual	int		NOT NULL,
-	sequenceDate	varchar(12)	NULL,
-	recordDate	varchar(12)	NULL,
-	primaryID	varchar(30)	NULL,
-	logicalDB	varchar(80)	NULL,
+	is_virtual	int		NOT NULL,
+	sequence_date	varchar(12)	NULL,
+	record_date	varchar(12)	NULL,
+	primary_id	varchar(30)	NULL,
+	logical_db	varchar(80)	NULL,
 	library		varchar(255)	NULL,
-	PRIMARY KEY(sequenceKey))''' % tableName
+	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'primaryID' : 'create index %s on %s (primaryID)',
+	'primary_id' : 'create index %s on %s (primary_id)',
 	}
 
 # global instance of this Table object

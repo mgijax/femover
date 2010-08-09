@@ -2,25 +2,25 @@
 
 import Table
 
-# contains data definition information for the probeCloneCollection table
+# contains data definition information for the probe_clone_collection table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'probeCloneCollection'
+tableName = 'probe_clone_collection'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int		NOT NULL,
-	probeKey	int		NOT NULL,
+	unique_key	int		NOT NULL,
+	probe_key	int		NOT NULL,
 	collection	varchar(255)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'probeKey' : 'create index %s on %s (probeKey)',
+	'probe_key' : 'create index %s on %s (probe_key)',
 	}
 
 # global instance of this Table object

@@ -2,18 +2,18 @@
 
 import Table
 
-# contains data definition information for the markerNote table
+# contains data definition information for the marker_note table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerNote'
+tableName = 'marker_note'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int	NOT NULL,
-	markerKey	int	NOT NULL,
-	noteType	varchar(255)	NOT NULL,
+	unique_key	int	NOT NULL,
+	marker_key	int	NOT NULL,
+	note_type	varchar(255)	NOT NULL,
 	note		varchar(64000)	NULL,
 	PRIMARY KEY(uniqueKey))''' % tableName
 
@@ -21,7 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'markerKey' : 'create index %s on %s (markerKey, noteType)',
+	'marker_key' : 'create index %s on %s (marker_key, note_type)',
 	}
 
 # global instance of this Table object

@@ -7,15 +7,15 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'alleleSequenceNum'
+tableName = 'allele_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	alleleKey	int		not null,
-	bySymbol	int		not null,
-	byAlleleType	int		not null,
-	byPrimaryID	int		not null,
-	PRIMARY KEY(alleleKey))''' % tableName
+	allele_key	int		not null,
+	by_symbol	int		not null,
+	by_allele_type	int		not null,
+	by_primary_id	int		not null,
+	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

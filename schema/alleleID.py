@@ -7,24 +7,24 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'alleleID'
+tableName = 'allele_id'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int	NOT NULL,
-	alleleKey	int 	NOT NULL,
-	logicalDB	varchar(80) NULL,
-	accID		varchar(30) NULL,
+	unique_key	int	NOT NULL,
+	allele_key	int 	NOT NULL,
+	logical_db	varchar(80) NULL,
+	acc_id		varchar(30) NULL,
 	preferred	int	NOT NULL,
 	private		int 	NOT NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'alleleKey' : 'create index %s on %s (alleleKey)',
-	'accID' : 'create index %s on %s (accID)',
+	'allele_key' : 'create index %s on %s (allele_key)',
+	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 # global instance of this Table object

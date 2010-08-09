@@ -9,23 +9,23 @@ tableName = 'marker'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	markerKey    	int	NOT NULL,
+	marker_key    	int	NOT NULL,
 	symbol        	varchar(50) NULL,
 	name          	varchar(255) NULL,
-	markerType	varchar(80) NULL,
-	markerSubtype   varchar(50) NULL,
+	marker_type	varchar(80) NULL,
+	marker_subtype	varchar(50) NULL,
 	organism      	varchar(50) NULL,
-	primaryID      	varchar(30) NULL,
-	logicalDB	varchar(80) NULL,
+	primary_id     	varchar(30) NULL,
+	logical_db	varchar(80) NULL,
 	status       	varchar(255) NULL,
-	PRIMARY KEY(markerKey))''' % tableName
+	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
 	'symbol' : 'create index %s on %s (symbol)',
-	'ID' : 'create index %s on %s (primaryID)',
+	'id' : 'create index %s on %s (primary_id)',
 	}
 
 # global instance of this Table object

@@ -7,18 +7,18 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerCounts'
+tableName = 'marker_counts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	markerKey	int	NOT NULL,
-	referenceCount	int	NULL,
-	sequenceCount	int	NULL,
-	alleleCount	int	NULL,
-	goTermCount	int	NULL,
-	gxdAssayCount	int	NULL,
-	orthologCount	int	NULL,
-	PRIMARY KEY(markerKey))''' % tableName
+	marker_key	int	NOT NULL,
+	reference_count	int	NULL,
+	sequence_count	int	NULL,
+	allele_count	int	NULL,
+	go_term_count	int	NULL,
+	gxd_assay_count	int	NULL,
+	ortholog_count	int	NULL,
+	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

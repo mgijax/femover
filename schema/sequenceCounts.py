@@ -2,18 +2,18 @@
 
 import Table
 
-# contains data definition information for the sequenceCounts table
+# contains data definition information for the sequence_counts table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceCounts'
+tableName = 'sequence_counts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey	int	NOT NULL,
-	markerCount	int NULL,
-	PRIMARY KEY(sequenceKey))''' % tableName
+	sequence_key	int	NOT NULL,
+	marker_count	int NULL,
+	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

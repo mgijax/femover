@@ -2,20 +2,20 @@
 
 import Table
 
-# contains data definition information for the sequenceSequenceNum table
+# contains data definition information for the sequence_sequence_num table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceSequenceNum'
+tableName = 'sequence_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	sequenceKey	int		not null,
-	byLength	int		not null,
-	bySequenceType	int		not null,
-	byProvider	int		not null,
-	PRIMARY KEY(sequenceKey))''' % tableName
+	sequence_key		int		not null,
+	by_length		int		not null,
+	by_sequence_type	int		not null,
+	by_provider		int		not null,
+	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

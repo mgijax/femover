@@ -9,20 +9,20 @@ tableName = 'probe'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	probeKey    	int	NOT NULL,
+	probe_key    	int	NOT NULL,
 	name          	varchar(40) NULL,
-	segmentType	varchar(255) NULL,
-	primaryID      	varchar(30) NULL,
-	logicalDB	varchar(80) NULL,
-	cloneID		varchar(30) NULL,
-	PRIMARY KEY(probeKey))''' % tableName
+	segment_type	varchar(255) NULL,
+	primary_id     	varchar(30) NULL,
+	logical_db	varchar(80) NULL,
+	clone_id	varchar(30) NULL,
+	PRIMARY KEY(probe_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'cloneID' : 'create index %s on %s (cloneID)',
-	'ID' : 'create index %s on %s (primaryID)',
+	'clone_id' : 'create index %s on %s (clone_id)',
+	'id' : 'create index %s on %s (primary_id)',
 	}
 
 # global instance of this Table object

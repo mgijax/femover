@@ -2,29 +2,29 @@
 
 import Table
 
-# contains data definition information for the sequenceSource table
+# contains data definition information for the sequence_source table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceSource'
+tableName = 'sequence_source'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int		NOT NULL,
-	sequenceKey	int		NOT NULL,
+	unique_key	int		NOT NULL,
+	sequence_key	int		NOT NULL,
 	strain		varchar(255)	NULL,
 	tissue		varchar(80)	NULL,
 	age		varchar(50)	NULL,
 	sex		varchar(100)	NULL,
-	cellLine	varchar(100)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	cell_line	varchar(100)	NULL,
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'sequenceKey' : 'create index %s on %s (sequenceKey)',
+	'sequence_key' : 'create index %s on %s (sequence_key)',
 	}
 
 # global instance of this Table object

@@ -2,29 +2,29 @@
 
 import Table
 
-# contains data definition information for the markerSynonym table
+# contains data definition information for the marker_synonym table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerSynonym'
+tableName = 'marker_synonym'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int	NOT NULL,
-	markerKey	int	NOT NULL,
+	unique_key	int	NOT NULL,
+	marker_key	int	NOT NULL,
 	synonym		varchar(255)	NULL,
-	synonymType	varchar(255)	NULL,
-	jnumID		varchar(30)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	synonym_type	varchar(255)	NULL,
+	jnum_id		varchar(30)	NULL,
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'markerKey' : 'create index %s on %s (markerKey)',
+	'marker_key' : 'create index %s on %s (marker_key)',
 	'synonym' : 'create index %s on %s (synonym)',
-	'jnumID' : 'create index %s on %s (jnumID)',
+	'jnum_id' : 'create index %s on %s (jnum_id)',
 	}
 
 # global instance of this Table object

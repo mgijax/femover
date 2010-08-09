@@ -9,26 +9,24 @@ import logger
 
 class databaseInfoTable (Table.Table):
 	def setInfo (self, name, value):
-#		logger.debug ('Called setInfo(%s, %s)' % (name, value))
-
 		dbm = Table.DBM
-		cols, rows = dbm.execute ('''select uniqueKey
-			from databaseInfo
+		cols, rows = dbm.execute ('''select unique_key
+			from database_info
 			where name = '%s' ''' % name)
 
 		if len(rows) > 0:
 			nextKey = rows[0][0]
-			cmd = '''update databaseInfo set value = '%s'
-				where uniqueKey = %d''' % (value, nextKey)
+			cmd = '''update database_info set value = '%s'
+				where unique_key = %d''' % (value, nextKey)
 		else:
-			cols, rows = dbm.execute ('''select max(uniqueKey)
-				from databaseInfo''')
+			cols, rows = dbm.execute ('''select max(unique_key)
+				from database_info''')
 			if (len(rows) > 0) and (rows[0][0] != None):
 				nextKey = rows[0][0] + 1
 			else:
 				nextKey = 1
 
-			cmd = '''insert into databaseInfo (uniqueKey, name,
+			cmd = '''insert into database_info (unique_key, name,
 					value) values (%d, '%s', '%s')''' % (
 						nextKey, name, value)
 		dbm.execute(cmd)
@@ -40,14 +38,14 @@ class databaseInfoTable (Table.Table):
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'databaseInfo'
+tableName = 'database_info'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int		not null,
+	unique_key	int		not null,
 	name		varchar(40)	not null,
 	value		varchar(255)	null,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

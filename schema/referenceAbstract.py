@@ -2,18 +2,18 @@
 
 import Table
 
-# contains data definition information for the referenceAbstract table
+# contains data definition information for the reference_abstract table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'referenceAbstract'
+tableName = 'reference_abstract'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int NOT NULL,
+	reference_key	int NOT NULL,
 	abstract	text NULL,
-	PRIMARY KEY(referenceKey))''' % tableName
+	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

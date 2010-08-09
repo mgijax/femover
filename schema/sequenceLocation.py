@@ -2,33 +2,33 @@
 
 import Table
 
-# contains data definition information for the sequenceLocation table
+# contains data definition information for the sequence_location table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'sequenceLocation'
+tableName = 'sequence_location'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey		int		NOT NULL,
-	sequenceKey		int		NOT NULL,
-	sequenceNum		int		NOT NULL,
+	unique_key		int		NOT NULL,
+	sequence_key		int		NOT NULL,
+	sequence_num		int		NOT NULL,
 	chromosome		varchar(8)	NULL,
-	startCoordinate		float		NULL,
-	endCoordinate		float		NULL,
-	buildIdentifier		varchar(30)	NULL,
-	locationType		varchar(20)	NULL,
-	mapUnits		varchar(50)	NULL,
+	start_coordinate	float		NULL,
+	end_coordinate		float		NULL,
+	build_identifier	varchar(30)	NULL,
+	location_type		varchar(20)	NULL,
+	map_units		varchar(50)	NULL,
 	provider		varchar(255)	NULL,
 	version			varchar(30)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'sequenceKey' : 'create index %s on %s (sequenceKey, sequenceNum)',
+	'sequence_key' : 'create index %s on %s (sequence_key, sequence_num)',
 	}
 
 # global instance of this Table object

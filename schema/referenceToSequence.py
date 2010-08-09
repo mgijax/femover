@@ -2,28 +2,27 @@
 
 import Table
 
-# contains data definition information for the Template table
-# (search for Template to find areas that need changes)
+# contains data definition information for the reference_to_sequence table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'referenceToSequence'
+tableName = 'reference_to_sequence'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int		NOT NULL,
-	sequenceKey	int 	NOT NULL,
-	referenceKey	int		NOT NULL,
+	unique_key	int		NOT NULL,
+	sequence_key	int 	NOT NULL,
+	reference_key	int		NOT NULL,
 	qualifier	varchar(80)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'sequenceKey' : 'create index %s on %s (sequenceKey)',
-	'referenceKey' : 'create index %s on %s (referenceKey)',
+	'sequence_key' : 'create index %s on %s (sequence_key)',
+	'reference_key' : 'create index %s on %s (reference_key)',
 	}
 
 # global instance of this Table object

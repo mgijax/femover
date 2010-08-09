@@ -2,22 +2,22 @@
 
 import Table
 
-# contains data definition information for the referenceBook table
+# contains data definition information for the reference_book table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'referenceBook'
+tableName = 'reference_book'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	referenceKey	int NOT NULL,
+	reference_key	int NOT NULL,
 	editor    	varchar(160) NULL,
-	bookTitle  	varchar(200) NULL,
+	book_title  	varchar(200) NULL,
 	edition  	varchar(50) NULL,
 	place	  	varchar(50) NULL,
 	publisher  	varchar(50) NULL,
-	PRIMARY KEY(referenceKey))''' % tableName
+	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

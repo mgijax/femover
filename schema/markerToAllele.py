@@ -2,29 +2,29 @@
 
 import Table
 
-# contains data definition information for the markerToAllele table
+# contains data definition information for the marker_to_allele table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerToAllele'
+tableName = 'marker_to_allele'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int		NOT NULL,
-	markerKey	int		NOT NULL,
-	alleleKey	int 		NOT NULL,
-	referenceKey	int		NULL,
+	unique_key	int		NOT NULL,
+	marker_key	int		NOT NULL,
+	allele_key	int 		NOT NULL,
+	reference_key	int		NULL,
 	qualifier	varchar(80)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'markerKey' : 'create index %s on %s (markerKey, alleleKey)',
-	'alleleKey' : 'create index %s on %s (alleleKey, markerKey)',
-	'referenceKey' : 'create index %s on %s (referenceKey)',
+	'marker_key' : 'create index %s on %s (marker_key, allele_key)',
+	'allele_key' : 'create index %s on %s (allele_key, marker_key)',
+	'reference_key' : 'create index %s on %s (reference_key)',
 	}
 
 # global instance of this Table object

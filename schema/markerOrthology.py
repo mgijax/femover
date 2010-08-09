@@ -2,29 +2,29 @@
 
 import Table
 
-# contains data definition information for the markerOrthology table
+# contains data definition information for the marker_orthology table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerOrthology'
+tableName = 'marker_orthology'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	uniqueKey	int	NOT NULL,
-	mouseMarkerKey	int	NOT NULL,
-	otherMarkerKey	int	NOT NULL,
-	otherSymbol	varchar(50)	NULL,
-	otherOrganism	varchar(50)	NULL,
-	PRIMARY KEY(uniqueKey))''' % tableName
+	unique_key		int	NOT NULL,
+	mouse_marker_key	int	NOT NULL,
+	other_marker_key	int	NOT NULL,
+	other_symbol		varchar(50)	NULL,
+	other_organism		varchar(50)	NULL,
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'mouseMarker' : 'create index %s on %s (mouseMarkerKey)',
-	'otherMarker' : 'create index %s on %s (otherMarkerKey)',
-	'otherOrganism' : 'create index %s on %s (otherOrganism)',
+	'mouse_marker' : 'create index %s on %s (mouse_marker_key)',
+	'other_marker' : 'create index %s on %s (other_marker_key)',
+	'other_organism' : 'create index %s on %s (other_organism)',
 	}
 
 # global instance of this Table object

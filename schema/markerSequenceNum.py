@@ -2,22 +2,22 @@
 
 import Table
 
-# contains data definition information for the markerSequenceNum table
+# contains data definition information for the marker_sequence_num table
 
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'markerSequenceNum'
+tableName = 'marker_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	markerKey	int		not null,
-	bySymbol	int		not null,
-	byMarkerType	int		not null,
-	byOrganism	int		not null,
-	byPrimaryID	int		not null,
-	byLocation	int		not null,
-	PRIMARY KEY(markerKey))''' % tableName
+	marker_key	int		not null,
+	by_symbol	int		not null,
+	by_marker_type	int		not null,
+	by_organism	int		not null,
+	by_primary_id	int		not null,
+	by_location	int		not null,
+	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
