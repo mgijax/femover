@@ -90,7 +90,7 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 
 		for r in self.finalResults:
 
-			# lookups from VOC_Term
+			# lookups from voc_term
 
 			self.addColumn ('sequenceType', Gatherer.resolve(
 				r[seqTypeCol]), r, self.finalColumns)

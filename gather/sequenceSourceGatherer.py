@@ -26,7 +26,7 @@ class SequenceSourceGatherer (Gatherer.ChunkGatherer):
 
 		for r in self.finalResults:
 
-			# lookups from VOC_Term
+			# lookups from voc_term
 
 			self.addColumn ('tissue', Gatherer.resolve(
 				r[tissueCol]), r, self.finalColumns)

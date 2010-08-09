@@ -21,7 +21,7 @@ cmds = [
 		m._Refs_key,
 		m._Qualifier_key,
 		t.term as qualifier
-	from SEQ_Marker_Cache m, VOC_Term t
+	from seq_marker_cache m, voc_term t
 	where m._Qualifier_key = t._Term_key''',
 	]
 

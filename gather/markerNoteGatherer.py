@@ -56,7 +56,7 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-	from MGI_Note mn, MGI_NoteChunk mnc
+	from mgi_note mn, mgi_notechunk mnc
 	where mn._MGIType_key = 2
 		and mn._Note_key = mnc._Note_key
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',

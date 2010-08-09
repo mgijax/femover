@@ -58,7 +58,7 @@ class AlleleAnnotationGatherer (Gatherer.Gatherer):
 
 		for r in self.finalResults:
 			self.addColumn ('vocab', Gatherer.resolve (
-				r[vocCol], 'VOC_Vocab', '_Vocab_key', 'name'),
+				r[vocCol], 'voc_vocab', '_Vocab_key', 'name'),
 				r, self.finalColumns)
 			self.addColumn ('evidenceTerm', Gatherer.resolve (
 				r[evCol]), r, self.finalColumns)

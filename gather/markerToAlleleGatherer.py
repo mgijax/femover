@@ -31,7 +31,7 @@ cmds = [
 		m._Allele_key,
 		m._Refs_key,
 		m._Qualifier_key
-	from ALL_Marker_Assoc m, VOC_Term t
+	from all_marker_assoc m, voc_term t
 	where m._Status_key = t._Term_key
 		and t.term != 'deleted' ''',
 	]
