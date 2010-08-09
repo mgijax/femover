@@ -3,6 +3,7 @@
 # gathers data for the 'sequenceID' table in the front-end database
 
 import Gatherer
+import logger
 
 ###--- Classes ---###
 
@@ -17,13 +18,14 @@ class SequenceIDGatherer (Gatherer.ChunkGatherer):
 
 		self.convertFinalResultsToList()
 
+		logger.info('columns: %s' % ','.join(self.finalColumns))
 		ldbCol = Gatherer.columnNumber (self.finalColumns,
 			'_LogicalDB_key')
 
 		for r in self.finalResults:
 			self.addColumn ('logicalDB', Gatherer.resolve (
 				r[ldbCol], 'acc_logicaldb',
-				'_LogicalDB_key', 'name'),
+				'_logicaldb_key', 'name'),
 				r, self.finalColumns)
 		return
 
