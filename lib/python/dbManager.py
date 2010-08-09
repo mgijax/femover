@@ -90,7 +90,7 @@ class dbManager:
 		connection = self._getConnection()
 	except:
 		(excType, excValue, excTraceback) = sys.exc_info()
-		traceback.printException (excType, excValue, excTraceback)
+		traceback.print_exception (excType, excValue, excTraceback)
 		raise Exception (Error,
 			'Cannot get connection to %s:%s as %s' % (self.host,
 				self.database, self.user) )
