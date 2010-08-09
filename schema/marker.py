@@ -25,7 +25,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'symbol' : 'create index %s on %s (symbol)',
-	'id' : 'create index %s on %s (primary_id)',
+	'primary_id' : 'create index %s on %s (primary_id)',
 	}
 
 # global instance of this Table object
