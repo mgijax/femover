@@ -10,7 +10,7 @@ import config
 import dbManager	# for Postgres/MySQL access
 
 USAGE = '''Usage: %s
-	Report the contents of the databaseInfo table in the target database.
+	Report the contents of the database_info table in the target database.
 ''' % sys.argv[0]
 
 ###--- Functions ---###
@@ -27,7 +27,7 @@ def report (dbm = None):
 				config.TARGET_PASSWORD)
 
 	(columns, rows) = dbm.execute (
-		'select name, value from databaseInfo order by uniqueKey')
+		'select name, value from database_info order by unique_key')
 
 	maxName = 0
 	for row in rows:
