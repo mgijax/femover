@@ -76,31 +76,33 @@ INDEX_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
-ALLELES = [ 'allele', 'alleleID', 'alleleCounts', 'alleleNote',
-		'alleleSequenceNum', 'alleleAnnotation', 'alleleToReference',
+ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
+		'allele_sequence_num', 'allele_annotation',
+		'allele_to_reference',
 	]
 CRE = []
-MARKERS = [ 'marker', 'markerID', 'markerSynonym', 'markerToAllele',
-		'markerToSequence', 'markerToReference', 'markerOrthology',
-		'markerLocation', 'markerCounts', 'markerNote',
-		'markerSequenceNum', 'markerAnnotation', 'markerToProbe',
+MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
+		'marker_to_sequence', 'marker_to_reference',
+		'marker_orthology', 'marker_location', 'marker_counts',
+		'marker_note', 'marker_sequence_num', 'marker_annotation',
+		'marker_to_probe',
 	]
-PROBES = [ 'probe', 'probeCloneCollection', 'probeToSequence',
+PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
-REFERENCES = [ 'reference', 'referenceAbstract', 'referenceBook', 
-		'referenceCounts', 'referenceID', 'referenceSequenceNum', 
-		'referenceToSequence', 'referenceIndividualAuthors',
+REFERENCES = [ 'reference', 'reference_abstract', 'reference_book', 
+		'reference_counts', 'reference_id', 'reference_sequence_num', 
+		'reference_to_sequence', 'reference_individual_authors',
 	]
-SEQUENCES = [ 'sequence', 'sequenceCounts', 'sequenceGeneModel',
-		'sequenceGeneTrap', 'sequenceID', 'sequenceLocation',
-		'sequenceSource', 'sequenceSequenceNum',
-		'sequenceCloneCollection',
+SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
+		'sequence_gene_trap', 'sequence_id', 'sequence_location',
+		'sequence_source', 'sequence_sequence_num',
+		'sequence_clone_collection',
 	]
 
 # list of high priority tables, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
-HIGH_PRIORITY_TABLES = [ 'sequence', 'sequenceSequenceNum', 'sequenceID', ]
+HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 
 # dictionary mapping each command-line flag to the list of tables that it
 # would regenerate
@@ -361,7 +363,7 @@ def scheduleGatherers (
 	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS
 
 	for table in tables:
-		script = os.path.join (config.GATHER_DIR, '%sGatherer.py' % \
+		script = os.path.join (config.GATHER_DIR, '%s_gatherer.py' % \
 			table)
 		id = GATHER_DISPATCHER.schedule (script)
 		GATHER_IDS.append ( (table, id) )
