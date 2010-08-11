@@ -30,18 +30,18 @@ class AlleleGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d recombinase alleles' % \
 			len(self.driver))
 
-		# extract gene symbol data from the second query and cache it
+		# extract gene name data from the second query and cache it
 		# for later use in postprocessResults()
 
 		keyCol = Gatherer.columnNumber (self.results[1][0],
 			'_Allele_key')
-		symCol = Gatherer.columnNumber (self.results[1][0], 'symbol')
+		nameCol = Gatherer.columnNumber (self.results[1][0], 'name')
 
 		self.genes = {}
 		for row in self.results[1][1]:
-			self.genes[row[keyCol]] = row[symCol]
+			self.genes[row[keyCol]] = row[nameCol]
 
-		logger.debug ('Found %d gene symbols' % len(self.genes))
+		logger.debug ('Found %d gene names' % len(self.genes))
 
 		# extract inducible notes from the third query and cache them
 		# for later use in postprocessResults()
@@ -121,7 +121,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 			self.addColumn('isRecombinase', isRecombinase, r,
 				self.finalColumns)
 			self.addColumn('driver', driver, r, self.finalColumns)
-			self.addColumn('geneSymbol', gene, r,
+			self.addColumn('geneName', gene, r,
 				self.finalColumns)
 			self.addColumn('inducibleNote', inducibleNote, r,
 				self.finalColumns)
@@ -132,7 +132,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 cmds = [
 	'''select distinct _Allele_key, driverNote from all_cre_cache''',
 
-	'''select a._Allele_key, m.symbol
+	'''select a._Allele_key, m.name
 	from all_allele a, mrk_marker m
 	where a._Marker_key = m._Marker_key''',
 
@@ -154,7 +154,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneSymbol',
+	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
 	'isRecombinase', 'driver', 'inducibleNote',
 	]
