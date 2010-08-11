@@ -18,6 +18,9 @@ class SequenceIDGatherer (Gatherer.ChunkGatherer):
 
 		self.convertFinalResultsToList()
 
+		if len(self.finalResults) == 0:
+			return
+
 		logger.info('columns: %s' % ','.join(self.finalColumns))
 		ldbCol = Gatherer.columnNumber (self.finalColumns,
 			'_LogicalDB_key')
