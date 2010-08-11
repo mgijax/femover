@@ -80,8 +80,7 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_annotation',
 		'allele_to_reference',
 	]
-CRE = [ 'allele_recombinase_systems',
-#		'allele_recombinase_assay_result',s
+CRE = [ 'allele_recombinase_systems', 'allele_recombinase_assay_result',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
