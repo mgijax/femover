@@ -15,7 +15,7 @@ createStatement = '''CREATE TABLE %s  (
 	symbol			varchar(60)	null,
 	name			varchar(255)	null,
 	only_allele_symbol	varchar(60)	null,
-	gene_symbol		varchar(60)	null,
+	gene_name		varchar(255)	null,
 	primary_id		varchar(30)	null,
 	logical_db		varchar(80)	null,
 	allele_type		varchar(255)	null,
