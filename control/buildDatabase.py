@@ -24,7 +24,7 @@ import dbManager
 import time
 import os
 import traceback
-import databaseInfo
+import database_info
 
 ###--- Globals ---###
 
@@ -41,7 +41,7 @@ USAGE = '''Usage: %s [-a|-c|-m|-p|-r|-s]
 ''' % sys.argv[0]
 
 # databaseInfoTable object
-dbInfoTable = databaseInfo.table
+dbInfoTable = database_info.table
 
 # time (in seconds) at which we start the build
 START_TIME = time.time()
@@ -80,7 +80,9 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_annotation',
 		'allele_to_reference',
 	]
-CRE = []
+CRE = [ 'allele_recombinase_systems',
+#		'allele_recombinase_assay_result',s
+	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
 		'marker_orthology', 'marker_location', 'marker_counts',
@@ -698,6 +700,7 @@ if __name__ == '__main__':
 		status = 'succeeded'
 	except:
 		(excType, excValue, excTraceback) = sys.exc_info()
+		traceback.print_exception (excType, excValue, excTraceback)
 		status = 'failed'
 
 	elapsed = hms(time.time() - START_TIME)
@@ -711,6 +714,5 @@ if __name__ == '__main__':
 	logger.info (report)
 
 	if excType != None:
-		traceback.print_exception (excType, excValue, excTraceback)
 		raise excType, excValue
 	logger.close()
