@@ -15,12 +15,14 @@ createStatement = '''CREATE TABLE %s  (
 	symbol			varchar(60)	null,
 	name			varchar(255)	null,
 	only_allele_symbol	varchar(60)	null,
+	gene_symbol		varchar(60)	null,
 	primary_id		varchar(30)	null,
 	logical_db		varchar(80)	null,
 	allele_type		varchar(255)	null,
 	allele_subtype		varchar(255)	null,
 	is_recombinase		int		not null,
 	driver			varchar(50)	null,
+	inducible_note		varchar(255)	null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
