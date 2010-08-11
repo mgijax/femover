@@ -30,10 +30,41 @@ class AlleleGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d recombinase alleles' % \
 			len(self.driver))
 
-		# main results are in the second query
+		# extract gene symbol data from the second query and cache it
+		# for later use in postprocessResults()
 
-		self.finalColumns = self.results[1][0]
-		self.finalResults = self.results[1][1]
+		keyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Allele_key')
+		symCol = Gatherer.columnNumber (self.results[1][0], 'symbol')
+
+		self.genes = {}
+		for row in self.results[1][1]:
+			self.genes[row[keyCol]] = row[symCol]
+
+		logger.debug ('Found %d gene symbols' % len(self.genes))
+
+		# extract inducible notes from the third query and cache them
+		# for later use in postprocessResults()
+
+		keyCol = Gatherer.columnNumber (self.results[2][0],
+			'_Object_key')
+		noteCol = Gatherer.columnNumber (self.results[2][0], 'note')
+
+		self.inducible = {}
+		for row in self.results[2][1]:
+			key = row[keyCol]
+			if self.inducible.has_key(key):
+				self.inducible[key] = self.inducible[key] + \
+					row[noteCol]
+			else:
+				self.inducible[key] = row[noteCol]
+
+		logger.debug('Found %d inducible notes' % len(self.inducible))
+
+		# main results are in the last query
+
+		self.finalColumns = self.results[-1][0]
+		self.finalResults = self.results[-1][1]
 		return
 
 	def postprocessResults (self):
@@ -77,15 +108,39 @@ class AlleleGatherer (Gatherer.Gatherer):
 				isRecombinase = 0
 				driver = None
 
+			if self.genes.has_key (r[keyCol]):
+				gene = self.genes[r[keyCol]]
+			else:
+				gene = None
+
+			if self.inducible.has_key(r[keyCol]):
+				inducibleNote = self.inducible[r[keyCol]]
+			else:
+				inducibleNote = None
+
 			self.addColumn('isRecombinase', isRecombinase, r,
 				self.finalColumns)
 			self.addColumn('driver', driver, r, self.finalColumns)
+			self.addColumn('geneSymbol', gene, r,
+				self.finalColumns)
+			self.addColumn('inducibleNote', inducibleNote, r,
+				self.finalColumns)
 		return
 
 ###--- globals ---###
 
 cmds = [
 	'''select distinct _Allele_key, driverNote from all_cre_cache''',
+
+	'''select a._Allele_key, m.symbol
+	from all_allele a, mrk_marker m
+	where a._Marker_key = m._Marker_key''',
+
+	'''select n._Object_key, c.note, c.sequenceNum
+	from mgi_note n, mgi_notechunk c
+	where n._Note_key = c._Note_key
+		and n._NoteType_key = 1032
+	order by c.sequenceNum''',
 
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key
@@ -99,9 +154,9 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol',
+	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneSymbol',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
-	'isRecombinase', 'driver',
+	'isRecombinase', 'driver', 'inducibleNote',
 	]
 
 # prefix for the filename of the output file
