@@ -13,6 +13,7 @@ tableName = 'allele_counts'
 createStatement = '''CREATE TABLE %s  ( 
 	allele_key	int	NOT NULL,
 	marker_count	int	NULL,
+	reference_count	int	NULL,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
