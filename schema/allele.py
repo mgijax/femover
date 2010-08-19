@@ -23,6 +23,7 @@ createStatement = '''CREATE TABLE %s  (
 	is_recombinase		int		not null,
 	driver			varchar(50)	null,
 	inducible_note		varchar(255)	null,
+	molecular_description	varchar(2048)	null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
