@@ -126,6 +126,65 @@ def columnNumber (columns, columnName):
 
 	return columns.index(c)
 
+def createFile (filename):
+	# Purpose: create a uniquely named data file
+	# Returns: tuple (string path to filename, open file descriptor)
+	# Assumes: we can write the file
+	# Modifies: writes to the file system
+	# Throws: propagates all exceptions
+
+	# each file will be named with a specified prefix, a period,
+	# then a generated unique identifier, and a '.rpt' suffix
+
+	prefix = filename + '.'
+
+	(fd, path) = tempfile.mkstemp (suffix = '.rpt',
+		prefix = prefix, dir = config.DATA_DIR, text = True)
+
+	return path, fd
+
+def executeQueries (cmds):
+	# Purpose: to issue the queries and collect the results
+	# Returns: list of lists, each with (columns, rows) for a query
+	# Assumes: nothing
+	# Modifies: queries the database
+	# Throws: propagates all exceptions
+
+	if not cmds:
+		raise Error, 'No SQL commands given to executeQueries()'
+
+	if type(cmds) == types.StringType:
+		cmds = [ cmds ]
+	i = 0
+	results = []
+	for cmd in cmds:
+		results.append (execute (cmd))
+		logger.debug ('Finished query %d' % i)
+		i = i + 1
+	return results
+
+def main (
+	gatherer	# Gatherer object; object to use in gathering data
+	):
+	# Purpose: to serve as the main program for any Gathering subclass
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: queries the database, writes to the file system
+	# Throws: propagates all exceptions
+	# Notes: Inspects the command-line to determine how to proceed.  If
+	#	there were no command-line arguments, then we do a full
+	#	gathering operation.  If there are command-line arguments,
+	#	then we interpret the first as a keyField and the second as
+	#	an integer keyValue; we then do gathering only for that
+	#	particular database key.
+
+	if len(sys.argv) > 1:
+		raise Error, 'Command-line arguments not supported'
+	logger.info ('Begin %s' % sys.argv[0])
+	gatherer.go()
+	logger.close()
+	return
+
 ###--- Classes ---###
 
 class Gatherer:
@@ -175,41 +234,23 @@ class Gatherer:
 
 		self.preprocessCommands()
 		logger.info ('Pre-processed queries')
-		self.querySource()
+		self.results = executeQueries (self.cmds)
 		logger.info ('Finished queries of source %s db' % SOURCE_DB)
 		self.collateResults()
 		logger.info ('Built final result set (%d rows)' % \
 			len(self.finalResults))
 		self.postprocessResults()
 		logger.info ('Post-processed result set')
-		path, fd = self.createFile()
+		path, fd = createFile (self.filenamePrefix)
 		logger.info ('Opened output file: %s' % path)
 		self.writeFile(fd)
-		self.closeFile(fd)
+		os.close(fd)
 		logger.info ('Wrote and closed output file: %s' % path)
-		print path
+		print '%s %s' % (path, self.filenamePrefix)
 		return
 
-	def querySource (self):
-		# Purpose: to issue the queries and add the results
-		#	to self.results
-		# Returns: nothing
-		# Assumes: nothing
-		# Modifies: queries the database
-		# Throws: propagates all exceptions
-
-		if not self.cmds:
-			raise Error, 'No commands defined for Gatherer'
-
-		if type(self.cmds) == types.StringType:
-			self.cmds = [ self.cmds ]
-
-		i = 0
-		for cmd in self.cmds:
-			self.results.append (execute (cmd))
-			logger.debug ('Finished query %d' % i)
-			i = i + 1
-		return
+	def getTables (self):
+		return [ self.filenamePrefix ]
 
 	def collateResults (self):
 		# Purpose: to do any necessary slicing and dicing of
@@ -249,30 +290,6 @@ class Gatherer:
 		# Modifies: nothing
 		# Throws: nothing
 
-		return
-
-	def createFile (self):
-		# Purpose: create a uniquely named data file
-		# Returns: tuple (string path to filename,
-		#	open file descriptor)
-		# Assumes: we can write the file
-		# Modifies: writes to the file system
-		# Throws: propagates all exceptions
-
-		# each file will be named with a specified prefix, a period,
-		# then a generated unique identifier, and a '.rpt' suffix
-
-		prefix = self.filenamePrefix + '.'
-
-		(fd, path) = tempfile.mkstemp (suffix = '.rpt',
-			prefix = prefix, dir = config.DATA_DIR, text = True)
-
-		return path, fd
-
-	def closeFile (self,
-		fd			# file descriptor to which to write
-		):
-		os.close(fd)
 		return
 
 	def writeFile (self,
@@ -361,7 +378,7 @@ class ChunkGatherer (Gatherer):
 
 		# create the output data file
 
-		path, fd = self.createFile()
+		path, fd = createFile(self.filenamePrefix)
 		logger.info ('Created output file: %s' % path)
 
 		# work through the data chunk by chunk
@@ -373,7 +390,7 @@ class ChunkGatherer (Gatherer):
 			self.finalResults = []
 
 			self.preprocessCommandsByChunk (lowKey, highKey)
-			self.querySource()
+			self.results = executeQueries (self.cmds)
 			self.collateResults()
 			self.postprocessResults()
 			logger.debug ('Post-processed results')
@@ -385,9 +402,9 @@ class ChunkGatherer (Gatherer):
 
 		# close the data file and write its path to stdout
 
-		self.closeFile(fd)
+		os.close(fd)
 		logger.info ('Closed output file: %s' % path)
-		print path
+		print '%s %s' % (path, self.filenamePrefix)
 		return
 
 	def getMinKeyQuery (self):
@@ -414,26 +431,145 @@ class ChunkGatherer (Gatherer):
 				self.cmds.append (cmd)
 		return
 
-###--- Functions ---###
+class MultiFileGatherer:
+	# Is: a Gatherer which handles generating multiple files rather than a
+	#	single one.  This is useful for cases where we are generating
+	#	unique keys which need to be used for joins to related tables.
+	# Has: information about queries to execute, fields to retrieve, how
+	#	to write data files, etc.
+	# Does: queries source db for data, collates result sets, and writes
+	#	out one or more text files of results
+	# Notes: This is not a subclass of Gatherer, because it is pretty much
+	#	completely re-implemented.  They share a common goal (extract
+	#	data from the source database, repackage it, and write data
+	#	files), but that is as far as the similarity goes.
 
-def main (
-	gatherer	# Gatherer object; object to use in gathering data
-	):
-	# Purpose: to serve as the main program for any Gathering subclass
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: queries the database, writes to the file system
-	# Throws: propagates all exceptions
-	# Notes: Inspects the command-line to determine how to proceed.  If
-	#	there were no command-line arguments, then we do a full
-	#	gathering operation.  If there are command-line arguments,
-	#	then we interpret the first as a keyField and the second as
-	#	an integer keyValue; we then do gathering only for that
-	#	particular database key.
+	def __init__ (self,
+		files,			# list of (filename, field order,
+					# ...table name) triplets for output
+		cmds = None		# list of strings; queries to execute
+					# ...against the source database to
+					# ...extract data
+		):
+		self.files = files
+		self.cmds = cmds
 
-	if len(sys.argv) > 1:
-		raise Error, 'Command-line arguments not supported'
-	logger.info ('Begin %s' % sys.argv[0])
-	gatherer.go()
-	logger.close()
-	return
+		self.results = []	# list of lists of query results (to
+					# ...be built from executing 'cmds')
+
+		self.output = []	# list of (list of columns, list of
+					# rows), with one per output file, to
+					# be filled in by collateResults()
+		return
+
+	def preprocessCommands (self):
+		# Purpose: to do any necessary pre-processing of the SQL
+		#	queries
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+
+		return
+
+	def go (self):
+		# Purpose: to drive the gathering process from queries
+		#	through writing the output file
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: queries the database, writes to the file system;
+		#	writes one line to stdout for each file written,
+		#	containing the path to the file and the table into
+		#	which it should be loaded
+		# Throws: propagates all exceptions
+
+		self.preprocessCommands()
+		logger.info ('Pre-processed queries')
+		self.results = executeQueries (self.cmds)
+		logger.info ('Finished queries of source %s db' % SOURCE_DB)
+		self.collateResults()
+		logger.info ('Built %d result sets' % len(self.output))
+		self.postprocessResults()
+		logger.info ('Post-processed result sets')
+
+		if len(self.output) != len(self.files):
+			raise Error, 'Mismatch: %d files, %d output sets' % (
+				len(self.files), len(self.output) )
+
+		i = 0
+		while i < len(self.files):
+			filename, fieldOrder, tableName = self.files[i]
+			columns, rows = self.output[i]
+
+			path, fd = createFile(filename)
+			logger.info ('Opened output file: %s' % path)
+
+			self.writeFile(fieldOrder, columns, rows, fd)
+			os.close(fd)
+			logger.info('Wrote and closed output file: %s' % path)
+			print '%s %s' % (path, tableName)
+
+			i = i + 1
+		return
+
+	def getTables (self):
+		items = []
+		for (filename, fieldOrder, tableName) in self.files:
+			items.append (tableName)
+		return items
+
+	def collateResults (self):
+		# Purpose: to do any necessary slicing and dicing of
+		#	self.results to produce a final set of results to be
+		#	written in self.output
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+
+		raise Error, 'Must define collateResults() in subclass'
+
+	def postprocessResults (self):
+		# Purpose: to do any necessary post-processing of the final
+		#	results before they are written out to files
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+
+		return
+
+	def writeFile (self,
+		fieldOrder,	# list of field names, in order to write out
+		columns,	# list of field names, in order of rows
+		rows,		# list of lists, each a single row
+		fd		# file descriptor to which to write
+		):
+		# Purpose: to write data from 'rows' out as a tab-delimited
+		#	file to 'fd'
+		# Returns: None
+		# Assumes: nothing
+		# Modifies: writes to the file system
+		# Throws: propagates all exceptions
+
+		autoKey = 1
+
+		for row in rows:
+			out = []	# list of field values
+
+			for col in fieldOrder:
+				if col == AUTO:
+					out.append (str(autoKey))
+					autoKey = 1 + autoKey
+				else:
+					colNum = columnNumber (columns, col)
+					fieldVal = row[colNum]
+
+					if fieldVal == None:
+						out.append ('') 
+					else:
+						out.append (str(fieldVal))
+
+			os.write (fd, '&=&'.join(out) + '#=#\n')
+		return
+
