@@ -67,7 +67,7 @@ cmds = [
 fieldOrder = [ Gatherer.AUTO, 'markerKey', 'noteType', 'note', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerNote'
+filenamePrefix = 'marker_note'
 
 # global instance of a MarkerNoteGatherer
 gatherer = MarkerNoteGatherer (filenamePrefix, fieldOrder, cmds)

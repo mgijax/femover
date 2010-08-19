@@ -70,7 +70,7 @@ fieldOrder = [ Gatherer.AUTO, '_Marker_key', 'annotType', 'vocab', 'term',
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerAnnotation'
+filenamePrefix = 'marker_annotation'
 
 # global instance of a MarkerAnnotationGatherer
 gatherer = MarkerAnnotationGatherer (filenamePrefix, fieldOrder, cmds)

@@ -94,7 +94,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceIndividualAuthors'
+filenamePrefix = 'reference_individual_authors'
 
 # global instance of a ReferenceIndividualAuthorsGatherer
 gatherer = ReferenceIndividualAuthorsGatherer (filenamePrefix, fieldOrder,

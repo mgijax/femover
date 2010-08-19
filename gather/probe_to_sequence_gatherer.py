@@ -38,7 +38,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'probeToSequence'
+filenamePrefix = 'probe_to_sequence'
 
 # global instance of a ProbeToSequenceGatherer
 gatherer = ProbeToSequenceGatherer (filenamePrefix, fieldOrder, cmds)

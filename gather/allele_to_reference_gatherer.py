@@ -28,7 +28,7 @@ cmds = [
 fieldOrder = [ Gatherer.AUTO, '_Allele_key', '_Refs_key', 'qualifier', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleToReference'
+filenamePrefix = 'allele_to_reference'
 
 # global instance of a AlleleToReferenceGatherer
 gatherer = AlleleToReferenceGatherer (filenamePrefix, fieldOrder, cmds)

@@ -167,7 +167,7 @@ fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
 	GxdAssayCount, AlleleCount, SequenceCount ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceCounts'
+filenamePrefix = 'reference_counts'
 
 # global instance of a ReferenceCountsGatherer
 gatherer = ReferenceCountsGatherer (filenamePrefix, fieldOrder, cmds)

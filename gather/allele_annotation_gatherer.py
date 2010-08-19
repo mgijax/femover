@@ -123,7 +123,7 @@ fieldOrder = [ Gatherer.AUTO, '_Allele_key', 'annotType', 'vocab', 'term',
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleAnnotation'
+filenamePrefix = 'allele_annotation'
 
 # global instance of a AlleleAnnotationGatherer
 gatherer = AlleleAnnotationGatherer (filenamePrefix, fieldOrder, cmds)

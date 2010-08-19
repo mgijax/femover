@@ -32,7 +32,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceGeneModel'
+filenamePrefix = 'sequence_gene_model'
 
 # global instance of a SequenceGeneModelGatherer
 gatherer = SequenceGeneModelGatherer (filenamePrefix, fieldOrder, cmds)

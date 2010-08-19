@@ -54,7 +54,7 @@ fieldOrder = [ Gatherer.AUTO, 'sequenceKey', 'logicalDB', 'accID',
 	'preferred', 'private' ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceID'
+filenamePrefix = 'sequence_id'
 
 # global instance of a SequenceIDGatherer
 gatherer = SequenceIDGatherer (filenamePrefix, fieldOrder, cmds)

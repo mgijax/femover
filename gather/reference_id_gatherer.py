@@ -47,7 +47,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceID'
+filenamePrefix = 'reference_id'
 
 # global instance of a ReferenceIDGatherer
 gatherer = ReferenceIDGatherer (filenamePrefix, fieldOrder, cmds)

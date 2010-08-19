@@ -103,7 +103,7 @@ cmds = [
 fieldOrder = [ '_Sequence_key', MarkerCount, ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceCounts'
+filenamePrefix = 'sequence_counts'
 
 # global instance of a SequenceCountsGatherer
 gatherer = SequenceCountsGatherer (filenamePrefix, fieldOrder, cmds)

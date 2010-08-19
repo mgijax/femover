@@ -50,7 +50,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerOrthology'
+filenamePrefix = 'marker_orthology'
 
 # global instance of a MarkerOrthologyGatherer
 gatherer = MarkerOrthologyGatherer (filenamePrefix, fieldOrder, cmds)

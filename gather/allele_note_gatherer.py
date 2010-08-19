@@ -67,7 +67,7 @@ cmds = [
 fieldOrder = [ Gatherer.AUTO, 'alleleKey', 'noteType', 'note', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleNote'
+filenamePrefix = 'allele_note'
 
 # global instance of a AlleleNoteGatherer
 gatherer = AlleleNoteGatherer (filenamePrefix, fieldOrder, cmds)

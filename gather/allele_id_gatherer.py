@@ -28,7 +28,7 @@ fieldOrder = [ Gatherer.AUTO, 'alleleKey', 'logicalDB', 'accID', 'preferred',
 	'private' ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleID'
+filenamePrefix = 'allele_id'
 
 # global instance of a alleleIDGatherer
 gatherer = AlleleIDGatherer (filenamePrefix, fieldOrder, cmds)

@@ -22,7 +22,7 @@ cmds = [
 fieldOrder = [ 'referenceKey', 'abstract', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceAbstract'
+filenamePrefix = 'reference_abstract'
 
 # global instance of a ReferenceAbstractGatherer
 gatherer = ReferenceAbstractGatherer (filenamePrefix, fieldOrder, cmds)

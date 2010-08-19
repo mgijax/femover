@@ -144,7 +144,7 @@ fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount, AlleleCount,
 	GOCount, AssayCount, OrthologCount, ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerCounts'
+filenamePrefix = 'marker_counts'
 
 # global instance of a MarkerCountsGatherer
 gatherer = MarkerCountsGatherer (filenamePrefix, fieldOrder, cmds)

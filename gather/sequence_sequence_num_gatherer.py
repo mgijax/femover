@@ -108,7 +108,7 @@ cmds = [
 fieldOrder = [ '_Sequence_key', LENGTH, TYPE, PROVIDER, ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceSequenceNum'
+filenamePrefix = 'sequence_sequence_num'
 
 # global instance of a SequenceSequenceNumGatherer
 gatherer = SequenceSequenceNumGatherer (filenamePrefix, fieldOrder, cmds)

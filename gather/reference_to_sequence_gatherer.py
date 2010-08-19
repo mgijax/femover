@@ -26,7 +26,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceToSequence'
+filenamePrefix = 'reference_to_sequence'
 
 # global instance of a TemplateGatherer
 gatherer = ReferenceToSequenceGatherer (filenamePrefix, fieldOrder, cmds)

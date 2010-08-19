@@ -33,7 +33,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerToSequence'
+filenamePrefix = 'marker_to_sequence'
 
 # global instance of a MarkerToSequenceGatherer
 gatherer = MarkerToSequenceGatherer (filenamePrefix, fieldOrder, cmds)

@@ -42,7 +42,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerSynonym'
+filenamePrefix = 'marker_synonym'
 
 # global instance of a MarkerSynonymGatherer
 gatherer = MarkerSynonymGatherer (filenamePrefix, fieldOrder, cmds)

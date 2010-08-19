@@ -44,7 +44,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerToAllele'
+filenamePrefix = 'marker_to_allele'
 
 # global instance of a MarkerToAlleleGatherer
 gatherer = MarkerToAlleleGatherer (filenamePrefix, fieldOrder, cmds)

@@ -58,7 +58,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceLocation'
+filenamePrefix = 'sequence_location'
 
 # global instance of a SequenceLocationGatherer
 gatherer = SequenceLocationGatherer (filenamePrefix, fieldOrder, cmds)

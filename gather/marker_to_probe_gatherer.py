@@ -31,7 +31,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerToProbe'
+filenamePrefix = 'marker_to_probe'
 
 # global instance of a MarkerToProbeGatherer
 gatherer = MarkerToProbeGatherer (filenamePrefix, fieldOrder, cmds)

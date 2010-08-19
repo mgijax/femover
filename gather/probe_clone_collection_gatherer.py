@@ -34,7 +34,7 @@ cmds = [ '''select distinct pp._Probe_key, ldb.name as collection
 fieldOrder = [ Gatherer.AUTO, '_Probe_key', 'collection', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'probeCloneCollection'
+filenamePrefix = 'probe_clone_collection'
 
 # global instance of a SequenceCloneCollectionGatherer
 gatherer = SequenceCloneCollectionGatherer (filenamePrefix, fieldOrder, cmds)

@@ -226,7 +226,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerSequenceNum'
+filenamePrefix = 'marker_sequence_num'
 
 # global instance of a MarkerSequenceNumGatherer
 gatherer = MarkerSequenceNumGatherer (filenamePrefix, fieldOrder, cmds)

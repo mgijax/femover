@@ -28,7 +28,7 @@ fieldOrder = [ Gatherer.AUTO, 'markerKey', 'logicalDB', 'accID', 'preferred',
 	'private' ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerID'
+filenamePrefix = 'marker_id'
 
 # global instance of a markerIDGatherer
 gatherer = MarkerIDGatherer (filenamePrefix, fieldOrder, cmds)

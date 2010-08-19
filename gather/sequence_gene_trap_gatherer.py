@@ -61,7 +61,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceGeneTrap'
+filenamePrefix = 'sequence_gene_trap'
 
 # global instance of a SequenceGeneTrapGatherer
 gatherer = SequenceGeneTrapGatherer (filenamePrefix, fieldOrder, cmds)

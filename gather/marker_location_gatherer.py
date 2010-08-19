@@ -86,7 +86,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerLocation'
+filenamePrefix = 'marker_location'
 
 # global instance of a MarkerLocationGatherer
 gatherer = MarkerLocationGatherer (filenamePrefix, fieldOrder, cmds)

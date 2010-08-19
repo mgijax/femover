@@ -112,7 +112,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceSequenceNum'
+filenamePrefix = 'reference_sequence_num'
 
 # global instance of a ReferenceSequenceNumGatherer
 gatherer = ReferenceSequenceNumGatherer (filenamePrefix, fieldOrder, cmds)

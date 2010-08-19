@@ -68,7 +68,7 @@ cmds = [
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Refs_key', 'qualifier', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'markerToReference'
+filenamePrefix = 'marker_to_reference'
 
 # global instance of a MarkerToReferenceGatherer
 gatherer = MarkerToReferenceGatherer (filenamePrefix, fieldOrder, cmds)

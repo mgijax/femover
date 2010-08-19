@@ -67,7 +67,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'sequenceSource'
+filenamePrefix = 'sequence_source'
 
 # global instance of a sequenceGatherer
 gatherer = SequenceSourceGatherer (filenamePrefix, fieldOrder, cmds)

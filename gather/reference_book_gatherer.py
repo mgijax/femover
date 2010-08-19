@@ -28,7 +28,7 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'referenceBook'
+filenamePrefix = 'reference_book'
 
 # global instance of a ReferenceBookGatherer
 gatherer = ReferenceBookGatherer (filenamePrefix, fieldOrder, cmds)
