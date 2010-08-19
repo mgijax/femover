@@ -9,33 +9,22 @@ import Gatherer
 
 class TemplateGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the Template table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for Templates,
+	# Has: queries to execute against the source database
+	# Does: queries the source database for primary data for Templates,
 	#	collates results, writes tab-delimited text file
-
-	def getKeyClause (self):
-		# Purpose: we override this method to provide information
-		#	about how to retrieve data for a single Template,
-		#	rather than for all Templates
-
-		if self.keyField == 'TemplateKey':
-			return 'TemplateTableAbbrev._Template_key = %s' % \
-				self.keyValue
-		return ''
 
 ###--- globals ---###
 
 cmds = [
-	# Template - fill in necessary SQL commands here.  Any commands which
-	# will require a keyClause to retrieve for an individual object should
-	# include ' %s ' in its WHERE section to allow the clause to be
-	# automatically inserted.
+	# Template - fill in necessary SQL commands here.  If this is for a
+	# ChunkGatherer, then queries to be processed in chunks require two
+	# %d fields, the first for the >= value and the second for < value.
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	# Template - fill in returned Sybase fields, in desired order, here.
+	# Template - fill in returned fields, in desired order, here.
 	# If you need the Gatherer to automatically manage a uniqueKey field
 	# in the destination table, specify that field as Gatherer.AUTO.
 	]
