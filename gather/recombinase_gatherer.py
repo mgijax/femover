@@ -259,7 +259,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		strengthCol = Gatherer.columnNumber (cols, '_Strength_key')
 		patternCol = Gatherer.columnNumber (cols, '_Pattern_key')
 		jnumCol = Gatherer.columnNumber (cols, 'jnumID')
-		prepCol = Gatherer.columnNumber (cols, '_ProbePrep_key')
+		pPrepCol = Gatherer.columnNumber (cols, '_ProbePrep_key')
+		aPrepCol = Gatherer.columnNumber (cols, '_AntibodyPrep_key')
 
 		out = []
 		columns = [ 'resultKey', 'alleleSystemKey', 'structure',
@@ -290,10 +291,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 				'assayType'))
 			row.append (Gatherer.resolve (r[reporterCol]))
 
-			prep = r[prepCol]
-			if probeIDs.has_key(prep):
+			pPrep = r[pPrepCol]
+			aPrep = r[aPrepCol]
+
+			if probeIDs.has_key(pPrep):
 				row.append ('probe')
-			elif antibodyIDs.has_key(prep):
+			elif antibodyIDs.has_key(aPrep):
 				row.append ('antibody')
 			else:
 				row.append ('direct')
@@ -315,14 +318,15 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				row.append (None)
 
-			toDo = [ probeIDs, probeNames, antibodyIDs,
-				antibodyNames ]
+			toDo = [ (pPrep, (probeIDs, probeNames) ), 
+				(aPrep, (antibodyIDs, antibodyNames) ) ]
 
-			for dict in toDo:
-				if dict.has_key(prep):
-					row.append (dict[prep])
-				else:
-					row.append (None)
+			for (prep, dicts) in toDo:
+				for dict in dicts:
+					if dict.has_key(prep):
+						row.append (dict[prep])
+					else:
+						row.append (None)
 
 			out.append (row)
 
@@ -481,9 +485,9 @@ cmds = [
 	order by acc._LogicalDB_key''',		# MGI IDs preferred
 
 	# main cre assay result data
-	'''select c._Allele_key, c.system, c.structure,
+	'''select distinct c._Allele_key, c.system, c.structure,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
-		a._Assay_key, a._ProbePrep_key,
+		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
 		r.resultNote, r._Strength_key, r._Pattern_key,
 		b.jnumID
@@ -491,10 +495,13 @@ cmds = [
 		gxd_assay a,
 		gxd_specimen s,
 		gxd_insituresult r,
+		gxd_isresultstructure rs,
 		bib_citation_cache b
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
+		and c._Structure_key = rs._Structure_key
+		and rs._Result_key = r._Result_key
 		and a._Refs_key = b._Refs_key''',
 	]
 
