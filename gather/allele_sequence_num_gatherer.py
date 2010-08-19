@@ -11,6 +11,7 @@ import symbolsort
 SYMBOL = 'alleleSymbol'
 TYPE = 'alleleType'
 ID = 'alleleID'
+DRIVER = 'driver'
 
 ###--- Classes ---###
 
@@ -95,9 +96,41 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 
 		# handle alleles without IDs (if there are any)
 		for key in allKeys.keys():
-			dict[alleleKey].append (i)
+			dict[key].append (i)
 
 		logger.debug ('Collated primary IDs')
+
+		# driver (for recombinase alleles)
+
+		keyCol = Gatherer.columnNumber (self.results[3][0],
+			'_Allele_key')
+		driverCol = Gatherer.columnNumber (self.results[3][0],
+			'driverNote')
+
+		counts.append (DRIVER)
+
+		byDriver = []
+		for row in self.results[3][1]:
+			byDriver.append ( (row[driverCol], row[keyCol]) )
+		byDriver.sort()
+
+		allKeys = {}
+		for key in dict.keys():
+			allKeys[key] = 1
+
+		i = 1
+		for (driver, alleleKey) in byDriver:
+			# if we've already seen an earlier driver for this
+			# allele, then skip it
+
+			if allKeys.has_key (alleleKey):
+				dict[alleleKey].append (i)
+				del allKeys[alleleKey]
+				i = i + 1
+
+		# handle alleles without drivers (many)
+		for key in allKeys.keys():
+			dict[key].append (i)
 
 		self.finalColumns = [ '_Allele_key' ] + counts
 		self.finalResults = dict.values() 
@@ -118,16 +151,18 @@ cmds = [
 			and a._LogicalDB_key = ldb._LogicalDB_key
 			and a.preferred = 1
 			and m._Allele_key = a._Object_key''',
+
+	'''select distinct _Allele_key, driverNote from all_cre_cache''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Allele_key', SYMBOL, TYPE, ID,
+	'_Allele_key', SYMBOL, TYPE, ID, DRIVER,
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleSequenceNum'
+filenamePrefix = 'allele_sequence_num'
 
 # global instance of a AlleleSequenceNumGatherer
 gatherer = AlleleSequenceNumGatherer (filenamePrefix, fieldOrder, cmds)
