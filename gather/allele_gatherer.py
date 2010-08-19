@@ -61,6 +61,24 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 		logger.debug('Found %d inducible notes' % len(self.inducible))
 
+		# extract molecular description from the fourth query and
+		# cache them for later use in postprocessResults()
+
+		keyCol = Gatherer.columnNumber (self.results[3][0],
+			'_Object_key')
+		noteCol = Gatherer.columnNumber (self.results[3][0], 'note')
+
+		self.molNote = {}
+		for row in self.results[3][1]:
+			key = row[keyCol]
+			if self.molNote.has_key(key):
+				self.molNote[key] = self.molNote[key] + \
+					row[noteCol]
+			else:
+				self.molNote[key] = row[noteCol]
+
+		logger.debug('Found %d molecular notes' % len(self.molNote))
+
 		# main results are in the last query
 
 		self.finalColumns = self.results[-1][0]
@@ -118,12 +136,19 @@ class AlleleGatherer (Gatherer.Gatherer):
 			else:
 				inducibleNote = None
 
+			if self.molNote.has_key(r[keyCol]):
+				molNote = self.molNote[r[keyCol]]
+			else:
+				molNote = None
+
 			self.addColumn('isRecombinase', isRecombinase, r,
 				self.finalColumns)
 			self.addColumn('driver', driver, r, self.finalColumns)
 			self.addColumn('geneName', gene, r,
 				self.finalColumns)
 			self.addColumn('inducibleNote', inducibleNote, r,
+				self.finalColumns)
+			self.addColumn('molecularDescription', molNote, r,
 				self.finalColumns)
 		return
 
@@ -142,6 +167,12 @@ cmds = [
 		and n._NoteType_key = 1032
 	order by c.sequenceNum''',
 
+	'''select n._Object_key, c.note, c.sequenceNum
+	from mgi_note n, mgi_notechunk c
+	where n._Note_key = c._Note_key
+		and n._NoteType_key = 1021
+	order by c.sequenceNum''',
+
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key
 	from all_allele a, acc_accession ac
@@ -156,7 +187,7 @@ cmds = [
 fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
-	'isRecombinase', 'driver', 'inducibleNote',
+	'isRecombinase', 'driver', 'inducibleNote', 'molecularDescription',
 	]
 
 # prefix for the filename of the output file
