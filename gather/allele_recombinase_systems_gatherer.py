@@ -36,9 +36,6 @@ FLAGS = [
 	'embryo other',
 	'postnatal other',
 	]
-logger.debug ('%d flags' % len(FLAGS))
-FLAGS.sort()
-logger.debug ('%d flags' % len(FLAGS))
 
 ###--- Functions ---###
 
@@ -114,8 +111,6 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 
 		self.finalColumns = [ '_Allele_key', ] + FLAGS + [
 			'detectedCount', 'notDetectedCount', ]
-		logger.debug ('%d flags' % len(FLAGS))
-		logger.debug ('%d finalColumns' % len(self.finalColumns))
 		logger.debug ('Found %d alleles' % len(self.finalResults))
 		return
 
