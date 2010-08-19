@@ -15,6 +15,7 @@ createStatement = '''CREATE TABLE %s  (
 	by_symbol	int		not null,
 	by_allele_type	int		not null,
 	by_primary_id	int		not null,
+	by_driver	int		not null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
