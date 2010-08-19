@@ -14,6 +14,7 @@ import Gatherer
 ###--- Globals ---###
 
 MarkerCount = 'markerCount'
+ReferenceCount = 'referenceCount'
 
 ###--- Classes ---###
 
@@ -44,11 +45,21 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 
 		keyCol = Gatherer.columnNumber (self.results[1][0],
 			'_Allele_key')
-		ctCol = Gatherer.columnNumber (self.results[1][0],
-			'mrkCount')
+		ctCol = Gatherer.columnNumber (self.results[1][0], 'mrkCount')
 
 		for row in self.results[1][1]:
 			d[row[keyCol]][MarkerCount] = row[ctCol]
+
+		# reference counts
+		counts.append (ReferenceCount)
+
+		keyCol = Gatherer.columnNumber (self.results[2][0],
+			'_Object_key')
+		ctCol = Gatherer.columnNumber (self.results[2][0], 'refCount')
+
+		for row in self.results[2][1]:
+			d[row[keyCol]][ReferenceCount] = row[ctCol]
+
 
 		# add other counts here...
 
@@ -87,14 +98,20 @@ cmds = [
 	'''select m._Allele_key, count(1) as mrkCount
 		from all_marker_assoc m
 		group by m._Allele_key''',
+
+	# count of references for each allele
+	'''select _Object_key, count(distinct _Refs_key) as refCount
+		from mgi_reference_assoc
+		where _MGIType_key = 11
+		group by _Object_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Allele_key', MarkerCount, ]
+fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'alleleCounts'
+filenamePrefix = 'allele_counts'
 
 # global instance of a AlleleCountsGatherer
 gatherer = AlleleCountsGatherer (filenamePrefix, fieldOrder, cmds)
