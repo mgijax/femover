@@ -25,6 +25,7 @@ import time
 import os
 import traceback
 import database_info
+import types
 
 ###--- Globals ---###
 
@@ -78,9 +79,9 @@ INDEX_STATUS = NOTYET
 # particular data type:
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_annotation',
-		'allele_to_reference',
+		'allele_to_reference', 'allele_synonym',
 	]
-CRE = [ 'allele_recombinase_systems', 'allele_recombinase_assay_result',
+CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
@@ -261,7 +262,11 @@ def dropTables (
 				config.TARGET_TYPE, table)
 
 	# report how many tables were dropped
-	logger.info ('Dropped %d tables' % len(items))
+	if FULL_BUILD:
+		logger.info ('Dropped all %d tables' % len(items))
+	else:
+		logger.info ('Dropped %d table(s): %s' % (len(items), 
+			', '.join (tables) ))
 	return
 
 def createTables (
@@ -278,6 +283,9 @@ def createTables (
 	createDispatcher = Dispatcher.Dispatcher (config.CONCURRENT_CREATE)
 
 	items = []
+
+	if type(tables) == types.StringType:
+		tables = [ tables ]
 
 	for table in tables:
 		script = os.path.join (config.SCHEMA_DIR, '%s.py' % table)
@@ -296,7 +304,8 @@ def createTables (
 			raise error, 'Failed to create %s table %s' % (
 				config.TARGET_TYPE, table)
 
-	logger.info ('Created %d tables' % len(items))
+	logger.info ('Created %d table(s): %s' % (len(items),
+		', '.join (tables)) )
 	return
 
 def dispatcherReport():
@@ -419,8 +428,17 @@ def checkForFinishedGathering():
 		if GATHER_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del GATHER_IDS[i]
 			if GATHER_DISPATCHER.getReturnCode(id) == 0:
-				scheduleConversion (table,
-				    GATHER_DISPATCHER.getStdout(id)[0].strip())
+				for line in GATHER_DISPATCHER.getStdout(id):
+					line = line.strip()
+
+					[ inputFile, table ] = line.split()
+
+					if not FULL_BUILD:
+						dropTables( [table] )
+					createTables (table)
+					scheduleConversion (table, inputFile)
+
+					logger.debug ('Scheduled conversion of %s for %s' % (inputFile, table))
 			else:
 				# an error occurred in gathering, so bail out
 				print '\n'.join (
@@ -635,7 +653,8 @@ def main():
 	logger.info ('Beginning %s script' % sys.argv[0])
 	tables = shuffle(processCommandLine())
 	dbInfoTable.dropTable()
-	dropTables(tables)
+	if FULL_BUILD:
+		dropTables(tables)
 
 	dbInfoTable.createTable()
 	dbInfoTable.setInfo ('status', 'starting')
@@ -654,9 +673,11 @@ def main():
 
 	dbInfoTable.setInfo ('build started', time.strftime (
 		'%m/%d/%Y %H:%M:%S', time.localtime(START_TIME)) )
-	dbInfoTable.setInfo ('status', 'creating tables')
 
-	createTables(tables)
+# Tables are now created as-needed, rather than all at once.
+#	dbInfoTable.setInfo ('status', 'creating tables')
+#	createTables(tables)
+
 	scheduleGatherers(tables)
 	dbInfoTable.setInfo ('status', 'gathering data')
 
