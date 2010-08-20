@@ -408,9 +408,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		arColumns = [ 'uniqueKey', 'resultKey', 'imageKey',
 			'sequenceNum', 'paneLabel', ]
 
-		# columns for allele system image panes
+		# columns for allele system images
 		asColumns = [ 'uniqueKey', 'alleleSystemKey', 'imageKey',
-			'sequenceNum', 'paneLabel', ]
+			'sequenceNum', ]
 
 		arRows = []	# rows for assay result image panes
 		asRows = []	# rows for allele system image panes
@@ -418,8 +418,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		arNum = 0	# sequence number for assay result image panes
 		asNum = 0	# sequence number for allele system img panes
 
-		done = {}	# done[(allele/system key, image key, pane
-				#	label)] = 1
+		done = {}	# done[(allele/system key, image key)] = 1
 
 		lastResultKey = None
 		lastSystemKey = None
@@ -446,8 +445,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			arRows.append ( (arMax, resultKey, imageKey, arNum,
 				label) )
 
-			triple = (alleleSysKey, imageKey, label)
-			if not done.has_key (triple):
+			pair = (alleleSysKey, imageKey)
+			if not done.has_key (pair):
 
 				if alleleSysKey != lastSystemKey:
 					asNum = asNum + 1
@@ -457,8 +456,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 				asMax = asMax + 1
 				asRows.append ( (asMax, alleleSysKey,
-					imageKey, asNum, label) )
-				done[triple] = 1
+					imageKey, asNum) )
+				done[pair] = 1
 
 		return arColumns, arRows, asColumns, asRows
 
@@ -645,9 +644,8 @@ files = [
 		'recombinase_assay_result_sequence_num'),
 
 	('recombinase_allele_system_imagepane',
-		[ 'uniqueKey', 'alleleSystemKey', 'imageKey', 'sequenceNum',
-			'paneLabel', ],
-		'recombinase_allele_system_imagepane'),
+		[ 'uniqueKey', 'alleleSystemKey', 'imageKey', 'sequenceNum' ],
+		'recombinase_allele_system_to_image'),
 
 	('recombinase_assay_result_imagepane',
 		[ 'uniqueKey', 'resultKey', 'imageKey', 'sequenceNum',
