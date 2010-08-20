@@ -29,10 +29,11 @@ import types
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-m|-p|-r|-s]
+USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s]
     Data sets to (re)generate:
 	-a : Alleles
 	-c : Cre
+	-i : Images
 	-m : Markers
 	-p : Probes
 	-s : Sequences
@@ -83,6 +84,8 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
+IMAGES = [ 'image',
+	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
 		'marker_orthology', 'marker_location', 'marker_counts',
@@ -110,6 +113,7 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
+	'-i' : IMAGES,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
