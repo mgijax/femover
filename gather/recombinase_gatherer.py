@@ -242,7 +242,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		# detailed assay results from query 5
 
-		cols = self.results[-1][0]
+		cols = self.results[5][0]
 
 		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
 		systemCol = Gatherer.columnNumber (cols, 'system')
@@ -261,6 +261,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		jnumCol = Gatherer.columnNumber (cols, 'jnumID')
 		pPrepCol = Gatherer.columnNumber (cols, '_ProbePrep_key')
 		aPrepCol = Gatherer.columnNumber (cols, '_AntibodyPrep_key')
+		dbResultCol = Gatherer.columnNumber (cols, '_Result_key')
 
 		out = []
 		columns = [ 'resultKey', 'alleleSystemKey', 'structure',
@@ -271,14 +272,28 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			'antibodyName',
 			]
 
+		# newResultKeys[db result key] = [ (new result key, new
+		#	allele/system key), ... ]
+		newResultKeys = {}
+
 		i = 0
-		for r in self.results[-1][1]:
-			if not alleleSystemMap[r[alleleCol]].has_key (r[systemCol]):
-				logger.debug ('allele %d, missing "%s", systems: %s' % (r[alleleCol], r[systemCol], ', '.join(alleleSystemMap[r[alleleCol]].keys()) ) )
+		for r in self.results[5][1]:
 			alleleSystemKey = \
 				alleleSystemMap[r[alleleCol]][r[systemCol]]
 
 			i = i + 1
+
+			# map the old result key (from the database) to the
+			# new result key(s) and the allele/system keys being
+			# generated
+
+			info = (i, alleleSystemKey)
+			dbResultKey = r[dbResultCol]
+			if newResultKeys.has_key(dbResultKey):
+				newResultKeys[dbResultKey].append (info)
+			else:
+				newResultKeys[dbResultKey] = [ info ]
+
 			row = [ i, alleleSystemKey, r[structureCol],
 				r[ageCol], r[sexCol], r[jnumCol],
 				r[resultNoteCol], r[specimenNoteCol], ]
@@ -331,7 +346,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			out.append (row)
 
 		logger.debug ('Found %d assay results' % len(out))
-		return columns, out
+		logger.debug ('Mapped %d assay results' % len(newResultKeys))
+		return columns, out, newResultKeys
 
 	def findSortValues (self, cols, rows):
 		keyCol = Gatherer.columnNumber (cols, 'resultKey')
@@ -375,6 +391,77 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		return [ 'resultKey' ] + byFields, allRows
 
+	def findResultImages (self,
+		resultMap	# maps from old result key to (new result key,
+				# new allele/system key)
+		):
+
+		# associations between results and image panes is in query 6
+
+		columns, rows = self.results[6]
+
+		resultCol = Gatherer.columnNumber (columns, '_Result_key')
+		labelCol = Gatherer.columnNumber (columns, 'paneLabel')
+		imageCol = Gatherer.columnNumber (columns, '_Image_key')
+
+		# columns for assay result image panes
+		arColumns = [ 'uniqueKey', 'resultKey', 'imageKey',
+			'sequenceNum', 'paneLabel', ]
+
+		# columns for allele system image panes
+		asColumns = [ 'uniqueKey', 'alleleSystemKey', 'imageKey',
+			'sequenceNum', 'paneLabel', ]
+
+		arRows = []	# rows for assay result image panes
+		asRows = []	# rows for allele system image panes
+
+		arNum = 0	# sequence number for assay result image panes
+		asNum = 0	# sequence number for allele system img panes
+
+		done = {}	# done[(allele/system key, image key, pane
+				#	label)] = 1
+
+		lastResultKey = None
+		lastSystemKey = None
+
+		arMax = 0
+		asMax = 0
+
+		for row in rows:
+		    if not resultMap.has_key(row[resultCol]):
+			logger.debug ('Unknown result key: %s' % \
+				row[resultCol])
+			continue
+		    for (resultKey, alleleSysKey) in resultMap[row[resultCol]]:
+			imageKey = row[imageCol]
+			label = row[labelCol]
+
+			if resultKey == lastResultKey:
+				arNum = arNum + 1
+			else:
+				arNum = 1
+				lastResultKey = resultKey
+
+			arMax = arMax + 1
+			arRows.append ( (arMax, resultKey, imageKey, arNum,
+				label) )
+
+			triple = (alleleSysKey, imageKey, label)
+			if not done.has_key (triple):
+
+				if alleleSysKey != lastSystemKey:
+					asNum = asNum + 1
+				else:
+					asNum = 1
+					lastSystemKey = alleleSysKey
+
+				asMax = asMax + 1
+				asRows.append ( (asMax, alleleSysKey,
+					imageKey, asNum, label) )
+				done[triple] = 1
+
+		return arColumns, arRows, asColumns, asRows
+
 	def collateResults (self):
 
 		# step 1 -- recombinase_allele_system table
@@ -396,13 +483,21 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		# step 4 -- recombinase_assay_result table
 
-		columns, rows = self.findAssayResults (alleleSystemMap)
+		columns, rows, resultMap = \
+			self.findAssayResults (alleleSystemMap)
 		self.output.append ( (columns, rows) )
 
 		# step 5 -- recombinase_assay_result_sequence_num table
 
 		columns, rows = self.findSortValues (columns, rows)
 		self.output.append ( (columns, rows) )
+
+		# step 6 - recombinase_assay_result_imagepane and
+		#	recombinase_allele_system_imagepane tables
+		arColumns, arRows, asColumns, asRows = self.findResultImages (
+			resultMap)
+		self.output.append ( (asColumns, asRows) )
+		self.output.append ( (arColumns, arRows) )
 		return
 
 ###--- globals ---###
@@ -489,7 +584,7 @@ cmds = [
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
-		r.resultNote, r._Strength_key, r._Pattern_key,
+		r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
 		b.jnumID
 	from all_cre_cache c,
 		gxd_assay a,
@@ -503,6 +598,18 @@ cmds = [
 		and c._Structure_key = rs._Structure_key
 		and rs._Result_key = r._Result_key
 		and a._Refs_key = b._Refs_key''',
+
+	# image panes associated with recombinase assay results
+	'''select distinct g._Result_key, i.paneLabel, i._Image_key
+	from img_imagepane i,
+		gxd_insituresultimage g,
+		gxd_insituresult r,
+		gxd_specimen s,
+		all_cre_cache c
+	where g._ImagePane_key = i._ImagePane_key
+		and g._Result_key = r._Result_key
+		and r._Specimen_key = s._Specimen_key
+		and s._Assay_key = c._Assay_key''',
 	]
 
 # data about files to be written; for each:  (filename prefix, list of field
@@ -536,6 +643,16 @@ files = [
 			'detectionMethod', 'assayNote', 'allelicComposition',
 			'sex', 'specimenNote', 'resultNote' ],
 		'recombinase_assay_result_sequence_num'),
+
+	('recombinase_allele_system_imagepane',
+		[ 'uniqueKey', 'alleleSystemKey', 'imageKey', 'sequenceNum',
+			'paneLabel', ],
+		'recombinase_allele_system_imagepane'),
+
+	('recombinase_assay_result_imagepane',
+		[ 'uniqueKey', 'resultKey', 'imageKey', 'sequenceNum',
+			'paneLabel', ],
+		'recombinase_assay_result_imagepane'),
 	]
 
 # global instance of a RecombinaseGatherer
