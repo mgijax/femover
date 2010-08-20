@@ -23,6 +23,9 @@ createStatement = '''CREATE TABLE %s  (
 	height			int		null,
 	figure_label		varchar(255)	not null,
 	image_type		varchar(255)	null,
+	pixeldb_numeric_id	varchar(30)	null,
+	copyright		varchar(512)	null,
+	caption			varchar(4500)	null,
 	PRIMARY KEY(image_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
