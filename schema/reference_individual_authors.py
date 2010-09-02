@@ -26,6 +26,7 @@ indexes = {
 	'reference_key' : 'create index %s on %s (reference_key)',
 	'sequence_num' : 'create index %s on %s (sequence_num)',
 	'is_last' : 'create index %s on %s (is_last)',
+	'author' : 'create index %s on %s (author)',
 	}
 
 # global instance of this Table object
