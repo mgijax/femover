@@ -34,6 +34,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'jnum_id' : 'create index %s on %s (jnum_id)',
+	'journal' : 'create index %s on %s (journal)',
 	'refs_key_sort' : 'create index %s on %s (reference_key, jnum_numeric)',
 	}
 
