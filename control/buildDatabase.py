@@ -38,6 +38,7 @@ USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s]
 	-p : Probes
 	-s : Sequences
 	-r : References
+	-v : Vocabularies
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
@@ -104,6 +105,9 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_clone_collection',
 	]
 
+VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym',
+	]
+
 # list of high priority tables, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
@@ -113,7 +117,7 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
-	'-i' : IMAGES,
+	'-i' : IMAGES,		'-v' : VOCABULARIES,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
