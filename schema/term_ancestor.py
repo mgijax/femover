@@ -17,7 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	term_key		int		not null,
 	ancestor_term_key	int		not null,
-	ancestor_term		varchar(255)	not null,
+	ancestor_term		varchar(255)	null,
 	ancestor_primary_id	varchar(30)	null,
 	path_number		int		not null,
 	depth			int		not null,
