@@ -554,14 +554,19 @@ class MultiFileGatherer:
 
 		autoKey = 1
 
+#		logger.debug ('fieldOrder: ' + str(fieldOrder))
+#		logger.debug ('columns: ' + str(columns))
+
 		for row in rows:
 			out = []	# list of field values
 
 			for col in fieldOrder:
 				if col == AUTO:
+#					logger.debug ('%s == %s' % (col, AUTO))
 					out.append (str(autoKey))
 					autoKey = 1 + autoKey
 				else:
+#					logger.debug ('%s != %s' % (col, AUTO))
 					colNum = columnNumber (columns, col)
 					fieldVal = row[colNum]
 
