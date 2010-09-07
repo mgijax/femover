@@ -105,15 +105,15 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_clone_collection',
 	]
 
-VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym',
+VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	]
 
-# list of high priority tables, in order of precedence
+# list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
 HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 
-# dictionary mapping each command-line flag to the list of tables that it
+# dictionary mapping each command-line flag to the list of gatherers that it
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
@@ -157,7 +157,7 @@ def bailout (s,			# string; error message to print
 def processCommandLine():
 	# Purpose: process the command-line to extract necessary data on how
 	#	the script should run
-	# Returns: list of tables to be generated, sorted alphabetically
+	# Returns: list of gatherers to be run, sorted alphabetically
 	# Assumes: nothing
 	# Modifies: nothing
 	# Throws: propagates SystemExit from bailout() in case of errors
@@ -165,7 +165,7 @@ def processCommandLine():
 	global FULL_BUILD
 
 	# list of table names (strings), allowing for duplicate table names
-	tablesWithDuplicates = []
+	withDuplicates = []
 
 	# if there were any command-line flags, process them
 
@@ -176,7 +176,7 @@ def processCommandLine():
 			if not FLAGS.has_key (flag):
 				badFlags.append (flag)
 			else:
-				tablesWithDuplicates = tablesWithDuplicates \
+				withDuplicates = withDuplicates \
 					+ FLAGS[flag]
 	
 		FULL_BUILD = False
@@ -187,25 +187,25 @@ def processCommandLine():
 		logger.info ('Processed command-line with %d flags' % \
 			(len(sys.argv) - 1) )
 	else:
-		# no flags -- do a full build of all tables
+		# no flags -- do a full build of all gatherers
 
 		FULL_BUILD = True
-		for tables in FLAGS.values():
-			tablesWithDuplicates = tablesWithDuplicates + tables
+		for gatherers in FLAGS.values():
+			withDuplicates = withDuplicates + gatherers
 		logger.info ('No command-line flags; building full db')
 	
 	# list of table names, with no duplicates allowed
 	uniqueTables = []
 
-	# collapse the list of potentially-duplicated tables into a list of
+	# collapse the list of potentially-duplicated gatherers into a list of
 	# unique table names
 
-	for table in tablesWithDuplicates:
+	for table in withDuplicates:
 		if table not in uniqueTables:
 			uniqueTables.append (table)
 
 	uniqueTables.sort()
-	logger.info ('Found %d tables to generate' % len(uniqueTables))
+	logger.info ('Found %d gatherers to run' % len(uniqueTables))
 	return uniqueTables
 
 def dropTables (
@@ -350,29 +350,30 @@ def dispatcherReport():
 	return
 
 def shuffle (
-	tables		# list of table names (strings)
+	gatherers		# list of gatherers (strings)
 	):
-	# Purpose: to shuffle the 'tables' to bring any high priority ones to
-	#	the front of the list
-	# Returns: a re-ordered copy of 'tables'
+	# Purpose: to shuffle the 'gatherers' to bring any high priority ones
+	#	to the front of the list
+	# Returns: a re-ordered copy of 'gatherers'
 	# Assumes: nothing
 	# Modifies: nothing
 	# Throws: nothing
 
 	toDo = []
 	for table in HIGH_PRIORITY_TABLES:
-		if table in tables:
+		if table in gatherers:
 			toDo.append(table)
 
-	for table in tables:
+	for table in gatherers:
 		if table not in toDo:
 			toDo.append(table)
 	return toDo 
 
 def scheduleGatherers (
-	tables		# list of table names (strings)
+	gatherers		# list of table names (strings)
 	):
-	# Purpose: to begin the data gathering stage for the various 'tables'
+	# Purpose: to begin the data gathering stage for the various
+	#	'gatherers'
 	# Returns: nothing
 	# Assumes: nothing
 	# Modifies: uses a Dispatcher to fire off multiple subprocesses
@@ -380,14 +381,14 @@ def scheduleGatherers (
 
 	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS
 
-	for table in tables:
+	for table in gatherers:
 		script = os.path.join (config.GATHER_DIR, '%s_gatherer.py' % \
 			table)
 		id = GATHER_DISPATCHER.schedule (script)
 		GATHER_IDS.append ( (table, id) )
 
 	GATHER_STATUS = WORKING
-	logger.info ('Scheduled %d gatherers' % len(tables)) 
+	logger.info ('Scheduled %d gatherers' % len(gatherers)) 
 	return
 
 def scheduleConversion (
@@ -659,10 +660,10 @@ def main():
 	# Throws: propagates 'error' if problems occur
 
 	logger.info ('Beginning %s script' % sys.argv[0])
-	tables = shuffle(processCommandLine())
+	gatherers = shuffle(processCommandLine())
 	dbInfoTable.dropTable()
 	if FULL_BUILD:
-		dropTables(tables)
+		dropTables(gatherers)
 
 	dbInfoTable.createTable()
 	dbInfoTable.setInfo ('status', 'starting')
@@ -682,11 +683,7 @@ def main():
 	dbInfoTable.setInfo ('build started', time.strftime (
 		'%m/%d/%Y %H:%M:%S', time.localtime(START_TIME)) )
 
-# Tables are now created as-needed, rather than all at once.
-#	dbInfoTable.setInfo ('status', 'creating tables')
-#	createTables(tables)
-
-	scheduleGatherers(tables)
+	scheduleGatherers(gatherers)
 	dbInfoTable.setInfo ('status', 'gathering data')
 
 	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS):
