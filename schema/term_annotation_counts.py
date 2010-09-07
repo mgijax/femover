@@ -17,8 +17,10 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key				int		not null,
 	term_key				int		not null,
 	annotated_object_type			varchar(80)	not null,
-	annotated_count_to_term			int		not null,
-	annotated_count_with_descendents	int		not null,
+	object_count_to_term			int		not null,
+	object_count_with_descendents		int		not null,
+	annot_count_to_term			int		not null,
+	annot_count_with_descendents		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
