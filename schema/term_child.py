@@ -20,6 +20,8 @@ createStatement = '''CREATE TABLE %s  (
 	child_term		varchar(255)	null,
 	child_primary_id	varchar(30)	null,
 	sequence_num		int		null,
+	is_leaf			int		not null,
+	edge_label		varchar(255)	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
