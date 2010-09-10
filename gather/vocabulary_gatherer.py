@@ -27,7 +27,7 @@ def maxDepth (term, vocab, edges):
 	# maximum depth
 
 	deepest = 0
-	for child in edges[vocab][term]:
+	for (edgeType, child) in edges[vocab][term]:
 		childDepth = maxDepth(child, vocab, edges)
 		deepest = max(deepest, childDepth)
 
@@ -47,18 +47,18 @@ def pathsToRoots (term, vocab, upEdges):
 	# if this term has no ancestors, it is itself a root
 
 	if (not upEdges.has_key(vocab)) or (not upEdges[vocab].has_key(term)):
-		pathsUpward[term] = [ [term] ]
-		return [ [term] ]
+		pathsUpward[term] = [ [ (None, term) ] ]
+		return pathsUpward[term]
 
 	# recursively iterate through this term's ancestors to enumerate all
 	# possible paths up to roots
 
 	paths = []
-	for ancestor in upEdges[vocab][term]:
+	for (edgeType, ancestor) in upEdges[vocab][term]:
 		ancestorPaths = pathsToRoots (ancestor, vocab, upEdges)
 		for p in ancestorPaths:
 			pNew = p[:]
-			pNew.append (term)
+			pNew.append ( (edgeType, term) )
 			paths.append (pNew)
 
 	pathsUpward[term] = paths
@@ -73,10 +73,10 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 	#	collates results, writes tab-delimited text file
 
 	def findVocabularies (self):
-		# edges[vocab] = {parent : [ child 1, child 2, ... child n ]}
+		# edges[vocab] = {parent : [ (edge type 1, child 1), ... ]}
 		edges = {}
 
-		# upEdges[vocab] = { child : [ parent 1, ... parent n ] }
+		# upEdges[vocab] = { child : [ (edge type 1, parent 1), ... ]}
 		upEdges = {}
 
 		# isRoot[vocab][term key] = True/False
@@ -91,25 +91,31 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			'_Vocab_key')
 		pCol = Gatherer.columnNumber (self.results[0][0], 'parentKey')
 		cCol = Gatherer.columnNumber (self.results[0][0], 'childKey')
+		eCol = Gatherer.columnNumber (self.results[0][0],
+			'_Label_key')
 
 		for row in self.results[0][1]:
 			voc = row[vocCol]
 			parent = row[pCol]
 			child = row[cCol]
+			edgeType = Gatherer.resolve (row[eCol], 'dag_label',
+				'_Label_key', 'label')
 
 			if not edges.has_key(voc):
-				edges[voc] = { parent : [ child ] }
+				edges[voc] = { parent : [ (edgeType, child) ]}
 			elif not edges[voc].has_key(parent):
-				edges[voc][parent] = [ child ]
+				edges[voc][parent] = [ (edgeType, child) ]
 			else:
-				edges[voc][parent].append (child)
+				edges[voc][parent].append ( (edgeType, child) )
 
 			if not upEdges.has_key(voc):
-				upEdges[voc] = { child : [ parent ] }
+				upEdges[voc] = { child : [ (edgeType, parent)
+					] }
 			elif not upEdges[voc].has_key(child):
-				upEdges[voc][child] = [ parent ]
+				upEdges[voc][child] = [ (edgeType, parent) ]
 			else:
-				upEdges[voc][child].append (parent)
+				upEdges[voc][child].append ( (edgeType,
+					parent) )
 
 			# existing as a child term ensures that this term is
 			# not a root term
@@ -140,8 +146,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		# vocDepth[vocab] = max depth for that vocab
 		vocDepth = {}
 
-		vocabs = isRoot.keys()
-		for vocab in vocabs:
+		vocabList = isRoot.keys()
+		for vocab in vocabList:
 			vocDepth[vocab] = 0
 			terms = isRoot[vocab].keys()
 			for term in terms:
@@ -192,16 +198,20 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached %d IDs for terms' % len(ids))
 		return ids
 
-	def findChildren (self, ids):
+	def findChildren (self, ids, edges, sequenceNum):
 
+		vCol = Gatherer.columnNumber (self.results[0][0],
+			'_Vocab_key')
 		pCol = Gatherer.columnNumber (self.results[0][0], 'parentKey')
 		cCol = Gatherer.columnNumber (self.results[0][0], 'childKey')
 		tCol = Gatherer.columnNumber (self.results[0][0], 'term')
 		sCol = Gatherer.columnNumber (self.results[0][0],
 			'sequenceNum')
+		eCol = Gatherer.columnNumber (self.results[0][0],
+			'_Label_key')
 
 		columns = [ 'parentKey', 'childKey', 'term', 'accID',
-			'sequenceNum' ]
+			'sequenceNum', 'isLeaf', 'edgeLabel' ]
 		rows = []
 
 		for r in self.results[0][1]:
@@ -210,7 +220,26 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				row.append (ids[r[cCol]])
 			else:
 				row.append (None)
-			row.append (r[sCol])
+
+			# some vocabs have a defined ordering.  if this terms
+			# is ordered, then use that one.  if not, use our
+			# computed sequence number.
+
+			if r[sCol]:
+				row.append (r[sCol])
+			else:
+				row.append (sequenceNum[r[cCol]])
+
+			isLeaf = 1
+			if edges.has_key(r[vCol]):
+				if edges[r[vCol]].has_key(r[cCol]):
+					isLeaf = 0
+			row.append (isLeaf)
+
+			edgeType = Gatherer.resolve (r[eCol], 'dag_label',
+				'_Label_key', 'label')
+			row.append (edgeType)
+
 			rows.append (row)
 
 		logger.debug ('Found %d parent/child pairs' % len(rows))
@@ -245,6 +274,28 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		columns = [ 'termKey', 'term', 'accID', 'vocab', 'def',
 			'sequenceNum', 'isRoot', 'isLeaf' ]
 
+		# produce a sorted list of terms, for those vocabularies
+		# without a pre-assigned set of sequence numbers
+
+		toSort = []		# (term, term key)...
+		for r in self.results[4][1]:
+			if r[tCol]:
+				toSort.append ( (r[tCol].lower(), r[kCol]) )
+			else:
+				toSort.append ( ('', r[kCol]) )
+
+		toSort.sort()
+		i = 0
+		sequenceNum = {}		# sequenceNum[termKey] = i
+
+		for (term, termKey) in toSort:
+			i = i + 1
+			sequenceNum[termKey] = i
+
+		logger.debug ('Sorted %d terms' % len(sequenceNum))
+
+		# now compile the rows for the term table
+
 		rows = []
 		for r in self.results[4][1]:
 			key = r[kCol]
@@ -267,7 +318,14 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			else:
 				row.append (None)
 
-			row.append (r[sCol])
+			# some vocabularies have a defined ordering; if this
+			# term has such an ordering, use it; if not, use our
+			# computed ordering
+
+			if r[sCol] != None:
+				row.append (r[sCol])
+			else:
+				row.append (sequenceNum[key])
 
 			flag = 0
 			if isRoot.has_key(voc):
@@ -281,11 +339,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				if not edges[voc].has_key(key):
 					flag = 1
 			row.append (flag)
-
 			rows.append (row)
 
 		logger.debug ('Found %d terms' % len(rows))
-		return terms, columns, rows
+
+		return terms, sequenceNum, columns, rows
 
 	def collectDescendentCounts (self):
 		keyCol = Gatherer.columnNumber (self.results[5][0],
@@ -330,8 +388,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 	def findTermAncestors (self, upEdges, ids, termByKey):
 		columns = [ 'termKey', 'ancestorTermKey', 'ancestorTerm',
-			'ancestorID', 'pathNumber', 'depth' ]
+			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ]
 		rows = []
+
+		# pathCache[term] = { parent term key : path number }
+		pathCache = {}
 
 		# for each vocab, walk through its terms
 
@@ -345,6 +406,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				paths = pathsToRoots (term, voc, upEdges)
 				pathNum = 0
 
+				pathCache[term] = {}
+
 				# for each path, enumerate all terms along the
 				# path
 
@@ -352,10 +415,15 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 					depth = 0
 					pathNum = pathNum + 1
 
+					# cache the parent and its path number
+					if len(path) > 1:
+						pathCache[term][path[-2]] = \
+							pathNum
+
 					# for each ancestor, add a record to
 					# the set of rows
 
-					for ancestor in path:
+					for (edgeType, ancestor) in path:
 
 						# if we reach the current term
 						# then we don't need a record
@@ -377,9 +445,10 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 						row.append (pathNum)
 						row.append (depth)
+						row.append (edgeType)
 						rows.append (row)
 		logger.debug ('Found %d ancestors' % len(rows))
-		return columns, rows
+		return pathCache, columns, rows
 
 	def extractCountsToTerm (self):
 
@@ -600,6 +669,44 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Collated %d rows for annot counts' % len(rows))
 		return columns, rows
 
+	def findSiblings (self, pathCache, terms, ids, edges, vocabs,
+			sequenceNum):
+		termList = pathCache.keys()
+		columns = [ 'termKey', 'siblingKey', 'term', 'accID',
+			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ]
+		rows = []
+
+		for term in termList:
+			ancestorDict = pathCache[term]
+			vocabKey = vocabs[term]
+
+			for ((edgeType, ancestor), pathNum) in \
+				ancestorDict.items():
+
+				for (edgeType, sibling) in \
+					edges[vocabKey][ancestor]:
+
+					if sibling == term:
+						continue
+
+					isLeaf = 1
+					if edges[vocabKey].has_key(sibling):
+						isLeaf = 0
+
+					termText = None
+					termID = None
+					if terms.has_key(sibling):
+						termText = terms[sibling]
+					if ids.has_key(sibling):
+						termID = ids[sibling]
+
+					row = [ term, sibling, termText,
+						termID, sequenceNum[sibling],
+						isLeaf, edgeType, pathNum ]
+					rows.append (row)
+		logger.debug ('Collated %d rows for siblings' % len(rows))
+		return columns, rows
+
 	def collateResults (self):
 
 		# step 1 -- vocabulary table
@@ -612,19 +719,19 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		ids = self.collectIDs()
 
-		# step 3 -- term_child table
-
-		columns, rows = self.findChildren (ids)
-		self.output.append ( (columns, rows) )
-
 		# step 4 -- cache term definitions
 		
 		defs = self.collectDefinitions()
 
 		# step 5 -- term table
 
-		terms, columns, rows = self.findTerms (ids, defs, isRoot,
-			edges)
+		terms, sequenceNum, columns, rows = self.findTerms (ids, defs,
+			isRoot, edges)
+		self.output.append ( (columns, rows) )
+
+		# step 3 -- term_child table (moved to 5a)
+
+		columns, rows = self.findChildren (ids, edges, sequenceNum)
 		self.output.append ( (columns, rows) )
 
 		# step 6 -- get counts of descendents for each term
@@ -639,12 +746,18 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		# step 8 -- term_ancestor table
 
-		columns, rows = self.findTermAncestors (upEdges, ids, terms)
+		pathCache, columns, rows = self.findTermAncestors (upEdges,
+			ids, terms)
 		self.output.append ( (columns, rows) )
 
 		# step 9 -- term_annotation_counts table
 		columns, rows = self.findAnnotationCounts ()
 		self.output.append ( (columns, rows) )
+
+		# step 10 -- term_sibling table
+		columns, rows = self.findSiblings (pathCache, terms, ids,
+			edges, vocabs, sequenceNum)
+		self.output.append ( (columns, rows) ) 
 		return
 
 ###--- globals ---###
@@ -655,7 +768,8 @@ cmds = [
 			p._Object_key as parentKey,
 			c._Object_key as childKey,
 			ct.term,
-			ct.sequenceNum
+			ct.sequenceNum,
+			e._Label_key
 		from voc_term t,
 			dag_node p,
 			dag_node c,
@@ -726,15 +840,15 @@ files = [
 		[ '_Vocab_key', 'name', 'termCount', 'isSimple', 'maxDepth' ],
 		'vocabulary'),
 
-	('term_child',
-		[ Gatherer.AUTO, 'parentKey', 'childKey', 'term', 'accID',
-			'sequenceNum' ],
-		'term_child'),
-
 	('term',
 		[ 'termKey', 'term', 'accID', 'vocab', 'def', 'sequenceNum',
 			'isRoot', 'isLeaf' ],
 		'term'),
+
+	('term_child',
+		[ Gatherer.AUTO, 'parentKey', 'childKey', 'term', 'accID',
+			'sequenceNum', 'isLeaf', 'edgeLabel' ],
+		'term_child'),
 
 	('term_counts',
 		[ 'termKey', 'pathCount', 'descendentCount', 'childCount' ],
@@ -742,13 +856,18 @@ files = [
 
 	('term_ancestor',
 		[ Gatherer.AUTO, 'termKey', 'ancestorTermKey', 'ancestorTerm',
-			'ancestorID', 'pathNumber', 'depth' ],
+			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ],
 		'term_ancestor'),
 
 	('term_annotation_counts',
 		[ Gatherer.AUTO, 'termKey', 'mgitype', 'objectsToTerm',
 			'objectsWithDesc', 'annotToTerm', 'annotWithDesc' ],
 		'term_annotation_counts'),
+
+	('term_sibling',
+		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
+			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ],
+		'term_sibling'),
 	]
 
 # global instance of a VocabularyGatherer
