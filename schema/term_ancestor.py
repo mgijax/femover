@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	ancestor_primary_id	varchar(30)	null,
 	path_number		int		not null,
 	depth			int		not null,
+	edge_label		varchar(255)	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
