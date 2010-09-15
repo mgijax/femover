@@ -34,14 +34,25 @@ class SequenceSequenceNumGatherer (Gatherer.Gatherer):
 		logger.debug ('Ordered the %d types' % len(typeOrder))
 
 		# compute and cache the ordering for sequence providers
+		# (note that all Genbank providers should be sorted together,
+		# rather than separately)
 
 		providerOrder = {}	# providerOrder[provider key] =seq num
 		i = 0
+		genbankI = None
+
 		keyCol = Gatherer.columnNumber (self.results[1][0],
 			'_Term_key')
+		termCol = Gatherer.columnNumber (self.results[1][0], 'term')
+
 		for row in self.results[1][1]:
 			i = i + 1
-			providerOrder[row[keyCol]] = i
+			if row[termCol].lower().startswith('genbank'):
+				if genbankI == None:
+					genbankI = i
+				providerOrder[row[keyCol]] = genbankI
+			else: 
+				providerOrder[row[keyCol]] = i
 
 		logger.debug ('Ordered the %d providers' % len(providerOrder))
 
@@ -89,7 +100,7 @@ cmds = [
 		and v.name = 'Sequence Type'
 	order by t.sequenceNum''',
 
-	'''select t._Term_key
+	'''select t._Term_key, t.term
 	from voc_term t, voc_vocab v
 	where t._Vocab_key = v._Vocab_key
 		and v.name = 'Sequence Provider'
