@@ -485,8 +485,10 @@ class MultiFileGatherer:
 
 		self.preprocessCommands()
 		logger.info ('Pre-processed queries')
-		self.results = executeQueries (self.cmds)
-		logger.info ('Finished queries of source %s db' % SOURCE_DB)
+		if self.cmds:
+			self.results = executeQueries (self.cmds)
+			logger.info ('Finished queries of source %s db' % \
+				SOURCE_DB)
 		self.collateResults()
 		logger.info ('Built %d result sets' % len(self.output))
 		self.postprocessResults()
