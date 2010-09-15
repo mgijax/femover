@@ -29,7 +29,7 @@ import types
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s]
+USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s|-x]
     Data sets to (re)generate:
 	-a : Alleles
 	-c : Cre
@@ -39,6 +39,7 @@ USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s]
 	-s : Sequences
 	-r : References
 	-v : Vocabularies
+	-x : GXD Literature Index
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
@@ -85,6 +86,9 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
+GXD_INDEX = [ 'expression_index', 'expression_index_stages',
+		'expression_index_map', 'expression_index_sequence_num',
+	]
 IMAGES = [ 'image',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
@@ -117,7 +121,7 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
-	'-i' : IMAGES,		'-v' : VOCABULARIES,
+	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : GXD_INDEX,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
