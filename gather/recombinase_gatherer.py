@@ -50,8 +50,15 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		sysCol = Gatherer.columnNumber (cols, 'system')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
+		expCol = Gatherer.columnNumber (cols, 'expressed')
 
 		alleleData = {}		# alleleData[key] = (ID, symbol)
+
+		affectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
+		unaffectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
+
+		affected = []
+		unaffected = []
 
 		lastKey = None
 		out = []
@@ -71,6 +78,15 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 			out.append ( (i, key, row[idCol], row[sysCol]) )
 
+			# add this allele/system pair to either the list of
+			# affected systems or unaffected systems
+
+			triple = (key, i, system)
+			if row[expCol] == 1:
+				affected.append (triple)
+			else:
+				unaffected.append (triple)
+
 			# if this is not the same as the last allele, then
 			# we need to cache its ID and symbol
 
@@ -86,7 +102,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Found %d allele/system pairs' % i)
 		logger.debug ('Found %d alleles' % len(alleleData))
 
-		return alleleSystemMap, alleleData, columns, out
+		return alleleSystemMap, alleleData, columns, out, \
+			affectedCols, affected, unaffectedCols, unaffected
 
 	def findOtherSystems (self, alleleSystemMap):
 		# Purpose: processes 'alleleSystemMap' to find other systems
@@ -465,7 +482,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		# step 1 -- recombinase_allele_system table
 
-		alleleSystemMap, alleleData, columns, rows = \
+		alleleSystemMap, alleleData, columns, rows, \
+		affectedCols, affected, unaffectedCols, unaffected = \
 			self.findAlleleSystemPairs()
 		self.output.append ( (columns, rows) )
 
@@ -497,6 +515,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			resultMap)
 		self.output.append ( (asColumns, asRows) )
 		self.output.append ( (arColumns, arRows) )
+
+		# step 7 - allele_recombinase_affected_system and
+		#	allele_recombinase_unaffected_system tables
+
+		self.output.append ( (affectedCols, affected) )
+		self.output.append ( (unaffectedCols, unaffected) )
 		return
 
 ###--- globals ---###
@@ -505,14 +529,14 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 cmds = [
 	# all allele / system pairs; order by logical db to prioritize MGI IDs
 	'''select distinct c._Allele_key, a.accID, c.system, a._LogicalDB_key,
-		c.symbol
+		c.symbol, c.expressed
 	from all_cre_cache c,
 		acc_accession a
 	where c._Allele_key = a._Object_key
 		and a.preferred = 1
 		and a.private = 0
 		and a._MGIType_key = 11
-	order by c._Allele_key, a._LogicalDB_key''',
+	order by c._Allele_key, a._LogicalDB_key, c.system''',
 
 	# genetic background info by genotype
 	'''select distinct s._Genotype_key, mnc.note, mnc.sequenceNum,
@@ -651,6 +675,14 @@ files = [
 		[ 'uniqueKey', 'resultKey', 'imageKey', 'sequenceNum',
 			'paneLabel', ],
 		'recombinase_assay_result_imagepane'),
+
+	('allele_recombinase_affected_system',
+		[ Gatherer.AUTO, 'alleleKey', 'alleleSystemKey', 'system' ],
+		'allele_recombinase_affected_system'),
+
+	('allele_recombinase_unaffected_system',
+		[ Gatherer.AUTO, 'alleleKey', 'alleleSystemKey', 'system' ],
+		'allele_recombinase_unaffected_system'),
 	]
 
 # global instance of a RecombinaseGatherer
