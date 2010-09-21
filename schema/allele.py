@@ -27,6 +27,11 @@ createStatement = '''CREATE TABLE %s  (
 	strain			varchar(255)	null,
 	strain_type		varchar(255)	null,
 	inheritance_mode	varchar(255)	null,
+	holder			varchar(30)	null,
+	company_id		varchar(30)	null,
+	transmission_type	varchar(30)	null,
+	transmission_phrase	varchar(255)	null,
+	primary_image_key	int		null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
