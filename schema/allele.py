@@ -24,6 +24,9 @@ createStatement = '''CREATE TABLE %s  (
 	driver			varchar(50)	null,
 	inducible_note		varchar(255)	null,
 	molecular_description	varchar(2048)	null,
+	strain			varchar(255)	null,
+	strain_type		varchar(255)	null,
+	inheritance_mode	varchar(255)	null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
