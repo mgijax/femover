@@ -18,6 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	go_term_count	int	NULL,
 	gxd_assay_count	int	NULL,
 	ortholog_count	int	NULL,
+	gene_trap_count	int	NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
