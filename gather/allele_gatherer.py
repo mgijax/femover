@@ -79,6 +79,39 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 		logger.debug('Found %d molecular notes' % len(self.molNote))
 
+		# extract the holder and company ID for deltagen/lexicon
+		# knockouts, and cache them for postprocessResults()
+
+		keyCol = Gatherer.columnNumber (self.results[4][0],
+			'_Allele_key')
+		holderCol = Gatherer.columnNumber (self.results[4][0],
+			'holder')
+		companyCol = Gatherer.columnNumber (self.results[4][0],
+			'companyID')
+
+		self.knockouts = {}
+
+		for r in self.results[4][1]:
+			self.knockouts[r[keyCol]] = (r[holderCol], 
+				r[companyCol])
+
+		logger.debug ('Found %d knockouts' % len(self.knockouts))
+
+		# extract the primary image for each allele (where available)
+		# and cache them for postprocessResults()
+
+		keyCol = Gatherer.columnNumber (self.results[5][0],
+			'_Allele_key')
+		imageCol = Gatherer.columnNumber (self.results[5][0],
+			'_Image_key')
+
+		self.images = {}
+
+		for r in self.results[5][1]:
+			self.images[r[keyCol]] = r[imageCol]
+
+		logger.debug ('Found %d primary images' % len(self.images))
+
 		# main results are in the last query
 
 		self.finalColumns = self.results[-1][0]
@@ -88,16 +121,15 @@ class AlleleGatherer (Gatherer.Gatherer):
 	def postprocessResults (self):
 		self.convertFinalResultsToList()
 
-		keyCol = Gatherer.columnNumber (self.finalColumns, 
-			'_Allele_key')
-		ldbCol = Gatherer.columnNumber (self.finalColumns,
-			'_LogicalDB_key')
-		typeCol = Gatherer.columnNumber (self.finalColumns,
-			'_Allele_Type_key')
-		symCol = Gatherer.columnNumber (self.finalColumns, 'symbol')
-		modeCol = Gatherer.columnNumber (self.finalColumns,
-			'_Mode_key')
-		strainCol = Gatherer.columnNumber(self.finalColumns, 'strain')
+		columns = self.finalColumns
+
+		keyCol = Gatherer.columnNumber (columns, '_Allele_key')
+		ldbCol = Gatherer.columnNumber (columns, '_LogicalDB_key')
+		typeCol = Gatherer.columnNumber (columns, '_Allele_Type_key')
+		symCol = Gatherer.columnNumber (columns, 'symbol')
+		modeCol = Gatherer.columnNumber (columns, '_Mode_key')
+		strainCol = Gatherer.columnNumber(columns, 'strain')
+		transCol = Gatherer.columnNumber(columns, '_Transmission_key')
 
 		# pulls the actual allele symbol out of the combined
 		# marker symbol<allele symbol> field
@@ -105,6 +137,8 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 		for r in self.finalResults:
 			alleleType = Gatherer.resolve (r[typeCol])
+			allele = r[keyCol]
+
 			ldb = Gatherer.resolve (r[ldbCol], 'acc_logicaldb',
 				'_LogicalDB_key', 'name')
 
@@ -114,55 +148,72 @@ class AlleleGatherer (Gatherer.Gatherer):
 			else:
 				symbol = r[symCol]
 
-			self.addColumn('logicalDB', ldb, r, self.finalColumns)
-			self.addColumn('alleleType', alleleType, r,
-				self.finalColumns)
-			self.addColumn('alleleSubType', None, r,
-				self.finalColumns)
-			self.addColumn('onlyAlleleSymbol', symbol, r,
-				self.finalColumns)
+			self.addColumn('logicalDB', ldb, r, columns)
+			self.addColumn('alleleType', alleleType, r, columns)
+			self.addColumn('alleleSubType', None, r, columns)
+			self.addColumn('onlyAlleleSymbol', symbol, r, columns)
 
-			if self.driver.has_key (r[keyCol]):
+			if self.driver.has_key (allele):
 				isRecombinase = 1
-				driver = self.driver[r[keyCol]]
+				driver = self.driver[allele]
 			else:
 				isRecombinase = 0
 				driver = None
 
-			if self.genes.has_key (r[keyCol]):
-				gene = self.genes[r[keyCol]]
+			if self.genes.has_key (allele):
+				gene = self.genes[allele]
 			else:
 				gene = None
 
-			if self.inducible.has_key(r[keyCol]):
-				inducibleNote = self.inducible[r[keyCol]]
+			if self.inducible.has_key(allele):
+				inducibleNote = self.inducible[allele]
 			else:
 				inducibleNote = None
 
-			if self.molNote.has_key(r[keyCol]):
-				molNote = self.molNote[r[keyCol]]
+			if self.molNote.has_key(allele):
+				molNote = self.molNote[allele]
 			else:
 				molNote = None
 
 			self.addColumn('isRecombinase', isRecombinase, r,
-				self.finalColumns)
-			self.addColumn('driver', driver, r, self.finalColumns)
-			self.addColumn('geneName', gene, r,
-				self.finalColumns)
+				columns)
+			self.addColumn('driver', driver, r, columns)
+			self.addColumn('geneName', gene, r, columns)
 			self.addColumn('inducibleNote', inducibleNote, r,
-				self.finalColumns)
+				columns)
 			self.addColumn('molecularDescription', molNote, r,
-				self.finalColumns)
+				columns)
 
 			if alleleType == 'QTL':
 				strainLabel = 'Strain of Specimen'
 			else:
 				strainLabel = 'Strain of Origin'
 
-			self.addColumn ('strainLabel', strainLabel, r,
-				self.finalColumns)
-			self.addColumn ('inheritanceMode', Gatherer.resolve (
-				r[modeCol]), r, self.finalColumns)
+			self.addColumn('strainLabel', strainLabel, r, columns)
+			self.addColumn('inheritanceMode', Gatherer.resolve (
+				r[modeCol]), r, columns)
+
+			if self.knockouts.has_key(allele):
+				holder, company = self.knockouts[allele]
+			else:
+				holder = None
+				company = None
+
+			self.addColumn('holder', holder, r, columns)
+			self.addColumn('companyID', company, r, columns)
+
+			self.addColumn('transmission', Gatherer.resolve (
+				r[transCol]), r, columns)
+			self.addColumn('transmission_phrase',
+				Gatherer.resolve (r[transCol], 'voc_term',
+				'_Term_key', 'abbreviation'), r, columns)
+
+			if self.images.has_key(allele):
+				image = self.images[allele]
+			else:
+				image = None
+
+			self.addColumn('imageKey', image, r, columns)
 		return
 
 ###--- globals ---###
@@ -186,8 +237,18 @@ cmds = [
 		and n._NoteType_key = 1021
 	order by c.sequenceNum''',
 
+	'select _Allele_key, holder, companyID from ALL_Knockout_Cache',
+
+	'''select a._Object_key as _Allele_key, p._Image_key
+		from img_imagepane_assoc a,
+			img_imagepane p
+		where a.isPrimary = 1
+			and a._ImagePane_key = p._ImagePane_key
+			and a._MGIType_key = 11''',
+
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
-		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key
+		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
+		a._Transmission_key
 	from all_allele a, acc_accession ac, prb_strain s
 	where a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
@@ -202,7 +263,8 @@ fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
 	'isRecombinase', 'driver', 'inducibleNote', 'molecularDescription',
-	'strain', 'strainLabel', 'inheritanceMode',
+	'strain', 'strainLabel', 'inheritanceMode', 'holder', 'companyID',
+	'transmission', 'transmission_phrase', 'imageKey',
 	]
 
 # prefix for the filename of the output file
