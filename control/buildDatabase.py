@@ -26,6 +26,7 @@ import os
 import traceback
 import database_info
 import types
+import getopt
 
 ###--- Globals ---###
 
@@ -169,28 +170,35 @@ def processCommandLine():
 
 	global FULL_BUILD
 
-	# list of table names (strings), allowing for duplicate table names
+	try:
+		flags = ''.join (map (lambda x : x[1], FLAGS.keys()) )
+		options, args = getopt.getopt (sys.argv[1:], flags + 'G:')
+	except getopt.GetoptError:
+		bailout ('Invalid command-line arguments')
+
+	if args:
+		bailout ('Extra command-line argument(s): %s' % \
+			' '.join (args))
+
+	# list of gatherer names (strings), allowing for duplicates
 	withDuplicates = []
 
 	# if there were any command-line flags, process them
 
-	if len(sys.argv) > 1:
-		badFlags = []
+	if options:
+		for (option, value) in options:
+			# specify a particular gatherer
 
-		for flag in sys.argv[1:]:
-			if not FLAGS.has_key (flag):
-				badFlags.append (flag)
+			if option == '-G':
+				gatherer = value.replace('_gatherer', '').replace ('.py', '')
+				withDuplicates.append (gatherer)
 			else:
-				withDuplicates = withDuplicates \
-					+ FLAGS[flag]
-	
+				withDuplicates = withDuplicates + FLAGS[option]
+
 		FULL_BUILD = False
-		if badFlags:
-			bailout ('Unknown command-line flag(s): %s' % \
-				' '.join (badFlags))
 
 		logger.info ('Processed command-line with %d flags' % \
-			(len(sys.argv) - 1) )
+			len(options))
 	else:
 		# no flags -- do a full build of all gatherers
 
@@ -199,19 +207,19 @@ def processCommandLine():
 			withDuplicates = withDuplicates + gatherers
 		logger.info ('No command-line flags; building full db')
 	
-	# list of table names, with no duplicates allowed
-	uniqueTables = []
+	# list of gatherer names, with no duplicates allowed
+	uniqueGatherers = []
 
 	# collapse the list of potentially-duplicated gatherers into a list of
-	# unique table names
+	# unique gatherer names
 
-	for table in withDuplicates:
-		if table not in uniqueTables:
-			uniqueTables.append (table)
+	for gatherer in withDuplicates:
+		if gatherer not in uniqueGatherers:
+			uniqueGatherers.append (gatherer)
 
-	uniqueTables.sort()
-	logger.info ('Found %d gatherers to run' % len(uniqueTables))
-	return uniqueTables
+	uniqueGatherers.sort()
+	logger.info ('Found %d gatherers to run' % len(uniqueGatherers))
+	return uniqueGatherers
 
 def dropTables (
 	tables		# list of table names (strings) to be regenerated
