@@ -11,9 +11,11 @@ tableName = 'allele_counts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	allele_key	int	NOT NULL,
-	marker_count	int	NULL,
-	reference_count	int	NULL,
+	allele_key			int	NOT NULL,
+	marker_count			int	NULL,
+	reference_count			int	NULL,
+	expression_assay_result_count	int	NULL,
+	image_count			int	NULL,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
