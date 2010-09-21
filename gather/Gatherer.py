@@ -84,15 +84,18 @@ def resolve (key,		# integer; key value to look up
 	global resolveCache
 
 	tableDict = None
+	keyDict = None
 	fieldDict = None
 	term = None
 
 	if resolveCache.has_key(table):
 		tableDict = resolveCache[table]
 		if tableDict.has_key(keyField):
-			fieldDict = tableDict[keyField]
-			if fieldDict.has_key(key):
-				return fieldDict[key]
+			keyDict = tableDict[keyField]
+			if keyDict.has_key (stringField):
+				fieldDict = tableDict[keyField][stringField]
+				if fieldDict.has_key(key):
+					return fieldDict[key]
 
 	cmd = 'select %s from %s where %s = %d' % (stringField, table,
 		keyField, key)
@@ -105,9 +108,13 @@ def resolve (key,		# integer; key value to look up
 		tableDict = {}
 		resolveCache[table] = tableDict
 		
+	if keyDict == None:
+		keyDict = {}
+		tableDict[keyField] = keyDict
+
 	if fieldDict == None:
 		fieldDict = {}
-		tableDict[keyField] = fieldDict
+		tableDict[keyField][stringField] = fieldDict
 
 	fieldDict[key] = term
 	return term
