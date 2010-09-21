@@ -83,6 +83,7 @@ INDEX_STATUS = NOTYET
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_annotation',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
+		'allele_to_sequence',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
