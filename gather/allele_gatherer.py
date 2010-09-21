@@ -95,6 +95,9 @@ class AlleleGatherer (Gatherer.Gatherer):
 		typeCol = Gatherer.columnNumber (self.finalColumns,
 			'_Allele_Type_key')
 		symCol = Gatherer.columnNumber (self.finalColumns, 'symbol')
+		modeCol = Gatherer.columnNumber (self.finalColumns,
+			'_Mode_key')
+		strainCol = Gatherer.columnNumber(self.finalColumns, 'strain')
 
 		# pulls the actual allele symbol out of the combined
 		# marker symbol<allele symbol> field
@@ -150,6 +153,16 @@ class AlleleGatherer (Gatherer.Gatherer):
 				self.finalColumns)
 			self.addColumn('molecularDescription', molNote, r,
 				self.finalColumns)
+
+			if alleleType == 'QTL':
+				strainLabel = 'Strain of Specimen'
+			else:
+				strainLabel = 'Strain of Origin'
+
+			self.addColumn ('strainLabel', strainLabel, r,
+				self.finalColumns)
+			self.addColumn ('inheritanceMode', Gatherer.resolve (
+				r[modeCol]), r, self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -174,11 +187,12 @@ cmds = [
 	order by c.sequenceNum''',
 
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
-		ac.accID, ac._LogicalDB_key
-	from all_allele a, acc_accession ac
+		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key
+	from all_allele a, acc_accession ac, prb_strain s
 	where a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
 		and ac.preferred = 1 
+		and a._Strain_key = s._Strain_key
 		and ac.private = 0''',
 	]
 
@@ -188,6 +202,7 @@ fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
 	'isRecombinase', 'driver', 'inducibleNote', 'molecularDescription',
+	'strain', 'strainLabel', 'inheritanceMode',
 	]
 
 # prefix for the filename of the output file
