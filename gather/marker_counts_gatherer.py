@@ -20,6 +20,7 @@ AlleleCount = 'alleleCount'
 GOCount = 'goTermCount'
 AssayCount = 'gxdAssayCount'
 OrthologCount = 'orthologCount'
+GeneTrapCount = 'geneTrapCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -54,6 +55,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[4], GOCount, 'numGO'),
 			(self.results[5], AssayCount, 'numAssay'),
 			(self.results[6], OrthologCount, 'numOrtho'),
+			(self.results[7], GeneTrapCount, 'numGeneTraps'),
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -136,12 +138,26 @@ cmds = [
 			and h1._Organism_key = 1
 			and h2._Organism_key != 1
 		group by h1._Marker_key''',
+
+	# count of gene trap insertions for each marker (gene trap alleles
+	# which have at least one sequence with coordinates)
+	'''select ama._Marker_key, count(1) as numGeneTraps
+		from all_marker_assoc ama,
+			all_allele aa
+		where ama._Allele_key = aa._Allele_key
+			and aa._Allele_Type_key = 847121
+			and exists (select 1
+				from seq_allele_assoc saa,
+				    seq_coord_cache scc
+				where aa._Allele_key = saa._Allele_key
+				    and saa._Sequence_key = scc._Sequence_key)
+		group by ama._Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount, AlleleCount,
-	GOCount, AssayCount, OrthologCount, ]
+	GOCount, AssayCount, OrthologCount, GeneTrapCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_counts'
