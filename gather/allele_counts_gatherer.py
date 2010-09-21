@@ -10,11 +10,16 @@
 #	4. add the new fieldname to fieldOrder in the main program
 
 import Gatherer
+import logger
 
 ###--- Globals ---###
 
+error = 'allele_counts_gatherer.error'
+
 MarkerCount = 'markerCount'
 ReferenceCount = 'referenceCount'
+ExpressionCount = 'expressionAssayResultCount'
+ImageCount = 'imageCount'
 
 ###--- Classes ---###
 
@@ -35,40 +40,64 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 		# initialize dictionary for collecting data per allele
 		#	d[allele key] = { count type : count }
 		d = {}
-		keyCol = Gatherer.columnNumber (self.results[0][0],
-			'_Allele_key')
 		for row in self.results[0][1]:
-			d[row[keyCol]] = {}
+			d[row[0]] = {}
 
-		# marker counts
-		counts.append (MarkerCount)
+		# counts to add in this order, with each tuple being:
+		#	(set of results, count constant, count column)
 
-		keyCol = Gatherer.columnNumber (self.results[1][0],
-			'_Allele_key')
-		ctCol = Gatherer.columnNumber (self.results[1][0], 'mrkCount')
+		toAdd = [ (self.results[1], MarkerCount, 'mrkCount'),
+			(self.results[2], ReferenceCount, 'refCount'),
+			(self.results[3], ExpressionCount, 'expCount'),
+			]
 
-		for row in self.results[1][1]:
-			d[row[keyCol]][MarkerCount] = row[ctCol]
+		for (r, countName, colName) in toAdd:
+			logger.debug ('Processing %s, %d rows' % (countName,
+				len(r[1])) )
+			counts.append (countName)
+			keyCol = Gatherer.columnNumber (r[0], '_Allele_key')
+			countCol = Gatherer.columnNumber (r[0], colName)
 
-		# reference counts
-		counts.append (ReferenceCount)
+			for row in r[1]:
+				allele = row[keyCol]
+				if d.has_key(allele):
+					d[allele][countName] = row[countCol]
+				else:
+					raise error, \
+					'Unknown allele key: %d' % allele
 
-		keyCol = Gatherer.columnNumber (self.results[2][0],
-			'_Object_key')
-		ctCol = Gatherer.columnNumber (self.results[2][0], 'refCount')
+		# non-standard handling for images; we need to collect the
+		# image keys for each allele, then get the counts from there
 
-		for row in self.results[2][1]:
-			d[row[keyCol]][ReferenceCount] = row[ctCol]
+		columns, rows = self.results[4]
 
+		logger.debug ('Processing ImageCount, %d rows' % \
+			len(rows) )
 
-		# add other counts here...
+		allKeyCol = Gatherer.columnNumber (columns, '_Allele_key')
+		imgKeyCol = Gatherer.columnNumber (columns, '_Image_key')
 
-		# (see referenceCountsGatherer for a nice pattern to use)
+		# imagesPerAllele[allele key] = [ image keys ]
+		imagesPerAllele = {}
 
+		for row in rows:
+			allele = row[allKeyCol]
+			image = row[imgKeyCol]
 
+			if imagesPerAllele.has_key(allele):
+				if image not in imagesPerAllele[allele]:
+					imagesPerAllele[allele].append (image)
+			else:
+				imagesPerAllele[allele] = [ image ]
 
+		alleleKeys = imagesPerAllele.keys()
+		for allele in alleleKeys:
+			d[allele][ImageCount] = len(imagesPerAllele[allele]) 
 
+		counts.append (ImageCount)
+		
 		# compile the list of collated counts in self.finalResults
+
 		self.finalResults = []
 		alleleKeys = d.keys()
 		alleleKeys.sort()
@@ -88,8 +117,6 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
-# remember the %s at the end of each query, so we can do update-by-key when
-# needed
 cmds = [
 	# all alleles
 	'''select _Allele_key from all_allele''',
@@ -100,15 +127,43 @@ cmds = [
 		group by m._Allele_key''',
 
 	# count of references for each allele
-	'''select _Object_key, count(distinct _Refs_key) as refCount
+	'''select _Object_key as _Allele_key, 
+			count(distinct _Refs_key) as refCount
 		from mgi_reference_assoc
 		where _MGIType_key = 11
 		group by _Object_key''',
+
+	# count of expression assay results for each allele
+	'''select gag._Allele_key, count(distinct _Expression_key) as expCount
+		from gxd_allelegenotype gag,
+			gxd_expression ge
+		where gag._Genotype_key = ge._Genotype_key
+			and ge.isForGXD = 1
+		group by gag._Allele_key''',
+
+	# allele images by key (we count them in Python, since I didn't see
+	# an obvious way to handle the 'union' in a 'select count')
+	'''select ipa._Object_key as _Allele_key,
+			ip._Image_key
+		from img_imagepane_assoc ipa,
+			img_imagepane ip
+		where ipa._MGIType_key = 11
+			and ipa._ImagePane_key = ip._ImagePane_key
+	   union
+	   select gag._Allele_key,
+	   		ip._Image_key
+	   	from img_imagepane_assoc ipa,
+			img_imagepane ip,
+			gxd_allelegenotype gag
+		where gag._Genotype_key = ipa._Object_key
+			and ipa._MGIType_key = 12
+			and ipa._ImagePane_key = ip._ImagePane_key''', 
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ]
+fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, 
+		ImageCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'allele_counts'
