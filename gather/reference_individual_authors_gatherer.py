@@ -25,6 +25,52 @@ def cleanAuthorString (x):
 	x = re.sub ('[Hh][Tt][Tt][Pp]:[^,; ]+', '', x)
 	return x
 
+def formatAuthor (x):
+	# Purpose: to standardize the capitalization of author 'x', so that
+	#	any instances of 'x' with varying capitalization will be
+	#	represented by a single instance in the authors pick-list
+	# Returns: string, modified from 'x'
+	# Assumes: 'x' is a string and is non-None
+	# Modifies: nothing
+	# Throws: nothing
+	# Notes: The following rules apply for our standard capitalization:
+	#	1. 'x' will be split into multiple tokens on whitespace
+	#	2. the first letter of each token will be uppercase and the
+	#	   remaining letters will be lowercase, except:
+	#		a. if the last token has < 4 characters, it is assumed
+	#		   to be initials and will be all uppercase (unless
+	#		   2b applies)
+	#		b. if the last token is 'jr' or begins with a digit,
+	#		   then the last token gets only an initial capital
+	#		   and the next to last token is assumed to be
+	#		   initials (if < 4 characters) and will be all
+	#		   uppercase
+
+	if not x:
+		return x
+
+	tokens = map (lambda y : y.lower().capitalize(), x.split() )
+
+	lastToken = len(tokens) - 1
+
+	# if the last token has < 4 charcters and is 'Jr' or begins with a
+	# digit (like '3d', '4th'), then we need to look at the next to last
+	# token for initials
+
+	if len(tokens[lastToken]) < 4:
+		if (tokens[lastToken] == 'Jr') or \
+			(tokens[lastToken] == 'Jr.') or \
+			('0' <= tokens[lastToken][0] <= '9'):
+				lastToken = lastToken - 1
+	
+		# look to see if we need to uppercase an entire token as
+		# initials
+
+		if len(tokens[lastToken]) < 4:
+			tokens[lastToken] = tokens[lastToken].upper()
+
+	return ' '.join(tokens)
+
 ###--- Classes ---###
 
 class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
@@ -72,7 +118,7 @@ class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
 						isLast = 0
 
 					row = [ refsKey,
-						author,
+						formatAuthor(author),
 						seqNum,
 						isLast
 						]
