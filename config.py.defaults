@@ -14,6 +14,8 @@ LOG_DIR = INSTALL_DIR + 'logs/'
 
 CHUNK_SIZE = 100000		# number of records to process per chunk
 				# (for large tables we don't want in memory)
+IMSR_COUNT_TIMEOUT = 300        # seconds before timeout of IMSR web query
+IMSR_COUNT_URL = 'http://lindon.informatics.jax.org:18080/imsr/fetch?page=imsrReport&report=mgiCounts'
 
 ###--- parallelization options ---###
 
