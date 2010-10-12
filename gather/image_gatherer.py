@@ -73,6 +73,17 @@ class ImageGatherer (Gatherer.Gatherer):
 			else:
 				dict[key] = row[noteCol]
 
+		# cache the MGI ID for each image from query 3
+
+		self.mgiID = {}		# mgiID[image key] = MGI ID
+
+		(columns, rows) = self.results[3]
+		keyCol = Gatherer.columnNumber (columns, '_Object_key')
+		idCol = Gatherer.columnNumber (columns, 'accID')
+
+		for row in rows:
+			self.mgiID[row[keyCol]] = row[idCol]
+
 		# the last query has the bulk of the output data set
 
 		self.finalColumns = self.results[-1][0]
@@ -97,6 +108,7 @@ class ImageGatherer (Gatherer.Gatherer):
 			id = None
 			copyright = None
 			caption = None
+			mgiID = None
 
 			if self.myThumb.has_key(key):
 				thumb = self.myThumb[key]
@@ -109,6 +121,9 @@ class ImageGatherer (Gatherer.Gatherer):
 
 			if self.pixID.has_key(key):
 				id = self.pixID[key]
+
+			if self.mgiID.has_key(key):
+				mgiID = self.mgiID[key]
 
 			if self.copyright.has_key(key):
 				copyright = self.copyright[key]
@@ -125,6 +140,8 @@ class ImageGatherer (Gatherer.Gatherer):
 			self.addColumn ('imageType', Gatherer.resolve (
 				row[typeCol]), row, self.finalColumns)
 			self.addColumn ('pixNumeric', id, row,
+				self.finalColumns)
+			self.addColumn ('mgiID', mgiID, row,
 				self.finalColumns)
 			self.addColumn ('copyright', copyright, row,
 				self.finalColumns)
@@ -149,6 +166,11 @@ cmds = [
 			and n._Note_key = nc._Note_key
 		order by nc.sequenceNum''',
 
+	'''select _Object_key, accID
+		from acc_accession
+		where _MGIType_key = 9 and _LogicalDB_key = 1
+			and preferred = 1''',
+
 	'''select _Image_key, xDim, yDim, _Refs_key, figureLabel,
 			_ImageType_key
 		from img_image''',
@@ -158,7 +180,7 @@ cmds = [
 # output file
 fieldOrder = [ '_Image_key', '_Refs_key', 'thumbnailKey', 'fullsizeKey',
 		'isThumbnail', 'xDim', 'yDim', 'figureLabel', 'imageType',
-		'pixNumeric', 'copyright', 'caption',
+		'pixNumeric', 'mgiID', 'copyright', 'caption',
 	]
 
 # prefix for the filename of the output file
