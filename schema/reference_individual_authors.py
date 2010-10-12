@@ -14,7 +14,7 @@ tableName = 'reference_individual_authors'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int NOT NULL,
 	reference_key 	int NOT NULL,
-	author    	varchar(255) NULL,
+	author    	varchar(510) NULL,
 	sequence_num	int NOT NULL,
 	is_last		int NOT NULL,
 	PRIMARY KEY(unique_key))''' % tableName
