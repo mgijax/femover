@@ -25,8 +25,9 @@ createStatement = '''CREATE TABLE %s  (
 	jnum_id       	varchar(30) NULL,
 	jnum_numeric    int NULL,
 	pubmed_id	varchar(30) NULL,
-	citation    	varchar(255) NULL,
-	short_citation 	varchar(255) NULL,
+	mini_citation  	varchar(765) NULL,
+	short_citation 	varchar(765) NULL,
+	long_citation  	varchar(2040) NULL,
 	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
