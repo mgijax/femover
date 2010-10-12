@@ -30,10 +30,11 @@ import getopt
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s|-x]
+USAGE = '''Usage: %s [-a|-c|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-c : Cre
+	-h : IMSR counts (via HTTP)
 	-i : Images
 	-m : Markers
 	-p : Probes
@@ -41,6 +42,7 @@ USAGE = '''Usage: %s [-a|-c|-i|-m|-p|-r|-s|-x]
 	-r : References
 	-v : Vocabularies
 	-x : GXD Literature Index
+	-G : run a single, specified gatherer (useful for testing)
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
@@ -93,6 +95,8 @@ GXD_INDEX = [ 'expression_index', 'expression_index_stages',
 	]
 IMAGES = [ 'image',
 	]
+IMSR = [ 'imsr',
+	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
 		'marker_orthology', 'marker_location', 'marker_counts',
@@ -108,7 +112,7 @@ REFERENCES = [ 'reference', 'reference_abstract', 'reference_book',
 SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_gene_trap', 'sequence_id', 'sequence_location',
 		'sequence_source', 'sequence_sequence_num',
-		'sequence_clone_collection',
+		'sequence_clone_collection', 'sequence_provider_map',
 	]
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
@@ -124,6 +128,7 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : GXD_INDEX,
+	'-h' : IMSR,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
