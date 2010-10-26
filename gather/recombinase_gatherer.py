@@ -49,6 +49,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		sysCol = Gatherer.columnNumber (cols, 'system')
+		systemKeyCol = Gatherer.columnNumber (cols, '_System_key')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
 		expCol = Gatherer.columnNumber (cols, 'expressed')
 
@@ -76,7 +77,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				alleleSystemMap[key] = { system : i }
 
-			out.append ( (i, key, row[idCol], row[sysCol]) )
+			out.append ( (i, key, row[idCol], row[sysCol],
+				row[systemKeyCol]) )
 
 			# add this allele/system pair to either the list of
 			# affected systems or unaffected systems
@@ -97,7 +99,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			lastKey = key
 
 		columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
-			'system' ]
+			'system', 'systemKey', ]
 
 		logger.debug ('Found %d allele/system pairs' % i)
 		logger.debug ('Found %d alleles' % len(alleleData))
@@ -529,7 +531,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 cmds = [
 	# all allele / system pairs; order by logical db to prioritize MGI IDs
 	'''select distinct c._Allele_key, a.accID, c.system, a._LogicalDB_key,
-		c.symbol, c.expressed
+		c.symbol, c.expressed, c._System_key
 	from all_cre_cache c,
 		acc_accession a
 	where c._Allele_key = a._Object_key
@@ -639,7 +641,8 @@ cmds = [
 #	names in order to be written, name of table to be loaded)
 files = [
 	('recombinase_allele_system',
-		[ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system' ],
+		[ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system',
+			'systemKey', ],
 		'recombinase_allele_system'),
 
 	('recombinase_other_system',
