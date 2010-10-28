@@ -109,9 +109,16 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 
 		counts.append (DRIVER)
 
+		# when sorting by driver, we need a two-level sort:
+		#	1. driver, alphanumerically
+		#	2. allele symbol (when driver matches)
+
 		byDriver = []
 		for row in self.results[3][1]:
-			byDriver.append ( (row[driverCol], row[keyCol]) )
+			alleleKey = row[keyCol]
+			symbolOrder = dict[alleleKey][1]
+			byDriver.append ( (row[driverCol], symbolOrder,
+				alleleKey) )
 		byDriver.sort()
 
 		allKeys = {}
@@ -119,7 +126,7 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 			allKeys[key] = 1
 
 		i = 1
-		for (driver, alleleKey) in byDriver:
+		for (driver, symbolOrder, alleleKey) in byDriver:
 			# if we've already seen an earlier driver for this
 			# allele, then skip it
 
