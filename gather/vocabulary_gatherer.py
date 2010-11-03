@@ -258,6 +258,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			else:
 				defs[key] = row[noteCol]
 
+		# trim trailing whitespace
+
+		for key in defs.keys():
+			defs[key] = defs[key].rstrip()
+
 		logger.debug ('Cached %d term definitions' % len(defs))
 		return defs
 
