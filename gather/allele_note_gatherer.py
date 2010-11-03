@@ -46,9 +46,11 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 			noteTypes = m[alleleKey].keys()
 			noteTypes.sort()
 
+			# make sure to trim off trailing whitespace
+
 			for noteType in noteTypes:
 				row = [ alleleKey, noteType,
-					m[alleleKey][noteType] ]
+					m[alleleKey][noteType].rstrip() ]
 				self.finalResults.append (row)
 		return
 
