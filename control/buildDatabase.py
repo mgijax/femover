@@ -669,6 +669,43 @@ def checkForFinishedIndexes():
 		dbInfoTable.setInfo ('status', 'finished indexing')
 	return
 
+def getMgiDbInfo():
+	# Purpose: get data about our source database and drop it into the
+	#	dbInfoTable
+	# Returns: nothing
+	# Assumes: we can read from the source database, write to the target
+	#	datqabase, etc.
+	# Modifies: the target database
+	# Throws: propagates 'error' if problems occur in updating dbInfoTable
+
+	dbInfoDispatcher = Dispatcher.Dispatcher()
+	id = dbInfoDispatcher.schedule (os.path.join (config.CONTROL_DIR,
+		'reportMgiDbInfo.py'))
+	dbInfoDispatcher.wait()
+
+	dbDate = 'unknown'
+	pubVersion = 'unknown'
+	schemaVersion = 'unknown' 
+
+	if not dbInfoDispatcher.getReturnCode(id):
+		for line in dbInfoDispatcher.getStdout(id):
+			line = line.strip()
+			items = line.split()
+			fieldname = items[0]
+			value = ' '.join(items[1:])
+
+			if fieldname == 'lastdump_date':
+				dbDate = value
+			elif fieldname == 'public_version':
+				pubVersion = value
+			elif fieldname == 'schema_version':
+				schemaVersion = value
+	
+	dbInfoTable.setInfo ('built from mgd database date', dbDate)
+	dbInfoTable.setInfo ('built from mgd schema version', schemaVersion)
+	dbInfoTable.setInfo ('built from mgd public version', pubVersion)
+	return
+
 def main():
 	# Purpose: main program (main logic of the script)
 	# Returns: nothing
@@ -714,6 +751,9 @@ def main():
 		checkForFinishedIndexes()
 		dispatcherReport()
 		time.sleep(0.5)
+
+	# while waiting, pick up select contents of MGI_dbInfo
+	getMgiDbInfo()
 
 	GATHER_DISPATCHER.wait()
 	CONVERT_DISPATCHER.wait()
