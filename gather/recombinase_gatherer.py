@@ -206,6 +206,11 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 				alleleComp[key] = r[noteCol]
 				strain[key] = r[strainCol]
 
+		# trim trailing whitespace from allelic composition notes
+
+		for key in alleleComp.keys():
+			alleleComp[key] = alleleComp[key].rstrip()
+
 		logger.debug ('Found %d genotypes' % len(strain))
 		return alleleComp, strain
 
