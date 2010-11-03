@@ -46,9 +46,10 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 			noteTypes = m[markerKey].keys()
 			noteTypes.sort()
 
+			# trim trailing whitespace from notes
 			for noteType in noteTypes:
 				row = [ markerKey, noteType,
-					m[markerKey][noteType] ]
+					m[markerKey][noteType].rstrip() ]
 				self.finalResults.append (row)
 		return
 
