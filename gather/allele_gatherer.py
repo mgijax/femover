@@ -59,6 +59,11 @@ class AlleleGatherer (Gatherer.Gatherer):
 			else:
 				self.inducible[key] = row[noteCol]
 
+		# trim trailing whitespace
+
+		for key in self.inducible.keys():
+			self.inducible[key] = self.inducible[key].rstrip()
+
 		logger.debug('Found %d inducible notes' % len(self.inducible))
 
 		# extract molecular description from the fourth query and
@@ -76,6 +81,11 @@ class AlleleGatherer (Gatherer.Gatherer):
 					row[noteCol]
 			else:
 				self.molNote[key] = row[noteCol]
+
+		# trim trailing whitespace
+
+		for key in self.molNote.keys():
+			self.molNote[key] = self.molNote[key].rstrip()
 
 		logger.debug('Found %d molecular notes' % len(self.molNote))
 
