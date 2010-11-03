@@ -125,11 +125,13 @@ class ImageGatherer (Gatherer.Gatherer):
 			if self.mgiID.has_key(key):
 				mgiID = self.mgiID[key]
 
+			# trim trailing whitespace from notes fields
+
 			if self.copyright.has_key(key):
-				copyright = self.copyright[key]
+				copyright = self.copyright[key].rstrip()
 
 			if self.caption.has_key(key):
-				caption = self.caption[key]
+				caption = self.caption[key].rstrip()
 
 			self.addColumn ('thumbnailKey', thumb, row,
 				self.finalColumns)
