@@ -173,16 +173,18 @@ cmds = [
 		where _MGIType_key = 9 and _LogicalDB_key = 1
 			and preferred = 1''',
 
-	'''select _Image_key, xDim, yDim, _Refs_key, figureLabel,
-			_ImageType_key
-		from img_image''',
+	# this works because img_image._Refs_key is non-null in mgd
+	'''select i._Image_key, i.xDim, i.yDim, i._Refs_key, i.figureLabel,
+			i._ImageType_key, r.jnumID
+		from img_image i, bib_citation_cache r
+		where i._Refs_key = r._Refs_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Image_key', '_Refs_key', 'thumbnailKey', 'fullsizeKey',
 		'isThumbnail', 'xDim', 'yDim', 'figureLabel', 'imageType',
-		'pixNumeric', 'mgiID', 'copyright', 'caption',
+		'pixNumeric', 'mgiID', 'jnumID', 'copyright', 'caption',
 	]
 
 # prefix for the filename of the output file
