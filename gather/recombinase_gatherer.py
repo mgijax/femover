@@ -37,10 +37,14 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 	def findAlleleSystemPairs (self):
 		# Purpose: processes query 0 to identify allele/system pairs
-		# Returns: alleleSystemMap, alleleData, columns, rows
+		# Returns: alleleSystemMap, alleleData, columns, rows,
+		#	systemKeys
 
 		# alleleSystemMap[allele key] = {system : all/sys key}
 		alleleSystemMap = {}
+
+		# systemKeys[system name] = system key
+		systemKeys = {}
 
 		# query 0 - defines allele / system pairs.  We need to number
 		# these and store them in data set 0
@@ -89,6 +93,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				unaffected.append (triple)
 
+			# if we've not seen this system before, we need to
+			# cache its key
+
+			if system and (not systemKeys.has_key(system)):
+				systemKeys[system] = row[systemKeyCol]
+
 			# if this is not the same as the last allele, then
 			# we need to cache its ID and symbol
 
@@ -103,11 +113,13 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d allele/system pairs' % i)
 		logger.debug ('Found %d alleles' % len(alleleData))
+		logger.debug ('Found %d systems' % len(systemKeys))
 
 		return alleleSystemMap, alleleData, columns, out, \
-			affectedCols, affected, unaffectedCols, unaffected
+			affectedCols, affected, unaffectedCols, unaffected, \
+			systemKeys
 
-	def findOtherSystems (self, alleleSystemMap):
+	def findOtherSystems (self, alleleSystemMap, alleleData, systemKeys):
 		# Purpose: processes 'alleleSystemMap' to find other systems
 		#	involved with the allele for each allele/system pair
 		#	(does not touch query results in self.results)
@@ -124,21 +136,27 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			systems = alleleSystemMap[allele].keys()
 			systems.sort()
 
+			alleleID = alleleData[allele][0]
+
 			for (system, otherSystems) in explode(systems):
 				alleleSystemKey = \
 					alleleSystemMap[allele][system]
 				for otherSystem in otherSystems:
+				    if otherSystem:
 					i = i + 1
+					systemKey = systemKeys[otherSystem]
 					out.append ( (i, alleleSystemKey,
-						otherSystem) )
+						alleleID, otherSystem,
+						systemKey) )
 
-		columns = [ 'uniqueKey', 'alleleSystemKey', 'system' ]
+		columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleID',
+				'system', 'systemKey' ]
 
 		logger.debug ('Found %d other systems' % i)
 
 		return columns, out
 
-	def findOtherAlleles (self, alleleSystemMap, alleleData):
+	def findOtherAlleles (self, alleleSystemMap, alleleData, systemKeys):
 		# Purpose: processes 'alleleSystemMap' to find other alleles
 		#	involved with the system for each allele/system pair
 		#	(does not touch query results in self.results)
@@ -164,6 +182,11 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		for system in bySystem.keys():
 			alleles = bySystem[system]
+			if system:
+				systemKey = systemKeys[system]
+			else:
+				systemKey = None
+
 			for (allele, otherAlleles) in explode(alleles):
 				alleleSystemKey = \
 					alleleSystemMap[allele][system]
@@ -176,10 +199,11 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 						other,
 						alleleData[other][0],
 						alleleData[other][1],
+						systemKey
 						) )
 
 		columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleKey',
-				'alleleID', 'alleleSymbol', ]
+				'alleleID', 'alleleSymbol', 'systemKey', ]
 
 		logger.debug ('Found %d other alleles' % i)
 
@@ -490,19 +514,21 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		# step 1 -- recombinase_allele_system table
 
 		alleleSystemMap, alleleData, columns, rows, \
-		affectedCols, affected, unaffectedCols, unaffected = \
-			self.findAlleleSystemPairs()
+			affectedCols, affected, unaffectedCols, unaffected, \
+			systemKeys = self.findAlleleSystemPairs()
+		logger.debug ('Systems: %s' % ', '.join(systemKeys.keys()))
 		self.output.append ( (columns, rows) )
 
 		# step 2 -- recombinase_other_system table
 
-		columns, rows = self.findOtherSystems (alleleSystemMap)
+		columns, rows = self.findOtherSystems (alleleSystemMap,
+			alleleData, systemKeys)
 		self.output.append ( (columns, rows) )
 
 		# step 3 -- recombinase_other_allele table
 
 		columns, rows = self.findOtherAlleles (alleleSystemMap,
-			alleleData)
+			alleleData, systemKeys)
 		self.output.append ( (columns, rows) )
 
 		# step 4 -- recombinase_assay_result table
@@ -615,7 +641,7 @@ cmds = [
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
 		r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
-		b.jnumID
+		b.jnumID, c._System_key
 	from all_cre_cache c,
 		gxd_assay a,
 		gxd_specimen s,
@@ -651,12 +677,13 @@ files = [
 		'recombinase_allele_system'),
 
 	('recombinase_other_system',
-		[ 'uniqueKey', 'alleleSystemKey', 'system' ],
+		[ 'uniqueKey', 'alleleSystemKey', 'alleleID', 'system',
+			'systemKey', ],
 		'recombinase_other_system'),
 
 	('recombinase_other_allele',
 		[ 'uniqueKey', 'alleleSystemKey', 'alleleKey', 'alleleID',
-			'alleleSymbol', ],
+			'alleleSymbol', 'systemKey' ],
 		'recombinase_other_allele'),
 
 	('recombinase_assay_result',
