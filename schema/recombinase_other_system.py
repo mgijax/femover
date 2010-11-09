@@ -16,7 +16,9 @@ tableName = 'recombinase_other_system'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	allele_system_key	int		not null,
-	system			varchar(255)	null,
+	allele_id		varchar(30)	null,
+	other_system		varchar(255)	null,
+	other_system_key	int		null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
