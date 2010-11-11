@@ -13,6 +13,17 @@ TYPE = 'alleleType'
 ID = 'alleleID'
 DRIVER = 'driver'
 
+###--- Functions ---###
+
+def driverCompare (a, b):
+	# assumes a and b both contain:
+	#	(driver text, symbol sort integer, allele key)
+
+	res = symbolsort.nomenCompare(a[0], b[0])
+	if res == 0:
+		return cmp(a[1], b[1])
+	return res
+
 ###--- Classes ---###
 
 class AlleleSequenceNumGatherer (Gatherer.Gatherer):
@@ -119,7 +130,7 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 			symbolOrder = dict[alleleKey][1]
 			byDriver.append ( (row[driverCol], symbolOrder,
 				alleleKey) )
-		byDriver.sort()
+		byDriver.sort(driverCompare)
 
 		allKeys = {}
 		for key in dict.keys():
