@@ -14,12 +14,14 @@
 #	record separators
 # 3. convert FreeTDS tabs to traditional tab characters
 
-sed 's/\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\).[0-9][0-9][0-9]/\1/g' $1 | \
-postgresTextCleaner.py | \
+#sed 's/\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\).[0-9][0-9][0-9]/\1/g' $1 | \
+#postgresTextCleaner.py | \
 #sed 's/	/\\	/g' | \
 #sed 's/$/\\/g' | \
 #sed 's/#=#\\$//g' | \
-sed 's/&=&/	/g' > $1.new
+#sed 's/&=&/	/g' > $1.new
+
+cat $1 | postgresTextCleaner.py > $1.new
 
 # replace the original file
 rm $1
