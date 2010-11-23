@@ -20,10 +20,14 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 			'_Sequence_key')
 		libraryCol = Gatherer.columnNumber (self.results[0][0],
 			'rawLibrary')
+		organismCol = Gatherer.columnNumber (self.results[0][0],
+			'rawOrganism')
 
-		libraryDict = {}
+		rawLibraries = {}
+		organismDict = {}
 		for row in self.results[0][1]:
-			libraryDict[row[seqKeyCol]] = row[libraryCol]
+			rawLibraries[row[seqKeyCol]] = row[libraryCol]
+			organismDict[row[seqKeyCol]] = row[organismCol]
 
 		# build a dictionary of accession info
 
@@ -40,6 +44,17 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				'_LogicalDB_key', 'name')
 			accDict[row[seqKeyCol]] = (row[accCol], ldb)
 
+		# pick up the resolved library names
+
+		seqKeyCol = Gatherer.columnNumber (self.results[2][0],
+			'_Sequence_key')
+		libraryCol = Gatherer.columnNumber (self.results[2][0],
+			'library')
+
+		resolvedLibraries = {}
+		for row in self.results[2][1]:
+			resolvedLibraries[row[seqKeyCol]] = row[libraryCol]
+
 		# merge into a final results set
 
 		self.finalColumns = self.results[-1][0]
@@ -49,17 +64,44 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 
 		seqKeyCol = Gatherer.columnNumber (self.finalColumns,
 			'_Sequence_key')
+		organismCol = Gatherer.columnNumber (self.finalColumns,
+			'_Organism_key')
 
 		for row in self.finalResults:
 			seqKey = row[seqKeyCol]
 
-			if libraryDict.has_key(seqKey):
-				library = libraryDict[seqKey]
-			else:
-				library = None
+			# prefer resolved library, then raw library
 
-			self.addColumn ('rawLibrary', library,
+			library = None
+			if resolvedLibraries.has_key(seqKey):
+				library = resolvedLibraries[seqKey]
+
+			if (not library) or (library == 'Not Resolved'):
+				if rawLibraries.has_key(seqKey):
+					if rawLibraries[seqKey] == None:
+						library = ''
+					else:
+						library = rawLibraries[seqKey] + '*'
+
+			self.addColumn ('library', library,
 				row, self.finalColumns)
+
+			# prefer resolved organism, then raw organism
+
+			organism = None
+			if row[organismCol]:
+				organism = Gatherer.resolve (row[organismCol],
+					'mgi_organism', '_Organism_key',
+					'commonName')
+
+			if (not organism) or (organism == 'Not Resolved'):
+				if organismDict.has_key(seqKey):
+					organism = organismDict[seqKey] + '*'
+
+			self.addColumn ('organism', organism, row,
+				self.finalColumns)
+
+			# primary accession ID and logicalDB
 
 			if accDict.has_key(seqKey):
 				accID, ldb = accDict[seqKey]
@@ -85,8 +127,6 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 			'_SequenceStatus_key')
 		providerCol = Gatherer.columnNumber (self.finalColumns,
 			'_SequenceProvider_key')
-		organismCol = Gatherer.columnNumber (self.finalColumns,
-			'_Organism_key')
 
 		for r in self.finalResults:
 
@@ -100,13 +140,6 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				r[statusCol]), r, self.finalColumns)
 			self.addColumn ('provider', Gatherer.resolve(
 				r[providerCol]), r, self.finalColumns)
-
-			# lookups from other tables
-
-			self.addColumn ('organism', Gatherer.resolve (
-				r[organismCol], 'mgi_organism',
-				'_Organism_key', 'commonName'),
-				r, self.finalColumns)
 		return
 
 	def getMinKeyQuery (self):
@@ -132,7 +165,8 @@ cmds = [
 	# queries and will then join the results in code
 
 	'''select _Sequence_key,
-		rawLibrary
+		rawLibrary,
+		rawOrganism
 	from seq_sequence_raw
 	where _Sequence_key >= %d and _Sequence_key < %d''',
 
@@ -143,6 +177,12 @@ cmds = [
 	where _MGIType_key = 19
 		and preferred = 1
 		and _Object_key >= %d and _Object_key < %d''',
+
+	'''select ssa._Sequence_key, ps.name as library
+	from seq_source_assoc ssa,
+		prb_source ps
+	where ssa._Sequence_key >= %d and ssa._Sequence_key < %d
+		and ssa._Source_key = ps._Source_key''',
 
 	'''select s._Sequence_key,
 		s._SequenceType_key,
@@ -168,7 +208,7 @@ fieldOrder = [
 	'_Sequence_key', 'sequenceType', 'quality', 'status', 'provider',
 	'organism', 'length', 'description', 'version', 'division',
 	'isVirtual', 'sequenceDate', 'seqrecordDate', 'accID',
-	'logicalDB', 'rawLibrary',
+	'logicalDB', 'library',
 	]
 
 # prefix for the filename of the output file
