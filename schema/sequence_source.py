@@ -13,11 +13,11 @@ tableName = 'sequence_source'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		NOT NULL,
 	sequence_key	int		NOT NULL,
-	strain		varchar(255)	NULL,
-	tissue		varchar(80)	NULL,
-	age		varchar(50)	NULL,
-	sex		varchar(100)	NULL,
-	cell_line	varchar(100)	NULL,
+	strain		varchar(256)	NULL,
+	tissue		varchar(256)	NULL,
+	age		varchar(256)	NULL,
+	sex		varchar(256)	NULL,
+	cell_line	varchar(256)	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
