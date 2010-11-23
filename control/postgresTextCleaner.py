@@ -31,11 +31,12 @@ ACCEPTABLE_CHARACTERS = string.digits + string.letters + \
 # number of subprocesses to use
 SUBPROC_COUNT = 4
 
-# debugging on or off?
+# debugging on or off?	(only turn on for interactive debugging; the
+# buildDatabase.py script will hang if this is turned on)
 DEBUG = False
 
-OVER = 'Over'
-QUIT = 'Quit'
+OVER = '&&Over&&'
+QUIT = '&&Quit&&'
 
 START_TIME = time.time()
 
@@ -45,9 +46,16 @@ def debug (s):
 	sys.stderr.write ('%6.3f : %s\n' % (time.time() - START_TIME, s) )
 	return
 
+childfp = None
 def childDebug (s):
+	global childfp
 	if not DEBUG:
 		return
+
+	if not childfp:
+		childfp = open('%s.log' % os.getpid(), 'w')
+	childfp.write(s + '\n')
+	childfp.flush()
 	return
 
 def cleanLines(lines):
@@ -81,6 +89,13 @@ def cleanLines(lines):
 	
 		cleanLine = cleanLine + line[last:lineLength]
 
+		# do conversion of tab characters and removal of milliseconds
+		# (formerly done with sed)
+
+		cleanLine = re.sub ('&=&', '\t', cleanLine)
+		cleanLine = re.sub('([0-9]{2}:[0-9]{2}:[0-9]{2})\.[0-9]{3}',
+			'\\1', cleanLine)
+
 		# if this input line finishes a record, then we need to see if
 		# it is the conclusion of a multi-line record or if it is a
 		# one-line record and write it out correctly in either case
@@ -110,6 +125,7 @@ def cleanLines(lines):
 	return output
 
 def childMain():
+	global childfp
 	sys.stdout.write (OVER + '\n')
 	sys.stdout.flush()
 	childDebug ('Child sent initial OVER signal')
@@ -121,6 +137,8 @@ def childMain():
 		while not line.startswith(OVER):
 			if line.startswith(QUIT):
 				childDebug ('Subprocess received QUIT signal')
+				if childfp:
+					childfp.close()
 				return
 			lines.append (line)
 			line = sys.stdin.readline()
@@ -201,33 +219,46 @@ def parentMain():
 	bucketSize = cacheSize / SUBPROC_COUNT
 	maxBucket = SUBPROC_COUNT - 1
 
-	i = 0
-	ct = 0
-	pn = 0
+	i = 0			# total number of lines sent for cleaning
+	ct = 0			# number of lines cached in buckets so far
+	pn = 0			# bucket number being filled currently
 	recordEnded = True
 
 	line = sys.stdin.readline()
 	while line:
+		# if our current bucket is already full and our last record
+		# ended appropriately (this line is not a continuation), then
+		# move on to start filling the next bucket
+
 		if (len(buckets[pn]) >= bucketSize) and recordEnded:
 			if pn < maxBucket:
 				pn = pn + 1
-				debug ('filling bucket %d' % pn)
+				debug ('filling bucket %d, line %d' % (pn, i))
 
 		buckets[pn].append (line)
 
 		i = i + 1
 		ct = ct + 1
 
-		if ct >= cacheSize:
-			subprocIO (buckets, processes)
-			debug ('Total lines sent: %d' % i)
-			ct = 0
-			pn = 0
+		# determine if this line ends a record (True) or if it is
+		# "to be continued" on the next line (False)
 
 		if line[-4:-1] == '#=#':
 			recordEnded = True
 		else:
 			recordEnded = False
+
+		# if our current line is the end of a record and if this line
+		# hits our maximum cache size, then send the buckets out to
+		# the subprocesses and collect their output from the prior
+		# batch
+
+		if recordEnded and (ct >= cacheSize):
+			subprocIO (buckets, processes)
+			debug ('Total lines sent: %d' % i)
+			ct = 0		# buckets start empty again
+			pn = 0		# start over with the first bucket
+			debug ('start bucket 0 at line %d' % (i+1))
 
 		line = sys.stdin.readline() 
 	debug ('Finished reading data: %d lines' % i)
