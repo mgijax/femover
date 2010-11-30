@@ -240,6 +240,9 @@ class ReferenceGatherer (Gatherer.Gatherer):
 		title2Col = Gatherer.columnNumber (self.finalColumns,
 			'title2')
 
+		pubmedCol = Gatherer.columnNumber (self.finalColumns,
+			'pubmedID')
+
 		for r in self.finalResults:
 			# combine two partial authors fields
 
@@ -291,6 +294,13 @@ class ReferenceGatherer (Gatherer.Gatherer):
 				self.finalColumns)
 			self.addColumn ('longCitation', longCitation, r,
 				self.finalColumns)
+
+			# clean up PubMed IDs which are the string "null"
+			# rather than a null value
+
+			if (r[pubmedCol] != None) and \
+				(r[pubmedCol].lower() == 'null'):
+					r[pubmedCol] = None
 		return
 
 ###--- globals ---###
