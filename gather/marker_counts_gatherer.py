@@ -18,9 +18,30 @@ ReferenceCount = 'referenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
 GOCount = 'goTermCount'
-AssayCount = 'gxdAssayCount'
 OrthologCount = 'orthologCount'
 GeneTrapCount = 'geneTrapCount'
+GxdAssayCount = 'gxdAssayCount'
+GxdResultCount = 'gxdResultCount'
+GxdLiteratureCount = 'gxdLiteratureCount'
+GxdTissueCount = 'gxdTissueCount'
+GxdImageCount = 'gxdImageCount'
+MappingCount = 'mappingCount'
+SequenceRefSeqCount = 'seqRefSeqCount'
+SequenceUniprotCount = 'seqUniprotCount'
+CdnaSourceCount = 'cDNASourceCount'
+MicroarrayCount = 'microarrayCount'
+PolymorphismCount = 'polymorphismCount'
+PolymorphismPcrCount = 'polymorphismPcrCount'
+PolymorphismRflpCount = 'polymorphismRflpCount' 
+PhenotypeImageCount = 'phenotypeImageCount'
+HumanDiseaseCount = 'humanDiseaseCount'
+AllelesWithDiseaseCount = 'allelesWithHumanDiseasesCount'
+ReagentsNucleicCount = 'reagentsNucleicCount'
+ReagentsGenomicCount = 'reagentsGenomicCount'
+ReagentsCdnaCount = 'reagentsCdnaCount'
+ReagentsPrimerPairCount = 'reagentsPrimerPairCount'
+ReagentsOtherCount = 'reagentsOtherCount'
+ReagentsAntibodyCount = 'reagentsAntibodyCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -53,9 +74,35 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[2], SequenceCount, 'numSeq'),
 			(self.results[3], AlleleCount, 'numAll'),
 			(self.results[4], GOCount, 'numGO'),
-			(self.results[5], AssayCount, 'numAssay'),
+			(self.results[5], GxdAssayCount, 'numAssay'),
 			(self.results[6], OrthologCount, 'numOrtho'),
 			(self.results[7], GeneTrapCount, 'numGeneTraps'),
+			(self.results[8], GxdResultCount, 'resultCount'),
+			(self.results[9], GxdLiteratureCount, 'indexCount'),
+			(self.results[10], GxdTissueCount, 'tissueCount'),
+			(self.results[11], GxdImageCount, 'paneCount'),
+			(self.results[12], MappingCount, 'mappingCount'),
+			(self.results[13], SequenceRefSeqCount, 'numSeq'),
+			(self.results[14], SequenceUniprotCount, 'numSeq'),
+			(self.results[15], CdnaSourceCount, 'cdnaCount'),
+			(self.results[16], MicroarrayCount, 'affyCount'),
+			(self.results[17], PolymorphismCount, 'numPoly'),
+			(self.results[18], PolymorphismPcrCount, 'numPcr'),
+			(self.results[19], PolymorphismRflpCount, 'numRflv'),
+			(self.results[20], PhenotypeImageCount, 'imageCount'),
+			(self.results[21], HumanDiseaseCount, 'diseaseCount'),
+			(self.results[22], AllelesWithDiseaseCount,
+				'alleleCount'),
+			(self.results[23], ReagentsNucleicCount,
+				'probeCount'),
+			(self.results[24], ReagentsGenomicCount,
+				'probeCount'),
+			(self.results[25], ReagentsCdnaCount, 'probeCount'),
+			(self.results[26], ReagentsPrimerPairCount,
+				'probeCount'),
+			(self.results[27], ReagentsOtherCount, 'probeCount'),
+			(self.results[28], ReagentsAntibodyCount,
+				'antibodyCount'),
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -93,24 +140,22 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
-# remember the %s at the end of each query, so we can do update-by-key when
-# needed
 cmds = [
-	# all markers
+	# 0. all markers
 	'''select _Marker_key
 		from mrk_marker''',
 
-	# count of references for each marker
+	# 1. count of references for each marker
 	'''select _Marker_key, count(1) as numRef
 		from mrk_reference
 		group by _Marker_key''',
 
-	# count of sequences for each marker
+	# 2. count of sequences for each marker
 	'''select _Marker_key, count(1) as numSeq
 		from seq_marker_cache
 		group by _Marker_key''',
 
-	# count of alleles for each marker
+	# 3. count of alleles for each marker
 	'''select m._Marker_key, count(1) as numAll
 		from all_marker_assoc m, voc_term t, all_allele a
 		where m._Status_key = t._Term_key
@@ -119,18 +164,18 @@ cmds = [
 			and a.isWildType != 1
 		group by m._Marker_key''',
 
-	# count of GO terms for each marker
+	# 4. count of GO terms for each marker
 	'''select _Object_key as _Marker_key, count(1) as numGO
 		from voc_annot
 		where _AnnotType_key = 1000
 		group by _Object_key''',
 
-	# count of expression assays for each marker
+	# 5. count of expression assays for each marker
 	'''select _Marker_key, count(_Assay_key) as numAssay
 		from gxd_assay
 		group by _Marker_key''',
 
-	# count of orthologs for each marker
+	# 6. count of orthologs for each marker
 	'''select h1._Marker_key, count(distinct h2._Organism_key) as numOrtho
 		from mrk_homology_cache h1,
 			mrk_homology_cache h2
@@ -139,7 +184,7 @@ cmds = [
 			and h2._Organism_key != 1
 		group by h1._Marker_key''',
 
-	# count of gene trap insertions for each marker (gene trap alleles
+	# 7. count of gene trap insertions for each marker (gene trap alleles
 	# which have at least one sequence with coordinates)
 	'''select ama._Marker_key, count(1) as numGeneTraps
 		from all_marker_assoc ama,
@@ -152,12 +197,212 @@ cmds = [
 				where aa._Allele_key = saa._Allele_key
 				    and saa._Sequence_key = scc._Sequence_key)
 		group by ama._Marker_key''',
+
+	# 8. count of GXD results for each marker
+	'''select _Marker_key, count(distinct _Expression_key) as resultCount
+		from gxd_expression
+		where isForGXD = 1
+		group by _Marker_key''',
+
+	# 9. count of GXD Index entries for each marker
+	'''select _Marker_key, count(1) as indexCount
+		from gxd_index
+		group by _Marker_key''',
+
+	# 10. count of tissues associated with each marker
+	'''select _Marker_key, count(distinct _Structure_key) as tissueCount
+		from gxd_expression
+		where isForGXD = 1
+		group by _Marker_key''',
+
+	# 11. count of expression image panes associated with each marker
+	'''select _Object_key as _Marker_key,
+			count(distinct _ImagePane_key) as paneCount
+		from img_cache
+		where _ImageMGIType_key = 8
+			and _MGIType_key = 2
+		group by _Marker_key''',
+
+	# 12. count of mapping experiments associated with each marker
+	'''select _Marker_key, count(distinct _Expt_key) as mappingCount
+		from mld_expt_marker
+		group by _Marker_key''',
+
+	# 13. count of RefSeq sequences associated with each marker
+	'''select c._Marker_key, count(distinct c._Sequence_key) as numSeq
+		from seq_marker_cache c, acc_accession a
+		where c._Sequence_key = a._Object_key
+			and a.private = 0
+			and a.preferred = 1
+			and a._MGIType_key = 19
+			and a._LogicalDB_key = 27
+		group by c._Marker_key''',
+
+	# 14. count of Uniprot sequences associated with each marker
+	'''select c._Marker_key, count(distinct c._Sequence_key) as numSeq
+		from seq_marker_cache c, acc_accession a
+		where c._Sequence_key = a._Object_key
+			and a.private = 0
+			and a._MGIType_key = 19
+			and a._LogicalDB_key in (13, 41)
+		group by c._Marker_key''',
+
+	# 15. count of cDNA sources associated with each marker
+	'''select m._Marker_key, count(distinct p._Probe_key) as cdnaCount
+		from prb_probe p,
+			prb_source s,
+			voc_term t,
+			prb_marker m
+		where t.term = 'cDNA'
+			and t._Term_key = p._SegmentType_key
+			and p._Source_key = s._Source_key
+			and s._Organism_key = 1
+			and p._Probe_key = m._Probe_key
+			and m.relationship in ('E', 'P')
+		group by m._Marker_key''',
+
+	# 16. count of microarray probesets associated with each marker
+	'''select _Object_key as _Marker_key, count(1) as affyCount
+		from acc_accession
+		where _MGIType_key = 2
+			and _LogicalDB_key in (select _Object_key
+				from mgi_setmember sm, mgi_set s
+				where sm._Set_key = s._Set_key
+					and s.name = 'MA Chip')
+		group by _Object_key''',
+
+	# 17. count of RFLP/PCR polymorphisms for each marker
+	'''select rflv._Marker_key, count(rflv._Reference_key) as numPoly
+		from prb_probe p,
+			prb_rflv rflv,
+			prb_reference r,
+			voc_term t
+		where p._SegmentType_key = t._Term_key
+			and rflv._Reference_key = r._Reference_key
+			and r._Probe_key = p._Probe_key
+		group by rflv._Marker_key''',
+
+	# 18. count of only PCR polymorphisms for each marker
+	'''select rflv._Marker_key, count(rflv._Reference_key) as numPcr
+		from prb_probe p,
+			prb_rflv rflv,
+			prb_reference r,
+			voc_term t
+		where p._SegmentType_key = t._Term_key
+			and rflv._Reference_key = r._Reference_key
+			and r._Probe_key = p._Probe_key
+			and t.term = 'primer'
+		group by rflv._Marker_key''',
+
+	# 19. count of only RFLP polymoprhisms for each marker
+	'''select rflv._Marker_key, count(rflv._Reference_key) as numRflv
+		from prb_probe p,
+			prb_rflv rflv,
+			prb_reference r,
+			voc_term t
+		where p._SegmentType_key = t._Term_key
+			and rflv._Reference_key = r._Reference_key
+			and r._Probe_key = p._Probe_key
+			and t.term != 'primer'
+		group by rflv._Marker_key''',
+
+	# 20. count of phenotype images for each marker
+	'''select _Object_key as _Marker_key,
+			count(distinct _Image_key) as imageCount
+		from img_cache
+		where _ImageMGIType_key = 11
+			and _MGIType_key = 2
+		group by _Marker_key''',
+
+	# 21. count of human diseases for the marker
+	'''select _Marker_key, count(distinct _Term_key) as diseaseCount
+		from mrk_omim_cache
+		where qualifier is null
+		group by _Marker_key''',
+
+	# 22. count of alleles for the marker which are associated with
+	# human diseases
+	'''select a._Marker_key, count(distinct a._Allele_key) as alleleCount
+		from all_allele a,
+			gxd_allelegenotype gag,
+			voc_annot va,
+			voc_term vt
+		where a._Allele_key = gag._Allele_key
+			and gag._Genotype_key = va._Object_key
+			and va._AnnotType_key = 1005
+			and a.isWildType = 0
+			and va._Qualifier_key = vt._Term_key
+			and vt.term is null
+		group by a._Marker_key''',
+
+	# 23. count of nucleic reagents for the marker
+	'''select pm._Marker_key, count(distinct pp._Probe_key) as probeCount
+		from prb_marker pm,
+			prb_probe pp,
+			voc_term vt
+		where pp._SegmentType_key = vt._Term_key
+			and pm._Probe_key = pp._Probe_key
+			and vt.term in ('primer', 'genomic', 'cDNA')
+		group by pm._Marker_key''',
+
+	# 24. count of genomic reagents for the marker
+	'''select pm._Marker_key, count(distinct pp._Probe_key) as probeCount
+		from prb_marker pm,
+			prb_probe pp,
+			voc_term vt
+		where pp._SegmentType_key = vt._Term_key
+			and pm._Probe_key = pp._Probe_key
+			and vt.term = 'genomic'
+		group by pm._Marker_key''',
+
+	# 25. count of cDNA reagents for the marker
+	'''select pm._Marker_key, count(distinct pp._Probe_key) as probeCount
+		from prb_marker pm,
+			prb_probe pp,
+			voc_term vt
+		where pp._SegmentType_key = vt._Term_key
+			and pm._Probe_key = pp._Probe_key
+			and vt.term = 'cDNA'
+		group by pm._Marker_key''',
+
+	# 26. count of primer pair reagents for the marker
+	'''select pm._Marker_key, count(distinct pp._Probe_key) as probeCount
+		from prb_marker pm,
+			prb_probe pp,
+			voc_term vt
+		where pp._SegmentType_key = vt._Term_key
+			and pm._Probe_key = pp._Probe_key
+			and vt.term = 'primer'
+		group by pm._Marker_key''',
+
+	# 27. count of other reagents for the marker
+	'''select pm._Marker_key, count(distinct pp._Probe_key) as probeCount
+		from prb_marker pm,
+			prb_probe pp,
+			voc_term vt
+		where pp._SegmentType_key = vt._Term_key
+			and pm._Probe_key = pp._Probe_key
+			and vt.term not in ('primer', 'genomic', 'cDNA')
+		group by pm._Marker_key''',
+
+	# 28. count of antibodies for the marker
+	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
+		from gxd_antibodymarker
+		group by _Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount, AlleleCount,
-	GOCount, AssayCount, OrthologCount, GeneTrapCount, ]
+fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount,
+	SequenceRefSeqCount, SequenceUniprotCount, AlleleCount,
+	GOCount, GxdAssayCount, GxdResultCount, GxdLiteratureCount,
+	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
+	MappingCount, PolymorphismCount, PolymorphismPcrCount,
+	PolymorphismRflpCount, CdnaSourceCount, MicroarrayCount,
+	PhenotypeImageCount, HumanDiseaseCount, AllelesWithDiseaseCount,
+	ReagentsNucleicCount, ReagentsGenomicCount, ReagentsCdnaCount,
+	ReagentsPrimerPairCount, ReagentsOtherCount, ReagentsAntibodyCount
+	]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_counts'
