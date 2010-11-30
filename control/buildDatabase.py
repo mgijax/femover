@@ -101,7 +101,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
 		'marker_orthology', 'marker_location', 'marker_counts',
 		'marker_note', 'marker_sequence_num', 'marker_annotation',
-		'marker_to_probe',
+		'marker_to_probe', 'marker_count_sets',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
