@@ -165,7 +165,8 @@ cmds = [
 		group by m._Marker_key''',
 
 	# 4. count of GO terms for each marker
-	'''select _Object_key as _Marker_key, count(1) as numGO
+	'''select _Object_key as _Marker_key,
+			count(distinct _Term_key) as numGO
 		from voc_annot
 		where _AnnotType_key = 1000
 		group by _Object_key''',
