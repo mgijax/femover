@@ -12,6 +12,20 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 	# Does: queries Sybase for primary data for marker annotations,
 	#	collates results, writes tab-delimited text file
 
+	def collateResults (self):
+		# join the two lists of results together, assuming that they
+		# have the same column definitions
+
+		combined = []
+		for set in [ self.results[0][1], self.results[1][1] ]:
+			for row in set:
+				combined.append(row)
+
+		self.results.append ( [ self.results[0][0], combined ] )
+		self.finalColumns = self.results[-1][0]
+		self.finalResults = self.results[-1][1]
+		return
+
 	def postprocessResults (self):
 		# Purpose: override of standard method for key-based lookups
 
@@ -28,10 +42,21 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 			self.addColumn ('vocab', Gatherer.resolve (
 				r[vocCol], 'voc_vocab', '_Vocab_key', 'name'),
 				r, self.finalColumns)
-			self.addColumn ('evidenceTerm', Gatherer.resolve (
-				r[etCol]), r, self.finalColumns)
-			self.addColumn ('annotQualifier', Gatherer.resolve (
-				r[aqCol]), r, self.finalColumns)
+			if r[etCol]:
+				self.addColumn ('evidenceTerm',
+					Gatherer.resolve (
+					r[etCol]), r, self.finalColumns)
+			else:
+				self.addColumn ('evidenceTerm', None,
+					r, self.finalColumns)
+
+			if r[aqCol]:
+				self.addColumn ('annotQualifier',
+					Gatherer.resolve (
+					r[aqCol]), r, self.finalColumns)
+			else:
+				self.addColumn ('annotQualifier', None,
+					r, self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -60,6 +85,29 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			  and aa.preferred = 1
 			  and va._Annot_key = ve._Annot_key
 			  and ve._Refs_key = bc._Refs_key''',
+
+	# Protein Ontology terms
+	'''select distinct m._Object_key as _Marker_key,
+			'Protein Ontology' as annotType,
+			vt._Vocab_key,
+			vt.term as term,
+			p.accID as termID,
+			null as _Annot_key,
+			null as _EvidenceTerm_key,
+			null as _Qualifier_key,
+			null as _Refs_key,
+			null as jnumID
+		from acc_accession m,
+			acc_accession p,
+			voc_term vt,
+			acc_actualdb adb
+		where m._LogicalDB_key = 135
+			and m._MGIType_key = 2
+			and m.accID = p.accID
+			and p._LogicalDB_key = 135
+			and p._MGIType_key = 13
+			and p._Object_key = vt._Term_key
+			and p._LogicalDB_key = adb._LogicalDB_key''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the
