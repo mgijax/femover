@@ -91,7 +91,8 @@ class SequenceSourceGatherer (Gatherer.ChunkGatherer):
 
 			# lookups from voc_term
 
-			tissue = Gatherer.resolve(r[tissueCol])
+			tissue = Gatherer.resolve(r[tissueCol], 'prb_tissue',
+				'_Tissue_key', 'tissue')
 			sex = Gatherer.resolve(r[sexCol])
 
 			# for any unspecified or unresolved items, update
