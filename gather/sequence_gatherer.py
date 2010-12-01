@@ -151,14 +151,17 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 ###--- globals ---###
 
 if config.SOURCE_TYPE == 'sybase':
-	sd = 'convert(varchar(10), s.sequence_date, 101)'
-	srd = 'convert(varchar(10), s.seqrecord_date, 101)'
+	# from Sybase, get: yyyy/mm/dd
+	sd = 'convert(varchar(10), s.sequence_date, 121)'
+	srd = 'convert(varchar(10), s.seqrecord_date, 121)'
 elif config.SOURCE_TYPE == 'mysql':
-	sd = "date_format(s.sequence_date, '%%m/%%d/%%Y')"
-	srd = "date_format(s.seqrecord_date, '%%m/%%d/%%Y')"
+	# from MySQL, get: yyyy-mm-dd
+	sd = "date_format(s.sequence_date, '%%Y-%%m-%%d')"
+	srd = "date_format(s.seqrecord_date, '%%Y-%%m-%%d')"
 elif config.SOURCE_TYPE == 'postgres':
-	sd = "to_char(s.sequence_date, 'MM/DD/YYYY')"
-	srd = "to_char(s.seqrecord_date, 'MM/DD/YYYY')"
+	# from Postgres, get: yyyy-mm-dd
+	sd = "to_char(s.sequence_date, 'YYYY-MM-DD')"
+	srd = "to_char(s.seqrecord_date, 'YYYY-MM-DD')"
 
 cmds = [
 	# in an attempt to improve efficiency, we just do multiple one-table
