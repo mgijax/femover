@@ -256,6 +256,7 @@ cmds = [
 			and a._ImagePane_key = p._ImagePane_key
 			and a._MGIType_key = 11''',
 
+	# assume all alleles have an MGI ID
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
 		a._Transmission_key
@@ -263,6 +264,7 @@ cmds = [
 	where a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
 		and ac.preferred = 1 
+		and ac._LogicalDB_key = 1
 		and a._Strain_key = s._Strain_key
 		and ac.private = 0''',
 	]
