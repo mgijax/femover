@@ -21,8 +21,11 @@ class MarkerSynonymGatherer (Gatherer.Gatherer):
 			'_SynonymType_key')
 
 		for r in self.finalResults:
-			self.addColumn ('synonymType', Gatherer.resolve (
-				r[typeCol]), r, self.finalColumns)
+			self.addColumn ('synonymType',
+				Gatherer.resolve (r[typeCol],
+					'mgi_synonymtype',
+					'_SynonymType_key',
+					'synonymType'), r, self.finalColumns)
 		return
 
 ###--- globals ---###
