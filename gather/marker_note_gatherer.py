@@ -16,6 +16,8 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 		# m[marker key] = { note type : note }
 		m = {}
 
+		# general notes, using MGI_Note tables
+
 		keyCol = Gatherer.columnNumber (self.results[0][0],
 			'_Object_key')
 		typeCol = Gatherer.columnNumber (self.results[0][0],
@@ -35,6 +37,27 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 			else:
 				m[markerKey][noteType] = \
 					m[markerKey][noteType] + note 
+
+		# marker clips, using MRK_Notes table
+
+		keyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Marker_key')
+		noteCol = Gatherer.columnNumber (self.results[1][0], 'note')
+		noteType = 'marker clip'
+
+		for row in self.results[1][1]:
+			markerKey = row[keyCol]
+			note = row[noteCol]
+
+			if not m.has_key(markerKey):
+				m[markerKey] = { noteType : note }
+			elif not m[markerKey].has_key(noteType):
+				m[markerKey][noteType] = note
+			else:
+				m[markerKey][noteType] = \
+					m[markerKey][noteType] + note 
+
+		# collate into final results
 
 		self.finalResults = []
 		self.finalColumns = [ 'markerKey', 'noteType', 'note' ]
@@ -61,6 +84,10 @@ cmds = [
 	where mn._MGIType_key = 2
 		and mn._Note_key = mnc._Note_key
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+
+	'''select _Marker_key, sequenceNum, note
+		from mrk_notes
+		order by _Marker_key, sequenceNum''',
 	]
 
 # order of fields (from the query results) to be written to the
