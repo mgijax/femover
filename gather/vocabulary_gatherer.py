@@ -263,6 +263,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		for key in defs.keys():
 			defs[key] = defs[key].rstrip()
 
+		# trim trailing backslash (uncommon, but causes errors)
+		for key in defs.keys():
+			if defs[key][-1] == '\\':
+				defs[key] = defs[key][:-1]
+
 		logger.debug ('Cached %d term definitions' % len(defs))
 		return defs
 
