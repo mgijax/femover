@@ -38,7 +38,120 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		i = 0		# counter for ordering of rows
 		j = 0		# counter of result sets
 
-		for (columns, rows) in self.results:
+		# first two sets are special cases:  
+		# 1) reagents
+
+		(columns, rows) = self.results[0]
+		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
+		termCol = Gatherer.columnNumber (columns, 'term')
+		countCol = Gatherer.columnNumber (columns, 'myCount')
+
+		byMarker = {}			# byMarker[marker key] = {}
+
+		nucleic = 'All nucleic'		# keys per marker in byMarker
+		genomic = 'Genomic'
+		cdna = 'cDNA'
+		primerPair = 'Primer pair'
+		other = 'Other'
+
+		# collate counts per marker
+
+		for row in rows:
+			term = row[termCol]
+			ct = row[countCol]
+			key = row[keyCol]
+
+			if not byMarker.has_key (key):
+				byMarker[key] = {}
+
+			if term == 'primer':
+				byMarker[key][primerPair] = ct
+			elif term == 'genomic':
+				byMarker[key][genomic] = ct
+			elif term == 'cDNA':
+				byMarker[key][cdna] = ct
+			else:
+				byMarker[key][other] = ct
+
+		# combine genomic, cDNA, and primer pair counts into nucleic
+
+		for key in byMarker.keys():
+			byMarker[key][nucleic] = 0
+			for term in [ genomic, cdna, primerPair ]:
+				if byMarker[key].has_key(term):
+					byMarker[key][nucleic] = \
+						byMarker[key][nucleic] + \
+						byMarker[key][term]
+			
+		# generate rows, one per marker/count pair
+
+		orderedTerms = [ nucleic, genomic, cdna, primerPair, other ]
+		for key in byMarker.keys():
+			for term in orderedTerms:
+				if byMarker[key].has_key(term):
+					i = i + 1
+					newRow = [ key, 'Molecular reagents',
+						term, byMarker[key][term], i ]
+					self.finalResults.append (newRow)
+
+		logger.debug ('finished set %s, %d rows so far' % (j, i) )
+		j = j + 1
+
+		# 2) polymorphisms
+
+		(columns, rows) = self.results[1]
+		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
+		termCol = Gatherer.columnNumber (columns, 'term')
+		countCol = Gatherer.columnNumber (columns, 'myCount')
+
+		byMarker = {}			# byMarker[marker key] = {}
+
+		all = 'All PCR and RFLP'	# keys per marker in byMarker
+		pcr = 'PCR'
+		rflp = 'RFLP'
+
+		# collate counts per marker
+
+		for row in rows:
+			term = row[termCol]
+			ct = row[countCol]
+			key = row[keyCol]
+
+			if not byMarker.has_key (key):
+				byMarker[key] = {}
+
+			if term == 'primer':
+				byMarker[key][pcr] = ct
+			elif not byMarker[key].has_key(rflp):
+				byMarker[key][rflp] = ct
+			else:
+				byMarker[key][rflp] = byMarker[key][rflp] + ct
+
+		# if we had both PCR and RFLP then we need a count for the sum
+
+		for key in byMarker.keys():
+			if len(byMarker[key]) > 1:
+				byMarker[key][all] = byMarker[key][pcr] + \
+					byMarker[key][rflp]
+			
+		# generate rows, one per marker/count pair
+
+		orderedTerms = [ all, pcr, rflp ]
+		for key in byMarker.keys():
+			for term in orderedTerms:
+				if byMarker[key].has_key(term):
+					i = i + 1
+					newRow = [ key, 'Polymorphisms',
+						term, byMarker[key][term], i ]
+					self.finalResults.append (newRow)
+
+		logger.debug ('finished set %s, %d rows so far' % (j, i) )
+		j = j + 1
+
+		# the remaining sets are have standard format and can be done
+		# in a nested loop
+
+		for (columns, rows) in self.results[2:]:
 			keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 			setCol = Gatherer.columnNumber (columns, SET_TYPE)
 			typeCol = Gatherer.columnNumber (columns, COUNT_TYPE)
@@ -58,6 +171,31 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
+	# counts of reagents by type (these need to be grouped in code, but
+	# this will give us the raw counts)
+	'''select pm._Marker_key,
+		vt.term,
+		count(distinct pp._Probe_key) as myCount
+	from prb_marker pm,
+		prb_probe pp,
+		voc_term vt
+	where pp._SegmentType_key = vt._Term_key
+		and pm._Probe_key = pp._Probe_key
+	group by pm._Marker_key, vt.term''',
+
+	# counts of RFLP/PCR polymorphisms by type
+	'''select rflv._Marker_key,
+		t.term,
+		count(rflv._Reference_key) as myCount
+	from prb_probe p,
+		prb_rflv rflv,
+		prb_reference r,
+		voc_term t
+	where p._SegmentType_key = t._Term_key
+		and rflv._Reference_key = r._Reference_key
+		and r._Probe_key = p._Probe_key
+	group by rflv._Marker_key, t.term''',
+
 	# alleles by type (and these aren't the actual types, but the
 	# groupings of types defined as vocabulary associations)
 	'''select a._Marker_key,
