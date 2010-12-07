@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	allele_type		varchar(255)	null,
 	allele_subtype		varchar(255)	null,
 	is_recombinase		int		not null,
+	is_wild_type		int		not null,
 	driver			varchar(50)	null,
 	inducible_note		varchar(255)	null,
 	molecular_description	varchar(2048)	null,
