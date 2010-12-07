@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the markerCounts table
+# contains data definition information for the marker_counts table
 
 ###--- Globals ---###
 
@@ -26,20 +26,12 @@ createStatement = '''CREATE TABLE %s  (
 	ortholog_count				int	NULL,
 	gene_trap_count				int	NULL,
 	mapping_expt_count			int	NULL,
-	polymorphism_count			int	NULL,
-	polymorphism_pcr_count			int	NULL,
-	polymorphism_rflp_count			int	NULL,
 	cdna_source_count			int	NULL,
 	microarray_probeset_count		int	NULL,
 	phenotype_image_count			int	NULL,
 	human_disease_count			int	NULL,
 	alleles_with_human_disease_count	int	NULL,
-	reagents_nucleic_count			int	NULL,
-	reagents_genomic_count			int	NULL,
-	reagents_cdna_count			int	NULL,
-	reagents_primer_pair_count		int	NULL,
-	reagents_other_count			int	NULL,
-	reagents_antibody_count			int	NULL,
+	antibody_count				int	NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
