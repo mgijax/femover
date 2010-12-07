@@ -17,7 +17,8 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 		# have the same column definitions
 
 		combined = []
-		for set in [ self.results[0][1], self.results[1][1] ]:
+		for set in [ self.results[0][1], self.results[1][1],
+				self.results[2][1] ]:
 			for row in set:
 				combined.append(row)
 
@@ -108,6 +109,36 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			and p._MGIType_key = 13
 			and p._Object_key = vt._Term_key
 			and p._LogicalDB_key = adb._LogicalDB_key''',
+
+	# bring in and cache MP and OMIM annotations for each marker's alleles
+	'''select distinct a._Marker_key,
+			  vat.name as annotType,
+			  vt._Vocab_key,
+			  vt.term as term,
+			  aa.accID as termID,
+			  va._Annot_key,
+			  ve._EvidenceTerm_key,
+			  va._Qualifier_key,
+			  ve._Refs_key,
+			  bc.jnumID
+			from all_allele a,
+			  gxd_allelegenotype g,
+			  voc_annottype vat,
+			  voc_annot va,
+			  voc_evidence ve,
+			  voc_term vt,
+			  acc_accession aa,
+			  bib_citation_cache bc
+			where vat._MGIType_key = 12
+			  and vat._AnnotType_key = va._AnnotType_key
+			  and va._Object_key = g._Genotype_key
+			  and g._Allele_key = a._Allele_key
+			  and va._Term_key = vt._Term_key
+			  and vt._Term_key = aa._Object_key
+			  and aa._MGIType_key = 13
+			  and aa.preferred = 1
+			  and va._Annot_key = ve._Annot_key
+			  and ve._Refs_key = bc._Refs_key''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the
