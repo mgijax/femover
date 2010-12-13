@@ -26,7 +26,7 @@ import subprocess
 # this string is omitted from the output (except tab and newline, which are
 # escaped)
 ACCEPTABLE_CHARACTERS = string.digits + string.letters + \
-	'''-&=#,:. _?+<>()'"/[]*;\\'''
+	'''-&=#,:. _?+<>()'"/[]*;|\\'''
 
 # number of subprocesses to use
 SUBPROC_COUNT = 4
