@@ -30,10 +30,11 @@ import getopt
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-c|-g|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
-	-c : Cre
+	-c : Cre (Recombinases)
+	-g : Genotypes
 	-h : IMSR counts (via HTTP)
 	-i : Images
 	-m : Markers
@@ -41,7 +42,7 @@ USAGE = '''Usage: %s [-a|-c|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
 	-s : Sequences
 	-r : References
 	-v : Vocabularies
-	-x : GXD Literature Index
+	-x : eXpression (GXD Data plus GXD Literature Index)
 	-G : run a single, specified gatherer (useful for testing)
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
@@ -90,8 +91,11 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
-GXD_INDEX = [ 'expression_index', 'expression_index_stages',
+GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_annotation',
+	]
+EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
+		'expression_assay', 'marker_to_expression_assay',
 	]
 IMAGES = [ 'image',
 	]
@@ -127,8 +131,8 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 # would regenerate
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
-	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : GXD_INDEX,
-	'-h' : IMSR,
+	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
+	'-h' : IMSR,		'-g' : GENOTYPES,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
