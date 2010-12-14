@@ -15,6 +15,7 @@ import Gatherer
 ###--- Globals ---###
 
 MarkerCount = 'markerCount'
+ProbeCount = 'probeCount'
 
 ###--- Classes ---###
 
@@ -32,7 +33,7 @@ class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 		# list of count types (like field names)
 		counts = []
 
-		seqKeyCol = Gatherer.columnNumber (self.results[1][0],
+		seqKeyCol = Gatherer.columnNumber (self.results[0][0],
 			'_Sequence_key')
 
 		# initialize dictionary for collecting data per sequence
@@ -46,11 +47,23 @@ class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 		counts.append (MarkerCount)
 		mrkCol = Gatherer.columnNumber (self.results[1][0],
 			'mrkCount')
+		seqKeyCol = Gatherer.columnNumber (self.results[1][0],
+			'_Sequence_key')
 
 		for row in self.results[1][1]:
 			sequenceKey = row[seqKeyCol]
 			d[sequenceKey][MarkerCount] = row[mrkCol]
 
+		# count of probes per sequence
+		counts.append (ProbeCount)
+		prbCol = Gatherer.columnNumber (self.results[2][0],
+			'prbCount')
+		seqKeyCol = Gatherer.columnNumber (self.results[2][0],
+			'_Sequence_key')
+
+		for row in self.results[2][1]:
+			sequenceKey = row[seqKeyCol]
+			d[sequenceKey][ProbeCount] = row[prbCol]
 
 		# add other counts here...
 
@@ -96,11 +109,17 @@ cmds = [
 		from seq_marker_cache m
 		where m._Sequence_key >= %d and m._Sequence_key < %d
 		group by m._Sequence_key''',
+
+	# count of probes for each sequence
+	'''select m._Sequence_key, count(1) as prbCount
+		from seq_probe_cache m
+		where m._Sequence_key >= %d and m._Sequence_key < %d
+		group by m._Sequence_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Sequence_key', MarkerCount, ]
+fieldOrder = [ '_Sequence_key', MarkerCount, ProbeCount ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'sequence_counts'

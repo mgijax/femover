@@ -12,7 +12,8 @@ tableName = 'sequence_counts'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	sequence_key	int	NOT NULL,
-	marker_count	int NULL,
+	marker_count	int 	NULL,
+	probe_count	int	NULL,
 	PRIMARY KEY(sequence_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
