@@ -10,6 +10,7 @@
 import Gatherer
 import logger
 import symbolsort
+import re
 
 ###--- Functions ---###
 
@@ -26,6 +27,12 @@ def explode (x):
 			no_i.append (j)
 		out.append ( (i, no_i) )
 	return out
+
+def convert (s):
+	# convert any ampersands (&) in s to be ands (and)
+	if not s:
+		return s
+	return re.sub ('&', 'and', s)
 
 ###--- Classes ---###
 
@@ -73,7 +80,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			# make sure to add the system for the allele key
 
 			key = row[keyCol]
-			system = row[sysCol]
+			system = convert(row[sysCol])
 			i = i + 1
 
 			if alleleSystemMap.has_key(key):
@@ -81,7 +88,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				alleleSystemMap[key] = { system : i }
 
-			out.append ( (i, key, row[idCol], row[sysCol],
+			out.append ( (i, key, row[idCol], system,
 				row[systemKeyCol]) )
 
 			# add this allele/system pair to either the list of
@@ -326,8 +333,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		i = 0
 		for r in self.results[5][1]:
+			system = convert(r[systemCol])
+
 			alleleSystemKey = \
-				alleleSystemMap[r[alleleCol]][r[systemCol]]
+				alleleSystemMap[r[alleleCol]][system]
 
 			i = i + 1
 
