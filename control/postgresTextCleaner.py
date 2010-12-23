@@ -89,6 +89,18 @@ def cleanLines(lines):
 	
 		cleanLine = cleanLine + line[last:lineLength]
 
+		# we do not want any fields to end with a backslash before the
+		# tab notation; otherwise, we'll end up with an escaped actual
+		# tab character and the wrong number of columns for that line,
+		# and Postgres will not populate the table
+
+		cleanLine = re.sub ('\\\\&=&', '\\\\\\&=&', cleanLine)
+
+		# convert any '\.' sequences to just '.', as this causes an
+		# "end-of-copy marker corrupt" error in postgres
+
+		cleanLine = re.sub ('\\\.', '.', cleanLine)
+
 		# do conversion of tab characters and removal of milliseconds
 		# (formerly done with sed)
 
@@ -119,6 +131,7 @@ def cleanLines(lines):
 
 	# if we ended with a partial line, write it out (should not happen, as
 	# BCP should properly terminate all records with #=#)
+	# (skip it, or postgres will likely fail anyway)
 	if partialLine:
 		output.append (partialLine)
 
