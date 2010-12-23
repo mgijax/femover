@@ -55,6 +55,14 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 		for row in self.results[2][1]:
 			resolvedLibraries[row[seqKeyCol]] = row[libraryCol]
 
+		# get info about which sequences are part of clone collections
+
+		hasCC = {}
+		seqKeyCol = Gatherer.columnNumber (self.results[3][0],
+			'_Sequence_key')
+		for row in self.results[3][1]:
+			hasCC[row[seqKeyCol]] = 1
+
 		# merge into a final results set
 
 		self.finalColumns = self.results[-1][0]
@@ -113,6 +121,16 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				self.finalColumns)
 			self.addColumn ('logicalDB', ldb, row,
 				self.finalColumns)
+
+			# has clone collection(s)
+
+			if hasCC.has_key(seqKey):
+				hasCloneCollection = 1
+			else:
+				hasCloneCollection = 0
+
+			self.addColumn ('hasCloneCollection',
+				hasCloneCollection, row, self.finalColumns)
 		return
 
 	def postprocessResults (self):
@@ -187,6 +205,21 @@ cmds = [
 	where ssa._Sequence_key >= %d and ssa._Sequence_key < %d
 		and ssa._Source_key = ps._Source_key''',
 
+	'''select spc._Sequence_key
+		from seq_probe_cache spc,
+			mgi_setmember msm,
+			mgi_set ms,
+			acc_logicaldb ldb,
+			acc_accession aa
+		where spc._Probe_key = aa._Object_key
+			and spc._Sequence_key >= %d
+			and spc._Sequence_key < %d
+			and aa._MGIType_key = 3
+			and aa._LogicalDB_key = ldb._LogicalDB_key
+			and aa._LogicalDB_key = msm._Object_key
+			and msm._Set_key = ms._Set_key
+			and ms.name = 'Clone Collection (all)' ''',
+
 	'''select s._Sequence_key,
 		s._SequenceType_key,
 		s._SequenceQuality_key,
@@ -210,8 +243,8 @@ cmds = [
 fieldOrder = [
 	'_Sequence_key', 'sequenceType', 'quality', 'status', 'provider',
 	'organism', 'length', 'description', 'version', 'division',
-	'isVirtual', 'sequenceDate', 'seqrecordDate', 'accID',
-	'logicalDB', 'library',
+	'isVirtual', 'hasCloneCollection', 'sequenceDate', 'seqrecordDate',
+	'accID', 'logicalDB', 'library',
 	]
 
 # prefix for the filename of the output file
