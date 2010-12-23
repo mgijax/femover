@@ -30,9 +30,10 @@ import getopt
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-c|-g|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-b|-c|-g|-h|-i|-m|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
+	-b : Batch Query tables
 	-c : Cre (Recombinases)
 	-g : Genotypes
 	-h : IMSR counts (via HTTP)
@@ -89,6 +90,8 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
 		'allele_to_sequence',
 	]
+BATCHQUERY = [ 'batch_marker_terms',
+	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_annotation',
@@ -133,7 +136,7 @@ HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
 FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
-	'-h' : IMSR,		'-g' : GENOTYPES,
+	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
