@@ -22,6 +22,7 @@ createStatement = '''CREATE TABLE %s  (
 	version		varchar(15)	NULL,
 	division	varchar(3)	NULL,
 	is_virtual	int		NOT NULL,
+	has_clone_collection	int	NOT NULL,
 	sequence_date	varchar(12)	NULL,
 	record_date	varchar(12)	NULL,
 	primary_id	varchar(30)	NULL,
