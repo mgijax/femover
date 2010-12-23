@@ -150,7 +150,7 @@ cmds = [
 		from mgi_reference_assoc r, all_allele a
 		where r._Object_key = a._Allele_key
 			and r._MGIType_key = 11
-			and a.isWildType = 1
+			and a.isWildType != 1
 		group by r._Refs_key''',
 
 	# count of sequences
