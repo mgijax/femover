@@ -22,6 +22,7 @@ createStatement = '''CREATE TABLE %s  (
 	evidence_term		varchar(255)	NULL,
 	reference_key		int		NULL,
 	jnum_id			varchar(30)	NULL,
+	sequence_num		int		NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
