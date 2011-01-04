@@ -10,61 +10,18 @@ import sys
 import config
 import logger
 import types
-import dbManager
-try:
-	import freedb
-	db = freedb
-except:
-	import db
-	db.set_sqlLogin (config.SOURCE_USER, config.SOURCE_PASSWORD,
-		config.SOURCE_HOST, config.SOURCE_DATABASE)
+import dbAgnostic
 
 ###--- Globals ---###
 
 Error = 'Gatherer.error'	# exception raised by this module
 AUTO = 'Gatherer.AUTO'		# special fieldname for auto-incremented field
 SOURCE_DB = config.SOURCE_TYPE	# either sybase, mysql, or postgres
-DBM = None			# dbManager object for postgres/mysql access
 
 # cache of terms already looked up
 resolveCache = {}		# resolveCache[table][keyField][key] = term
 
-if SOURCE_DB == 'postgres':
-	DBM = dbManager.postgresManager (config.SOURCE_HOST,
-		config.SOURCE_DATABASE, config.SOURCE_USER,
-		config.SOURCE_PASSWORD)
-elif SOURCE_DB == 'mysql':
-	DBM = dbManager.mysqlManager (config.SOURCE_HOST,
-		config.SOURCE_DATABASE, config.SOURCE_USER,
-		config.SOURCE_PASSWORD)
-elif SOURCE_DB == 'sybase':
-	db.useOneConnection(1)
-else:
-	raise Error, 'Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB
-
 ###--- Functions ---###
-
-def execute (cmd):
-	if DBM:
-		return DBM.execute(cmd)
-
-	# if not using a dbManager (ie- we are querying Sybase), then convert
-	# the Sybase-style return to the dbManager-style return
-
-	results = db.sql (cmd, 'auto')
-	columns = []
-	rows = []
-
-	if results:
-		columns = results[0].keys()
-		columns.sort()
-
-		for sybRow in results:
-			row = []
-			for col in columns:
-				row.append (sybRow[col])
-			rows.append (row)
-	return columns, rows
 
 def resolve (key,		# integer; key value to look up
 	table = "voc_term",	# string; table in which to look up key
@@ -79,7 +36,7 @@ def resolve (key,		# integer; key value to look up
 	# Assumes: we can query our source database
 	# Modifies: adds entries to global 'resolveCache' to cache values as
 	#	they are looked up
-	# Throws: propagates any exceptions from db.sql() or dbManager.execute()
+	# Throws: propagates any exceptions from dbAgnostic.execute()
 
 	global resolveCache
 
@@ -100,7 +57,7 @@ def resolve (key,		# integer; key value to look up
 	cmd = 'select %s from %s where %s = %d' % (stringField, table,
 		keyField, key)
 
-	columns, rows = execute(cmd)
+	columns, rows = dbAgnostic.execute(cmd)
 	if len(rows) > 0:
 		term = rows[0][0]
 
@@ -165,7 +122,7 @@ def executeQueries (cmds):
 	i = 0
 	results = []
 	for cmd in cmds:
-		results.append (execute (cmd))
+		results.append (dbAgnostic.execute (cmd))
 		logger.debug ('Finished query %d' % i)
 		i = i + 1
 	return results
@@ -375,8 +332,8 @@ class ChunkGatherer (Gatherer):
 		if (minCmd == None) or (maxCmd == None):
 			raise Error, 'Required methods not implemented'
 
-		minKey = execute(minCmd)[1][0][0]
-		maxKey = execute(maxCmd)[1][0][0]
+		minKey = dbAgnostic.execute(minCmd)[1][0][0]
+		maxKey = dbAgnostic.execute(maxCmd)[1][0][0]
 
 		if (minKey == None) or (maxKey == None):
 			raise Error, 'No data found'
