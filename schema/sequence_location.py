@@ -22,6 +22,7 @@ createStatement = '''CREATE TABLE %s  (
 	map_units		varchar(50)	NULL,
 	provider		varchar(255)	NULL,
 	version			varchar(30)	NULL,
+	strand			varchar(1)	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
