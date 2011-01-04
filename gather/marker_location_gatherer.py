@@ -27,7 +27,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 		self.finalColumns = [ 'markerKey', 'sequenceNum',
 			'chromosome', 'cmOffset', 'cytogeneticOffset',
 			'startCoordinate', 'endCoordinate', 'buildIdentifier',
-			'locationType', 'mapUnits', 'provider' ]
+			'locationType', 'mapUnits', 'provider', 'strand' ]
 		self.finalResults = []
 
 		cols = self.results[0][0]
@@ -38,6 +38,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 		startCol = Gatherer.columnNumber (cols, 'startCoordinate')
 		endCol = Gatherer.columnNumber (cols, 'endCoordinate')
 		buildCol = Gatherer.columnNumber (cols, 'version')
+		strandCol = Gatherer.columnNumber (cols, 'strand')
 
 		for row in self.results[0][1]:
 			startCoordinate = row[startCol]
@@ -45,6 +46,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 			cyto = row[cytoCol]
 			key = row[keyCol]
 			chrom = row[chrCol]
+			strand = row[strandCol]
 
 			seqNum = 0
 
@@ -54,26 +56,27 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 					chrom, None, None,
 					int(startCoordinate),
 					int(row[endCol]), row[buildCol],
-					'coordinates', 'bp', None ] )
+					'coordinates', 'bp', None, strand ] )
 			if cm:
 				seqNum = seqNum + 1
 				self.finalResults.append ( [ key, seqNum,
 					chrom, '%0.1f' % cm, None,
 					None, None, None,
-					'centimorgans', 'cM', None ] )
+					'centimorgans', 'cM', None, None ] )
 			if cyto:
 				seqNum = seqNum + 1
 				self.finalResults.append ( [ key, seqNum,
 					chrom, None, cyto,
 					None, None, None,
-					'cytogenetic', None, None ] )
+					'cytogenetic', None, None, None ] )
 		return
 
 ###--- globals ---###
 
 cmds = [
 	'''select distinct _Marker_key, chromosome, %s,
-		cytogeneticOffset, startCoordinate, endCoordinate, version
+		cytogeneticOffset, startCoordinate, endCoordinate, version,
+		strand
 	from mrk_location_cache''' % offset,
 	]
 
@@ -82,7 +85,7 @@ cmds = [
 fieldOrder = [
 	Gatherer.AUTO, 'markerKey', 'sequenceNum', 'chromosome', 'cmOffset',
 	'cytogeneticOffset', 'startCoordinate', 'endCoordinate', 
-	'buildIdentifier', 'locationType', 'mapUnits', 'provider',
+	'buildIdentifier', 'locationType', 'mapUnits', 'provider', 'strand',
 	]
 
 # prefix for the filename of the output file

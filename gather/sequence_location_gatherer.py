@@ -44,7 +44,8 @@ cmds = [
 		'coordinates' as locationType,
 		s.mapUnits,
 		s.provider,
-		s.version
+		s.version,
+		s.strand
 	from seq_coord_cache s
 	where s._Sequence_key >= %d and s._Sequence_key < %d''',
 	]
@@ -54,7 +55,7 @@ cmds = [
 fieldOrder = [
 	Gatherer.AUTO, '_Sequence_key', 'sequenceNum', 'chromosome',
 	'startCoordinate', 'endCoordinate', 'buildIdentifier',
-	'locationType', 'mapUnits', 'provider', 'version',
+	'locationType', 'mapUnits', 'provider', 'version', 'strand',
 	]
 
 # prefix for the filename of the output file
