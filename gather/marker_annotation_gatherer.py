@@ -3,6 +3,7 @@
 # gathers data for the 'markerAnnotation' table in the front-end database
 
 import Gatherer
+import VocabSorter
 
 ###--- Classes ---###
 
@@ -38,6 +39,8 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 			'_EvidenceTerm_key')
 		aqCol = Gatherer.columnNumber (self.finalColumns,
 			'_Qualifier_key')
+		termCol = Gatherer.columnNumber (self.finalColumns,
+			'_Term_key')
 
 		for r in self.finalResults:
 			self.addColumn ('vocab', Gatherer.resolve (
@@ -58,6 +61,10 @@ class MarkerAnnotationGatherer (Gatherer.Gatherer):
 			else:
 				self.addColumn ('annotQualifier', None,
 					r, self.finalColumns)
+
+			self.addColumn ('sequenceNum',
+				VocabSorter.getSequenceNum (r[termCol]),
+				r, self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -71,7 +78,8 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			  ve._EvidenceTerm_key,
 			  va._Qualifier_key,
 			  ve._Refs_key,
-			  bc.jnumID
+			  bc.jnumID,
+			  vt._Term_key
 			from voc_annottype vat,
 			  voc_annot va,
 			  voc_evidence ve,
@@ -97,7 +105,8 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			null as _EvidenceTerm_key,
 			null as _Qualifier_key,
 			null as _Refs_key,
-			null as jnumID
+			null as jnumID,
+			vt._Term_key
 		from acc_accession m,
 			acc_accession p,
 			voc_term vt,
@@ -120,7 +129,8 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 			  ve._EvidenceTerm_key,
 			  va._Qualifier_key,
 			  ve._Refs_key,
-			  bc.jnumID
+			  bc.jnumID,
+			  vt._Term_key
 			from all_allele a,
 			  gxd_allelegenotype g,
 			  voc_annottype vat,
@@ -145,7 +155,7 @@ cmds = [ '''select distinct va._Object_key as _Marker_key,
 # output file
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', 'annotType', 'vocab', 'term',
 	'termID', '_Annot_key', 'annotQualifier', 'evidenceTerm', '_Refs_key',
-	'jnumID',
+	'jnumID', 'sequenceNum',
 	]
 
 # prefix for the filename of the output file
