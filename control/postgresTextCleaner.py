@@ -26,7 +26,7 @@ import subprocess
 # this string is omitted from the output (except tab and newline, which are
 # escaped)
 ACCEPTABLE_CHARACTERS = string.digits + string.letters + \
-	'''-&=#,:. _?+<>()'"/[]*;|\\'''
+	'''-&=#,:. _?+<>()'"/[]*;|'''
 
 # number of subprocesses to use
 SUBPROC_COUNT = 4
@@ -82,24 +82,15 @@ def cleanLines(lines):
 				if line[i] == '\t':
 					cleanLine = cleanLine + line[last:i] \
 						+ '\\\t'
+				elif line[i] == '\\':
+					cleanLine = cleanLine + line[last:i] \
+						+ '\\\\'
 				else:
 					cleanLine = cleanLine + line[last:i]
 				last = i + 1
 			i = i + 1
 	
 		cleanLine = cleanLine + line[last:lineLength]
-
-		# we do not want any fields to end with a backslash before the
-		# tab notation; otherwise, we'll end up with an escaped actual
-		# tab character and the wrong number of columns for that line,
-		# and Postgres will not populate the table
-
-		cleanLine = re.sub ('\\\\&=&', '\\\\\\&=&', cleanLine)
-
-		# convert any '\.' sequences to just '.', as this causes an
-		# "end-of-copy marker corrupt" error in postgres
-
-		cleanLine = re.sub ('\\\.', '.', cleanLine)
 
 		# do conversion of tab characters and removal of milliseconds
 		# (formerly done with sed)
@@ -131,7 +122,6 @@ def cleanLines(lines):
 
 	# if we ended with a partial line, write it out (should not happen, as
 	# BCP should properly terminate all records with #=#)
-	# (skip it, or postgres will likely fail anyway)
 	if partialLine:
 		output.append (partialLine)
 
