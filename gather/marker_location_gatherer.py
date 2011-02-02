@@ -60,7 +60,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 			if cm:
 				seqNum = seqNum + 1
 				self.finalResults.append ( [ key, seqNum,
-					chrom, '%0.1f' % cm, None,
+					chrom, '%0.2f' % cm, None,
 					None, None, None,
 					'centimorgans', 'cM', None, None ] )
 			if cyto:
