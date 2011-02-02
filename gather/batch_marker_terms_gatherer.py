@@ -20,7 +20,31 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		self.finalResults = []
 		i = 0
 
-		for (cols, rows) in self.results[0:6]:
+		# nomenclature: for each marker key, a given term should only
+		# appear once, with preference to the lowest priority values
+		# (priority is handled by the order-by on the query)
+
+		done = {}	# (marker key, term) -> 1
+
+		cols, rows = self.results[0]
+
+		termCol = Gatherer.columnNumber (cols, 'term')
+		typeCol = Gatherer.columnNumber (cols, 'term_type')
+		keyCol = Gatherer.columnNumber (cols, 'marker_key')
+
+		for row in rows:
+			pair = (row[keyCol], row[termCol].lower())
+			if not done.has_key(pair):
+				self.finalResults.append ( [ row[termCol],
+					row[typeCol], row[keyCol] ] )
+				done[pair] = 1
+
+		logger.debug ('Kept %d labels from %d nomen rows' % (
+			len(done), len(rows)) )
+
+		# handle IDs in two queries
+
+		for (cols, rows) in self.results[1:3]:
 			termCol = Gatherer.columnNumber (cols, 'term')
 			typeCol = Gatherer.columnNumber (cols, 'term_type')
 			keyCol = Gatherer.columnNumber (cols, 'marker_key')
@@ -29,13 +53,13 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				self.finalResults.append ( [ row[termCol],
 					row[typeCol], row[keyCol] ] )
 
-			logger.debug ('Processed %d rows from query %d' % (
+			logger.debug ('Processed %d IDs from query %d' % (
 				len(rows), i) )
 			i = i + 1
 
 		# gather GO IDs for each term key
 
-		(cols, rows) = self.results[6]
+		(cols, rows) = self.results[3]
 		termCol = Gatherer.columnNumber (cols, '_Object_key')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 
@@ -53,7 +77,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 
 		# gather ancestor term keys for each term key
 
-		(cols, rows) = self.results[7]
+		(cols, rows) = self.results[4]
 		parentCol = Gatherer.columnNumber (cols,
 			'_AncestorObject_key')
 		childCol = Gatherer.columnNumber (cols,
@@ -77,7 +101,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		# go through our marker/GO annotations and produce a row in
 		# finalResults for each term and rows for its ancestors
 
-		(cols, rows) = self.results[8]
+		(cols, rows) = self.results[5]
 		markerCol = Gatherer.columnNumber (cols, '_Object_key')
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
 
@@ -142,53 +166,33 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
+# sybase uses a different syntax at the end of its 'case' statement, so we
+# need to account for that
 if config.SOURCE_TYPE in [ 'postgres', 'mysql' ]:
 	caseEnd = 'end as term_type'
 elif config.SOURCE_TYPE == 'sybase':
 	caseEnd = "end 'term_type'"
 
 cmds = [
-	# 0. current symbol for mouse markers
-	'''select symbol as term,
-			'current symbol' as term_type,
-			_Marker_key as marker_key
-		from mrk_marker
-		where _Organism_key = 1
-			and _Marker_Status_key in (1,3)''',
-
-	# 1. synonyms for current mouse markers
-	'''select s.synonym as term,
-			t.synonymType as term_type,
-			s._Object_key as marker_key
-		from mgi_synonym s,
-			mrk_marker m,
-			mgi_synonymtype t
-		where s._SynonymType_key = t._SynonymType_key
-			and s._Object_key = m._Marker_key
-			and m._Marker_Status_key in (1,3)
-			and m._Organism_key = 1
-			and t._MGIType_key = 2''',
-
-	# 2. ortholog symbols for current mouse markers
-	'''select distinct om.symbol as term,
-			o.commonName as term_type,
-			mm._Marker_key as marker_key
+	# 0. nomenclature for current mouse markers, including symbol, name,
+	# synonyms, old symbols, old names, human synonyms, related
+	# synonyms, ortholog symbols, and ortholog names (not allele symbols,
+	# not allele names)
+	'''select ml.label as term,
+			ml.labelTypeName as term_type,
+			mm._Marker_key as marker_key,
+			ml.priority
 		from mrk_marker mm,
-			mrk_homology_cache mc,
-			mrk_homology_cache oc,
-			mrk_marker om,
-			mgi_organism o
-		where mm._Marker_Status_key in (1,3)
-			and mm._Organism_key = 1
-			and mm._Marker_key = mc._Marker_key
-			and mc._Class_key = oc._Class_key
-			and oc._Marker_key = om._Marker_key
-			and oc._Organism_key != 1
-			and om._Organism_key = o._Organism_key''',
+			mrk_label ml
+		where mm._Organism_key = 1
+			and mm._Marker_Status_key in (1,3)
+			and mm._Marker_key = ml._Marker_key
+			and ml.priority not in (3,4)
+		order by mm._Marker_key, ml.priority''',
 
-	# 3. select accession IDs directly associated with current mouse
-	# markers: MGI (1), Entrez Gene (55), Ensembl Gene Model (60), VEGA
-	# Gene Model (85), UniGene (23), and miRBase (83)
+	# 1. all public accession IDs for current mouse markers (excluding
+	# the sequence IDs picked up in a later query from the related
+	# sequences)
 	'''select a.accID as term,
 			l.name as term_type,
 			a._Object_key as marker_key
@@ -200,30 +204,11 @@ cmds = [
 			and a._Object_key = m._Marker_key
 			and m._Marker_Status_key in (1,3)
 			and m._Organism_key = 1
-			and a._LogicalDB_key in (1, 55, 60, 85, 23, 83)
+			and a._LogicalDB_key not in (9,13,27,41)
 			and a._LogicalDB_key = l._LogicalDB_key''',
 
-	# 4. Affy IDs for current mouse markers
-	'''select a.accID as term,
-			l.name as term_type,
-			a._Object_key as marker_key
-		from acc_accession a,
-			acc_logicaldb l,
-			mrk_marker m
-		where a._MGIType_key = 2
-			and a.private = 0
-			and a._Object_key = m._Marker_key
-			and m._Marker_Status_key in (1,3)
-			and m._Organism_key = 1
-			and a._LogicalDB_key in (select sm._Object_key
-				from mgi_setmember sm, mgi_set s
-				where sm._Set_key = s._Set_key
-					and s.name = 'MA Chip')
-			and a._LogicalDB_key = l._LogicalDB_key''',
-	
-	# 5. Genbank (9), RefSeq (27), and Uniprot (13 and 41) IDs for
-	# sequences associated to current mouse markers.  note that this
-	# syntax for 'case' only works for postgres.
+	# 2. Genbank (9), RefSeq (27), and Uniprot (13 and 41) IDs for
+	# sequences associated to current mouse markers.
 	'''select a.accID as term,
 			case
 				when l.name = 'Sequence DB' then 'GenBank'
@@ -246,7 +231,7 @@ cmds = [
 	# retrieved for either its directly annotated terms or any of their
 	# ancestor terms for its annotated terms
 	
-	# 6. get the list of GO term IDs and keys
+	# 3. get the list of GO term IDs and keys
 	'''select _Object_key,
 			accID
 		from acc_accession
@@ -254,7 +239,7 @@ cmds = [
 			and private = 0
 			and _MGIType_key = 13''',
 
-	# 7. get the GO DAG, mapping a term to all of its subterms
+	# 4. get the GO DAG, mapping a term to all of its subterms
 	'''select c._AncestorObject_key,
 			c._DescendentObject_key
 		from dag_closure c,
@@ -263,7 +248,7 @@ cmds = [
 			and c._AncestorObject_key = t._Term_key
 			and t._Vocab_key = 4''',
 
-	# 8. get the marker/GO annotations
+	# 5. get the marker/GO annotations
 	'''select _Object_key,
 			_Term_key
 		from voc_annot
