@@ -30,7 +30,7 @@ import getopt
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-b|-c|-g|-h|-i|-m|-o|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-b : Batch Query tables
@@ -39,7 +39,7 @@ USAGE = '''Usage: %s [-a|-b|-c|-g|-h|-i|-m|-o|-p|-r|-s|-x] [-G <gatherer to run>
 	-h : IMSR counts (via HTTP)
 	-i : Images
 	-m : Markers
-	-o : gene Ontology (GO/marker data)
+	-n : Annotations
 	-p : Probes
 	-s : Sequences
 	-r : References
@@ -91,13 +91,13 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
 		'allele_to_sequence',
 	]
+ANNOTATIONS = [ 'annotation'
+	]
 BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_annotation',
-	]
-GO = [ 'marker_go'
 	]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
@@ -140,7 +140,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
-	'-o' : GO,
+	'-n' : ANNOTATIONS,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
