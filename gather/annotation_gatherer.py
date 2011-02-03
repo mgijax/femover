@@ -3,18 +3,6 @@
 # gathers data for the 'annotation_*' and '*_to_annotation' tables in the
 # front-end database
 
-
-
-
-
-
-# NEED TO RE-SORT BY DAG STRUCTURE WHERE AVAILABLE!
-
-
-
-
-
-
 import Gatherer
 import VocabSorter
 import logger
@@ -25,6 +13,24 @@ MARKER = 2		# MGI Type for markers
 
 ###--- Functions ---###
 
+# annotKey -> (annotTypeKey, objectKey, termKey, qualifierKey)
+annotKeyAttributes = {}
+
+def putAnnotAttributes (annotKey, annotType, objectKey, termKey, qualifier):
+	global annotKeyAttributes
+
+	annotKeyAttributes[annotKey] = (annotType, objectKey, termKey,
+		qualifier)
+	return
+
+def getAnnotAttributes (annotKey):
+	# returns (annot type, object key, term key, qualifier) if available,
+	#	or None
+
+	if annotKeyAttributes.has_key(annotKey):
+		return annotKeyAttributes[annotKey]
+	return None
+
 newAnnotKeys = {}
 
 def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
@@ -33,7 +39,15 @@ def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
 
 	global newAnnotKeys
 
-	tpl = (annotKey, evidenceTermKey, inferredFrom)
+	attributes = getAnnotAttributes(annotKey)
+	if attributes:
+		(annotType, objectKey, termKey, qualifier) = attributes
+		tpl = (annotType, objectKey, termKey, qualifier,
+			evidenceTermKey, inferredFrom)
+	else:
+		logger.debug ('Unknown annotation key: %d' % annotKey)
+		tpl = (annotKey, evidenceTermKey, inferredFrom)
+
 	if not newAnnotKeys.has_key(tpl):
 		newAnnotKeys[tpl] = len(newAnnotKeys) + 1
 	return newAnnotKeys[tpl]
@@ -212,7 +226,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		return byVocab, byAnnotType, byTermAlpha
 
 	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
-		# build the extra rows from query 8, where we pull a summary
+		# build the extra rows from query 9, where we pull a summary
 		# of annotations up from genotypes through alleles to markers
 
 		# see aCols, mCols, and sCols in buildRows() for column order
@@ -241,6 +255,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			markerKey = row[markerCol]
 			termID = row[accIDCol]
 			pair = (markerKey, termID)
+			annotKey = row[annotKeyCol]
 
 			if done.has_key(pair):
 				continue
@@ -251,9 +266,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
 				'_Vocab_key', 'name')
 
-			annotKey = row[annotKeyCol]
+			# use termID and markerKey to distinguish genotypes
+			# with multiple allele pairs and different markers
 			annotationKey = getNewAnnotationKey (annotKey, 
-				'fictional', 'fictional')
+				termID, markerKey)
 
 			if done.has_key(annotationKey):
 				continue
@@ -283,6 +299,26 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Pulled %d OMIM/MP terms up to markers' % \
 			len(aRows) )
 		return aRows, mRows, sRows
+
+	def cacheAnnotationData (self):
+		# our base data is in the results from query 5
+		cols, rows = self.results[5]
+
+		annotCol = Gatherer.columnNumber (cols, '_Annot_key')
+		objectCol = Gatherer.columnNumber (cols, '_Object_key')
+		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		annotTypeKeyCol = Gatherer.columnNumber (cols,
+			'_AnnotType_key')
+		objectTypeCol = Gatherer.columnNumber (cols, '_MGIType_key')
+
+		for row in rows:
+			putAnnotAttributes (row[annotCol],
+				row[annotTypeKeyCol], row[objectCol],
+				row[termKeyCol], row[qualifierCol])
+
+		logger.debug ('Cached data for %d annotations' % len(rows))
+		return
 
 	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
 		annotationEvidence, annotationRefs, inferredFromIDs):
@@ -339,6 +375,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		termCol = Gatherer.columnNumber (cols, 'term')
 		objectTypeCol = Gatherer.columnNumber (cols, '_MGIType_key')
 
+		# new annot key -> 1 (once done)
+		done = {}
+
 		for row in rows:
 			# base values that we'll need later
 			annotKey = row[annotCol]
@@ -385,6 +424,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			    refCount = 0	# number of references
 			    idCount = 0		# number of inferred-from IDs
 			    evidenceCode = None	# default to no evidence code
+
+			    if done.has_key(annotationKey):
+				    continue
+			    done[annotationKey] = 1
 
 			    # look up an evidence code, if one exists
 			    if annotationEvidence.has_key(annotationKey):
@@ -450,6 +493,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		return
 
 	def collateResults (self):
+		# cache some of our base annotation data for use later
+		self.cacheAnnotationData()
+
 		# process query 0 - maps term key to primary ID
 		termKeyToID = self.getTermIDs()
 
@@ -568,29 +614,55 @@ cmds = [
 
 	# 9. get OMIM and MP annotations made to genotypes, and pull a brief
 	# set of info for them up through their alleles to their markers
-	# (only null qualifiers, to avoid NOT and "normal" annotations)
+	# (only null qualifiers, to avoid NOT and "normal" annotations).  The
+	# union would also pull in OMIM annotations to orthologous human
+	# markers, but is commented-out for the time being.
 	'''select distinct va._Annot_key,
 		vt._Term_key,
 		vt.term,
 		aa.accID,
 		vt._Vocab_key,
-		ama._Marker_key,
+		gag._Marker_key,
 		va._AnnotType_key
-	from all_marker_assoc ama,
-		gxd_allelegenotype gag,
+	from gxd_allelegenotype gag,
 		voc_annot va,
 		voc_term vt,
 		voc_term vq,
 		acc_accession aa
-	where ama._Allele_key = gag._Allele_key
-		and gag._Genotype_key = va._Object_key
+	where gag._Genotype_key = va._Object_key
 		and va._AnnotType_key in (1005, 1002)
 		and va._Term_key = vt._Term_key
 		and va._Qualifier_key = vq._Term_key
 		and va._Term_key = aa._Object_key
 		and aa._MGIType_key = 13
 		and aa.preferred = 1
+		and gag._Marker_key is not null
 		and vq.term is null''',
+#	union
+#	select distinct va._Annot_key,
+#		vt._Term_key,
+#		vt.term,
+#		aa.accID,
+#		vt._Vocab_key,
+#		mus._Marker_key,
+#		va._AnnotType_key
+#	from mrk_homology_cache hum,
+#		mrk_homology_cache mus,
+#		voc_annot va,
+#		voc_term vt,
+#		voc_term vq,
+#		acc_accession aa
+#	where hum._Organism_key = 2
+#		and mus._Organism_key = 1
+#		and hum._Class_key = mus._Class_key
+#		and hum._Marker_key = va._Object_key
+#		and va._AnnotType_key = 1006
+#		and va._Term_key = vt._Term_key
+#		and va._Qualifier_key = vq._Term_key
+#		and va._Term_key = aa._Object_key
+#		and aa._MGIType_key = 13
+#		and aa.preferred = 1
+#		and vq.term is null''',
 	]
 
 # definition of output files, each as:
