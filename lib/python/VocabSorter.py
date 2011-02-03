@@ -44,6 +44,7 @@ class VocabSorter:
 		self.children = {}
 
 		# dictionary of term keys for root terms
+		#	root term key -> dag key
 		self.roots = {}
 
 		# dictionary of term keys which are not root terms
@@ -106,12 +107,25 @@ class VocabSorter:
 		termList = []
 		for row in rows:
 			term = row[termCol]
+			seqNum = row[seqCol]
+			termKey = row[keyCol]
+
 			if term:
 				term = term.lower()
+
+			# special handling to re-order GO DAGs in relation
+			# to each other (hack)
+			if termKey == 6113:
+				seqNum = 3	# biological process
+			elif termKey == 120:
+				seqNum = 2	# cellular component
+			elif termKey == 1098:
+				seqNum = 1	# molecular function
+
 			item = (row[vocabCol],
-				row[seqCol],
+				seqNum,
 				term,
-				row[keyCol])
+				termKey)
 			termList.append (item)
 		termList.sort()
 
@@ -133,7 +147,8 @@ class VocabSorter:
 		# all parent/child relationships for vocab terms (MGIType 13)
 
 		cmd = '''select distinct p._Object_key as parentKey,
-				c._Object_key as childKey
+				c._Object_key as childKey,
+				d._DAG_key as dagKey
 			from dag_dag d,
 				dag_edge e,
 				dag_node p,
@@ -149,6 +164,7 @@ class VocabSorter:
 
 		childCol = _columnNumber (cols, 'childkey')
 		parentCol = _columnNumber (cols, 'parentkey')
+		dagCol = _columnNumber (cols, 'dagkey')
 
 		for row in rows:
 			child = row[childCol]
@@ -164,7 +180,7 @@ class VocabSorter:
 			# unless we have seen the parent node as a child
 			# previously, then it is a root as far as we know now
 			if not self.notRoots.has_key(parent):
-				self.roots[parent] = 1
+				self.roots[parent] = row[dagCol]
 
 			# add the child to the list of the parent's children
 			if self.children.has_key(parent):
@@ -198,6 +214,53 @@ class VocabSorter:
 		# pull the now-ordered term keys back out of 'siblist'
 		return map (lambda y : y[1], siblist)
 
+	def __orderDagRoots (self):
+		# provide a custom ordering for the root nodes of our DAGs,
+		# since GO has three DAGs that require a certain order among
+		# them
+
+		# we will order by DAG key except for those cases where we
+		# need a different ordering.  In this case, we put the
+		# Molecular Function DAG before the Cellular Component DAG
+		dagMap = {
+			2 : 1,
+			1 : 2,
+			}
+
+		rootsByDag = {}
+
+		for (termKey, dagKey) in self.roots.items():
+
+			# re-order DAGs as needed
+			if dagMap.has_key(dagKey):
+				dagKey = dagMap[dagKey]
+
+			# collect roots for each DAG, in case multiple roots
+			# per DAG exist
+			if rootsByDag.has_key(dagKey):
+				rootsByDag[dagKey].append (termKey)
+			else:
+				rootsByDag[dagKey] = [ termKey]
+
+		dags = rootsByDag.keys()
+		dags.sort()
+
+		# list of roots in proper order, by DAG then term
+		roots = []
+		for dag in dags:
+			# order the roots for this DAG
+			rootlist = []
+			for root in rootsByDag[dag]:
+				rootlist.append ( (self.defaultOrder[root],
+					root) )
+			rootlist.sort()
+
+			# then pull out those root terms and add them to our
+			# list to return
+			for (rootOrder, root) in rootlist:
+				roots.append(root)
+		return roots 
+
 	def __computeFinalOrder (self):
 		# order the terms using a DFS algorithm to traverse down the
 		# DAGs.  fill in ordering for any non-DAG vocabulary terms as
@@ -213,7 +276,7 @@ class VocabSorter:
 		# get the ordered list of roots for the DAGs.  Any terms not
 		# reachable from those in 'rootList' are from non-DAG
 		# vocabularies; we will come back and order those ones later.
-		rootList = self.__orderTermList(self.roots.keys())
+		rootList = self.__orderDagRoots()
 		if rootList:
 			stack.append (rootList)
 
