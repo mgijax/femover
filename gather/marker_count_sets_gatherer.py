@@ -73,11 +73,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			else:
 				byMarker[key][other] = ct
 
-		# combine genomic, cDNA, and primer pair counts into nucleic
+		# combine genomic, cDNA, primer pair, other into nucleic
 
 		for key in byMarker.keys():
 			byMarker[key][nucleic] = 0
-			for term in [ genomic, cdna, primerPair ]:
+			for term in [ genomic, cdna, primerPair, other ]:
 				if byMarker[key].has_key(term):
 					byMarker[key][nucleic] = \
 						byMarker[key][nucleic] + \
