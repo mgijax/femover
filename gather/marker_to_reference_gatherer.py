@@ -3,6 +3,8 @@
 # gathers data for the 'markerToReference' table in the front-end database
 
 import Gatherer
+import PrivateRefSet
+import logger
 
 ###--- Classes ---###
 
@@ -22,26 +24,68 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 
 		self.finalResults = []
 
+		# marker key -> list of okay (not de-emphasized) refs keys
+		okayRefs = {}
+
+		# marker key -> list of private (de-emphasized) refs keys
+		privateRefs = {}
+
+		# marker key -> 1
+		markerKeys = {}
+
 		for r in rows:
 			markerKey = r[markerKeyCol]
 			refsKey = r[refsKeyCol]
 
-			if markerKey != lastMarkerKey:
-				qualifier = 'earliest'
-				if lastRow and (not lastRow[-1]):
-					lastRow[-1] = 'latest'
+			if PrivateRefSet.isPrivate (refsKey):
+				d = privateRefs
 			else:
-				qualifier = None
+				d = okayRefs
 
-			row = [ markerKey, refsKey, qualifier ]
-			self.finalResults.append (row)
+			if d.has_key(markerKey):
+				d[markerKey].append(refsKey)
+			else:
+				d[markerKey] = [ refsKey ]
+				markerKeys[markerKey] = 1
 
-			lastMarkerKey = markerKey
-			lastRow = row
+		logger.debug ('Collected refs for %d markers (%d:%d)' % (
+			len(markerKeys), len(okayRefs), len(privateRefs) ))
 
-		if lastRow and (not lastRow[-1]):
-			lastRow[-1] = 'latest'
+		# now go through the lists of references for each marker,
+		# flagging the earliest, latest, and private references
 
+		markers = markerKeys.keys()
+		markers.sort()
+
+		logger.debug ('Sorted %d marker keys' % len(markers))
+
+		rows = []
+
+		for markerKey in markers:
+			if okayRefs.has_key(markerKey):
+				# do earliest ref
+				first = okayRefs[markerKey][0]
+				row = [ markerKey, first, 'earliest' ]
+				rows.append (row)
+
+				# do any refs between earliest and latest
+				for ref in okayRefs[markerKey][1:-1]:
+					row = [ markerKey, ref, None ]
+					rows.append (row)
+
+				# do latest ref
+				last = okayRefs[markerKey][-1]
+				if first != last:
+					row = [ markerKey, last, 'latest' ]
+					rows.append (row)
+
+			if privateRefs.has_key(markerKey):
+				for ref in privateRefs[markerKey]:
+					row = [ markerKey, ref, 'private' ]
+					rows.append (row)
+
+		logger.debug ('Generated %d rows' % len(rows))
+		self.finalResults = rows
 		self.finalColumns = [ '_Marker_key', '_Refs_key', 'qualifier']
 		return
 
@@ -56,11 +100,6 @@ cmds = [
 		and mr._Refs_key = r._Refs_key
 		and m._Marker_Status_key != 2
 	order by mr._Marker_key, r.year, mr.jnum''',
-
-#	'''select distinct mr._Marker_key, mr._Refs_key, '' as qualifier
-#	from mrk_reference mr, mrk_marker m 
-#	where mr._Marker_key = m._Marker_key
-#		and m._Marker_Status_key != 2''',
 	]
 
 # order of fields (from the query results) to be written to the
