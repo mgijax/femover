@@ -50,8 +50,17 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 			keyCol = Gatherer.columnNumber (cols, 'marker_key')
 
 			for row in rows:
-				self.finalResults.append ( [ row[termCol],
-					row[typeCol], row[keyCol] ] )
+				term = row[termCol]
+				termType = row[typeCol]
+				marker = row[keyCol]
+
+				triple = (term, termType, marker)
+				if done.has_key(triple):
+					continue
+
+				self.finalResults.append ( [ term, termType,
+					marker ] )
+				done[triple] = 1
 
 			logger.debug ('Processed %d IDs from query %d' % (
 				len(rows), i) )
@@ -223,6 +232,7 @@ cmds = [
 			and m._Marker_Status_key in (1,3)
 			and m._Organism_key = 1
 			and s._Sequence_key = a._Object_key
+			and a._MGIType_key = 19
 			and a.private = 0
 			and a._LogicalDB_key in (9, 13, 27, 41)
 			and a._LogicalDB_key = l._LogicalDB_key''' % caseEnd,
