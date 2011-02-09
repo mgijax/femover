@@ -50,6 +50,24 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		#	one single list of final results, with one row per
 		#	marker
 
+		# pre-process the GO annotation data
+
+		# marker key -> count of rows
+		goAnnot = {}
+
+		cols, rows = self.results[4]
+		mrkKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+
+		for row in rows:
+			markerKey = row[mrkKeyCol]
+			if goAnnot.has_key(markerKey):
+				goAnnot[markerKey] = goAnnot[markerKey] + 1
+			else:
+				goAnnot[markerKey] = 1 
+
+		goData = [ ['_Marker_key', 'numGO'], goAnnot.items() ]
+		logger.debug ('Pre-processed %d GO counts' % len(goAnnot))
+
 		# list of count types (like field names)
 		counts = []
 
@@ -65,7 +83,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		toAdd = [ (self.results[1], ReferenceCount, 'numRef'),
 			(self.results[2], SequenceCount, 'numSeq'),
 			(self.results[3], AlleleCount, 'numAll'),
-			(self.results[4], GOCount, 'numGO'),
+			(goData, GOCount, 'numGO'),
 			(self.results[5], GxdAssayCount, 'numAssay'),
 			(self.results[6], OrthologCount, 'numOrtho'),
 			(self.results[7], GeneTrapCount, 'numGeneTraps'),
@@ -155,12 +173,30 @@ cmds = [
 			and a.isWildType != 1
 		group by m._Marker_key''',
 
-	# 4. count of GO terms for each marker
-	'''select _Object_key as _Marker_key,
-			count(distinct _Term_key) as numGO
-		from voc_annot
-		where _AnnotType_key = 1000
-		group by _Object_key''',
+	# 4. count of GO annotations for each marker (must manually count rows
+	# for each marker, since the 'distinct' determines the rows displayed
+	# on marker/GO).  Note that postgres could do this all with a
+	# count(distinct (a, b, c)) but sybase and mysql do not allow the
+	# combination within the distinct clause.
+	'''select distinct a._Object_key as _Marker_key,
+			a._Term_key,
+			a._Qualifier_key,
+			e.inferredFrom,
+			e._EvidenceTerm_key 
+		from voc_annot a, 
+			voc_evidence e
+		where a._AnnotType_key = 1000
+			and a._Annot_key = e._Annot_key
+		order by a._Object_key,
+			a._Term_key,
+			a._Qualifier_key,
+			e.inferredFrom,
+			e._EvidenceTerm_key''',
+#	'''select _Object_key as _Marker_key,
+#			count(distinct _Term_key) as numGO
+#		from voc_annot
+#		where _AnnotType_key = 1000
+#		group by _Object_key''',
 
 	# 5. count of expression assays for each marker
 	'''select _Marker_key, count(_Assay_key) as numAssay
