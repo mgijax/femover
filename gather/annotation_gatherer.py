@@ -293,11 +293,64 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
-				byAnnotType[annotTypeKey] ]
+				0 ]
 			sRows.append (sRow)
 
 		logger.debug ('Pulled %d OMIM/MP terms up to markers' % \
 			len(aRows) )
+		return aRows, mRows, sRows
+
+	def buildQuery10Rows (self, aRows, mRows, sRows, byVocab, byAnnotType,
+			byTermAlpha):
+		# build the extra rows from query 10, where we pull Protein
+		# Ontology IDs associated with markers up to be annotations
+
+		# see aCols, mCols, and sCols in buildRows() for column order
+		# for these three lists, respectively:
+
+		cols, rows = self.results[10]
+
+		termCol = Gatherer.columnNumber (cols, 'term')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		accIDCol = Gatherer.columnNumber (cols, 'accID')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
+		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+		accKeyCol = Gatherer.columnNumber (cols, '_Accession_key')
+
+		for row in rows:
+			markerKey = row[markerCol]
+			termID = row[accIDCol]
+			termKey = row[termKeyCol]
+			vocabKey = row[vocabKeyCol]
+			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
+				'_Vocab_key', 'name')
+			accKey = row[accKeyCol]
+
+			annotationKey = getNewAnnotationKey (accKey,
+				termID, markerKey)
+
+			annotType = 'Protein Ontology/Marker'
+
+			aRow = [ annotationKey, None, None, vocab,
+				row[termCol], termID, None, 'Marker',
+				annotType, 0, 0 ]
+			aRows.append (aRow)
+
+			mRow = [ len(mRows), markerKey, annotationKey,
+				None, None, annotType ]
+			mRows.append (mRow)
+
+			sRow = [ annotationKey,
+				VocabSorter.getSequenceNum(termKey),
+				byTermAlpha[termKey],
+				byVocab[vocabKey],
+				999
+				]
+			sRows.append (sRow)
+
+		logger.debug ('Pulled in %d Protein Ontology terms' % \
+			len(rows) )
+
 		return aRows, mRows, sRows
 
 	def cacheAnnotationData (self):
@@ -360,6 +413,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		aRows, mRows, sRows = self.buildQuery9Rows(byVocab,
 			byAnnotType, byTermAlpha)
+
+		# fill in the Protein Ontology data
+		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
+			sRows, byVocab, byAnnotType, byTermAlpha)
 
 		# our base data is in the results from query 5
 		cols, rows = self.results[5]
@@ -638,31 +695,24 @@ cmds = [
 		and aa.preferred = 1
 		and gag._Marker_key is not null
 		and vq.term is null''',
-#	union
-#	select distinct va._Annot_key,
-#		vt._Term_key,
-#		vt.term,
-#		aa.accID,
-#		vt._Vocab_key,
-#		mus._Marker_key,
-#		va._AnnotType_key
-#	from mrk_homology_cache hum,
-#		mrk_homology_cache mus,
-#		voc_annot va,
-#		voc_term vt,
-#		voc_term vq,
-#		acc_accession aa
-#	where hum._Organism_key = 2
-#		and mus._Organism_key = 1
-#		and hum._Class_key = mus._Class_key
-#		and hum._Marker_key = va._Object_key
-#		and va._AnnotType_key = 1006
-#		and va._Term_key = vt._Term_key
-#		and va._Qualifier_key = vq._Term_key
-#		and va._Term_key = aa._Object_key
-#		and aa._MGIType_key = 13
-#		and aa.preferred = 1
-#		and vq.term is null''',
+
+	# 10. get the Protein Ontology IDs for each marker, so we can convert
+	# them to be annotations
+	'''select distinct a._Accession_key,
+		t._Term_key,
+		t.term,
+		a.accID,
+		t._Vocab_key,
+		a._Object_key as _Marker_key
+	from acc_accession a,
+		voc_term t,
+		acc_accession a2
+	where a._MGIType_key = 2
+		and a._LogicalDB_key = 135
+		and a.private = 0
+		and a.accID = a2.accID
+		and a2._MGIType_key = 13
+		and a2._Object_key = t._Term_key''',
 	]
 
 # definition of output files, each as:
