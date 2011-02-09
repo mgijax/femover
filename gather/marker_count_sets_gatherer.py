@@ -170,6 +170,16 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
+sortVal = '''case
+	when gat.assayType = 'RT-PCR' then 'a'
+	when gat.assayType = 'RNA in situ' then 'b'
+	when gat.assayType = 'Immunohistochemistry' then 'c'
+	when gat.assayType = 'Northern blot' then 'd'
+	when gat.assayType = 'RNase protection' then 'e'
+	else gat.assayType
+	end as typeSort
+'''
+
 cmds = [
 	# counts of reagents by type (these need to be grouped in code, but
 	# this will give us the raw counts)
@@ -221,27 +231,29 @@ cmds = [
 	'''select ge._Marker_key,
 		gat.assayType as %s,
 		'Expression Assays by Assay Type' as %s,
-		count(distinct ge._Assay_key) as %s
+		count(distinct ge._Assay_key) as %s,
+		%s
 	from gxd_expression ge,
 		gxd_assaytype gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
 	group by ge._Marker_key, gat.assayType
-	order by ge._Marker_key, gat.assayType''' % (COUNT_TYPE, SET_TYPE,
-		COUNT),
+	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
+		COUNT, sortVal),
 
 	# expression results by type
 	'''select ge._Marker_key,
 		gat.assayType as %s,
 		'Expression Results by Assay Type' as %s,
-		count(distinct ge._Expression_key) as %s
+		count(distinct ge._Expression_key) as %s,
+		%s
 	from gxd_expression ge,
 		gxd_assaytype gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
 	group by ge._Marker_key, gat.assayType
-	order by ge._Marker_key, gat.assayType''' % (COUNT_TYPE, SET_TYPE,
-		COUNT),
+	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
+		COUNT, sortVal),
 
 	# expression results by theiler stages 
 	'''select ge._Marker_key,
