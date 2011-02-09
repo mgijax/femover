@@ -17,6 +17,8 @@ createStatement = '''CREATE TABLE %s  (
 	acc_id		varchar(30) NULL,
 	preferred	int	NOT NULL,
 	private		int	NOT NULL,
+	is_for_other_db_section	int	NOT NULL,
+	sequence_num	int	NOT NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
