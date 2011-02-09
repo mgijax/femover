@@ -44,6 +44,12 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 
 		# handle IDs in two queries
 
+		# we need to exclude NCBI Gene Model (and evidence) IDs if we
+		# encounter an Entrez Gene ID for that marker
+
+		# marker key -> 1
+		ncbiExcluded = {}
+
 		for (cols, rows) in self.results[1:3]:
 			termCol = Gatherer.columnNumber (cols, 'term')
 			typeCol = Gatherer.columnNumber (cols, 'term_type')
@@ -57,6 +63,19 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				triple = (term, termType, marker)
 				if done.has_key(triple):
 					continue
+
+				# eliminate NCBI Gene Model (and evidence) if
+				# it duplicates a Entrez Gene ID
+
+				if termType.lower() == 'entrez gene':
+					ncbiExcluded[marker] = 1
+
+				if termType.lower().startswith (
+						'ncbi gene model'):
+					if ncbiExcluded.has_key(marker):
+						continue
+
+				# if we made it this far, add the term
 
 				self.finalResults.append ( [ term, termType,
 					marker ] )
@@ -201,7 +220,7 @@ cmds = [
 
 	# 1. all public accession IDs for current mouse markers (excluding
 	# the sequence IDs picked up in a later query from the related
-	# sequences)
+	# sequences).  Ordering is so that Entrez IDs will come before NCBI.
 	'''select a.accID as term,
 			l.name as term_type,
 			a._Object_key as marker_key
@@ -214,7 +233,8 @@ cmds = [
 			and m._Marker_Status_key in (1,3)
 			and m._Organism_key = 1
 			and a._LogicalDB_key not in (9,13,27,41)
-			and a._LogicalDB_key = l._LogicalDB_key''',
+			and a._LogicalDB_key = l._LogicalDB_key
+		order by a._Object_key, l.name''',
 
 	# 2. Genbank (9), RefSeq (27), and Uniprot (13 and 41) IDs for
 	# sequences associated to current mouse markers.
