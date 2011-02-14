@@ -101,7 +101,8 @@ GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_annotation',
 	]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
-		'expression_assay', 'marker_to_expression_assay',
+		'expression_index_counts', 'expression_assay',
+		'marker_to_expression_assay',
 		'marker_tissue_expression_counts',
 	]
 IMAGES = [ 'image',
