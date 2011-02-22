@@ -28,6 +28,7 @@ createStatement = '''CREATE TABLE %s  (
 	mini_citation  	varchar(765) NULL,
 	short_citation 	varchar(765) NULL,
 	long_citation  	varchar(2040) NULL,
+	indexed_for_gxd	int	not null,
 	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -37,6 +38,7 @@ indexes = {
 	'jnum_id' : 'create index %s on %s (jnum_id)',
 	'journal' : 'create index %s on %s (journal)',
 	'refs_key_sort' : 'create index %s on %s (reference_key, jnum_numeric)',
+	'indexed_for_gxd' : 'create index %s on %s (indexed_for_gxd)',
 	}
 
 # global instance of this Table object
