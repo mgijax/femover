@@ -98,6 +98,8 @@ class ImageGatherer (Gatherer.Gatherer):
 			'_Image_key')
 		typeCol = Gatherer.columnNumber (self.finalColumns,
 			'_ImageType_key')
+		classCol = Gatherer.columnNumber (self.finalColumns,
+			'_ImageClass_key')
 
 		for row in self.finalResults:
 			key = row[keyCol]
@@ -149,6 +151,9 @@ class ImageGatherer (Gatherer.Gatherer):
 				self.finalColumns)
 			self.addColumn ('caption', caption, row,
 				self.finalColumns)
+			self.addColumn ('imageClass',
+				Gatherer.resolve (row[classCol]), row,
+				self.finalColumns)
 		return
 		
 ###--- globals ---###
@@ -175,7 +180,7 @@ cmds = [
 
 	# this works because img_image._Refs_key is non-null in mgd
 	'''select i._Image_key, i.xDim, i.yDim, i._Refs_key, i.figureLabel,
-			i._ImageType_key, r.jnumID
+			i._ImageType_key, r.jnumID, i._ImageClass_key
 		from img_image i, bib_citation_cache r
 		where i._Refs_key = r._Refs_key''',
 	]
@@ -185,6 +190,7 @@ cmds = [
 fieldOrder = [ '_Image_key', '_Refs_key', 'thumbnailKey', 'fullsizeKey',
 		'isThumbnail', 'xDim', 'yDim', 'figureLabel', 'imageType',
 		'pixNumeric', 'mgiID', 'jnumID', 'copyright', 'caption',
+		'imageClass',
 	]
 
 # prefix for the filename of the output file
