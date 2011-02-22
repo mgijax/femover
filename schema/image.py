@@ -28,6 +28,7 @@ createStatement = '''CREATE TABLE %s  (
 	jnum_id			varchar(30)	null,
 	copyright		varchar(512)	null,
 	caption			varchar(4500)	null,
+	image_class		varchar(20)	null,
 	PRIMARY KEY(image_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
