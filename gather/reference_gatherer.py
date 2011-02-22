@@ -220,6 +220,15 @@ class ReferenceGatherer (Gatherer.Gatherer):
 				}
 			self.books[key] = book
 		
+		# cache which references are cited in the GXD Lit Index
+
+		self.gxdRefs = {}
+
+		cols, rows = self.results[1]
+		keyCol = Gatherer.columnNumber (columns, '_Refs_key')
+		for row in rows:
+			self.gxdRefs[row[keyCol]] = 1 
+
 		# use last query as base for our final results
 
 		self.finalColumns = self.results[-1][0]
@@ -231,6 +240,8 @@ class ReferenceGatherer (Gatherer.Gatherer):
 
 		self.convertFinalResultsToList()
 
+		keyCol = Gatherer.columnNumber (self.finalColumns,
+			'referenceKey')
 		authorsCol = Gatherer.columnNumber (self.finalColumns,
 			'authors')
 		authors2Col = Gatherer.columnNumber (self.finalColumns,
@@ -301,6 +312,16 @@ class ReferenceGatherer (Gatherer.Gatherer):
 			if (r[pubmedCol] != None) and \
 				(r[pubmedCol].lower() == 'null'):
 					r[pubmedCol] = None
+
+			# add the flag for the GXD Literature Index
+
+			if self.gxdRefs.has_key(r[keyCol]):
+				inGxdIndex = 1
+			else:
+				inGxdIndex = 0
+
+			self.addColumn ('indexedForGXD', inGxdIndex, r,
+				self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -312,6 +333,9 @@ cmds = [ '''select _Refs_key,
 		publisher,
 		series_ed as edition
 	from bib_books''',
+
+	'''select distinct _Refs_key
+	from gxd_index''',
 
 	'''select r._Refs_key as referenceKey,
 		r.refType as referenceType,
@@ -341,7 +365,7 @@ fieldOrder = [
 	'longAuthors', 'longTitle',
 	'journal', 'vol', 'issue', 'pubDate', 'year', 'pages',
 	'jnumID', 'numericPart', 'pubmedID', 'miniCitation',
-	'shortCitation', 'longCitation',
+	'shortCitation', 'longCitation', 'indexedForGXD',
 	]
 
 # prefix for the filename of the output file
