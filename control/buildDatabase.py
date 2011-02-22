@@ -98,6 +98,7 @@ BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_annotation',
+		'genotype_sequence_num',
 	]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
@@ -105,7 +106,9 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'marker_to_expression_assay',
 		'marker_tissue_expression_counts',
 	]
-IMAGES = [ 'image',
+IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
+		'genotype_to_image', 'marker_to_phenotype_image', 
+		'expression_imagepane',
 	]
 IMSR = [ 'imsr',
 	]
