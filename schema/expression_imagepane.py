@@ -14,25 +14,16 @@ tableName = 'expression_imagepane'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key	int		not null,
+	imagepane_key	int		not null,
 	image_key	int		not null,
 	pane_label	varchar(255)	null,
-	assay_key	int		not null,
-	assay_id	varchar(40)	null,
-	marker_key	int		not null,
-	marker_id	varchar(40)	null,
-	marker_symbol	varchar(50)	null,
 	sequence_num	int		not null,
-	PRIMARY KEY(unique_key))''' % tableName
+	PRIMARY KEY(imagepane_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'image_key' : 'create index %s on %s (image_key)',
-	'assay_key' : 'create index %s on %s (assay_key)',
-	'marker_key' : 'create index %s on %s (marker_key)',
-	}
+indexes = { 'image_key' : 'create index %s on %s (image_key)' }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes)
