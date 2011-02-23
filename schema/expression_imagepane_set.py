@@ -14,14 +14,15 @@ tableName = 'expression_imagepane_set'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key	int		not null,
+	paneset_key	int		not null,
 	image_key	int		not null,
+	thumbnail_key	int		null,
 	assay_type	varchar(80)	null,
 	pane_labels	varchar(768)	null,
 	marker_key	int		not null,
 	in_pixeldb	int		not null,
 	sequence_num	int		not null,
-	PRIMARY KEY(unique_key))''' % tableName
+	PRIMARY KEY(paneset_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
