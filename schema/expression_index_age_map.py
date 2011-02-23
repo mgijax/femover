@@ -17,6 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	age_string		varchar(255)	not null,
 	min_theiler_stage	int		not null,
 	max_theiler_stage	int		not null,
+	sequence_num		int		not null,
 	PRIMARY KEY(age_string))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

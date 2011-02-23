@@ -16,7 +16,8 @@ tableName = 'expression_index_assay_type_map'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	assay_type		varchar(255)	not null,
-	full_coding_assay_type	varchar(80)	not null,
+	full_coding_assay_type	varchar(80)	null,
+	sequence_num		int		not null,
 	PRIMARY KEY(assay_type))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
