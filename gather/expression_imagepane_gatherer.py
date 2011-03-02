@@ -42,6 +42,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		assayTypeCol = Gatherer.columnNumber (cols, 'assayType')
 		xDimCol = Gatherer.columnNumber (cols, 'xDim')
 		paneKeyCol = Gatherer.columnNumber (cols, '_ImagePane_key')
+		thumbKeyCol = Gatherer.columnNumber (cols,
+			'_ThumbnailImage_key')
 
 		assays = []
 		for row in rows:
@@ -62,7 +64,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 
 			assays.append ( (imageKey, assayType, markerKey,
 				paneLabel, assayKey, assayID, symbol,
-				inPixeldb, markerID, row[paneKeyCol]) )
+				inPixeldb, markerID, row[paneKeyCol],
+				row[thumbKeyCol]) )
 		logger.debug ('Collected %d %s assays' % (len(assays), label))
 
 		assays.sort()
@@ -88,8 +91,9 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			'assayID', '_Marker_key', 'markerID', 'sequenceNum' ]
 
 		# column names for rows in 'paneSets'
-		paneSetCols = [ '_Image_key', 'assayType', 'paneLabels',
-			'_Marker_key', 'inPixeldb', 'sequenceNum' ]
+		paneSetCols = [ '_Image_key', '_ThumbnailImage_key',
+			'assayType', 'paneLabels', '_Marker_key', 'inPixeldb',
+			'sequenceNum' ]
 
 		i = 0		# counter for ordering
 
@@ -102,8 +106,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		# defined for a unique (image key, assay type, marker key)
 		# tuple
 		for (imageKey, assayType, markerKey, paneLabel, assayKey,
-			assayID, symbol, inPixeldb, markerID, paneKey) \
-			in allAssays:
+			assayID, symbol, inPixeldb, markerID, paneKey,
+			thumbKey) in allAssays:
 
 			i = i + 1
 			if not panesDone.has_key (paneKey):
@@ -116,7 +120,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			details.append ( [ paneKey, symbol, assayKey, assayID,
 				markerKey, markerID ] )
 
-			imageAssayMarker = (imageKey, assayType, markerKey)
+			imageAssayMarker = (imageKey, thumbKey, assayType,
+				markerKey)
 
 			# same set as last time, just add to the pane labels
 			# and go back to the loop
@@ -133,9 +138,11 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 				else:
 					label = None
 
-				oldImage, oldAssay, oldMarker = lastSet
-				paneSets.append ( (oldImage, oldAssay,
-					label, oldMarker, inPixeldb, i) )
+				oldImage, oldThumb, oldAssay, oldMarker = \
+					lastSet
+				paneSets.append ( (oldImage, oldThumb,
+					oldAssay, label, oldMarker, inPixeldb,
+					i) )
 
 			# both new sets and the initial set need to do basic
 			# setup work:
@@ -155,8 +162,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			else:
 				label = None
 
-			imageKey, assayType, markerKey = lastSet
-			paneSets.append ( (imageKey, assayType,
+			imageKey, thumbKey, assayType, markerKey = lastSet
+			paneSets.append ( (imageKey, thumbKey, assayType,
 				label, markerKey, inPixeldb, i) )
 
 		details.sort()
@@ -196,7 +203,8 @@ cmds = [
 		acc.accID as assayID,
 		gat.assaytype,
 		i.xDim,
-		p._ImagePane_key
+		p._ImagePane_key,
+		i._ThumbnailImage_key
 	from img_image i,
 		img_imagepane p,
 		gxd_assay a,
@@ -218,7 +226,8 @@ cmds = [
 		acc.accID as assayID,
 		gat.assayType,
 		i.xDim,
-		p._ImagePane_key
+		p._ImagePane_key,
+		i._ThumbnailImage_key
 	from img_image i,
 		img_imagepane p,
 		gxd_assay a,
@@ -248,8 +257,9 @@ files = [
 		'expression_imagepane'),
 
 	('expression_imagepane_set',
-		[ Gatherer.AUTO, '_Image_key', 'assayType', 'paneLabels',
-		'_Marker_key', 'inPixeldb', 'sequenceNum' ],
+		[ Gatherer.AUTO, '_Image_key', '_ThumbnailImage_key', 
+		'assayType', 'paneLabels', '_Marker_key', 'inPixeldb',
+		'sequenceNum' ],
 		'expression_imagepane_set'),
 
 	('expression_imagepane_details',
