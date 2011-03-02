@@ -122,6 +122,18 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 		logger.debug ('Found %d primary images' % len(self.images))
 
+		# get the set of alleles which have disease model genotypes
+
+		cols, rows = self.results[6]
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
+
+		self.diseaseModels = {}
+		for r in rows:
+			self.diseaseModels[r[keyCol]] = 1
+
+		logger.debug ('Found %d disease model alleles' % \
+			len(self.diseaseModels))
+
 		# main results are in the last query
 
 		self.finalColumns = self.results[-1][0]
@@ -185,6 +197,11 @@ class AlleleGatherer (Gatherer.Gatherer):
 			else:
 				molNote = None
 
+			if self.diseaseModels.has_key(allele):
+				diseaseModel = 1
+			else:
+				diseaseModel = 0
+
 			self.addColumn('isRecombinase', isRecombinase, r,
 				columns)
 			self.addColumn('driver', driver, r, columns)
@@ -224,31 +241,39 @@ class AlleleGatherer (Gatherer.Gatherer):
 				image = None
 
 			self.addColumn('imageKey', image, r, columns)
+			self.addColumn('hasDiseaseModel', diseaseModel, r,
+				columns)
 		return
 
 ###--- globals ---###
 
 cmds = [
+	# 0. Cre drivers
 	'''select distinct _Allele_key, driverNote from all_cre_cache''',
 
+	# 1. marker name for each allele
 	'''select a._Allele_key, m.name
 	from all_allele a, mrk_marker m
 	where a._Marker_key = m._Marker_key''',
 
+	# 2. Inducible allele notes
 	'''select n._Object_key, c.note, c.sequenceNum
 	from mgi_note n, mgi_notechunk c
 	where n._Note_key = c._Note_key
 		and n._NoteType_key = 1032
 	order by c.sequenceNum''',
 
+	# 3. Molecular allele notes
 	'''select n._Object_key, c.note, c.sequenceNum
 	from mgi_note n, mgi_notechunk c
 	where n._Note_key = c._Note_key
 		and n._NoteType_key = 1021
 	order by c.sequenceNum''',
 
+	# 4. Deltagen/Lexicon Knockout data
 	'select _Allele_key, holder, companyID from ALL_Knockout_Cache',
 
+	# 5. alleles' primary images
 	'''select a._Object_key as _Allele_key, p._Image_key
 		from img_imagepane_assoc a,
 			img_imagepane p
@@ -256,7 +281,13 @@ cmds = [
 			and a._ImagePane_key = p._ImagePane_key
 			and a._MGIType_key = 11''',
 
-	# assume all alleles have an MGI ID
+	# 6. alleles which have disease model genotypes
+	'''select distinct gag._Allele_key
+	from gxd_allelegenotype gag, voc_annot va
+	where va._AnnotType_key = 1005
+		and va._Object_key = gag._Genotype_key''',
+
+	# 7. assume all alleles have an MGI ID
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
 		a._Transmission_key, a.isWildType
@@ -277,7 +308,7 @@ fieldOrder = [
 	'isRecombinase', 'isWildType', 'driver', 'inducibleNote',
 	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',
-	'imageKey',
+	'imageKey', 'hasDiseaseModel',
 	]
 
 # prefix for the filename of the output file
