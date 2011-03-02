@@ -21,6 +21,10 @@ createStatement = '''CREATE TABLE %s  (
 	note			varchar(255)	null,
 	combination_1		varchar(1024)	null,
 	combination_2		varchar(1024)	null,
+	has_image		int		not null,
+	has_phenotype_data	int		not null,
+	is_disease_model	int		not null,
+	genotype_type		varchar(2)	null,
 	PRIMARY KEY(genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
