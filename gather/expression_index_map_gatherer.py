@@ -17,18 +17,21 @@ class ExpressionIndexMapsGatherer (Gatherer.MultiFileGatherer):
 	def collateResults (self):
 		cols1 = [ 'assay_type', 'full_coding_assay_type', 'seqNum' ]
 		rows1 = [
-			('Prot-sxn', 'Immunohistochemistry', 1),
-			('RNA-sxn', 'RNA in situ', 2),
-			('Prot-WM', 'Immunohistochemistry', 3),
-			('RNA-WM', 'RNA in situ', 4),
-			('Knock in', 'In situ reporter (knock in)', 5),
-			('Northern', 'Northern blot', 6),
-			('Western', 'Western blot', 7),
+			('In situ protein (section)',
+				'Immunohistochemistry', 1),
+			('In situ RNA (section)', 'RNA in situ', 2),
+			('In situ protein (whole mount)',
+				'Immunohistochemistry', 3),
+			('In situ RNA (whole mount)', 'RNA in situ', 4),
+			('In situ reporter (knock in)',
+				'In situ reporter (knock in)', 5),
+			('Northern blot', 'Northern blot', 6),
+			('Western blot', 'Western blot', 7),
 			('RT-PCR', 'RT-PCR', 8),
-			('cDNA', None, 9),
-			('RNAse prot', 'RNase protection', 10),
-			('S1 nuc', 'Nuclease S1', 11),
-			('Primer ex', None, 12),
+			('cDNA clones', None, 9),
+			('RNAse protection', 'RNase protection', 10),
+			('Nuclease S1', 'Nuclease S1', 11),
+			('Primer Extension', None, 12),
 			]
 
 		self.output.append ( (cols1, rows1) )
