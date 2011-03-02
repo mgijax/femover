@@ -26,7 +26,7 @@ createStatement = '''CREATE TABLE %s  (
 	pixeldb_numeric_id	varchar(30)	null,
 	mgi_id			varchar(30)	null,
 	jnum_id			varchar(30)	null,
-	copyright		varchar(512)	null,
+	copyright		varchar(768)	null,
 	caption			varchar(4500)	null,
 	image_class		varchar(20)	null,
 	PRIMARY KEY(image_key))''' % tableName
