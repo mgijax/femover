@@ -11,6 +11,7 @@ import Gatherer
 import logger
 import symbolsort
 import re
+import TagConverter
 
 ###--- Functions ---###
 
@@ -84,6 +85,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			i = i + 1
 
 			if alleleSystemMap.has_key(key):
+				# already seen this allele/system pair, so
+				# skip doing it again.  (useful for when both
+				# expressed = 1 and expressed = 0 for the same
+				# allele / system pair)
+				if alleleSystemMap[key].has_key(system):
+					continue
 				alleleSystemMap[key][system] = i
 			else:
 				alleleSystemMap[key] = { system : i }
@@ -240,7 +247,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		# trim trailing whitespace from allelic composition notes
 
 		for key in alleleComp.keys():
-			alleleComp[key] = alleleComp[key].rstrip()
+			alleleComp[key] = TagConverter.convert (
+				alleleComp[key].rstrip() )
 
 		logger.debug ('Found %d genotypes' % len(strain))
 		return alleleComp, strain
@@ -578,7 +586,8 @@ cmds = [
 		and a.preferred = 1
 		and a.private = 0
 		and a._MGIType_key = 11
-	order by c._Allele_key, a._LogicalDB_key, c.system''',
+	order by c._Allele_key, a._LogicalDB_key, c.system,
+		c.expressed desc''',
 
 	# genetic background info by genotype
 	'''select distinct s._Genotype_key, mnc.note, mnc.sequenceNum,
