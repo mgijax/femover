@@ -14,17 +14,22 @@ tableName = 'allele_to_genotype'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key	int		not null,
-	allele_key	int		not null,
-	genotype_key	int		not null,
-	qualifier	varchar(80)	null,
-	PRIMARY KEY(unique_key))''' % tableName
+	allele_genotype_key	int		not null,
+	allele_key		int		not null,
+	genotype_key		int		not null,
+	qualifier		varchar(80)	null,
+	genotype_type		varchar(2)	null,
+	genotype_designation	varchar(5)	null,
+	has_phenotype_data	int		not null,
+	is_disease_model	int		not null,
+	sequence_num		int		not null,
+	PRIMARY KEY(allele_genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'allele_key' : 'create index %s on %s (allele_key)',
+	'allele_key' : 'create index %s on %s (allele_key, sequence_num)',
 	'genotype_key' : 'create index %s on %s (genotype_key)',
 	}
 
