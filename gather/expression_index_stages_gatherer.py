@@ -49,11 +49,12 @@ class ExpressionIndexStagesGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select s._Index_key, t.term as assayType, a.term as ageString
+	'''select s._Index_key, t.note as assayType, a.term as ageString
 		from gxd_index_stages s,
-			voc_term t,
+			voc_text t,
 			voc_term a
 		where s._IndexAssay_key = t._Term_key
+			and t.sequenceNum = 1
 			and s._StageID_key = a._Term_key''',
 	]
 
