@@ -20,9 +20,8 @@ createStatement = '''CREATE TABLE %s  (
 	is_not			int		not null,
 	term			varchar(255)	null,
 	term_id			varchar(40)	null,
-	footnote_number		int		null,
-	footnote		varchar(255)	null,
 	genotype_count		int		not null,
+	has_footnote		int		not null,
 	sequence_num		int		not null,
 	PRIMARY KEY(allele_disease_key))''' % tableName
 
