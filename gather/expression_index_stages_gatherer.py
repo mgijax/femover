@@ -37,6 +37,9 @@ class ExpressionIndexStagesGatherer (Gatherer.Gatherer):
 
 		# now assign the float ages
 
+		assayTypeCol = Gatherer.columnNumber (self.finalColumns,
+			'note')
+
 		for row in self.finalResults:
 			try:
 				age = float(row[ageCol])
@@ -44,12 +47,15 @@ class ExpressionIndexStagesGatherer (Gatherer.Gatherer):
 				age = adultAge
 
 			self.addColumn ('age', age, row, self.finalColumns)
+			self.addColumn ('assayType',
+				row[assayTypeCol].strip(), row,
+				self.finalColumns)
 		return
 
 ###--- globals ---###
 
 cmds = [
-	'''select s._Index_key, t.note as assayType, a.term as ageString
+	'''select s._Index_key, t.note, a.term as ageString
 		from gxd_index_stages s,
 			voc_text t,
 			voc_term a
