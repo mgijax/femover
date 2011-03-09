@@ -42,7 +42,13 @@ def getArticleCitations (columns, r, longAuthors, longTitle):
 	# for short and long, include the title (with period, space)
 
 	if longTitle:
-		title = longTitle + '. '
+		# add a final period to the title if it's missing
+		if not longTitle.endswith('.'):
+			longTitle = longTitle + '.'
+
+		# add a space
+		title = longTitle + ' '
+
 		shortCitation = shortCitation + title
 		longCitation = longCitation + title
 
@@ -273,6 +279,8 @@ class ReferenceGatherer (Gatherer.Gatherer):
 				longTitle = r[titleCol]
 				if r[title2Col] != None:
 					longTitle = longTitle + r[title2Col]
+				longTitle = longTitle.rstrip()
+
 			self.addColumn ('longTitle', longTitle, r,
 				self.finalColumns)
 
