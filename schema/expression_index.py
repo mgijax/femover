@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	marker_symbol		varchar(50)	null,
 	marker_name		varchar(255)	null,
 	marker_id		varchar(30)	null,
+	comments		varchar(255)	null,
 	PRIMARY KEY(index_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

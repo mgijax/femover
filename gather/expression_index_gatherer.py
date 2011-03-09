@@ -16,7 +16,7 @@ ExpressionIndexGatherer = Gatherer.Gatherer
 
 cmds = [
 	'''select i._Index_key, i._Refs_key, c.jnumID, m._Marker_key,
-			m.symbol, m.name, a.accID
+			m.symbol, m.name, a.accID, i.comments
 		from gxd_index i, bib_citation_cache c, mrk_marker m,
 			acc_accession a
 		where i._Marker_key = m._Marker_key
@@ -32,7 +32,7 @@ cmds = [
 # output file
 fieldOrder = [
 	'_Index_key', '_Refs_key', 'jnumID', '_Marker_key', 'symbol',
-	'name', 'accID',
+	'name', 'accID', 'comments'
 	]
 
 # prefix for the filename of the output file
