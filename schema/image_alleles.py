@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	image_key		int		not null,
 	allele_key		int		not null,
 	allele_symbol		varchar(60)	null,
-	allele_name		varchar(255)	null,
+	allele_name		varchar(512)	null,
 	allele_id		varchar(30)	null,
 	sequence_num		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
