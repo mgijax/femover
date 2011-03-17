@@ -30,9 +30,10 @@ import getopt
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
+	-A : Accession IDs
 	-b : Batch Query tables
 	-c : Cre (Recombinases)
 	-g : Genotypes
@@ -86,6 +87,8 @@ INDEX_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
+ACCESSION = [ 'accession',
+	]
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_annotation',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
@@ -136,7 +139,8 @@ VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
-HIGH_PRIORITY_TABLES = [ 'sequence', 'sequence_sequence_num', 'sequence_id', ]
+HIGH_PRIORITY_TABLES = [ 'accession', 'sequence', 'sequence_sequence_num',
+	'sequence_id', ]
 
 # dictionary mapping each command-line flag to the list of gatherers that it
 # would regenerate
@@ -144,7 +148,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
-	'-n' : ANNOTATIONS,
+	'-n' : ANNOTATIONS,	'-A' : ACCESSION,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
