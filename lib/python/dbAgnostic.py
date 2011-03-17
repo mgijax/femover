@@ -84,3 +84,19 @@ def execute (cmd):
 
 	return columns, rows
 
+def columnNumber (columns, columnName):
+	# find the position of 'columnName' in the list of 'columns'
+
+	if columnName in columns:
+		return columns.index(columnName)
+
+	# Postgres returns lowercase fieldnames, so check for that
+
+	c = columnName.lower()
+	if c not in columns:
+		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
+			', '.join (columns) ) )
+		raise Error, 'Unknown column name: %s' % columnName
+
+	return columns.index(c)
+
