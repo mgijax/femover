@@ -24,12 +24,6 @@ def __initialize():
 		VOCAB_SORTER = VocabSorter()
 	return
 
-def _columnNumber (columns, columnName):
-	if columnName in columns:
-		return columns.index(columnName)
-	c = columnName.lower()
-	return columns.index(c)
-
 ###--- Classes ---###
 
 class VocabSorter:
@@ -47,6 +41,10 @@ class VocabSorter:
 		#	root term key -> dag key
 		self.roots = {}
 
+		# maps from a term key to all of its ancestors
+		# 	term key -> { ancestor term key : 1 }
+		self.ancestors = {}
+
 		# dictionary of term keys which are not root terms
 		self.notRoots = {}
 
@@ -63,6 +61,10 @@ class VocabSorter:
 		# compute the final ordering, using a DFS algorithm on the DAG
 		# vocabularies
 		self.__computeFinalOrder()
+
+		# get the transitive closure (pairs of ancestors and
+		# descendents) from the database
+		self.__getTransitiveClosure()
 		return
 
 	###--- public methods ---###
@@ -76,6 +78,19 @@ class VocabSorter:
 		if self.termKeys.has_key ( (vocabName, term) ):
 			return self.termKeys ( (vocabName, term) )
 		return None
+
+	def isChildOf (self, childTerm, parentTerm):
+		if self.children.has_key(parentTerm):
+			if childTerm in self.children[parentTerm]:
+				return 1
+		return 0
+
+	def isDescendentOf (self, descendentTerm, ancestorTerm):
+		if self.ancestors.has_key(descendentTerm):
+			if self.ancestors[descendentTerm].has_key (
+				ancestorTerm):
+				return 1
+		return 0
 
 	###--- private methods ---###
 
@@ -99,10 +114,10 @@ class VocabSorter:
 		# order all terms within a vocabulary by their pre-assigned
 		# sequence number from the database, then alphabetically
 
-		keyCol = _columnNumber (cols, '_Term_key')
-		termCol = _columnNumber (cols, 'term')
-		seqCol = _columnNumber (cols, 'sequenceNum')
-		vocabCol = _columnNumber (cols, 'name')
+		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
+		termCol = dbAgnostic.columnNumber (cols, 'term')
+		seqCol = dbAgnostic.columnNumber (cols, 'sequenceNum')
+		vocabCol = dbAgnostic.columnNumber (cols, 'name')
 
 		termList = []
 		for row in rows:
@@ -162,9 +177,9 @@ class VocabSorter:
 		logger.debug ('Retrieved %d relationships from database' % \
 			len(rows))
 
-		childCol = _columnNumber (cols, 'childkey')
-		parentCol = _columnNumber (cols, 'parentkey')
-		dagCol = _columnNumber (cols, 'dagkey')
+		childCol = dbAgnostic.columnNumber (cols, 'childkey')
+		parentCol = dbAgnostic.columnNumber (cols, 'parentkey')
+		dagCol = dbAgnostic.columnNumber (cols, 'dagkey')
 
 		for row in rows:
 			child = row[childCol]
@@ -319,6 +334,33 @@ class VocabSorter:
 		logger.debug ('Ordered %d flat vocab terms' % (seqNum - dag))
 		return
 
+	def __getTransitiveClosure (self):
+		cmd = '''select _AncestorObject_key,
+				_DescendentObject_key
+			from dag_closure'''
+
+		(cols, rows) = dbAgnostic.execute (cmd)
+		logger.debug ('Retrieved %d closure items from database' % \
+			len(rows))
+
+		ancestorCol = dbAgnostic.columnNumber (cols,
+			'_AncestorObject_key')
+		descendentCol = dbAgnostic.columnNumber (cols,
+			'_DescendentObject_key')
+
+		for row in rows:
+			ancestor = row[ancestorCol]
+			descendent = row[descendentCol]
+
+			if not self.ancestors.has_key(descendent):
+				self.ancestors[descendent] = {}
+			self.ancestors[descendent][ancestor] = 1
+
+		logger.debug ('Cached ancestors for %d terms' % \
+			len(self.ancestors))
+		return
+
+
 ###--- Public Functions ---###
 
 def getSequenceNum (termKey):
@@ -328,3 +370,11 @@ def getSequenceNum (termKey):
 def getSequenceNumByTerm (vocabName, term):
 	__initialize()
 	return getSequenceNum (VOCAB_SORTER.getTermKey (vocabName, term))
+
+def isChildOf (childTerm, parentTerm):
+	__initialize()
+	return VOCAB_SORTER.isChildOf (childTerm, parentTerm)
+
+def isDescendentOf (descendentTerm, ancestorTerm):
+	__initialize()
+	return VOCAB_SORTER.isDescendentOf (descendentTerm, ancestorTerm)
