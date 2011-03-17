@@ -32,12 +32,6 @@ TYPES = [ 'hm', 'ht', 'cx', 'tg', 'cn', 'ot' ]
 
 ###--- Private Functions ---###
 
-def _columnNumber (columns, columnName):
-	if columnName in columns:
-		return columns.index(columnName)
-	c = columnName.lower()
-	return columns.index(c)
-
 def _specialSort (a, b):
 	# a and b are both (allele key, sequence num, genotype key)
 	# sorting rules:
@@ -128,7 +122,7 @@ def _initialize():
 	for (query, abbrev) in queries:
 		(cols, rows) = dbAgnostic.execute (query)
 
-		genotypeCol = _columnNumber (cols, '_Genotype_key')
+		genotypeCol = dbAgnostic.columnNumber (cols, '_Genotype_key')
 		for row in rows:
 			GENOTYPE_TYPES[row[genotypeCol]] = abbrev
 
@@ -154,7 +148,7 @@ def _initialize():
 	for (query, d, vocab) in queries:
 		(cols, rows) = dbAgnostic.execute (query)
 
-		genotypeCol = _columnNumber (cols, '_Object_key')
+		genotypeCol = dbAgnostic.columnNumber (cols, '_Object_key')
 		for row in rows:
 			d[row[genotypeCol]] = 1
 
@@ -176,9 +170,9 @@ def _initialize():
 
 	(cols, rows) = dbAgnostic.execute (orderingQuery)
 
-	alleleCol = _columnNumber (cols, '_Allele_key')
-	genotypeCol = _columnNumber (cols, '_Genotype_key')
-	seqNumCol = _columnNumber (cols, 'sequenceNum')
+	alleleCol = dbAgnostic.columnNumber (cols, '_Allele_key')
+	genotypeCol = dbAgnostic.columnNumber (cols, '_Genotype_key')
+	seqNumCol = dbAgnostic.columnNumber (cols, 'sequenceNum')
 
 	lastAllele = None	# allele key from previous record
 	seqNumByAllele = None	# counter for genotypes of current allele

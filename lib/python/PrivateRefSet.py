@@ -14,12 +14,6 @@ PRIVATE_REFS = {}
 
 ###--- Private Functions ---###
 
-def _columnNumber (columns, columnName):
-	if columnName in columns:
-		return columns.index(columnName)
-	c = columnName.lower()
-	return columns.index(c)
-
 def _initialize():
 	global PRIVATE_REFS
 
@@ -55,8 +49,8 @@ def _initialize():
 	for (title, query) in queries:
 		(cols, rows) = dbAgnostic.execute (query)
 
-		idCol = _columnNumber (cols, 'accID')
-		keyCol = _columnNumber (cols, '_Refs_key')
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+		keyCol = dbAgnostic.columnNumber (cols, '_Refs_key')
 
 		for row in rows:
 			PRIVATE_REFS[row[idCol]] = 1

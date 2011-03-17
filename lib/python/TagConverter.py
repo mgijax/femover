@@ -17,12 +17,6 @@ ALLELE_SYMBOL = re.compile ('\\\\AlleleSymbol\(([^|)]+)\|[01]\)')
 
 ###--- Private Functions ---###
 
-def _columnNumber (columns, columnName):
-	if columnName in columns:
-		return columns.index(columnName)
-	c = columnName.lower()
-	return columns.index(c)
-
 def _initialize():
 	global ALLELES
 
@@ -37,8 +31,8 @@ def _initialize():
 
 	(cols, rows) = dbAgnostic.execute (query)
 
-	idCol = _columnNumber (cols, 'accID')
-	symbolCol = _columnNumber (cols, 'symbol')
+	idCol = dbAgnostic.columnNumber (cols, 'accID')
+	symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
 
 	for row in rows:
 		ALLELES[row[idCol]] = row[symbolCol]
