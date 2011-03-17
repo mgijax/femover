@@ -120,15 +120,6 @@ def sortGenotypePhenotypeRows (gpRows):
 		sortKeyDict[key] = i
 	logger.debug ('Put %d sortKeys into dict' % len(sortKeyDict))
 
-	# temporary trial:
-#
-#	for row in gpRows:
-#		sortKey = (row[1], row[5], row[3].lower() )
-#		row.append (sortKeyDict[sortKey])
-#	logger.debug ('Numbered %d rows' % len(gpRows))
-#	return gpRows
-
-
 	# collate our rows into a standard, sortable structure, each as:
 	#	[ [sortable fields], original row, [ sub rows ] ]
 	
@@ -143,7 +134,6 @@ def sortGenotypePhenotypeRows (gpRows):
 		indent = row[5]
 		lowerTerm = row[3].lower()
 
-#		sortVals = (genotypeKey, indent, lowerTerm)
 		sortVals = sortKeyDict[(genotypeKey, indent, lowerTerm)]
 		sortableRow = [ sortVals, i, [] ]
 		currentIndent = max(0,len(rowStack) - 1)
@@ -548,6 +538,8 @@ class PhenotypeGatherer (Gatherer.MultiFileGatherer):
 		# generate the list of row labels for the phenotype grid for
 		# each allele (the list of unique terms per allele)
 
+		mx = 0
+
 		# allele key -> ordered list of [term key, term, indent level]
 		# triples, with headers mixed in as appropriate.  Headers will
 		# have a None term key and a 0 indent level.
@@ -613,14 +605,15 @@ class PhenotypeGatherer (Gatherer.MultiFileGatherer):
 
 				if not indent:
 			   	    indent = 1
+				    parents.append (termKey)
 
-				parents.append (termKey)
+				mx = max(mx, indent)
 				alleleData.append ([ termKey, term, indent ])
 
 			self.alleleTerms[allele] = alleleData
 
-		logger.debug ('Collated terms for %d alleles' % \
-			len(self.alleleTerms) )
+		logger.debug ('Collated terms for %d alleles (max %d)' % (
+			len(self.alleleTerms), mx) )
 		return
 
 	def cacheIDs (self):
@@ -826,10 +819,8 @@ class PhenotypeGatherer (Gatherer.MultiFileGatherer):
 
 		    # build allele_grid_rows for the allele
 
-#		    i = 0
 		    header = None
 		    for [ termKey, term, indent ] in self.alleleTerms[allele]:
-#			i = i + 1
 			if termKey == None:
 				isHeader = 1
 				header = term
