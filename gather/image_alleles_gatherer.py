@@ -3,6 +3,7 @@
 # gathers data for the 'image_alleles' table in the front-end database
 
 import Gatherer
+import logger
 
 ###--- Classes ---###
 
@@ -12,19 +13,57 @@ class ImageAllelesGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for alleles associated with
 	#	images,	collates results, writes tab-delimited text file
 
-	def postprocessResults (self):
-		self.convertFinalResultsToList()
+	def collateResults (self):
+		cols, rows = self.results[0]
+
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		nameCol = Gatherer.columnNumber (cols, 'name')
+
+		markerNames = {}
+		for row in rows:
+			markerNames[row[keyCol]] = row[nameCol]
+		logger.debug ('Cached marker names for %d alleles' % \
+			len(markerNames))
+
+		self.finalColumns = [ '_Image_key', '_Allele_key', 'symbol',
+			'combinedName', 'accID', 'sequenceNum' ]
+		self.finalResults = []
+
+		cols, rows = self.results[1]
+
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		imageKeyCol = Gatherer.columnNumber (cols, '_Image_key')
+		nameCol = Gatherer.columnNumber (cols, 'name')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+		idCol = Gatherer.columnNumber (cols, 'accID')
 
 		i = 0
-		for row in self.finalResults:
+		for row in rows:
 			i = i + 1
-			self.addColumn ('sequenceNum', i, row,
-				self.finalColumns)
-		return 
+			alleleKey = row[alleleKeyCol]
+
+			if markerNames.has_key(alleleKey):
+				name = markerNames[alleleKey] + '; ' + \
+					row[nameCol]
+			else:
+				name = row[nameCol]
+
+			self.finalResults.append ( [ row[imageKeyCol],
+				alleleKey, row[symbolCol], name,
+				row[idCol], i ] )
+
+		logger.debug ('Built %d output rows' % len(self.finalResults))
+		return
 
 ###--- globals ---###
 
 cmds = [
+	# 0. cache marker names for every allele
+	'''select distinct a._Allele_key, m.name
+	from mrk_marker m, all_allele a
+	where a._Marker_key = m._Marker_key''',
+
+	# 1. main query
 	'''select i._Image_key,
 		a._Object_key as _Allele_key,
 		aa.symbol,
@@ -48,8 +87,8 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Image_key', '_Allele_key', 'symbol', 'name', 'accID',
-	'sequenceNum',
+	Gatherer.AUTO, '_Image_key', '_Allele_key', 'symbol', 'combinedName',
+	'accID', 'sequenceNum',
 	]
 
 # prefix for the filename of the output file
