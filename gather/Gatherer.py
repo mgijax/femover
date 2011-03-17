@@ -11,11 +11,12 @@ import config
 import logger
 import types
 import dbAgnostic
+import OutputFile
 
 ###--- Globals ---###
 
 Error = 'Gatherer.error'	# exception raised by this module
-AUTO = 'Gatherer.AUTO'		# special fieldname for auto-incremented field
+AUTO = OutputFile.AUTO		# special fieldname for auto-incremented field
 SOURCE_DB = config.SOURCE_TYPE	# either sybase, mysql, or postgres
 
 # cache of terms already looked up
@@ -77,35 +78,7 @@ def resolve (key,		# integer; key value to look up
 	return term
 
 def columnNumber (columns, columnName):
-	if columnName in columns:
-		return columns.index(columnName)
-
-	# Postgres returns lowercase fieldnames, so check for that
-
-	c = columnName.lower()
-	if c not in columns:
-		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
-			', '.join (columns) ) )
-		raise Error, 'Unknown column name: %s' % columnName
-
-	return columns.index(c)
-
-def createFile (filename):
-	# Purpose: create a uniquely named data file
-	# Returns: tuple (string path to filename, open file descriptor)
-	# Assumes: we can write the file
-	# Modifies: writes to the file system
-	# Throws: propagates all exceptions
-
-	# each file will be named with a specified prefix, a period,
-	# then a generated unique identifier, and a '.rpt' suffix
-
-	prefix = filename + '.'
-
-	(fd, path) = tempfile.mkstemp (suffix = '.rpt',
-		prefix = prefix, dir = config.DATA_DIR, text = True)
-
-	return path, fd
+	return dbAgnostic.columnNumber (columns, columnName)
 
 def executeQueries (cmds):
 	# Purpose: to issue the queries and collect the results
@@ -205,11 +178,10 @@ class Gatherer:
 			len(self.finalResults))
 		self.postprocessResults()
 		logger.info ('Post-processed result set')
-		path, fd = createFile (self.filenamePrefix)
-		logger.info ('Opened output file: %s' % path)
-		self.writeFile(fd)
-		os.close(fd)
-		logger.info ('Wrote and closed output file: %s' % path)
+
+		path = OutputFile.createAndWrite (self.filenamePrefix,
+			self.fieldOrder, self.finalColumns, self.finalResults)
+
 		print '%s %s' % (path, self.filenamePrefix)
 		return
 
@@ -254,44 +226,6 @@ class Gatherer:
 		# Modifies: nothing
 		# Throws: nothing
 
-		return
-
-	def writeFile (self,
-		fd			# file descriptor to which to write
-		):
-		# Purpose: to write self.finalResults out to a tab-delimited
-		#	file in the file system
-		# Returns: None
-		# Assumes: 1. the unique field in petal tables is named
-		#	uniqueKey; 2. the table we are building is the same
-		#	as self.filenamePrefix
-		# Modifies: writes to the file system
-		# Throws: propagates all exceptions
-
-		# For petal tables, we need to manage auto-incrementing of a
-		# uniqueKey field.  Sice we always do a full refresh of the
-		# table, then this can just start over at 1.
-
-		if self.nextAutoKey == None:
-			self.nextAutoKey = 1
-
-		for row in self.finalResults:
-			columns = []
-			for col in self.fieldOrder:
-				if col == AUTO:
-					columns.append (str(self.nextAutoKey))
-					self.nextAutoKey = 1 + self.nextAutoKey
-				else:
-					colNum = columnNumber (
-						self.finalColumns, col)
-					fieldVal = row[colNum]
-
-					if fieldVal == None:
-						columns.append ('') 
-					else:
-						columns.append (str(fieldVal))
-
-			os.write (fd, '&=&'.join(columns) + '#=#\n')
 		return
 
 class ChunkGatherer (Gatherer):
@@ -342,8 +276,7 @@ class ChunkGatherer (Gatherer):
 
 		# create the output data file
 
-		path, fd = createFile(self.filenamePrefix)
-		logger.info ('Created output file: %s' % path)
+		out = OutputFile.OutputFile (self.filenamePrefix)
 
 		# work through the data chunk by chunk
 
@@ -357,8 +290,8 @@ class ChunkGatherer (Gatherer):
 			self.results = executeQueries (self.cmds)
 			self.collateResults()
 			self.postprocessResults()
-			logger.debug ('Post-processed results')
-			self.writeFile(fd)
+			out.writeToFile (self.fieldOrder, self.finalColumns,
+				self.finalResults)
 			logger.debug ('Wrote keys %d..%d' % (
 				lowKey, highKey - 1))
 
@@ -366,9 +299,11 @@ class ChunkGatherer (Gatherer):
 
 		# close the data file and write its path to stdout
 
-		os.close(fd)
-		logger.info ('Closed output file: %s' % path)
-		print '%s %s' % (path, self.filenamePrefix)
+		out.close()
+		logger.debug ('Wrote %d rows to %s' % (out.getRowCount(),
+			out.getPath()) )
+
+		print '%s %s' % (out.getPath(), self.filenamePrefix)
 		return
 
 	def getMinKeyQuery (self):
@@ -467,14 +402,10 @@ class MultiFileGatherer:
 			filename, fieldOrder, tableName = self.files[i]
 			columns, rows = self.output[i]
 
-			path, fd = createFile(filename)
-			logger.info ('Opened output file: %s' % path)
+			path = OutputFile.createAndWrite (filename,
+				fieldOrder, columns, rows)
 
-			self.writeFile(fieldOrder, columns, rows, fd)
-			os.close(fd)
-			logger.info('Wrote and closed output file: %s' % path)
 			print '%s %s' % (path, tableName)
-
 			i = i + 1
 		return
 
@@ -504,43 +435,3 @@ class MultiFileGatherer:
 		# Throws: nothing
 
 		return
-
-	def writeFile (self,
-		fieldOrder,	# list of field names, in order to write out
-		columns,	# list of field names, in order of rows
-		rows,		# list of lists, each a single row
-		fd		# file descriptor to which to write
-		):
-		# Purpose: to write data from 'rows' out as a tab-delimited
-		#	file to 'fd'
-		# Returns: None
-		# Assumes: nothing
-		# Modifies: writes to the file system
-		# Throws: propagates all exceptions
-
-		autoKey = 1
-
-#		logger.debug ('fieldOrder: ' + str(fieldOrder))
-#		logger.debug ('columns: ' + str(columns))
-
-		for row in rows:
-			out = []	# list of field values
-
-			for col in fieldOrder:
-				if col == AUTO:
-#					logger.debug ('%s == %s' % (col, AUTO))
-					out.append (str(autoKey))
-					autoKey = 1 + autoKey
-				else:
-#					logger.debug ('%s != %s' % (col, AUTO))
-					colNum = columnNumber (columns, col)
-					fieldVal = row[colNum]
-
-					if fieldVal == None:
-						out.append ('') 
-					else:
-						out.append (str(fieldVal))
-
-			os.write (fd, '&=&'.join(out) + '#=#\n')
-		return
-
