@@ -26,7 +26,9 @@ OBJECT_TYPE_FILE = 'accession_object_type'
 ACCESSION_FILE = 'accession'
 DISPLAY_TYPE_FILE = 'accession_display_type'
 
-CHUNK_SIZE = 300000
+CHUNK_SIZE = 50000	# note that when we are chunking, we are doing the
+			# same key restriction in multiple tables; while this
+			# appears odd, it improves performance a lot
 
 ###--- Functions ---###
 
@@ -116,10 +118,9 @@ class AccessionGatherer:
 		# both mouse and non-mouse markers
 		cmd = '''select m._Marker_key, a.accID, m.symbol, m.name,
 				m.chromosome, a._LogicalDB_key,
-				a._MGIType_key, t.name as typeName
-			from acc_accession a, mrk_marker m, mrk_types t
+				a._MGIType_key, m._Marker_Type_key
+			from acc_accession a, mrk_marker m
 			where m._Marker_key = a._Object_key
-				and m._Marker_Type_key = t._Marker_Type_key
 				and a._MGIType_key = 2
 				and a.private = 0'''
 
@@ -132,7 +133,8 @@ class AccessionGatherer:
 		chromosomeCol = dbAgnostic.columnNumber (cols, 'chromosome')
 		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
 		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-		displayTypeCol = dbAgnostic.columnNumber (cols, 'typeName')
+		displayTypeCol = dbAgnostic.columnNumber (cols,
+			'_Marker_Type_key')
 
 		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
 			'sequenceNum', 'description', '_LogicalDB_key',
@@ -142,11 +144,14 @@ class AccessionGatherer:
 		for row in rows:
 			accID = row[idCol]
 
+			displayType = Gatherer.resolve (row[displayTypeCol],
+				'mrk_types', '_Marker_Type_key', 'name')
+
 			out = [ row[keyCol], accID, sequenceNum(accID),
 				'%s, %s, Chr %s' % (row[symbolCol],
 					row[nameCol], row[chromosomeCol]),
 				row[ldbCol],
-				displayTypeNum(row[displayTypeCol]),
+				displayTypeNum(displayType),
 				row[mgiTypeCol],
 				]
 			outputRows.append (out) 
@@ -204,35 +209,33 @@ class AccessionGatherer:
 
 	    # IDs for alleles
 	    cmd1 = '''select a._Allele_key, acc.accID, acc._LogicalDB_key,
-				acc._MGIType_key, t.term, a.symbol, a.name
-			from all_allele a, voc_term t, acc_accession acc
+				acc._MGIType_key, a.symbol, a.name,
+				a._Allele_Type_key
+			from all_allele a, acc_accession acc
 			where a._Allele_key = acc._Object_key
 				and acc._MGIType_key = 11
-				and acc.private = 0
-				and a._Allele_Type_key = t._Term_key'''
+				and acc.private = 0'''
 
 	    # seq IDs for sequences associated with alleles
 	    cmd2 = '''select aa._Allele_key, acc.accID,
 				acc._LogicalDB_key, 11 as _MGIType_key,
-				t.term, aa.symbol, aa.name
+				aa.symbol, aa.name, aa._Allele_Type_key
 			from seq_allele_assoc saa,
 				all_allele aa,
-				acc_accession acc,
-				voc_term t
+				acc_accession acc
 			where acc._MGIType_key = 19
 				and acc._Object_key = saa._Sequence_key
-				and saa._Allele_key = aa._Allele_key
-				and aa._Allele_Type_key = t._Term_key'''
+				and saa._Allele_key = aa._Allele_key'''
 
 	    # cell line IDs for cell lines associated with alleles
 	    cmd3 = '''select a._Allele_key, acc.accID, acc._LogicalDB_key,
-	    			11 as _MGIType_key, t.term, a.symbol, a.name
+	    			11 as _MGIType_key, a.symbol, a.name,
+				a._Allele_Type_key
 	    		from all_allele_cellline c, all_allele a,
-				acc_accession acc, voc_term t
+				acc_accession acc
 			where acc._MGIType_key = 28
 				and acc._Object_key = c._MutantCellLine_key
-				and c._Allele_key = a._Allele_key
-				and a._Allele_Type_key = t._Term_key'''
+				and c._Allele_key = a._Allele_key'''
 
 	    queries = [ (cmd1, 'allele IDs'),
 			(cmd2, 'seq IDs for alleles'),
@@ -249,7 +252,8 @@ class AccessionGatherer:
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
 		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-		displayTypeCol = dbAgnostic.columnNumber (cols, 'term')
+		displayTypeCol = dbAgnostic.columnNumber (cols,
+			'_Allele_Type_key')
 		symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
 		nameCol = dbAgnostic.columnNumber (cols, 'name')
 
@@ -259,9 +263,11 @@ class AccessionGatherer:
 			alleleKey = row[keyCol]
 			description = row[symbolCol] + ', ' + row[nameCol]
 
+			displayType = Gatherer.resolve (row[displayTypeCol])
+
 			out = [ alleleKey, accID, sequenceNum(accID),
 				description, row[ldbCol],
-				displayTypeNum(row[displayTypeCol]),
+				displayTypeNum(displayType),
 				row[mgiTypeCol],
 				]
 			outputRows.append (out) 
@@ -282,14 +288,15 @@ class AccessionGatherer:
 	    maxKey = CHUNK_SIZE
 
 	    cmd = '''select p._Probe_key, a.accID, a._LogicalDB_key,
-				a._MGIType_key, t.term, p.name
-			from prb_probe p, voc_term t, acc_accession a
+				a._MGIType_key, p._SegmentType_key, p.name
+			from prb_probe p, acc_accession a
 			where p._Probe_key = a._Object_key
 				and a.private = 0
 				and a._MGIType_key = 3
 				and p._Probe_key > %d
 				and p._Probe_key <= %d
-				and p._SegmentType_key = t._Term_key'''
+				and a._Object_key > %d
+				and a._Object_key <= %d'''
 
 	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
 			'sequenceNum', 'description', '_LogicalDB_key',
@@ -297,13 +304,15 @@ class AccessionGatherer:
 
 	    while minKey < maxProbeKey:
 		maxKey = minKey + CHUNK_SIZE
-		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey))
+		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
+			minKey, maxKey))
 
 		keyCol = dbAgnostic.columnNumber (cols, '_Probe_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
 		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-		displayTypeCol = dbAgnostic.columnNumber (cols, 'term')
+		displayTypeCol = dbAgnostic.columnNumber (cols,
+			'_SegmentType_key')
 		nameCol = dbAgnostic.columnNumber (cols, 'name')
 
 		outputRows = []
@@ -312,9 +321,11 @@ class AccessionGatherer:
 			accID = row[idCol]
 			probeKey = row[keyCol]
 
+			displayType = Gatherer.resolve (row[displayTypeCol])
+
 			out = [ probeKey, accID, sequenceNum(accID),
 				row[nameCol], row[ldbCol],
-				displayTypeNum(row[displayTypeCol]),
+				displayTypeNum(displayType),
 				row[mgiTypeCol],
 				]
 			outputRows.append (out) 
@@ -333,47 +344,51 @@ class AccessionGatherer:
 	def fillSequences (self, accessionFile):
 
 	    maxSeqKey = getMaxKey ('seq_sequence', '_Sequence_key')
+	    maxProbeKey = getMaxKey ('seq_probe_cache', '_Probe_key')
 
 	    # sequence IDs
 	    cmd1 = '''select s._Sequence_key, a.accID, a._LogicalDB_key,
-	    		a._MGIType_key, t.term, s.description
-	    	from acc_accession a, seq_sequence s, voc_term t
+	    		a._MGIType_key, s.description, s._SequenceType_key
+	    	from acc_accession a, seq_sequence s
 		where a._MGIType_key = 19
 			and a.private = 0
 			and a._Object_key = s._Sequence_key
 			and a._Object_key > %d
 			and a._Object_key <= %d
-			and s._SequenceType_key = t._Term_key'''
+			and s._Sequence_key > %d
+			and s._Sequence_key <= %d'''
 
 	    # probe IDs for probes associated with sequences (from non-Genbank
-	    # logical databases)
+	    # logical databases).  Iterate through probes, as there are fewer
+	    # of them.
 	    cmd2 = '''select s._Sequence_key, a.accID, a._LogicalDB_key,
-	    		19 as _MGIType_key, t.term, s.description
-	    	from acc_accession a, seq_probe_cache spc, seq_sequence s,
-			voc_term t
+	    		19 as _MGIType_key, s.description, s._SequenceType_key
+	    	from acc_accession a, seq_probe_cache spc, seq_sequence s
 		where a._MGIType_key = 3
 			and a.private = 0
-			and s._Sequence_key > %d
-			and s._Sequence_key <= %d
+			and spc._Probe_key > %d
+			and spc._Probe_key <= %d
+			and a._Object_key > %d
+			and a._Object_key <= %d
 			and a._Object_key = spc._Probe_key
 			and spc._Sequence_key = s._Sequence_key
-			and s._SequenceType_key = t._Term_key
 			and a._LogicalDB_key != 9'''
 
-	    queries = [ (cmd1, 'sequence IDs'),
-			(cmd2, 'probe IDs for sequences') ]
+	    queries = [ (cmd1, 'sequence IDs', maxSeqKey),
+			(cmd2, 'probe IDs for sequences', maxProbeKey) ]
 
 	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 
-	    for (cmd, idType) in queries:
+	    for (cmd, idType, maxObjectKey) in queries:
 		minKey = 0
 		maxKey = CHUNK_SIZE
 
-		while minKey < maxSeqKey:
+		while minKey < maxObjectKey:
 		    maxKey = minKey + CHUNK_SIZE
-		    cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey))
+		    cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
+			    minKey, maxKey))
 
 		    keyCol = dbAgnostic.columnNumber (cols, '_Sequence_key')
 		    idCol = dbAgnostic.columnNumber (cols, 'accID')
@@ -381,7 +396,7 @@ class AccessionGatherer:
 		    mgiTypeCol = dbAgnostic.columnNumber (cols,
 			'_MGIType_key')
 		    displayTypeCol = dbAgnostic.columnNumber (cols,
-			'term')
+			'_SequenceType_key')
 		    descriptionCol = dbAgnostic.columnNumber (cols,
 			'description')
 
@@ -390,9 +405,11 @@ class AccessionGatherer:
 			accID = row[idCol]
 			sequenceKey = row[keyCol]
 
+			displayType = Gatherer.resolve (row[displayTypeCol])
+
 			out = [ sequenceKey, accID, sequenceNum(accID),
 				row[descriptionCol], row[ldbCol],
-				displayTypeNum(row[displayTypeCol]),
+				displayTypeNum(displayType),
 				row[mgiTypeCol],
 				]
 			outputRows.append (out) 
