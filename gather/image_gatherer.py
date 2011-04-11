@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import TagConverter
 
 ###--- Classes ---###
 
@@ -134,6 +135,7 @@ class ImageGatherer (Gatherer.Gatherer):
 
 			if self.caption.has_key(key):
 				caption = self.caption[key].rstrip()
+				caption = TagConverter.convert(caption)
 
 			self.addColumn ('thumbnailKey', thumb, row,
 				self.finalColumns)
