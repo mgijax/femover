@@ -111,7 +111,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
-		'expression_imagepane', 'allele_to_image',
+		'expression_imagepane', 'allele_to_image', 'image_id'
 	]
 IMSR = [ 'imsr',
 	]
@@ -241,6 +241,14 @@ def processCommandLine():
 	for gatherer in withDuplicates:
 		if gatherer not in uniqueGatherers:
 			uniqueGatherers.append (gatherer)
+
+			# check that we have a gatherer script for the
+			# specified gatherer
+
+			script = os.path.join (config.GATHER_DIR,
+				'%s_gatherer.py' % gatherer)
+			if not os.path.exists (script):
+				bailout ('Unknown gatherer: %s' % gatherer)
 
 	uniqueGatherers.sort()
 	logger.info ('Found %d gatherers to run' % len(uniqueGatherers))
