@@ -123,7 +123,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 					int(startCoordinate),
 					int(row[endCol]), row[buildCol],
 					'coordinates', 'bp', prov, strand ] )
-			if cm:
+			if cm and (int(cm) != -1 or not cyto):
 				seqNum = seqNum + 1
 				self.finalResults.append ( [ key, seqNum,
 					chrom, '%0.2f' % cm, None,
