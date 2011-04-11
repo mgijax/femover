@@ -209,13 +209,11 @@ cmds = [
 		from seq_probe_cache spc,
 			mgi_setmember msm,
 			mgi_set ms,
-			acc_logicaldb ldb,
 			acc_accession aa
 		where spc._Probe_key = aa._Object_key
 			and spc._Sequence_key >= %d
 			and spc._Sequence_key < %d
 			and aa._MGIType_key = 3
-			and aa._LogicalDB_key = ldb._LogicalDB_key
 			and aa._LogicalDB_key = msm._Object_key
 			and msm._Set_key = ms._Set_key
 			and ms.name = 'Clone Collection (all)' ''',
