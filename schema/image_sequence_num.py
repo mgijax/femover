@@ -16,6 +16,7 @@ tableName = 'image_sequence_num'
 createStatement = '''CREATE TABLE %s  ( 
 	image_key		int	not null,
 	by_default		int	not null,
+	by_jnum			int	not null,
 	PRIMARY KEY(image_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
