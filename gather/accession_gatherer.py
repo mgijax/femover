@@ -30,6 +30,8 @@ CHUNK_SIZE = 50000	# note that when we are chunking, we are doing the
 			# same key restriction in multiple tables; while this
 			# appears odd, it improves performance a lot
 
+ORTHOLOGY_TYPE = 18
+
 ###--- Functions ---###
 
 IDS = {}		# ID -> count of objects with that ID
@@ -90,7 +92,10 @@ class AccessionGatherer:
 		return
 
 	def buildMGITypeFile (self):
-		cmd = '''select _MGIType_key, name
+		cmd = '''select _MGIType_key, case
+				when name = 'Segment' then 'Probe/Clone'
+				else name
+				end as name
 			from acc_mgitype
 			order by _MGIType_key'''
 		cols, rows = dbAgnostic.execute (cmd)
@@ -118,7 +123,8 @@ class AccessionGatherer:
 		# both mouse and non-mouse markers
 		cmd = '''select m._Marker_key, a.accID, m.symbol, m.name,
 				m.chromosome, a._LogicalDB_key,
-				a._MGIType_key, m._Marker_Type_key
+				a._MGIType_key, m._Marker_Type_key,
+				m._Organism_key
 			from acc_accession a, mrk_marker m
 			where m._Marker_key = a._Object_key
 				and a._MGIType_key = 2
@@ -135,8 +141,10 @@ class AccessionGatherer:
 		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
 		displayTypeCol = dbAgnostic.columnNumber (cols,
 			'_Marker_Type_key')
+		organismKey = dbAgnostic.columnNumber (cols, '_Organism_key')
 
 		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 		outputRows = []
@@ -147,12 +155,18 @@ class AccessionGatherer:
 			displayType = Gatherer.resolve (row[displayTypeCol],
 				'mrk_types', '_Marker_Type_key', 'name')
 
-			out = [ row[keyCol], accID, sequenceNum(accID),
+			# non-mouse markers should use the fake orthology type
+			if row[organismKey] != 1:
+				mgiType = ORTHOLOGY_TYPE
+			else:
+				mgiType = row[mgiTypeCol]
+
+			out = [ row[keyCol], accID, accID, sequenceNum(accID),
 				'%s, %s, Chr %s' % (row[symbolCol],
 					row[nameCol], row[chromosomeCol]),
 				row[ldbCol],
 				displayTypeNum(displayType),
-				row[mgiTypeCol],
+				mgiType,
 				]
 			outputRows.append (out) 
 
@@ -182,6 +196,7 @@ class AccessionGatherer:
 		displayTypeCol = dbAgnostic.columnNumber (cols, 'typeName')
 
 		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 		outputRows = []
@@ -190,7 +205,7 @@ class AccessionGatherer:
 			accID = row[idCol]
 			refsKey = row[keyCol]
 
-			out = [ refsKey, accID, sequenceNum(accID),
+			out = [ refsKey, accID, accID, sequenceNum(accID),
 				ReferenceCitations.getMiniCitation(refsKey),
 				row[ldbCol],
 				displayTypeNum(row[displayTypeCol]),
@@ -242,6 +257,7 @@ class AccessionGatherer:
 			(cmd3, 'cell line IDs for alleles') ]
 
 	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 
@@ -265,7 +281,7 @@ class AccessionGatherer:
 
 			displayType = Gatherer.resolve (row[displayTypeCol])
 
-			out = [ alleleKey, accID, sequenceNum(accID),
+			out = [ alleleKey, accID, accID, sequenceNum(accID),
 				description, row[ldbCol],
 				displayTypeNum(displayType),
 				row[mgiTypeCol],
@@ -299,6 +315,7 @@ class AccessionGatherer:
 				and a._Object_key <= %d'''
 
 	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 
@@ -323,7 +340,7 @@ class AccessionGatherer:
 
 			displayType = Gatherer.resolve (row[displayTypeCol])
 
-			out = [ probeKey, accID, sequenceNum(accID),
+			out = [ probeKey, accID, accID, sequenceNum(accID),
 				row[nameCol], row[ldbCol],
 				displayTypeNum(displayType),
 				row[mgiTypeCol],
@@ -362,8 +379,11 @@ class AccessionGatherer:
 	    # logical databases).  Iterate through probes, as there are fewer
 	    # of them.
 	    cmd2 = '''select s._Sequence_key, a.accID, a._LogicalDB_key,
+	    		seqacc.accID as seqID,
+			seqacc._LogicalDB_key as seqLDB,
 	    		19 as _MGIType_key, s.description, s._SequenceType_key
-	    	from acc_accession a, seq_probe_cache spc, seq_sequence s
+	    	from acc_accession a, seq_probe_cache spc, seq_sequence s,
+			acc_accession seqacc
 		where a._MGIType_key = 3
 			and a.private = 0
 			and spc._Probe_key > %d
@@ -372,12 +392,17 @@ class AccessionGatherer:
 			and a._Object_key <= %d
 			and a._Object_key = spc._Probe_key
 			and spc._Sequence_key = s._Sequence_key
+			and s._Sequence_key = seqacc._Object_key
+			and seqacc._MGIType_key = 19
+			and seqacc.preferred = 1
+			and seqacc.private = 0
 			and a._LogicalDB_key != 9'''
 
 	    queries = [ (cmd1, 'sequence IDs', maxSeqKey),
 			(cmd2, 'probe IDs for sequences', maxProbeKey) ]
 
 	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 
@@ -399,16 +424,29 @@ class AccessionGatherer:
 			'_SequenceType_key')
 		    descriptionCol = dbAgnostic.columnNumber (cols,
 			'description')
+		    if idType[:5] == 'probe':
+			    seqCol = dbAgnostic.columnNumber (cols, 'seqID')
+			    seqLdbCol = dbAgnostic.columnNumber (cols,'seqLDB')
+		    else:
+			    seqCol = None
+			    seqLdbCol = None
 
 		    outputRows = []
 		    for row in rows:
 			accID = row[idCol]
 			sequenceKey = row[keyCol]
 
+			if seqCol:
+				seqID = row[seqCol]
+				ldb = row[seqLdbCol]
+			else:
+				seqID = accID
+				ldb = row[ldbCol]
+
 			displayType = Gatherer.resolve (row[displayTypeCol])
 
-			out = [ sequenceKey, accID, sequenceNum(accID),
-				row[descriptionCol], row[ldbCol],
+			out = [ sequenceKey, accID, seqID, sequenceNum(accID),
+				row[descriptionCol], ldb,
 				displayTypeNum(displayType),
 				row[mgiTypeCol],
 				]
@@ -451,6 +489,7 @@ class AccessionGatherer:
 		pgsCol = dbAgnostic.columnNumber (cols, 'pgs')
 
 		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'dislayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 		outputRows = []
@@ -464,7 +503,7 @@ class AccessionGatherer:
 				row[journalCol], row[dateCol], row[volCol],
 				row[issueCol], row[pgsCol])
 
-			out = [ imageKey, accID, sequenceNum(accID),
+			out = [ imageKey, accID, accID, sequenceNum(accID),
 				description, row[ldbCol],
 				displayTypeNum(row[displayTypeCol]),
 				row[mgiTypeCol],
@@ -477,6 +516,240 @@ class AccessionGatherer:
 			outputRows)
 		logger.debug ('Wrote image IDs to file')
 		return
+
+	def fillAntibodies (self, accessionFile):
+	    cmd = '''select g._Antibody_key, a.accID, a._LogicalDB_key,
+				a._MGIType_key, t.antibodyType,
+				g.antibodyName
+			from acc_accession a,
+				gxd_antibody g,
+				gxd_antibodytype t
+			where a._MGIType_key = 6
+				and a._Object_key = g._Antibody_key
+				and g._AntibodyType_key = t._AntibodyType_key
+				and a.private = 0'''
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    keyCol = dbAgnostic.columnNumber (cols, '_Antibody_key')
+	    idCol = dbAgnostic.columnNumber (cols, 'accID')
+	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+	    typeCol = dbAgnostic.columnNumber (cols, 'antibodyType')
+	    nameCol = dbAgnostic.columnNumber (cols, 'antibodyName')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
+			sequenceNum(row[idCol]), row[nameCol],
+			row[logicalDbCol], displayTypeNum(row[typeCol]),
+			row[mgiTypeCol] ] )
+
+	    logger.debug ('Found %d antibody IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote antibody IDs to file')
+	    return
+
+	def fillAntigens (self, accessionFile):
+	    cmd = '''select g._Antigen_key, a.accID, a._LogicalDB_key,
+	    			a._MGIType_key, g.antigenName
+	    		from gxd_antigen g, acc_accession a
+			where g._Antigen_key = a._Object_key
+				and a.private = 0
+				and a._MGIType_key = 7'''
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    keyCol = dbAgnostic.columnNumber (cols, '_Antigen_key')
+	    idCol = dbAgnostic.columnNumber (cols, 'accID')
+	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+	    nameCol = dbAgnostic.columnNumber (cols, 'antigenName')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
+			sequenceNum(row[idCol]), row[nameCol],
+			row[logicalDbCol], displayTypeNum('Antigen'),
+			row[mgiTypeCol] ] )
+
+	    logger.debug ('Found %d antigen IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote antigen IDs to file')
+	    return
+
+	def fillAssays (self, accessionFile):
+	    cmd = '''select g._Assay_key, a.accID, a._LogicalDB_key,
+	    			a._MGIType_key, t.assayType, m.symbol
+	    		from gxd_assay g, acc_accession a, mrk_marker m,
+				gxd_assaytype t
+			where a._MGIType_key = 8
+				and a._Object_key = g._Assay_key
+				and a.private = 0
+				and g._AssayType_key = t._AssayType_key
+				and g._Marker_key = m._Marker_key'''
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    keyCol = dbAgnostic.columnNumber (cols, '_Assay_key')
+	    idCol = dbAgnostic.columnNumber (cols, 'accID')
+	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+	    typeCol = dbAgnostic.columnNumber (cols, 'assayType')
+	    markerCol = dbAgnostic.columnNumber (cols, 'symbol')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
+			sequenceNum(row[idCol]), row[markerCol],
+			row[logicalDbCol], displayTypeNum(row[typeCol]),
+			row[mgiTypeCol] ] )
+
+	    logger.debug ('Found %d assay IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote assay IDs to file')
+	    return
+
+	def fillTerms (self, accessionFile):
+	    # markers associated with InterPro IDs
+	    cmd1 = '''select va._Object_key, a.accID, m.symbol, m.name,
+		    		m.chromosome, a._LogicalDB_key,
+				t.name as typeName, a._MGIType_key
+			from voc_annot va, acc_accession a, mrk_marker m,
+				mrk_types t
+			where a._MGIType_key = 13
+				and a.private = 0
+				and a._Object_key = va._Term_key
+				and va._AnnotType_key = 1003
+				and m._Marker_Type_key = t._Marker_Type_key
+				and va._Object_key = m._Marker_key'''
+
+	    # DAG-based IDs
+	    cmd2 = '''select a._Object_key, a.accID, d.name, t.term,
+	    			a._LogicalDB_key, a._MGIType_key
+	    		from acc_accession a, voc_term t, dag_node n,
+				dag_dag d
+			where a._MGIType_key = 13
+				and a.private = 0
+				and a._Object_key = t._Term_key
+				and t._Term_key = n._Object_key
+				and n._DAG_key = d._DAG_key'''
+
+	    # flat-vocab IDs
+	    cmd3 = '''select a._Object_key, a.accID, v.name, t.term,
+	    			a._LogicalDB_key, a._MGIType_key
+	    		from acc_accession a, voc_term t, voc_vocab v
+			where a._MGIType_key = 13
+				and a.private = 0
+				and a._Object_key = t._Term_key
+				and t._Vocab_key = v._Vocab_key
+				and not exists (select 1 from dag_node n
+					where t._Term_key = n._Object_key)'''
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    # list of (cmd, result set type) values; types:
+	    #	1 - markers associated with InterPro IDs
+	    #	2 - vocab terms
+	    commands = [ (cmd1, 1), (cmd2, 2), (cmd3, 2) ]
+
+	    for (cmd, resultType) in commands:
+	    	cols, rows = dbAgnostic.execute(cmd)
+
+		keyCol = dbAgnostic.columnNumber (cols, '_Object_key')
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+		logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+		nameCol = dbAgnostic.columnNumber (cols, 'name')
+
+		if resultType == 1:
+			symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
+			chrCol = dbAgnostic.columnNumber (cols, 'chromosome')
+			typeCol = dbAgnostic.columnNumber (cols, 'typeName')
+		else:
+			termCol = dbAgnostic.columnNumber (cols, 'term')
+
+		for row in rows:
+			if resultType == 1:
+				description = '%s, %s, Chr %s' % (
+					row[symbolCol], row[nameCol],
+					row[typeCol])
+				displayType = row[typeCol]
+			else:
+				description = row[termCol]
+				displayType = row[nameCol]
+
+			outputRows.append ( [ row[keyCol], row[idCol],
+				row[idCol], sequenceNum(row[idCol]),
+				description, row[logicalDbCol],
+				displayTypeNum(displayType), row[mgiTypeCol]
+				] )
+
+	    logger.debug ('Found %d term IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote term IDs to file')
+	    return
+
+	def fillMapping (self, accessionFile):
+	    cmd = '''select e._Expt_key, a.accID, a._LogicalDB_key,
+	    			a._MGIType_key, e._Refs_key, e.exptType
+	    		from mld_expts e, acc_accession a
+			where a._MGIType_key = 4
+				and a.private = 0
+				and a._Object_key = e._Expt_key'''
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    keyCol = dbAgnostic.columnNumber (cols, '_Expt_key')
+	    idCol = dbAgnostic.columnNumber (cols, 'accID')
+	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+	    typeCol = dbAgnostic.columnNumber (cols, 'exptType')
+	    refCol = dbAgnostic.columnNumber (cols, '_Refs_key')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    description = ReferenceCitations.getMiniCitation (
+			row[refCol])
+
+		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
+			sequenceNum(row[idCol]), description,
+			row[logicalDbCol], displayTypeNum(row[typeCol]),
+			row[mgiTypeCol] ] )
+
+	    logger.debug ('Found %d mapping IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote mapping IDs to file')
+	    return
 
 	def main (self):
 
@@ -494,6 +767,15 @@ class AccessionGatherer:
 		self.fillProbes (accessionFile)
 		self.fillSequences (accessionFile)
 		self.fillImages (accessionFile)
+		self.fillAssays (accessionFile)
+		self.fillAntibodies (accessionFile)
+		self.fillAntigens (accessionFile)
+		self.fillTerms (accessionFile)
+		self.fillMapping (accessionFile)
+
+		# note that we are not yet handling snp data:
+		#	consensus SNPs : SNP_Summary_View
+		#	sub SNPs : SNP_Summary_View
 
 		accessionFile.close() 
 		logger.debug ('Wrote %d rows (%d columns) to %s' % (
