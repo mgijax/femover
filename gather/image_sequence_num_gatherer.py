@@ -22,6 +22,8 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 		yearCol = Gatherer.columnNumber (cols, 'year')
 		jnumCol = Gatherer.columnNumber (cols, 'numericPart')
 
+		self.jnum = {}
+
 		gxdStyleList = []
 		phenoStyleList = []
 
@@ -29,6 +31,8 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 			key = row[keyCol]
 			year = row[yearCol]
 			jnum = row[jnumCol]
+
+			self.jnum[key] = jnum
 
 			# year descending, jnum ascending
 			gxdStyleList.append ( (-year, jnum, key) )
@@ -61,6 +65,8 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 	def collectImages (self, resultIndex, name):
 		cols, rows = self.results[resultIndex]
 
+		self.imageToRef = {}
+
 		imageCol = Gatherer.columnNumber (cols, '_Image_key')
 		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
 		labelCol = Gatherer.columnNumber (cols, 'figureLabel')
@@ -73,6 +79,8 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 			# spaces for proper sorting
 			images[row[imageCol]] = (row[imageCol], row[refsCol],
 				row[labelCol].lower().replace('_', ' '))
+
+			self.imageToRef[row[imageCol]] = row[refsCol]
 
 		logger.debug ('Got %d %s images' % (len(images), name))
 		return images
@@ -157,13 +165,16 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 
 		# product final set of results:
 
-		self.finalColumns = [ '_Image_key', 'sortVal' ]
+		self.finalColumns = [ '_Image_key', 'sortVal', 'numericPart' ]
 		self.finalResults = []
 
 		i = 0
 		for [group, refsVal, figureLabel, imageKey] in sortableList:
+			refs = self.imageToRef[imageKey]
+			jnum = self.jnum[refs]
+
 			i = i + 1
-			self.finalResults.append ( [ imageKey, i ] )
+			self.finalResults.append ( [ imageKey, i, jnum ] )
 		return
 
 ###--- globals ---###
@@ -208,7 +219,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Image_key', 'sortVal', ]
+fieldOrder = [ '_Image_key', 'sortVal', 'numericPart' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'image_sequence_num'
