@@ -31,7 +31,7 @@ class GenotypeToImageGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select i._Image_key,
+	'''select distinct i._Image_key,
 		i._Refs_key,
 		g._Genotype_key,
 		a.isPrimary
@@ -42,7 +42,21 @@ cmds = [
 	where i._Image_key = p._Image_key
 		and p._ImagePane_key = a._ImagePane_key
 		and a._Object_key = g._Genotype_key
-		and a._MGIType_key = 12''',
+		and a._MGIType_key = 12
+	union
+	select distinct i._ThumbnailImage_key as _Image_key,
+		i._Refs_key,
+		g._Genotype_key,
+		a.isPrimary
+	from img_image i,
+		img_imagepane p,
+		img_imagepane_assoc a,
+		gxd_genotype g
+	where i._Image_key = p._Image_key
+		and p._ImagePane_key = a._ImagePane_key
+		and a._Object_key = g._Genotype_key
+		and a._MGIType_key = 12
+		and i._ThumbnailImage_key is not null''',
 	]
 
 # order of fields (from the query results) to be written to the
