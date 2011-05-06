@@ -79,10 +79,25 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 					row = [ markerKey, last, 'latest' ]
 					rows.append (row)
 
+				hasPublicRefs = True
+			else:
+				hasPublicRefs = False
+
 			if privateRefs.has_key(markerKey):
+				i = 0
+				lastRef = len(privateRefs[markerKey]) - 1
+
 				for ref in privateRefs[markerKey]:
-					row = [ markerKey, ref, 'private' ]
+					flag = 'private'
+					if not hasPublicRefs:
+						if i == 0:
+							flag = 'earliest'
+						elif i == lastRef:
+							flag = 'latest'
+
+					row = [ markerKey, ref, flag ]
 					rows.append (row)
+					i = i + 1
 
 		logger.debug ('Generated %d rows' % len(rows))
 		self.finalResults = rows
