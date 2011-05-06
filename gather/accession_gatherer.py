@@ -34,16 +34,73 @@ ORTHOLOGY_TYPE = 18
 
 ###--- Functions ---###
 
+def splitID (accID):
+	# Purpose: split the given 'accID' into a string of letters and an
+	#	integer representing any digits contained
+	# Notes: This should decrease the memory requirements for the script,
+	#	by allowing digits to be represented in a 4-byte integer.
+	#	It is used solely by the sequenceNum() function to provide an
+	#	ordering of objects which have the same ID.  This compression
+	#	could allow two distinct IDs (eg- "a1b2c346" and "abc12346")
+	#	to share the same numbering, but the possibility of this
+	#	causing a display problem is remote enough that we will ignore
+	#	it for the sake of the memory savings.
+
+	myID = accID.lower()
+	letters = ''
+	digits = ''
+
+	for c in myID:
+		if 'a' <= c <= 'z':
+			letters = letters + c
+		elif '0' <= c <= '9':
+			digits = digits + c
+		# skip any other characters (period, underscore, etc.)
+	
+	# should have more than 4 digits to see any savings (in converting
+	# to a 4-byte integer)
+
+	if len(digits) > 4:
+		return letters, int(digits)
+	return myID, None
+
+# global variables for sequenceNum() function
 IDS = {}		# ID -> count of objects with that ID
+SPLIT_IDS = {}		# letters -> { integer number : count of objects }
+
+SPLIT_ID_COUNT = 0
+BASIC_ID_COUNT = 0
+
 def sequenceNum (accID):
-	global IDS
+	global IDS, SPLIT_IDS, BASIC_ID_COUNT, SPLIT_ID_COUNT
 
-	if IDS.has_key (accID):
-		num = IDS[accID] + 1
+	letters, digits = splitID(accID)
+
+	# if we didn't split up the ID, just use the whole lowercase ID
+	if not digits:
+		if IDS.has_key (letters):
+			num = IDS[letters] + 1
+		else:
+			num = 1
+			BASIC_ID_COUNT = BASIC_ID_COUNT + 1
+		IDS[letters] = num
 	else:
-		num = 1
+		# first time with this letter combination?  1
+		if not SPLIT_IDS.has_key(letters):
+			num = 1
+			SPLIT_IDS[letters] = { digits : num }
+			SPLIT_ID_COUNT = SPLIT_ID_COUNT + 1
 
-	IDS[accID] = num
+		# first time with these digits for this letter combo?  1
+		elif not SPLIT_IDS[letters].has_key(digits):
+			num = 1
+			SPLIT_IDS[letters][digits] = num
+			SPLIT_ID_COUNT = SPLIT_ID_COUNT + 1
+
+		# already seen these letters and digits, so increment
+		else:
+			num = SPLIT_IDS[letters][digits] + 1
+			SPLIT_IDS[letters][digits] = num
 	return num
 
 TYPES = {}
@@ -156,14 +213,23 @@ class AccessionGatherer:
 				'mrk_types', '_Marker_Type_key', 'name')
 
 			# non-mouse markers should use the fake orthology type
+			organism = ''
 			if row[organismKey] != 1:
 				mgiType = ORTHOLOGY_TYPE
+				organism = Gatherer.resolve (row[organismKey],
+					'mgi_organism', '_Organism_key',
+					'commonName')
+				if organism:
+					organism = '(%s)' % organism
+				else:
+					organism = ''
 			else:
 				mgiType = row[mgiTypeCol]
 
 			out = [ row[keyCol], accID, accID, sequenceNum(accID),
-				'%s, %s, Chr %s' % (row[symbolCol],
-					row[nameCol], row[chromosomeCol]),
+				'%s, %s, Chr %s%s' % (row[symbolCol],
+					row[nameCol], row[chromosomeCol],
+					organism),
 				row[ldbCol],
 				displayTypeNum(displayType),
 				mgiType,
@@ -184,6 +250,7 @@ class AccessionGatherer:
 			where c._Refs_key = a._Object_key
 				and a._MGIType_key = 1
 				and a.private = 0
+				and a.prefixPart != 'MGI:'
 				and (c.journal != 'Submission'
 					or c.journal is null)'''
 
@@ -431,10 +498,24 @@ class AccessionGatherer:
 			    seqCol = None
 			    seqLdbCol = None
 
+		    # for a probe ID for a sequence, we only really want one
+		    # instance per sequence, even if the same ID is associated
+		    # with a probe multiple times (for multiple logical dbs)
+		    idsByObject = {}
+
 		    outputRows = []
 		    for row in rows:
 			accID = row[idCol]
 			sequenceKey = row[keyCol]
+
+			if idType[:5] == 'probe':
+			    if idsByObject.has_key(sequenceKey):
+				if accID in idsByObject[sequenceKey]:
+				    continue
+			    	else:
+				    idsByObject[sequenceKey].append (accID)
+			    else:
+				    idsByObject[sequenceKey] = [ accID ]
 
 			if seqCol:
 				seqID = row[seqCol]
@@ -751,7 +832,132 @@ class AccessionGatherer:
 	    logger.debug ('Wrote mapping IDs to file')
 	    return
 
+	def fillConsensusSnps (self, accessionFile):
+	    maxSnpKey = getMaxKey ('snp_consensussnp', '_ConsensusSnp_key')
+
+	    cmd = '''select s._ConsensusSnp_key, a.accID, a._LogicalDB_key,
+	    			s.alleleSummary, s._VarClass_key
+			from snp_accession a, snp_consensussnp s
+			where a._MGIType_key = 30
+				and a._Object_key = s._ConsensusSnp_key
+				and s._ConsensusSnp_key > %d
+				and s._ConsensusSnp_key <= %d
+				and a._Object_key > %d
+				and a._Object_key <= %d'''
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+
+	    minKey = 0
+	    maxKey = CHUNK_SIZE
+
+	    while minKey < maxSnpKey:
+		maxKey = minKey + CHUNK_SIZE
+		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
+			minKey, maxKey))
+
+		keyCol = dbAgnostic.columnNumber (cols, '_ConsensusSnp_key')
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+		typeCol = dbAgnostic.columnNumber (cols, '_VarClass_key')
+		summaryCol = dbAgnostic.columnNumber (cols, 'alleleSummary')
+
+		outputRows = []
+
+		for row in rows:
+			accID = row[idCol]
+			snpKey = row[keyCol]
+
+			displayType = Gatherer.resolve (row[typeCol])
+
+			out = [ snpKey, accID, accID, sequenceNum(accID),
+				row[summaryCol], row[ldbCol],
+				displayTypeNum(displayType),
+				30,
+				]
+			outputRows.append (out) 
+
+		logger.debug ('Found %d SNP IDs (%d-%d)' % (len(rows),
+			minKey, maxKey))
+
+		accessionFile.writeToFile (outputCols, outputCols[1:],
+			outputRows)
+		logger.debug ('Wrote SNP IDs to file')
+
+	    	minKey = maxKey
+	    return
+
+	def fillSubSnps (self, accessionFile):
+	    maxSubSnpKey = getMaxKey ('snp_subsnp', '_SubSnp_key')
+
+	    cmd = '''select s._ConsensusSnp_key,
+	    			a.accID as subsnpID,
+				a._LogicalDB_key as subsnpLDB,
+	    			s._VarClass_key as subsnpType,
+	    			a2.accID as snpID,
+				a2._LogicalDB_key as snpLDB
+			from snp_accession a,
+				snp_accession a2,
+				snp_subsnp s
+			where a._MGIType_key = 31
+				and a._Object_key = s._SubSnp_key
+				and s._SubSnp_key > %d
+				and s._SubSnp_key <= %d
+				and a._Object_key > %d
+				and a._Object_key <= %d
+				and a2._MGIType_key = 30
+				and a2._Object_key = s._ConsensusSnp_key'''
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+
+	    minKey = 0
+	    maxKey = CHUNK_SIZE
+
+	    while minKey < maxSubSnpKey:
+		maxKey = minKey + CHUNK_SIZE
+		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
+			minKey, maxKey))
+
+		keyCol = dbAgnostic.columnNumber (cols, '_ConsensusSnp_key')
+		subsnpIDCol = dbAgnostic.columnNumber (cols, 'subsnpID')
+		snpIDCol = dbAgnostic.columnNumber (cols, 'snpID')
+		subsnpLdbCol = dbAgnostic.columnNumber (cols, 'subsnpLDB')
+		snpLdbCol = dbAgnostic.columnNumber (cols, 'snpLDB')
+		subsnpTypeCol = dbAgnostic.columnNumber (cols, 'subsnpType')
+
+		outputRows = []
+
+		for row in rows:
+			subsnpID = row[subsnpIDCol]
+			snpID = row[snpIDCol]
+			snpKey = row[keyCol]
+
+			displayType = Gatherer.resolve (row[subsnpTypeCol])
+
+			out = [ snpKey, subsnpID, subsnpID,
+				sequenceNum(subsnpID),
+				'submitted SNP for %s' % snpID,
+				row[subsnpLdbCol],
+				displayTypeNum(displayType),
+				30,
+				]
+			outputRows.append (out) 
+
+		logger.debug ('Found %d SubSNP IDs (%d-%d)' % (len(rows),
+			minKey, maxKey))
+
+		accessionFile.writeToFile (outputCols, outputCols[1:],
+			outputRows)
+		logger.debug ('Wrote SubSNP IDs to file')
+
+	    	minKey = maxKey
+	    return
+
 	def main (self):
+		global BASIC_ID_COUNT, SPLIT_ID_COUNT
 
 		# build the two small files
 
@@ -772,10 +978,8 @@ class AccessionGatherer:
 		self.fillAntigens (accessionFile)
 		self.fillTerms (accessionFile)
 		self.fillMapping (accessionFile)
-
-		# note that we are not yet handling snp data:
-		#	consensus SNPs : SNP_Summary_View
-		#	sub SNPs : SNP_Summary_View
+		self.fillConsensusSnps (accessionFile)
+		self.fillSubSnps (accessionFile)
 
 		accessionFile.close() 
 		logger.debug ('Wrote %d rows (%d columns) to %s' % (
@@ -783,6 +987,9 @@ class AccessionGatherer:
 			accessionFile.getColumnCount(),
 			accessionFile.getPath()) )
 		print '%s %s' % (accessionFile.getPath(), ACCESSION_FILE)
+
+		logger.debug ('%d split IDs, %d not split' % (
+			SPLIT_ID_COUNT, BASIC_ID_COUNT))
 
 		# build the third small file, which was compiled while
 		# building the large file (so this one must go last)
