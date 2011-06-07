@@ -96,88 +96,92 @@ def sortGenotypePhenotypeRows (gpRows):
 	# with the rows indented under them), even if those terms are actually
 	# at different levels of the DAG.
 
-	logger.debug ('Received %d gpRows to sort' % len(gpRows))
+	logger.debug ('Bypassing extra sort of gpRows')
+	if True:
+		return numberRows(gpRows)
 
-	# Each row in gpRows has:
-	#   genotypePhenotypeKey, genotypeKey, isHeaderTerm, term, termID,
-	#   indentationLevel, referenceCount, noteCount
-	# We will compute and append: sequenceNum
-
-	sortKeys = []
-	for row in gpRows:
-		# sort by genotype key, indent level, lowercase term
-		sortKeys.append ( (row[1], row[5], row[3].lower() ) )
-
-	logger.debug ('Collected %d sortKeys' % len(sortKeys))
-
-	sortKeys.sort()
-	logger.debug ('Sorted %d sortKeys' % len(sortKeys))
-
-	sortKeyDict = {}
-	i = 0
-	for key in sortKeys:
-		i = i + 1
-		sortKeyDict[key] = i
-	logger.debug ('Put %d sortKeys into dict' % len(sortKeyDict))
-
-	# collate our rows into a standard, sortable structure, each as:
-	#	[ [sortable fields], original row, [ sub rows ] ]
-	
-	headers = []	# outer list of sortable row structures
-	rowStack = []	# stack of rows we're working with now (one per
-			# indentation level)
-
-	i = 0		# position of 'row' in 'gpRows'
-
-	for row in gpRows:
-		genotypeKey = row[1]
-		indent = row[5]
-		lowerTerm = row[3].lower()
-
-		sortVals = sortKeyDict[(genotypeKey, indent, lowerTerm)]
-		sortableRow = [ sortVals, i, [] ]
-		currentIndent = max(0,len(rowStack) - 1)
-
-		# if a new header row, add it to the header list (all others
-		# will appear as subrows for a header row)
-
-		if indent == 0:
-			headers.append (sortableRow)
-
-		# if this row is at the same or a lesser indentation level, we
-		# need to pop off items until we get back to a parent node
-
-		if indent <= currentIndent:
-			rowStack = rowStack[:indent]
-
-		# otherwise, we're at a greater indent level, so we can leave
-		# the stack alone
-
-		# if we have a rowStack, then the last row is the parent to
-		# the current row
-
-		if rowStack:
-			parentRow = rowStack[-1]
-			parentRow[-1].append (sortableRow)
-
-		# now this row will be the potential parent for the next row
-
-		rowStack.append (sortableRow)
-
-		i = i + 1
-		
-	logger.debug ('Collected rows under %d header rows' % len(headers))
-
-	# now build our output rows
-
-	output = extractRows (headers, gpRows)
-	logger.debug ('Expanded back to %d rows' % len(output))
-
-	output = numberRows (output)
-	logger.debug ('Numbered %d rows' % len(output))
-
-	logger.debug ('Returning %d rows for gpRows' % len(output))
-	return output
+#	logger.debug ('Received %d gpRows to sort' % len(gpRows))
+#
+#	# Each row in gpRows has:
+#	#   genotypePhenotypeKey, genotypeKey, isHeaderTerm, term, termID,
+#	#   indentationLevel, referenceCount, noteCount
+#	# We will compute and append: sequenceNum
+#
+#	sortKeys = []
+#	for row in gpRows:
+#		# sort by genotype key, indent level, lowercase term
+#		sortKeys.append ( (row[1], row[5], row[3].lower() ) )
+#
+#	logger.debug ('Collected %d sortKeys' % len(sortKeys))
+#
+#	sortKeys.sort()
+#	logger.debug ('Sorted %d sortKeys' % len(sortKeys))
+#
+#	sortKeyDict = {}
+#	i = 0
+#	for key in sortKeys:
+#		i = i + 1
+#		sortKeyDict[key] = i
+#	logger.debug ('Put %d sortKeys into dict' % len(sortKeyDict))
+#
+#	# collate our rows into a standard, sortable structure, each as:
+#	#	[ [sortable fields], original row, [ sub rows ] ]
+#	
+#	headers = []	# outer list of sortable row structures
+#	rowStack = []	# stack of rows we're working with now (one per
+#			# indentation level)
+#
+#	i = 0		# position of 'row' in 'gpRows'
+#
+#	for row in gpRows:
+#		genotypeKey = row[1]
+#		indent = row[5]
+#		lowerTerm = row[3].lower()
+#
+#		sortVals = sortKeyDict[(genotypeKey, indent, lowerTerm)]
+#		sortableRow = [ sortVals, i, [] ]
+#		currentIndent = max(0,len(rowStack) - 1)
+#
+#		# if a new header row, add it to the header list (all others
+#		# will appear as subrows for a header row)
+#
+#		if indent == 0:
+#			headers.append (sortableRow)
+#
+#		# if this row is at the same or a lesser indentation level, we
+#		# need to pop off items until we get back to a parent node
+#
+#		if indent <= currentIndent:
+#			rowStack = rowStack[:indent]
+#
+#		# otherwise, we're at a greater indent level, so we can leave
+#		# the stack alone
+#
+#		# if we have a rowStack, then the last row is the parent to
+#		# the current row
+#
+#		if rowStack:
+#			parentRow = rowStack[-1]
+#			parentRow[-1].append (sortableRow)
+#
+#		# now this row will be the potential parent for the next row
+#
+#		rowStack.append (sortableRow)
+#
+#		i = i + 1
+#		
+#	logger.debug ('Collected rows under %d header rows' % len(headers))
+#
+#	# now build our output rows
+#
+#	output = extractRows (headers, gpRows)
+#	logger.debug ('Expanded back to %d rows' % len(output))
+#
+#	output = numberRows (output)
+#	logger.debug ('Numbered %d rows' % len(output))
+#
+#	logger.debug ('Returning %d rows for gpRows' % len(output))
+#	return output
 
 def sortAlleleGenotypeRows (agrRows):
 	# At this point, 'agrRows' is sorted by allele key, by header term,
@@ -188,87 +192,91 @@ def sortAlleleGenotypeRows (agrRows):
 	# (along with the rows indented under them), even if those terms are
 	# actually at different levels of the DAG.
 
-	logger.debug ('Received %d agrRows to sort' % len(agrRows))
+	logger.debug ('Bypassing extra sort for agrRows')
+	if True:
+		return numberRows(agrRows)
 
-	# Each row in agrRows has:
-	#   gridRowKey, alleleKey, term, termID, isHeader, indentationLevel
-	# We will compute and append: sequenceNum
-
-	sortKeys = []
-	for row in agrRows:
-		# sort by allele key, indent level, lowercase term
-		sortKeys.append ( (row[1], row[5], row[2].lower() ) )
-
-	logger.debug ('Collected %d sortKeys' % len(sortKeys))
-
-	sortKeys.sort()
-	logger.debug ('Sorted %d sortKeys' % len(sortKeys))
-
-	sortKeyDict = {}
-	i = 0
-	for key in sortKeys:
-		i = i + 1
-		sortKeyDict[key] = i
-	logger.debug ('Put %d sortKeys into dict' % len(sortKeyDict))
-
-	# collate our rows into a standard, sortable structure, each as:
-	#	[ [sortable fields], original row, [ sub rows ] ]
-	
-	headers = []	# outer list of sortable row structures
-	rowStack = []	# stack of rows we're working with now (one per
-			# indentation level)
-
-	i = 0		# position of 'row' in 'agrRows'
-
-	for row in agrRows:
-		alleleKey = row[1]
-		indent = row[5]
-		lowerTerm = row[2].lower()
-
-		sortVals = sortKeyDict[(alleleKey, indent, lowerTerm)]
-		sortableRow = [ sortVals, i, [] ]
-		currentIndent = max(0,len(rowStack) - 1)
-
-		# if a new header row, add it to the header list (all others
-		# will appear as subrows for a header row)
-
-		if indent == 0:
-			headers.append (sortableRow)
-
-		# if this row is at the same or a lesser indentation level, we
-		# need to pop off items until we get back to a parent node
-
-		if indent <= currentIndent:
-			rowStack = rowStack[:indent]
-
-		# otherwise, we're at a greater indent level, so we can leave
-		# the stack alone
-
-		# if we have a rowStack, then the last row is the parent to
-		# the current row
-
-		if rowStack:
-			parentRow = rowStack[-1]
-			parentRow[-1].append (sortableRow)
-
-		# now this row will be the potential parent for the next row
-
-		rowStack.append (sortableRow)
-
-		i = i + 1
-		
-	logger.debug ('Collected rows under %d header rows' % len(headers))
-
-	# now build our output rows
-
-	output = extractRows (headers, agrRows)
-	logger.debug ('Expanded back to %d rows' % len(output))
-
-	output = numberRows (output)
-	logger.debug ('Numbered %d rows' % len(output))
-
-	logger.debug ('Returning %d rows for agrRows' % len(output))
-	return output
+#	logger.debug ('Received %d agrRows to sort' % len(agrRows))
+#
+#	# Each row in agrRows has:
+#	#   gridRowKey, alleleKey, term, termID, isHeader, indentationLevel
+#	# We will compute and append: sequenceNum
+#
+#	sortKeys = []
+#	for row in agrRows:
+#		# sort by allele key, indent level, lowercase term
+#		sortKeys.append ( (row[1], row[5], row[2].lower() ) )
+#
+#	logger.debug ('Collected %d sortKeys' % len(sortKeys))
+#
+#	sortKeys.sort()
+#	logger.debug ('Sorted %d sortKeys' % len(sortKeys))
+#
+#	sortKeyDict = {}
+#	i = 0
+#	for key in sortKeys:
+#		i = i + 1
+#		sortKeyDict[key] = i
+#	logger.debug ('Put %d sortKeys into dict' % len(sortKeyDict))
+#
+#	# collate our rows into a standard, sortable structure, each as:
+#	#	[ [sortable fields], original row, [ sub rows ] ]
+#	
+#	headers = []	# outer list of sortable row structures
+#	rowStack = []	# stack of rows we're working with now (one per
+#			# indentation level)
+#
+#	i = 0		# position of 'row' in 'agrRows'
+#
+#	for row in agrRows:
+#		alleleKey = row[1]
+#		indent = row[5]
+#		lowerTerm = row[2].lower()
+#
+#		sortVals = sortKeyDict[(alleleKey, indent, lowerTerm)]
+#		sortableRow = [ sortVals, i, [] ]
+#		currentIndent = max(0,len(rowStack) - 1)
+#
+#		# if a new header row, add it to the header list (all others
+#		# will appear as subrows for a header row)
+#
+#		if indent == 0:
+#			headers.append (sortableRow)
+#
+#		# if this row is at the same or a lesser indentation level, we
+#		# need to pop off items until we get back to a parent node
+#
+#		if indent <= currentIndent:
+#			rowStack = rowStack[:indent]
+#
+#		# otherwise, we're at a greater indent level, so we can leave
+#		# the stack alone
+#
+#		# if we have a rowStack, then the last row is the parent to
+#		# the current row
+#
+#		if rowStack:
+#			parentRow = rowStack[-1]
+#			parentRow[-1].append (sortableRow)
+#
+#		# now this row will be the potential parent for the next row
+#
+#		rowStack.append (sortableRow)
+#
+#		i = i + 1
+#		
+#	logger.debug ('Collected rows under %d header rows' % len(headers))
+#
+#	# now build our output rows
+#
+#	output = extractRows (headers, agrRows)
+#	logger.debug ('Expanded back to %d rows' % len(output))
+#
+#	output = numberRows (output)
+#	logger.debug ('Numbered %d rows' % len(output))
+#
+#	logger.debug ('Returning %d rows for agrRows' % len(output))
+#	return output
 
 ###--- Classes ---###
 
@@ -593,9 +601,9 @@ class PhenotypeGatherer (Gatherer.MultiFileGatherer):
 
 			    alleleData.append ( [ None, header, 0 ] )
 			    parents = []
-			    indent = None	# indent level for this term
 
 			    for (sortVal, (termKey, term)) in terms:
+			        indent = None	# indent level for this term
 				while parents and (not indent):
 				    if descendsFrom(termKey, parents[-1]):
 					indent = len(parents) + 1
@@ -605,7 +613,14 @@ class PhenotypeGatherer (Gatherer.MultiFileGatherer):
 
 				if not indent:
 			   	    indent = 1
-				    parents.append (termKey)
+
+				    # if this is an annotation to a header
+				    # term, then we do not want anything to be
+				    # indented under it (so do not add it to
+				    # the parents list).
+
+				    if header != term:
+					parents.append (termKey)
 
 				mx = max(mx, indent)
 				alleleData.append ([ termKey, term, indent ])
