@@ -107,6 +107,10 @@ TYPES = {}
 def displayTypeNum (displayType):
 	global TYPES
 
+	# alter the text to appear for OMIM vocab terms
+	if displayType == 'OMIM':
+		displayType = 'Disease'
+
 	if not TYPES.has_key(displayType):
 		TYPES[displayType] = len(TYPES) + 1
 
@@ -250,7 +254,8 @@ class AccessionGatherer:
 			where c._Refs_key = a._Object_key
 				and a._MGIType_key = 1
 				and a.private = 0
-				and a.prefixPart != 'MGI:'
+				and (a.prefixPart != 'MGI:' or
+					a.prefixPart is null)
 				and (c.journal != 'Submission'
 					or c.journal is null)'''
 
