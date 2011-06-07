@@ -371,6 +371,19 @@ def getSequenceNumByTerm (vocabName, term):
 	__initialize()
 	return getSequenceNum (VOCAB_SORTER.getTermKey (vocabName, term))
 
+def getSequenceNumByID (accID):
+	__initialize()
+	
+	cmd = '''select _Object_key
+		from acc_accession
+		where lower(accid) = '%s'
+		and _MGIType_key = 13''' % accID.lower()
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+	if len(rows) != 1:
+		return None
+	return getSequenceNum(rows[0][0])
+
 def isChildOf (childTerm, parentTerm):
 	__initialize()
 	return VOCAB_SORTER.isChildOf (childTerm, parentTerm)
