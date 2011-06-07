@@ -33,6 +33,7 @@ class ImageAllelesGatherer (Gatherer.Gatherer):
 
 		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		imageKeyCol = Gatherer.columnNumber (cols, '_Image_key')
+		thumbKeyCol = Gatherer.columnNumber (cols, '_ThumbnailImage_key')
 		nameCol = Gatherer.columnNumber (cols, 'name')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 		idCol = Gatherer.columnNumber (cols, 'accID')
@@ -41,6 +42,7 @@ class ImageAllelesGatherer (Gatherer.Gatherer):
 		for row in rows:
 			i = i + 1
 			alleleKey = row[alleleKeyCol]
+			thumbKey = row[thumbKeyCol]
 
 			if markerNames.has_key(alleleKey):
 				name = markerNames[alleleKey] + '; ' + \
@@ -49,6 +51,11 @@ class ImageAllelesGatherer (Gatherer.Gatherer):
 				name = row[nameCol]
 
 			self.finalResults.append ( [ row[imageKeyCol],
+				alleleKey, row[symbolCol], name,
+				row[idCol], i ] )
+
+			i = i + 1
+			self.finalResults.append ( [ thumbKey,
 				alleleKey, row[symbolCol], name,
 				row[idCol], i ] )
 
@@ -68,7 +75,8 @@ cmds = [
 		a._Object_key as _Allele_key,
 		aa.symbol,
 		aa.name,
-		acc.accID
+		acc.accID,
+		i._ThumbnailImage_key
 	from img_image i,
 		img_imagepane p,
 		img_imagepane_assoc a,
