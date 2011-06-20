@@ -97,6 +97,7 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 ANNOTATIONS = [ 'annotation'
 	]
 BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
+		'batch_marker_snps',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
@@ -111,7 +112,8 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
-		'expression_imagepane', 'allele_to_image', 'image_id'
+		'expression_imagepane', 'allele_to_image', 'image_id',
+		'marker_to_expression_image',
 	]
 IMSR = [ 'imsr',
 	]
@@ -120,6 +122,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_orthology', 'marker_location', 'marker_counts',
 		'marker_note', 'marker_sequence_num', 'marker_annotation',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
+		'marker_biotype_conflict',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
