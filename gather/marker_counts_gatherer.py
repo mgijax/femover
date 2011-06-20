@@ -34,6 +34,7 @@ PhenotypeImageCount = 'phenotypeImageCount'
 HumanDiseaseCount = 'humanDiseaseCount'
 AllelesWithDiseaseCount = 'allelesWithHumanDiseasesCount'
 AntibodyCount = 'antibodyCount'
+SnpCount = 'snpCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -101,6 +102,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[19], AllelesWithDiseaseCount,
 				'alleleCount'),
 			(self.results[20], AntibodyCount, 'antibodyCount'),
+			(self.results[21], SnpCount, 'snpCount'),
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -332,6 +334,11 @@ cmds = [
 	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
 		from gxd_antibodymarker
 		group by _Marker_key''',
+
+	# 21. count of SNPs for the marker
+	'''select _Marker_key, count(distinct _ConsensusSnp_key) as snpCount
+		from snp_consensussnp_marker
+		group by _Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
@@ -342,7 +349,7 @@ fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount,
 	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
 	MappingCount, CdnaSourceCount, MicroarrayCount,
 	PhenotypeImageCount, HumanDiseaseCount, AllelesWithDiseaseCount,
-	AntibodyCount
+	AntibodyCount, SnpCount
 	]
 
 # prefix for the filename of the output file
