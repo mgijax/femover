@@ -44,7 +44,12 @@ class ImageAllelesGatherer (Gatherer.Gatherer):
 			alleleKey = row[alleleKeyCol]
 			thumbKey = row[thumbKeyCol]
 
-			if markerNames.has_key(alleleKey):
+			# if we have a marker name for the allele, and if that
+			# marker name differs from the allele name, then
+			# prepend it
+
+			if markerNames.has_key(alleleKey) and \
+			    markerNames[alleleKey] != row[nameCol]:
 				name = markerNames[alleleKey] + '; ' + \
 					row[nameCol]
 			else:
