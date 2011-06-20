@@ -50,7 +50,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		# marker key -> 1
 		ncbiExcluded = {}
 
-		for (cols, rows) in self.results[1:3]:
+		for (cols, rows) in self.results[1:4]:
 			termCol = Gatherer.columnNumber (cols, 'term')
 			typeCol = Gatherer.columnNumber (cols, 'term_type')
 			keyCol = Gatherer.columnNumber (cols, 'marker_key')
@@ -87,7 +87,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 
 		# gather GO IDs for each term key
 
-		(cols, rows) = self.results[3]
+		(cols, rows) = self.results[4]
 		termCol = Gatherer.columnNumber (cols, '_Object_key')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 
@@ -105,7 +105,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 
 		# gather ancestor term keys for each term key
 
-		(cols, rows) = self.results[4]
+		(cols, rows) = self.results[5]
 		parentCol = Gatherer.columnNumber (cols,
 			'_AncestorObject_key')
 		childCol = Gatherer.columnNumber (cols,
@@ -129,7 +129,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		# go through our marker/GO annotations and produce a row in
 		# finalResults for each term and rows for its ancestors
 
-		(cols, rows) = self.results[5]
+		(cols, rows) = self.results[6]
 		markerCol = Gatherer.columnNumber (cols, '_Object_key')
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
 
@@ -257,11 +257,24 @@ cmds = [
 			and a._LogicalDB_key in (9, 13, 27, 41)
 			and a._LogicalDB_key = l._LogicalDB_key''' % caseEnd,
 
+	# 3. RefSNP IDs for RefSNPs that are directly associated with markers
+	# (no SubSNPs, no distance-based associations in a region around a
+	# marker -- just direct associations)
+	'''select a.accid as term,
+		ldb.name as term_type,
+		m._Marker_key as marker_key
+	from snp_consensussnp_marker m,
+		snp_accession a,
+		acc_logicaldb ldb
+	where a._LogicalDB_key = ldb._LogicalDB_key
+		and m._ConsensusSnp_key = a._Object_key
+		and a._MGIType_key = 30''',
+
 	# need to do GO IDs and their descendent terms, so a marker can be
 	# retrieved for either its directly annotated terms or any of their
 	# ancestor terms for its annotated terms
 	
-	# 3. get the list of GO term IDs and keys
+	# 4. get the list of GO term IDs and keys
 	'''select _Object_key,
 			accID
 		from acc_accession
@@ -269,7 +282,7 @@ cmds = [
 			and private = 0
 			and _MGIType_key = 13''',
 
-	# 4. get the GO DAG, mapping a term to all of its subterms
+	# 5. get the GO DAG, mapping a term to all of its subterms
 	'''select c._AncestorObject_key,
 			c._DescendentObject_key
 		from dag_closure c,
@@ -278,7 +291,7 @@ cmds = [
 			and c._AncestorObject_key = t._Term_key
 			and t._Vocab_key = 4''',
 
-	# 5. get the marker/GO annotations
+	# 6. get the marker/GO annotations
 	'''select _Object_key,
 			_Term_key
 		from voc_annot
