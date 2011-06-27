@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import MarkerSnpAssociations
 
 ###--- Constants ---###
 
@@ -110,6 +111,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		pcr = 'PCR'
 		rflp = 'RFLP'
 
+		if MarkerSnpAssociations.isInSync():
+			snp = 'SNPs within 2kb'
+		else:
+			snp = 'SNPs'		# not counted in 'all'
+
 		# collate counts per marker
 
 		for row in rows:
@@ -118,7 +124,9 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			key = row[keyCol]
 
 			if not byMarker.has_key (key):
-				byMarker[key] = {}
+				byMarker[key] = {
+				  snp : MarkerSnpAssociations.getSnpCount(key)
+				}
 
 			if term == 'primer':
 				byMarker[key][pcr] = ct
@@ -130,13 +138,14 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		# if we had both PCR and RFLP then we need a count for the sum
 
 		for key in byMarker.keys():
-			if len(byMarker[key]) > 1:
+			if byMarker[key].has_key(pcr) \
+			    and byMarker[key].has_key(rflp):
 				byMarker[key][all] = byMarker[key][pcr] + \
 					byMarker[key][rflp]
 			
 		# generate rows, one per marker/count pair
 
-		orderedTerms = [ all, pcr, rflp ]
+		orderedTerms = [ all, pcr, rflp, snp ]
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):
