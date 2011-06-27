@@ -3,6 +3,8 @@
 # gathers data for the 'batch_marker_snps' table in the front-end database
 
 import Gatherer
+import config
+import MarkerSnpAssociations
 
 ###--- Classes ---###
 
@@ -14,23 +16,22 @@ class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
 	#	collates results, writes tab-delimited text file
 
 	def postprocessResults (self):
-		self.convertFinalResultsToList()
-
-		lastMarker = None
-		markerCol = Gatherer.columnNumber (self.finalColumns,
-			'_Marker_key')
+		columns = [ '_Marker_key', 'accid', 'sequence_num' ]
+		rows = []
 
 		for row in self.finalResults:
-			marker = row[markerCol]
+			marker = row[0]
 
-			if marker != lastMarker:
-				i = 1
-				lastMarker = marker
-			else:
+			snps = MarkerSnpAssociations.getSnpIDs(marker)
+
+			i = 0
+
+			for snp in snps:
 				i = i + 1
+				rows.append ( [ marker, snp, i ] )
 
-			self.addColumn ('sequence_num', i, row,
-				self.finalColumns)
+		self.finalColumns = columns
+		self.finalResults = rows
 		return
 
 	def getMinKeyQuery (self):
@@ -42,14 +43,11 @@ class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
-cmds = [
-	'''select m._Marker_key, a.accid, a.numericPart
-		from snp_consensussnp_marker m,
-			snp_accession a
-		where m._ConsensusSnp_key = a._Object_key
-			and a._MGIType_key = 30
-			and m._Marker_key >= %d and m._Marker_key < %d
-		order by m._Marker_key, a.numericPart''',
+cmds = [ '''select distinct _Marker_key
+	from mrk_marker
+	where _Organism_key = 1
+		and _Marker_Status_key in (1,3)
+		and _Marker_key >= %d and _Marker_key < %d''',
 	]
 
 # order of fields (from the query results) to be written to the
