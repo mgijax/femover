@@ -11,6 +11,8 @@
 
 import Gatherer
 import logger
+import config
+import MarkerSnpAssociations
 
 ###--- Globals ---###
 
@@ -102,7 +104,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[19], AllelesWithDiseaseCount,
 				'alleleCount'),
 			(self.results[20], AntibodyCount, 'antibodyCount'),
-			(self.results[21], SnpCount, 'snpCount'),
+			# SnpCount will be processed separately
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -120,11 +122,20 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 					raise error, \
 					'Unknown marker key: %d' % mrkKey
 
-		# compile the list of collated counts in self.finalResults
-		self.finalResults = []
+		# compile the count of SNPs associated with each marker and
+		# add it to the counts in 'd'
+
 		markerKeys = d.keys()
 		markerKeys.sort()
 
+		counts.append (SnpCount)
+
+		for mrk in markerKeys:
+			d[mrk][SnpCount] = MarkerSnpAssociations.getSnpCount(
+				mrk)
+
+		# compile the list of collated counts in self.finalResults
+		self.finalResults = []
 		self.finalColumns = [ '_Marker_key' ] + counts
 
 		for markerKey in markerKeys:
@@ -156,10 +167,6 @@ cmds = [
 			'Genbank References',
 			'Curatorial References') )
 	group by r._Marker_key''',
-
-#	'''select _Marker_key, count(1) as numRef
-#		from mrk_reference
-#		group by _Marker_key''',
 
 	# 2. count of sequences for each marker
 	'''select _Marker_key, count(1) as numSeq
@@ -333,11 +340,6 @@ cmds = [
 	# 20. count of antibodies for the marker
 	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
 		from gxd_antibodymarker
-		group by _Marker_key''',
-
-	# 21. count of SNPs for the marker
-	'''select _Marker_key, count(distinct _ConsensusSnp_key) as snpCount
-		from snp_consensussnp_marker
 		group by _Marker_key''',
 	]
 
