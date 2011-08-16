@@ -5,6 +5,8 @@
 import Gatherer
 import logger
 import TagConverter
+import dbAgnostic
+import re
 
 ###--- Classes ---###
 
@@ -13,6 +15,57 @@ class ImageGatherer (Gatherer.Gatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for images,
 	#	collates results, writes tab-delimited text file
+
+	def getElsevierCitation (self, jnum):
+		# look up the citation for the given Elsevier J#
+
+		if self.elsevier.has_key(jnum):
+			return self.elsevier[jnum]
+
+		cols, rows = dbAgnostic.execute (
+			'''select r.journal, r.vol, r.pgs, r.authors, 
+				r.title, r.year
+			from bib_refs r,
+				acc_accession a
+			where r._Refs_key = a._Object_key
+				and a.accID = '%s'
+				and a._MGIType_key = 1''' % jnum)
+
+		journalCol = dbAgnostic.columnNumber (cols, 'journal')
+		volCol = dbAgnostic.columnNumber (cols, 'vol')
+		pgsCol = dbAgnostic.columnNumber (cols, 'pgs')
+		authorsCol = dbAgnostic.columnNumber (cols, 'authors')
+		titleCol = dbAgnostic.columnNumber (cols, 'title')
+		yearCol = dbAgnostic.columnNumber (cols, 'year')
+
+		r = rows[0]
+		citation = '%s %s: %s, %s, %s Copyright %s' % (
+			r[journalCol], r[volCol], r[pgsCol],
+			r[authorsCol], r[titleCol], r[yearCol] )
+
+		self.elsevier[jnum] = citation
+		logger.debug ('Retrieved %s' % jnum)
+		return citation
+
+	def convertElsevierTag (self, s):
+		# convert any \Elsevier(...) tags in 's' to their respective
+		# citations.
+
+		# short-circuit for cases where the tag does not appear in 's'
+		tag = '\\Elsevier('
+		if s.find(tag) == -1:
+			return s
+
+		match = self.elsevierRE.search(s)
+
+		# recurse to this method, just in case there are more than one
+		# \Elsevier() tags in s
+
+		if not match:
+			return s
+
+		return self.convertElsevierTag (s.replace (match.group(0),
+			self.getElsevierCitation (match.group(1)) ) ) 
 
 	def collateResults (self):
 		# query 0 has the fullsize to thumbnail mapping; extract it
@@ -23,6 +76,12 @@ class ImageGatherer (Gatherer.Gatherer):
 
 		# myThumb[full size key] = thumbnail key
 		self.myThumb = {}
+
+		# self.elsevier[J: num] = Elsevier citation
+		self.elsevier = {}
+
+		# full tag in group(0), J# in group(1)
+		self.elsevierRE = re.compile ('\\\\Elsevier\(([^|)]+)\|\|\)?')
 
 		(columns, rows) = self.results[0]
 
@@ -131,7 +190,8 @@ class ImageGatherer (Gatherer.Gatherer):
 			# trim trailing whitespace from notes fields
 
 			if self.copyright.has_key(key):
-				copyright = self.copyright[key].rstrip()
+				copyright = self.convertElsevierTag (
+					self.copyright[key].rstrip() )
 
 			if self.caption.has_key(key):
 				caption = self.caption[key].rstrip()
