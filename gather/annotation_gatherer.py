@@ -373,6 +373,28 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached data for %d annotations' % len(rows))
 		return
 
+	def filterInvalidMarkers (self, mRows):
+		# filter out any rows from mRows where are for invalid marker
+		# keys
+		cols, rows = self.results[11]
+
+		validKeys = {}
+		for row in rows:
+			validKeys[row[0]] = 1
+
+		i = len(mRows) - 1
+		ct = 0
+
+		while i >= 0:
+			markerKey = mRows[i][1]
+			if not validKeys.has_key(markerKey):
+				del mRows[i]
+				ct = ct + 1
+			i = i - 1
+
+		logger.debug ('Filtered out %d marker annotation rows' % ct) 
+		return mRows
+
 	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
 		annotationEvidence, annotationRefs, inferredFromIDs):
 
@@ -542,6 +564,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				mRows.append ( (len(mRows), objectKey,
 				    annotationKey, None, qualifier,
 				    annotType) )
+
+		mRows = self.filterInvalidMarkers(mRows)
 
 		self.output = [ (aCols, aRows), (iCols, iRows),
 			(rCols, rRows), (mCols, mRows), (sCols, sRows) ]
@@ -713,6 +737,9 @@ cmds = [
 		and a.accID = a2.accID
 		and a2._MGIType_key = 13
 		and a2._Object_key = t._Term_key''',
+
+	# 11. get the valid marker keys
+	'''select _Marker_key from mrk_marker''',
 	]
 
 # definition of output files, each as:
