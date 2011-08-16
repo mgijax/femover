@@ -150,6 +150,8 @@ cmds = [
 		a.accID, a.preferred, a.private, ldb.name as logicalDB
 	from acc_accession a, acc_logicaldb ldb
 	where a._MGIType_key = 9
+		and exists (select 1 from img_image i
+			where i._Image_key = a._Object_key)
 		and a._LogicalDB_key = ldb._LogicalDB_key''',
 	]
 
