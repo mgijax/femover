@@ -38,7 +38,9 @@ cmds = [
 		m._Qualifier_key
 	from seq_allele_assoc m
 	where exists (select 1 from seq_genetrap g
-		where g._Sequence_key = m._Sequence_key)'''
+		where g._Sequence_key = m._Sequence_key)
+	and exists (select 1 from seq_sequence s
+		where m._Sequence_key = s._Sequence_key)'''
 	]
 
 # order of fields (from the query results) to be written to the

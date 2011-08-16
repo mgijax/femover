@@ -61,6 +61,8 @@ cmds = [
 	from mgi_note mn, mgi_notechunk mnc
 	where mn._MGIType_key = 11
 		and mn._Note_key = mnc._Note_key
+		and exists (select 1 from all_allele a
+			where a._Allele_key = mn._Object_key)
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 	]
 

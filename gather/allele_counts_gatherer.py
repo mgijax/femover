@@ -63,8 +63,8 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 				if d.has_key(allele):
 					d[allele][countName] = row[countCol]
 				else:
-					raise error, \
-					'Unknown allele key: %d' % allele
+					logger.debug (
+					'Unknown allele key: %d' % allele)
 
 		# non-standard handling for images; we need to collect the
 		# image keys for each allele, then get the counts from there
@@ -92,7 +92,9 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 
 		alleleKeys = imagesPerAllele.keys()
 		for allele in alleleKeys:
-			d[allele][ImageCount] = len(imagesPerAllele[allele]) 
+			if d.has_key(allele):
+				d[allele][ImageCount] = \
+					len(imagesPerAllele[allele]) 
 
 		counts.append (ImageCount)
 		
