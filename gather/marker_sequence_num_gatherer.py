@@ -216,7 +216,9 @@ cmds = [
 
 	'''select _Marker_key, chromosome, startCoordinate,
 			%s, cytogeneticOffset, sequenceNum
-		from mrk_location_cache''' % offset,
+		from mrk_location_cache c
+		where exists (select 1 from mrk_marker m
+			where m._Marker_key = c._Marker_key)''' % offset,
 	]
 
 # order of fields (from the Sybase query results) to be written to the

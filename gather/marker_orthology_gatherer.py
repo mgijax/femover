@@ -39,6 +39,8 @@ cmds = [
 	where mouse._Organism_key = 1
 		and mouse._Class_key = nonmouse._Class_key
 		and nonmouse._Organism_key != 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = nonmouse._Marker_key)
 		and nonmouse._Marker_key = mm._Marker_key''',
 	]
 

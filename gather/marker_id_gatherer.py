@@ -178,6 +178,8 @@ cmds = [
 		a.accID, a.preferred, a.private, ldb.name as logicalDB
 	from acc_accession a, acc_logicaldb ldb
 	where a._MGIType_key = 2
+		and exists (select 1 from mrk_marker m
+			where a._Object_key = m._Marker_key)
 		and a._LogicalDB_key = ldb._LogicalDB_key''',
 
 	# 1. some gene model IDs are shared by multiple markers; we need to
@@ -193,6 +195,8 @@ cmds = [
 		and a._Object_key != b._Object_key
 		and b._Object_key = m._Marker_key
 		and m._Marker_key = c._Object_key
+		and exists (select 1 from mrk_marker m2
+			where m2._Marker_key = a._Object_key)
 		and c._MGIType_key = 2
 		and c._LogicalDB_key = 1
 		and c.preferred = 1''',

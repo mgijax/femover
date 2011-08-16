@@ -20,7 +20,9 @@ cmds = [
 		_Marker_key,
 		_Refs_key,
 		relationship as qualifier
-	from prb_marker''',
+	from prb_marker p
+	where exists (select 1 from mrk_marker m
+		where p._Marker_key = m._Marker_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

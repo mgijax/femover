@@ -83,10 +83,14 @@ cmds = [
 	from mgi_note mn, mgi_notechunk mnc
 	where mn._MGIType_key = 2
 		and mn._Note_key = mnc._Note_key
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = mn._Object_key)
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 
 	'''select _Marker_key, sequenceNum, note
-		from mrk_notes
+		from mrk_notes n
+		where exists (select 1 from mrk_marker m
+			where m._Marker_key = n._Marker_key)
 		order by _Marker_key, sequenceNum''',
 	]
 

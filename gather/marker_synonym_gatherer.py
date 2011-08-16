@@ -35,6 +35,8 @@ cmds = [
 		r.jnumID
 	from mgi_synonym s, bib_citation_cache r
 	where s._MGIType_key = 2
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = s._Object_key)
 		and s._Refs_key = r._Refs_key'''
 	]
 

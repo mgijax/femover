@@ -22,7 +22,11 @@ cmds = [
 		m._Qualifier_key,
 		t.term as qualifier
 	from seq_marker_cache m, voc_term t
-	where m._Qualifier_key = t._Term_key''',
+	where m._Qualifier_key = t._Term_key
+		and exists (select 1 from seq_sequence ss
+			where ss._Sequence_key = m._Sequence_key)
+		and exists (select 1 from mrk_marker mm
+			where mm._Marker_key = m._Marker_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

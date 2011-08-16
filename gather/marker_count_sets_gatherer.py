@@ -200,6 +200,8 @@ cmds = [
 		voc_term vt
 	where pp._SegmentType_key = vt._Term_key
 		and pm._Probe_key = pp._Probe_key
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = pm._Marker_key)
 	group by pm._Marker_key, vt.term''',
 
 	# counts of RFLP/PCR polymorphisms by type
@@ -213,6 +215,8 @@ cmds = [
 	where p._SegmentType_key = t._Term_key
 		and rflv._Reference_key = r._Reference_key
 		and r._Probe_key = p._Probe_key
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = rflv._Marker_key)
 	group by rflv._Marker_key, t.term''',
 
 	# alleles by type (and these aren't the actual types, but the
@@ -232,6 +236,8 @@ cmds = [
 		and mva._Term_key_2 = a._Allele_Type_key
 		and a.isWildType = 0
 		and a._Marker_key is not null
+		and exists (select 1 from mrk_marker m
+			where a._Marker_key = m._Marker_key)
 	group by a._Marker_key, vt.term, vt.sequenceNum
 	order by a._Marker_key, vt.sequenceNum''' % (COUNT_TYPE, SET_TYPE,
 		COUNT),
@@ -246,6 +252,8 @@ cmds = [
 		gxd_assaytype gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
 	group by ge._Marker_key, gat.assayType
 	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
 		COUNT, sortVal),
@@ -260,6 +268,8 @@ cmds = [
 		gxd_assaytype gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
 	group by ge._Marker_key, gat.assayType
 	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
 		COUNT, sortVal),
@@ -275,6 +285,8 @@ cmds = [
 	where ge.isForGXD = 1
 		and ge._Structure_key = gs._Structure_key
 		and gs._Stage_key = ts._Stage_key
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
 	group by ge._Marker_key, ts.stage
 	order by ge._Marker_key, ts.stage''' % (COUNT_TYPE, SET_TYPE, COUNT),
 	]

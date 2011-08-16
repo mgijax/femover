@@ -49,6 +49,8 @@ cmds = [ '''select distinct i._Image_key,
 		i._Object_key as _Marker_key
 	from img_cache i
 	where i._MGIType_key = 2
+		and exists (select 1 from img_image ii
+			where ii._Image_key = i._Image_key)
 		and i._ImageMGIType_key = 8''',
 	]
 

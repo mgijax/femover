@@ -146,12 +146,16 @@ cmds = [
 	where c._Sequence_key = a._Object_key
 		and a._MGIType_key = 19
 		and a.preferred = 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = c._Marker_key)
 		and c._Qualifier_key = 615419''',
 
 	'''select distinct _Marker_key, chromosome, %s, provider,
 		cytogeneticOffset, startCoordinate, endCoordinate, version,
 		strand, mapUnits
-	from mrk_location_cache''' % offset,
+	from mrk_location_cache c
+	where exists (select 1 from mrk_marker m
+		where m._Marker_key = c._Marker_key)''' % offset,
 	]
 
 # order of fields (from the query results) to be written to the
