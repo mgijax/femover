@@ -15,9 +15,12 @@ ReferenceToSequenceGatherer = Gatherer.Gatherer
 
 ###--- globals ---###
 
-cmds = [''' select _Refs_key, _Object_key, '' as qualifier
-	from mgi_reference_assoc
-	where _MGIType_key = 19''']
+# include a clause to guard against deleted sequences
+cmds = ['''select a._Refs_key, a._Object_key, '' as qualifier
+	from mgi_reference_assoc a
+	where a._MGIType_key = 19
+		and exists (select 1 from seq_sequence s
+			where a._Object_key = s._Sequence_key)''']
 
 # order of fields (from the Sybase query results) to be written to the
 # output file
