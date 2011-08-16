@@ -54,6 +54,30 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to r
 # databaseInfoTable object
 dbInfoTable = database_info.table
 
+# tables waiting for indexing; table -> [ index process ids ]
+INDEXING_TABLES = {}
+
+# maps from index process id to table name
+TABLE_BY_INDEX_ID = {}
+
+# list of table names that have their creation, load, and indexes finished
+DONE_TABLES = []
+
+# tables waiting for foreign keys; table -> [ foreign key process ids ]
+FK_TABLES = {}
+
+# maps from foreign key process id to table name
+TABLE_BY_FK_ID = {}
+
+# list of strings, each of which is an 'add foreign key' statement that we're
+# waiting to schedule.  (We wait until both involved tables have had their
+# indexes completed.)
+WAITING_FK = []
+
+# error messages about failed foreign keys (just collect them, as foreign keys
+# are not critical)
+FAILED_FK = []
+
 # time (in seconds) at which we start the build
 START_TIME = time.time()
 
@@ -71,6 +95,7 @@ GATHER_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_GATHERER)
 CONVERT_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_CONVERT)
 BCPIN_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_BCPIN)
 INDEX_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_INDEX)
+FK_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_FK)
 
 # lists of not-yet-finished processes for each type of operation.  Each list
 # item is a tuple of (descriptive string, dispatcher process id).
@@ -78,21 +103,22 @@ GATHER_IDS = []
 CONVERT_IDS = []
 BCPIN_IDS = []
 INDEX_IDS = []
+FK_IDS = []
 
 # integer status values for each type of operation.
 GATHER_STATUS = NOTYET
 CONVERT_STATUS = NOTYET
 BCPIN_STATUS = NOTYET
 INDEX_STATUS = NOTYET
+FK_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
 ACCESSION = [ 'accession',
 	]
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
-		'allele_sequence_num', 'allele_annotation',
+		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
-		'allele_to_sequence',
 	]
 ANNOTATIONS = [ 'annotation'
 	]
@@ -121,7 +147,7 @@ IMSR = [ 'imsr',
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference',
 		'marker_orthology', 'marker_location', 'marker_counts',
-		'marker_note', 'marker_sequence_num', 'marker_annotation',
+		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict',
 	]
@@ -130,6 +156,7 @@ PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 REFERENCES = [ 'reference', 'reference_abstract', 'reference_book', 
 		'reference_counts', 'reference_id', 'reference_sequence_num', 
 		'reference_to_sequence', 'reference_individual_authors',
+		'reference_note',
 	]
 SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_gene_trap', 'sequence_id', 'sequence_location',
@@ -258,6 +285,67 @@ def processCommandLine():
 	logger.info ('Found %d gatherers to run' % len(uniqueGatherers))
 	return uniqueGatherers
 
+def dropForeignKeyConstraints(table):
+	# Purpose: to drop the foreign key constraints that refer to the 
+	#	given table
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: drops constraints from tables from the database
+	# Throws: 'error' if problems are detected
+
+	cmd = '''select fk.table_name as fk_table,
+			cu.column_name as fk_column, 
+			pk.table_name as pk_table,
+			pt.column_name as pk_column,
+			c.constraint_name as constraint_name
+		from information_schema.referential_constraints c
+		inner join information_schema.table_constraints fk
+			on c.constraint_name = fk.constraint_name
+		inner join information_schema.table_constraints pk
+			on c.unique_constraint_name = pk.constraint_name
+		inner join information_schema.key_column_usage cu
+			on c.constraint_name = cu.constraint_name
+		inner join (select i1.table_name, i2.column_name
+			from information_schema.table_constraints i1
+			inner join information_schema.key_column_usage i2
+				on i1.constraint_name = i2.constraint_name
+			where lower(i1.constraint_type) = 'primary key') pt
+				on pt.table_name = pk.table_name
+		where lower(pk.table_name) = '%s' ''' % table.lower()
+
+	logger.debug ('finding FK for %s : %s' % (table, cmd))
+
+	(columns, rows) = DBM.execute(cmd)
+	
+	logger.debug ('%d rows, %d columns' % (len(rows), len(columns)))
+
+	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
+	dropFKDispatcher = Dispatcher.Dispatcher(1)
+
+	if not columns:
+		return
+
+	tableCol = columns.index('fk_table')
+	nameCol = columns.index('constraint_name') 
+
+	for row in rows:
+	    fk_table = row[tableCol]
+	    constraint_name = row[nameCol]
+
+	    s = "%s 'alter table %s drop constraint if exists %s'" % (
+			dbExecute, fk_table, constraint_name)
+
+	    logger.debug ('dropping %s : %s' % (constraint_name, s))
+
+	    id = dropFKDispatcher.schedule(s)
+	    dropFKDispatcher.wait() 
+
+	    if dropFKDispatcher.getReturnCode(id):
+		print '\n'.join (dropFKDispatcher.getStderr(id))
+		raise error, 'Failed to drop constraint %s' % \
+			constraint_name
+	return
+
 def dropTables (
 	tables		# list of table names (strings) to be regenerated
 	):
@@ -296,11 +384,17 @@ def dropTables (
 
 		dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 		for row in rows:
+			dropForeignKeyConstraints(row[0]) 
+
+		for row in rows:
 			id = dropDispatcher.schedule (
-				"%s 'drop table %s'" % (dbExecute, row[0]))
+				"%s 'drop table %s cascade'" % (dbExecute, row[0]))
 			items.append ( (row[0], id) )
 	else:
 		# specific tables were specified, so just delete them
+		for table in tables:
+			dropForeignKeyConstraints(table) 
+
 		for table in tables:
 			script = os.path.join (config.SCHEMA_DIR, '%s.py' % \
 				table)
@@ -389,12 +483,18 @@ def dispatcherReport():
 	dispatchers = [ ('gather', GATHER_DISPATCHER),
 			('convert', CONVERT_DISPATCHER),
 			('load', BCPIN_DISPATCHER),
-			('index', INDEX_DISPATCHER) ]
+			('index', INDEX_DISPATCHER),
+			('foreign keys', FK_DISPATCHER)
+			]
 
 	for (name, dispatcher) in dispatchers:
-		logger.debug ('%s : %d active : %d waiting' % (name,
+		logger.debug ('%-14s : %d active : %d waiting' % (name,
 			dispatcher.getActiveProcessCount(),
 			dispatcher.getWaitingProcessCount() ) )
+
+	if WAITING_FK:
+		logger.debug ('%-14s : %d not scheduled' % (
+			'foreign keys', len(WAITING_FK)) )
 
 	REPORT_TIME = time.time() 	# update time of last report
 	return
@@ -591,6 +691,7 @@ def scheduleIndexes (
 	# Throws: 'error' if we cannot discover what indexes to create
 
 	global INDEX_IDS, INDEX_STATUS, INDEX_DISPATCHER
+	global INDEXING_TABLES, TABLE_BY_INDEX_ID
 
 	# ask the table's script for its list of indexes
 
@@ -609,10 +710,19 @@ def scheduleIndexes (
 
 	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 
+	INDEXING_TABLES[table] = []
+
+	hadIndex = False
 	for stmt in indexDispatcher.getStdout(id):
 		id = INDEX_DISPATCHER.schedule ("%s '%s'" % (dbExecute,
 			stmt.strip() ) )
 		INDEX_IDS.append ( (stmt.strip(), id) )
+		INDEXING_TABLES[table].append(id)
+		TABLE_BY_INDEX_ID[id] = table
+		hadIndex = True
+
+	if not hadIndex:
+		scheduleForeignKeys(table)
 
 	# if this is our first index creation, report it
 
@@ -672,6 +782,7 @@ def checkForFinishedIndexes():
 	# Throws: 'error' if we detect a failed index
 
 	global INDEX_IDS, INDEX_DISPATCHER, INDEX_STATUS
+	global INDEXING_TABLES, TABLE_BY_INDEX_ID, DONE_TABLES
 
 	# walk backward through the list of unfinished indexing processes,
 	# so as we delete some the loop is not disturbed
@@ -690,6 +801,18 @@ def checkForFinishedIndexes():
 				print '\n'.join ( \
 					INDEX_DISPATCHER.getStderr(id))
 				raise error, 'Indexing failed on: %s' % cmd
+
+			# see if this table's indexes are done
+
+			table = TABLE_BY_INDEX_ID[id]
+			del TABLE_BY_INDEX_ID[id]
+
+			INDEXING_TABLES[table].remove(id)
+			if not INDEXING_TABLES[table]:
+				DONE_TABLES.append(table)
+				del INDEXING_TABLES[table]
+				scheduleForeignKeys(table)
+				logger.debug ('Finished indexing %s' % table)
 		i = i - 1
 
 	# if the load processes have all finished and there are no unfinished
@@ -699,6 +822,124 @@ def checkForFinishedIndexes():
 		INDEX_STATUS = ENDED
 		logger.debug ('Last index finished')
 		dbInfoTable.setInfo ('status', 'finished indexing')
+	return
+
+def scheduleForeignKeys(table = None, doAll = False):
+	# Purpose: to schedule the creation of the foreign keys on the given
+	#	table
+	# Returns: nothing
+	# Assumes: the given 'table' has had its indexing finished
+	# Modifies: creates foreign keys for 'table'; updates globals listed
+	#	below
+	# Throws: 'error' if we cannot discover what foreign keys to create
+
+	global FK_IDS, FK_STATUS, FK_DISPATCHER, WAITING_FK
+	global FK_TABLES, TABLE_BY_FK_ID
+
+	# ask the table's script for its list of foreign keys
+
+	if table:
+		script = os.path.join (config.SCHEMA_DIR, table + '.py')
+		fkDispatcher = Dispatcher.Dispatcher()
+		id = fkDispatcher.schedule ('%s --sk' % script)
+		fkDispatcher.wait()
+
+		if fkDispatcher.getReturnCode(id):
+			print '\n'.join (fkDispatcher.getStderr(id))
+			raise error, \
+			'Failed to get foreign key creation scripts for %s' \
+				% table
+
+		# each fk creation statement will appear on a separate line;
+		# add them to the list of waiting commands.  We shouldn't
+		# schedule them until the tables have both been indexed, for
+		# performance reasons.
+
+		for stmt in fkDispatcher.getStdout(id):
+			items = stmt.strip().split()
+			table1 = items[2]
+			table2 = items[10]
+
+			WAITING_FK.append ( (table1, table2, stmt) )
+
+	# now, schedule whichever foreign-key commands have both their tables
+	# indexed
+
+	ranOne = False
+	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
+
+	i = len(WAITING_FK) - 1
+	while i >= 0:
+		(table1, table2, cmd) = WAITING_FK[i]
+		if ((table1 in DONE_TABLES) and (table2 in DONE_TABLES)) or \
+		    doAll:
+			id = FK_DISPATCHER.schedule ("%s '%s'" % (dbExecute,
+				cmd.strip() ) )
+			FK_IDS.append ( (cmd.strip(), id) )
+			del WAITING_FK[i] 
+
+			TABLE_BY_FK_ID[id] = table1
+			if not FK_TABLES.has_key(table1):
+				FK_TABLES[table1] = [ id ]
+			else:
+				FK_TABLES[table1].append(id)
+
+			ranOne = True
+		i = i - 1
+
+	# if this is our first foreign key creation, report it
+
+	if (FK_STATUS != WORKING) and ranOne:
+		FK_STATUS = WORKING
+		logger.debug ('Began creating foreign keys')
+	return
+
+def checkForFinishedForeignKeys():
+	# Purpose: look for any foreign key creation processes that are done
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed statement
+
+	global FK_IDS, FK_DISPATCHER, FK_STATUS, FAILED_FK
+
+	# walk backward through the list of unfinished foreign key processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(FK_IDS) - 1
+	while (i >= 0):
+		(cmd, id) = FK_IDS[i]
+
+		# if we detect a finished process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then report it and bail out
+
+		if FK_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del FK_IDS[i]
+			if FK_DISPATCHER.getReturnCode(id) != 0:
+				FAILED_FK.append ('\n'.join ( \
+					FK_DISPATCHER.getStderr(id)) )
+#				raise error, 'Foreign key failed on: %s' % cmd
+
+			# see if this table's foreing keys are done
+
+			table = TABLE_BY_FK_ID[id]
+			del TABLE_BY_FK_ID[id]
+
+			FK_TABLES[table].remove(id)
+			if not FK_TABLES[table]:
+				del FK_TABLES[table]
+				logger.debug ('Finished foreign keys for %s' % table)
+		i = i - 1
+
+	# if the indexing processes have all finished and there are no
+	# unfinished foreign key processes, then the foreign key stage is
+	# done -- report it
+
+	if (INDEX_STATUS == ENDED) and (not FK_IDS) and (FK_STATUS != ENDED):
+		FK_STATUS = ENDED
+		logger.debug ('Last foreign key finished')
+		dbInfoTable.setInfo ('status', 'finished foreign keys')
 	return
 
 def getMgiDbInfo():
@@ -773,7 +1014,7 @@ def main():
 	scheduleGatherers(gatherers)
 	dbInfoTable.setInfo ('status', 'gathering data')
 
-	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS):
+	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, INDEX_STATUS):
 		if GATHER_STATUS != ENDED:
 			checkForFinishedGathering()
 		if CONVERT_STATUS != ENDED:
@@ -781,6 +1022,7 @@ def main():
 		if BCPIN_STATUS != ENDED:
 			checkForFinishedLoad()
 		checkForFinishedIndexes()
+		checkForFinishedForeignKeys()
 		dispatcherReport()
 		time.sleep(0.5)
 
@@ -790,8 +1032,14 @@ def main():
 	GATHER_DISPATCHER.wait()
 	CONVERT_DISPATCHER.wait()
 	BCPIN_DISPATCHER.wait()
-	INDEX_DISPATCHER.wait(dispatcherReport)
-	checkForFinishedIndexes()		# do final reporting
+	INDEX_DISPATCHER.wait()
+	scheduleForeignKeys(doAll = True)	# any remaining ones
+	FK_DISPATCHER.wait(dispatcherReport)
+	checkForFinishedForeignKeys()
+
+	if FAILED_FK:
+		for item in FAILED_FK:
+			logger.debug ('Failed FK: %s' % item)
 	return
 
 def hms (x):
@@ -819,10 +1067,13 @@ if __name__ == '__main__':
 		status = 'failed'
 
 	elapsed = hms(time.time() - START_TIME)
-	dbInfoTable.setInfo ('status', status)
-	dbInfoTable.setInfo ('build ended', time.strftime (
-		'%m/%d/%Y %H:%M:%S', time.localtime()) )
-	dbInfoTable.setInfo ('build total time', elapsed)
+	try:
+		dbInfoTable.setInfo ('status', status)
+		dbInfoTable.setInfo ('build ended', time.strftime (
+			'%m/%d/%Y %H:%M:%S', time.localtime()) )
+		dbInfoTable.setInfo ('build total time', elapsed)
+	except:
+		pass
 
 	report = 'Build %s in %s' % (status, elapsed)
 	print report
