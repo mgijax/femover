@@ -10,6 +10,8 @@ CONTROL_DIR = INSTALL_DIR + 'control/'
 LIB_DIR = INSTALL_DIR + 'lib/python/'
 LOG_DIR = INSTALL_DIR + 'logs/'
 
+FULL_TEXT_LINKS = '/data/fullTextLinks.txt'
+
 ###--- general ---###
 
 CHUNK_SIZE = 100000		# number of records to process per chunk
@@ -28,6 +30,7 @@ CONCURRENT_GATHERER = 3		# data gathering scripts (1 per target table)
 CONCURRENT_CONVERT = 4		# file conversion scripts (1 per target table)
 CONCURRENT_BCPIN = 3		# bulk load statements (1 per target table)
 CONCURRENT_INDEX = 6		# 'create index' statements (many per table)
+CONCURRENT_FK = 4		# 'add foreign key' statements (many per table)
 
 ###--- source database connection (read-only) ---###
 
