@@ -16,7 +16,7 @@ tableName = 'accession_object_type'
 createStatement = '''CREATE TABLE %s  ( 
 	object_type_key		int		not null,
 	object_type		varchar(255)	null,
-	PRIMARY KEY(object_type))''' % tableName
+	PRIMARY KEY(object_type_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the

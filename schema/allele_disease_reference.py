@@ -29,8 +29,14 @@ indexes = {
 		'create index %s on %s (disease_genotype_key, sequence_num)',
 	}
 
+keys = {
+	'disease_genotype_key' : ('allele_disease_genotype',
+		'disease_genotype_key'),
+	'reference_key' : ('reference', 'reference_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

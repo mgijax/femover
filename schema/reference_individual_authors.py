@@ -29,8 +29,10 @@ indexes = {
 	'author' : 'create index %s on %s (author)',
 	}
 
+keys = { 'reference_key' : ('reference', 'reference_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

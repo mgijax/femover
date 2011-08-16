@@ -27,8 +27,10 @@ indexes = {
 	'sequence_key' : 'create index %s on %s (sequence_key)',
 	}
 
+keys = { 'sequence_key' : ('sequence', 'sequence_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

@@ -27,8 +27,10 @@ indexes = {
 	'allele_disease' : 'create index %s on %s (allele_disease_key, number)',
 	}
 
+keys = { 'allele_disease_key' : ('allele_disease', 'allele_disease_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

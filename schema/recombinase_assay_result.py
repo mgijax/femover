@@ -39,8 +39,10 @@ createStatement = '''CREATE TABLE %s  (
 indexes = { 'allele_system_key' : 'create index %s on %s (allele_system_key)',
 	}
 
+keys = { 'allele_system_key' : ('recombinase_allele_system', 'allele_system_key'), }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

@@ -20,6 +20,7 @@ USAGE = '''Usage: %s [--dt|--ct|--di|--ci|--dk|--ck|--dt|--ct|--lf <file>]
 	--ck : create foreign keys
 	--lf : load file (with full path to file specified)
 	--si : show 'create index' statements
+	--sk : show 'create foreign key' statements
     Notes:
     	1. At least one command-line option must be specified.
 	2. If one or more operations fail, this script will exit with a
@@ -27,7 +28,7 @@ USAGE = '''Usage: %s [--dt|--ct|--di|--ci|--dk|--ck|--dt|--ct|--lf <file>]
 	   is not guaranteed to be correct.
 	3. In the case of multiple command-line options, they are executed
 	   in a certain order (left to right):
-		--dk, --di, --dt, --ct, --lf, --ci, --ck, --si
+		--dk, --di, --dt, --ct, --lf, --ci, --ck, --si, --sk
 ''' % os.path.basename(sys.argv[0])
 
 # exception raised if things go wrong
@@ -123,7 +124,7 @@ def main (
 	userFlags = sys.argv[1:]
 
 	# order in which we must execute the user's specified flags
-	flagOrder = '--dk --di --dt --ct --lf --ci --ck --si'.split()
+	flagOrder = '--dk --di --dt --ct --lf --ci --ck --si --sk'.split()
 
 	# check that all user-specified flags are recognized
 	priorFlag = ''
@@ -157,6 +158,10 @@ def main (
 				stmts = myTable.getIndexCreationStatements()
 				for stmt in stmts:
 					print stmt
+			elif flag == '--sk':
+				stmts = myTable.getForeignKeyCreationStatements()
+				for stmt in stmts:
+					print stmt
 			else:
 				# should not happen
 				bailout ('Unknown option (%s)' % flag, True)
@@ -177,8 +182,8 @@ class Table:
 				# ...where the table name should be filled in)
 		indexes={},	# dict; index name -> SQL to create index
 				# ...(see comment above)
-		keys={}		# dict; related table name ->list of SQL to
-				# ...create keys
+		keys={}		# dict; column in this table -> (related
+				# ...table name, column in related table)
 		):
 		# Purpose: constructor
 		# Returns: nothing
@@ -190,7 +195,7 @@ class Table:
 		self.name = name
 		self.createStatement = createStatement
 		self.indexes = indexes
-		self.keys = keys
+		self.fKeys = keys
 		return
 
 	def getName (self):
@@ -209,7 +214,7 @@ class Table:
 		# Modifies: see Purpose
 		# Throws: propagates any exceptions from the drop operation
 
-		DBM.execute ('DROP TABLE IF EXISTS %s' % self.name)
+		DBM.execute ('DROP TABLE IF EXISTS %s CASCADE' % self.name)
 		DBM.commit()
 		return
 
@@ -267,7 +272,21 @@ class Table:
 		# Modifies:
 		# Throws:
 
+		cmd = '''ALTER TABLE %s DROP CONSTRAINT IF EXISTS %s_%s_fk CASCADE'''
+
+		for keyCol in self.fKeys.keys():
+			DBM.execute (cmd % (self.name, self.name, keyCol))
+		DBM.commit()
 		return
+
+	def getForeignKeyCreationStatements (self):
+		cmd = '''ALTER TABLE %s ADD CONSTRAINT %s_%s_fk FOREIGN KEY (%s) REFERENCES %s (%s)'''
+
+		stmts = []
+		for (keyCol, (fkTable, fkKeyCol)) in self.fKeys.items():
+			stmts.append (cmd % (self.name, self.name, keyCol,
+				keyCol, fkTable, fkKeyCol))
+		return stmts
 
 	def createKeys (self):
 		# Purpose: create all foreign key relationships for this table
@@ -277,4 +296,7 @@ class Table:
 		# Modifies:
 		# Throws:
 
+		for stmt in self.getForeignKeyCreationStatements():
+			DBM.execute(stmt)
+		DBM.commit()
 		return

@@ -27,8 +27,13 @@ indexes = {
 	'other_organism' : 'create index %s on %s (other_organism)',
 	}
 
+keys = {
+	'mouse_marker_key' : ('marker', 'marker_key'),
+	'other_marker_key' : ('marker', 'marker_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

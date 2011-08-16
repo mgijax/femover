@@ -25,8 +25,10 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = { 'image_key' : 'create index %s on %s (image_key)' }
 
+keys = { 'image_key' : ('image', 'image_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

@@ -33,8 +33,14 @@ indexes = {
 	'acc_id' : 'create index %s on %s (search_id)',
 	}
 
+keys = {
+	'logical_db_key' : ('accession_logical_db', 'logical_db_key'),
+	'display_type_key' : ('accession_display_type', 'display_type_key'),
+	'object_type_key' : ('accession_object_type', 'object_type_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

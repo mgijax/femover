@@ -31,8 +31,13 @@ indexes = {
 	'term_key' : 'create index %s on %s (term_key)',
 	}
 
+keys = {
+	'term_key' : ('term', 'term_key'),
+	'child_term_key' : ('term', 'term_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

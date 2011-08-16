@@ -25,8 +25,10 @@ indexes = {
 	'synonym' : 'create index %s on %s (synonym)',
 	}
 
+keys = { 'term_key' : ('term', 'term_key'), }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

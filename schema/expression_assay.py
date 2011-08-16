@@ -42,8 +42,14 @@ indexes = {
 	'marker_key' : 'create index %s on %s (marker_key)',
 	}
 
+keys = {
+	'probe_key' : ('probe', 'probe_key'),
+	'marker_key' : ('marker', 'marker_key'),
+	'reference_key' : ('reference', 'reference_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

@@ -28,6 +28,11 @@ indexes = {
 	'marker_id_key' : 'create index %s on %s (marker_id_key)',
 	}
 
+keys = {
+	'marker_id_key' : ('marker_id', 'unique_key'),
+	'marker_key' : ('marker', 'marker_key'),
+	}
+
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes)
 

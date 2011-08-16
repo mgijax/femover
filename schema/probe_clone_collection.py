@@ -23,8 +23,10 @@ indexes = {
 	'probe_key' : 'create index %s on %s (probe_key)',
 	}
 
+keys = { 'probe_key' : ('probe', 'probe_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

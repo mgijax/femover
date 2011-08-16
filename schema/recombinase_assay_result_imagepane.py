@@ -29,8 +29,13 @@ indexes = {
 	'result_key' : 'create index %s on %s (result_key)',
 	}
 
+keys = {
+	'result_key' : ('recombinase_assay_result', 'result_key'),
+	'image_key' : ('image', 'image_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

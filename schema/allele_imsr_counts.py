@@ -25,8 +25,10 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {}
 
+keys = { 'allele_key' : ('allele', 'allele_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

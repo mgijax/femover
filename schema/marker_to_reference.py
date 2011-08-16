@@ -14,6 +14,7 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int	NOT NULL,
 	marker_key	int	NOT NULL,
 	reference_key	int	NOT NULL,
+	is_strain_specific	int	NOT NULL,
 	qualifier	varchar(80)	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
@@ -25,8 +26,13 @@ indexes = {
 	'reference_key' : 'create index %s on %s (reference_key, marker_key)',
 	}
 
+keys = {
+	'marker_key' : ('marker', 'marker_key'),
+	'reference_key' : ('reference', 'reference_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

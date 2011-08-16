@@ -30,8 +30,14 @@ indexes = {
 	'grid_column_key' : 'create index %s on %s (grid_column_key)',
 	}
 
+keys = {
+	'grid_row_key' : ('allele_grid_row', 'grid_row_key'),
+	'grid_column_key' : ('allele_grid_column', 'grid_column_key'),
+	'allele_key' : ('allele', 'allele_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

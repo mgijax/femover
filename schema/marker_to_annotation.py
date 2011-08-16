@@ -27,8 +27,14 @@ indexes = {
 	'annotation_key' : 'create index %s on %s (annotation_key, marker_key)',
 	}
 
+keys = {
+	'marker_key' : ('marker', 'marker_key'),
+	'annotation_key' : ('annotation', 'annotation_key'),
+	'reference_key' : ('reference', 'reference_key'),
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 

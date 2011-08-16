@@ -28,8 +28,11 @@ indexes = {
 	'gp_key' : 'create index %s on %s (genotype_phenotype_key, sequence_num)',
 	}
 
+keys = { 'genotype_phenotype_key' : ('genotype_phenotype',
+	'genotype_phenotype_key') }
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, keys)
 
 ###--- Main program ---###
 
