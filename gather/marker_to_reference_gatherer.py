@@ -15,6 +15,20 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 	#	associations, collates results, writes tab-delimited text file
 
 	def collateResults (self):
+		
+		# first, build the list of marker/reference pairs for
+		# strain-specific data
+
+		columns, rows = self.results[1]
+		markerKeyCol = Gatherer.columnNumber (columns, '_Marker_key')
+		refsKeyCol = Gatherer.columnNumber (columns, '_Refs_key')
+
+		strSpecific = {}
+		for row in rows:
+			strSpecific[(row[markerKeyCol], row[refsKeyCol])] = 1 
+
+		# now process the main body of data
+
 		columns, rows = self.results[0]
 		markerKeyCol = Gatherer.columnNumber (columns, '_Marker_key')
 		refsKeyCol = Gatherer.columnNumber (columns, '_Refs_key')
@@ -65,18 +79,34 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 			if okayRefs.has_key(markerKey):
 				# do earliest ref
 				first = okayRefs[markerKey][0]
-				row = [ markerKey, first, 'earliest' ]
+
+				if strSpecific.has_key ( (markerKey, first) ):
+					specific = 1
+				else:
+					specific = 0
+
+				row = [ markerKey, first, specific, 'earliest' ]
 				rows.append (row)
 
 				# do any refs between earliest and latest
 				for ref in okayRefs[markerKey][1:-1]:
-					row = [ markerKey, ref, None ]
+					if strSpecific.has_key ( (markerKey, ref) ):
+						specific = 1
+					else:
+						specific = 0
+
+					row = [ markerKey, ref, specific, None ]
 					rows.append (row)
 
 				# do latest ref
 				last = okayRefs[markerKey][-1]
 				if first != last:
-					row = [ markerKey, last, 'latest' ]
+					if strSpecific.has_key ( (markerKey, last) ):
+						specific = 1
+					else:
+						specific = 0
+
+					row = [ markerKey, last, specific, 'latest' ]
 					rows.append (row)
 
 				hasPublicRefs = True
@@ -95,13 +125,13 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 						elif i == lastRef:
 							flag = 'latest'
 
-					row = [ markerKey, ref, flag ]
+					row = [ markerKey, ref, 0, flag ]
 					rows.append (row)
 					i = i + 1
 
 		logger.debug ('Generated %d rows' % len(rows))
 		self.finalResults = rows
-		self.finalColumns = [ '_Marker_key', '_Refs_key', 'qualifier']
+		self.finalColumns = [ '_Marker_key', '_Refs_key', 'isStrainSpecific', 'qualifier']
 		return
 
 ###--- globals ---###
@@ -115,11 +145,19 @@ cmds = [
 		and mr._Refs_key = r._Refs_key
 		and m._Marker_Status_key != 2
 	order by mr._Marker_key, r.year, mr.jnum''',
+
+	# get the set of all references with data for strain-specific markers
+	'''select m._Object_key as _Marker_key, m._Refs_key
+	from mgi_reference_assoc m, mgi_refassoctype t
+	where t._refassoctype_key = 1028
+	and m._MGIType_key = 2
+	and m._refassoctype_key = t._refassoctype_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Refs_key', 'qualifier', ]
+fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Refs_key', 'isStrainSpecific',
+	'qualifier', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_to_reference'
