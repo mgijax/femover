@@ -47,7 +47,9 @@ cmds = [
 		s.version,
 		s.strand
 	from seq_coord_cache s
-	where s._Sequence_key >= %d and s._Sequence_key < %d''',
+	where s._Sequence_key >= %d and s._Sequence_key < %d
+		and exists (select 1 from seq_sequence ss
+			where s._Sequence_key = ss._Sequence_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

@@ -52,7 +52,8 @@ class SequenceCountsGatherer (Gatherer.ChunkGatherer):
 
 		for row in self.results[1][1]:
 			sequenceKey = row[seqKeyCol]
-			d[sequenceKey][MarkerCount] = row[mrkCol]
+			if d.has_key(sequenceKey):
+				d[sequenceKey][MarkerCount] = row[mrkCol]
 
 		# count of probes per sequence
 		counts.append (ProbeCount)

@@ -45,6 +45,8 @@ cmds = [
 		a.accID, a.preferred, a.private
 	from acc_accession a
 	where a._MGIType_key = 19
+		and exists (select 1 from seq_sequence ss
+			where a._Object_key = ss._Sequence_key)
 		and a._Object_key >= %d and a._Object_key < %d''',
 	]
 
