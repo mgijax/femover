@@ -25,6 +25,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		# (priority is handled by the order-by on the query)
 
 		done = {}	# (marker key, term) -> 1
+		validKeys = {}	# marker key -> 1
 
 		cols, rows = self.results[0]
 
@@ -38,6 +39,7 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				self.finalResults.append ( [ row[termCol],
 					row[typeCol], row[keyCol] ] )
 				done[pair] = 1
+				validKeys[row[keyCol]] = 1
 
 		logger.debug ('Kept %d labels from %d nomen rows' % (
 			len(done), len(rows)) )
@@ -59,6 +61,9 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				term = row[termCol]
 				termType = row[typeCol]
 				marker = row[keyCol]
+
+				if not validKeys.has_key(marker):
+					continue
 
 				triple = (term, termType, marker)
 				if done.has_key(triple):
@@ -149,6 +154,9 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 		for row in rows:
 			termKey = row[termCol]
 			markerKey = row[markerCol]
+
+			if not validKeys.has_key(markerKey):
+				continue
 
 			# include IDs for all of the term's IDs and all of the
 			# IDs for its ancestors
