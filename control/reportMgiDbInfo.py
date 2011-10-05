@@ -3,6 +3,9 @@
 # Purpose: dump the contents of the MGI_dbInfo table from the source database
 
 import sys
+if '.' not in sys.path:
+	sys.path.insert (0, '.')
+
 import config
 import dbManager
 
