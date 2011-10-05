@@ -1,29 +1,39 @@
 #!/bin/sh
 
-# remember the top-level directory (piped through sed to trip any final slash)
+# Name: Install
+# Purpose: install script for the femover product
+
+# remember the top-level directory
 
 cd `dirname $0`
 TOP=`pwd`
 
-# check to ensure we have a config file in the top-level directory
+# if no Configuration file, bail out
 
-CONFIG=${TOP}/config.py
-
-if [ ! -f ${CONFIG} ]; then
-	echo "Cannot find config file: ${CONFIG}"
+if [ ! -f ${TOP}/Configuration ]; then
+	echo "Missing Configuration file"
 	exit 1
 fi
 
-# add links to config module wherever necessary
+# source the Configuration file
 
-for dir in ${TOP}/lib/python ${TOP}/gather ${TOP}/control ${TOP}/schema
+. ${TOP}/Configuration
+echo "Sourced Configuration file"
+
+# add/update links to config.py library
+
+CONFIG=${TOP}/lib/python/config.py
+
+for dir in gather control schema
 do
-	# if there's already a config link in this directory, remove it first
-	cd ${dir}
-	if [ -h config.py ]; then
-		rm config.py
+	if [ -h ${TOP}/${dir}/config.py ]; then
+		rm ${TOP}/${dir}/config.py
 	fi
-	ln -s ${CONFIG} config.py
+	if [ -f ${TOP}/${dir}/config.pyc ]; then
+		rm ${TOP}/${dir}/config.pyc
+	fi
+	ln -s ${CONFIG} ${TOP}/${dir}/config.py 
+	echo "Created symlink: ${TOP}/${dir}/config.py"
 done
 
 # back to top level...
@@ -32,16 +42,19 @@ cd ${TOP}
 
 # if we don't have a data and a logs directory, make them
 
-if [ ! -d data ]; then
-	mkdir data
+if [ ! -d ${DATA_DIR} ]; then
+	mkdir -p ${DATA_DIR}
+	echo "Created data directory: ${DATA_DIR}"
 fi
 
-if [ ! -d logs ]; then
-	mkdir logs
+if [ ! -d ${LOG_DIR} ]; then
+	mkdir ${LOG_DIR}
+	echo "Created log directory: ${LOG_DIR}"
 fi
 
 # update permissions on gatherers and controllers
 
-chmod ug+x gather/*Gatherer.py control/*
+chmod ug+x ${TOP}/gather/*Gatherer.py ${TOP}/control/*
+echo "Granted execute permissions for gatheres and control scripts"
 
 echo "Finished"
