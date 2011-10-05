@@ -41,6 +41,7 @@ cmds = [
 		and ac._MGIType_key = 13
 		and ac.preferred = 1
 		and ac.prefixPart = 'MP:'
+		and al._Marker_key is not null
 	order by _Marker_key, mp_id'''
 	]
 

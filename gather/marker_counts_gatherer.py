@@ -118,6 +118,8 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 				mrkKey = row[mrkKeyCol]
 				if d.has_key(mrkKey):
 					d[mrkKey][countName] = row[countCol]
+				elif mrkKey == None:
+					continue
 				else:
 					raise error, \
 					'Unknown marker key: %d' % mrkKey
