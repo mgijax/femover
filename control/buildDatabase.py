@@ -316,7 +316,7 @@ def dropForeignKeyConstraints(table):
 				on pt.table_name = pk.table_name
 		where lower(pk.table_name) = '%s' ''' % table.lower()
 
-	logger.debug ('finding FK for %s : %s' % (table, cmd))
+#	logger.debug ('finding FK for %s : %s' % (table, cmd))
 
 	(columns, rows) = DBM.execute(cmd)
 	
@@ -956,7 +956,7 @@ def getMgiDbInfo():
 
 	dbInfoDispatcher = Dispatcher.Dispatcher()
 	id = dbInfoDispatcher.schedule (os.path.join (config.CONTROL_DIR,
-		'reportMgiDbInfo.py'))
+		'reportMgiDbInfo.sh') + ' ' + config.SOURCE_TYPE)
 	dbInfoDispatcher.wait()
 
 	dbDate = 'unknown'
