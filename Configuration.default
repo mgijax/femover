@@ -71,7 +71,7 @@ TARGET_TYPE=postgres	# build into postgres or mysql
 export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
 
 # path to data file for short papers' Full Text links
-FULL_TEXT_LINKS_PATH=/home/jsb/fullTextLinks.txt
+FULL_TEXT_LINKS_PATH=${FEMOVER}/data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
 PYTHONPATH=${FEMOVER}/lib/python:.:${PYTHONPATH}
