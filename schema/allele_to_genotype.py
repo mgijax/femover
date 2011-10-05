@@ -19,7 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	genotype_key		int		not null,
 	qualifier		varchar(80)	null,
 	genotype_type		varchar(2)	null,
-	genotype_designation	varchar(5)	null,
+	genotype_designation	varchar(7)	null,
 	has_phenotype_data	int		not null,
 	is_disease_model	int		not null,
 	sequence_num		int		not null,
