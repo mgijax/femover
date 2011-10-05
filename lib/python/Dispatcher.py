@@ -32,6 +32,13 @@
 #	If we wanted to parallelize more and use 15 subprocesses, the last
 #	line could be:
 #		Dispatcher(15, cmds).wait()
+#
+# Note: If one of your subprocesses produces a lot of output, you will want to
+#	specify the optional bufsize parameter when instantiating your
+#	Dispatcher, with some large value of bytes.  For most cases, the
+#	default of None will work, but if you experience a seemingly hung
+#	subprocess, it may be that it's waiting to write a larger amount than
+#	the buffer size allows.
 
 import time
 import types
@@ -109,11 +116,12 @@ class Dispatcher:
 	def __init__ (self,
 		maxProcesses = 5, 	# integer; max number of subprocesses
 					# ...to manage concurrently
-		initialCommands = []	# list of lists or strings; each inner
+		initialCommands = [],	# list of lists or strings; each inner
 					# ...list or string represents one
 					# ...command to be executed.  (If a
 					# ...list, each parameter is its own
 					# ...separate string in that list.)
+		bufsize = None		# buffer size for I/O from subprocs
 		):
 		# Purpose: constructor; build a Dispatcher
 		# Returns: nothing
@@ -146,6 +154,14 @@ class Dispatcher:
 		self.returnCode = {}		  # maps from int ID to the
 						  # ...return code for that
 						  # ...command
+		self.startTime = {}		  # maps from int ID to the
+						  # ...time at which the
+						  # ...command began running
+		self.elapsedTime = {}		  # maps from int ID to the
+						  # ...total runtime (in
+						  # ...seconds) for the cmd
+		self.bufsize = bufsize		  # buffer size for inter-
+						  # ...process communication
 
 		# grab an ID for this Dispatcher and advance the counter
 
@@ -235,6 +251,21 @@ class Dispatcher:
 
 		self.__manageDispatchers()	# housekeeping
 		return self.nextID - 1
+
+	def getElapsedTime (self,
+		id		# integer; ID for the desired command
+		):
+		# Purpose: retrieve the elapsed time for the desired command
+		# Returns: float (time in seconds) if the command has finished
+		#	or None if not
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+
+		self.__manageDispatchers()	# housekeeping
+		if not self.elapsedTime.has_key(id):
+			return UNKNOWN
+		return self.elapsedTime[id]
 
 	def getStatus (self,
 		id		# integer; ID for the desired command
@@ -334,6 +365,11 @@ class Dispatcher:
 				self.debug ('finished command: %s' % \
 					self.commandString[id])
 
+				# note the elapsed time for the process
+
+				self.elapsedTime[id] = time.time() - \
+					self.startTime[id]
+
 		# if we have more commands waiting to be started, then we can
 		# start new subprocesses for them (up to the limit on the
 		# number of subprocesses)
@@ -348,7 +384,22 @@ class Dispatcher:
 				# then start a new subprocess for it
 
 				self.lastStartedID = self.lastStartedID + 1
-				self.activeProcesses.append ( (
+				if self.bufsize != None:
+				    # specify a buffer size for I/O from the
+				    # subprocess, to avoid hangs
+
+				    self.activeProcesses.append ( (
+					subprocess.Popen (self.command[
+						self.lastStartedID],
+						bufsize=self.bufsize,
+						stdout=subprocess.PIPE,
+						stderr=subprocess.PIPE),
+					self.lastStartedID) )
+				else:
+				    # no set bufsize, so just use whatever the
+				    # default is
+
+				    self.activeProcesses.append ( (
 					subprocess.Popen (self.command[
 						self.lastStartedID],
 						stdout=subprocess.PIPE,
@@ -360,6 +411,11 @@ class Dispatcher:
 				self.status[self.lastStartedID] = RUNNING
 				self.debug ('started command: %s' % \
 				    self.commandString[self.lastStartedID])
+
+				# remember the start time for the command
+
+				self.startTime[self.lastStartedID] = \
+					time.time()
 		return
 
 	def __manageDispatchers (self):
