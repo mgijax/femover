@@ -4,7 +4,13 @@ cd `dirname $0`; . ../Configuration
 
 usage()
 {
-    echo "Usage: buildDB.sh {postgres | mysql} [flags]"
+    echo "Usage: buildDB.sh [postgres | mysql] [flags]"
+    echo "  Optional target database type:"
+    echo "    postgres : build into a PostgreSQL database"
+    echo "    mysql : build into a MySQL database"
+    echo "  If no target database type is specified, we use the one specified"
+    echo "  in the Configuration file."
+    echo ""
     echo "  Optional flags for data sets to regenerate:"
     echo "    -a : Alleles"
     echo "    -A : Accession IDs"
@@ -32,20 +38,14 @@ usage()
     exit 1
 }
 
-# check that we have at least one parameter
-
-if [ $# -lt 1 ]; then
-	usage
-fi
-
 # handle the first parameter -- which database type to build into
 
 if [ "$1" = "postgres" ]; then
 	TARGET_TYPE=postgres
+	shift
 elif [ "$1" = "mysql" ]; then
 	TARGET_TYPE=mysql
-else
-	usage "Invalid database type"
+	shift
 fi
 export TARGET_TYPE
 
@@ -53,7 +53,6 @@ export TARGET_TYPE
 
 FLAGS=""
 POSSIBLE_FLAGS="-a -A -b -c -g -h -i -m -n -p -s -r -v -x -G"
-shift
 while [ $# -gt 0 ]; do
 	found=0
 	for flag in ${POSSIBLE_FLAGS}
@@ -78,7 +77,6 @@ while [ $# -gt 0 ]; do
 done
 
 # run the mover with any specified flags
-FEMOVER=..
 ${FEMOVER}/control/buildDatabase.py ${FLAGS}
 
 if [ $? -ne 0 ]; then
