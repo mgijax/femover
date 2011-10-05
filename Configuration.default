@@ -1,0 +1,78 @@
+# Name: Configuration.default
+# Assumes: This will be imported into a Bourne shell (/bin/sh) script.
+# Product: femover
+
+#
+#  If the MGICONFIG environment variable does not have a local override,
+#  use the default "live" settings.
+#
+if [ "${MGICONFIG}" = "" ]
+then
+    MGICONFIG=/usr/local/mgi/live/mgiconfig
+    export MGICONFIG
+fi
+
+. ${MGICONFIG}/master.config.sh
+
+#
+# Directory and file settings.
+#
+FILE_DIR=/data/loads/femover
+LOG_DIR=${FILE_DIR}/logs
+DATA_DIR=${FILE_DIR}/data
+
+DUMP_DIR=/export/dump
+
+FE_POSTGRES_DUMP=${DUMP_DIR}/fe.postgres.dump
+
+export FILE_DIR LOG_DIR DATA_DIR DUMP_DIR FE_POSTGRES_DUMP
+
+#
+# Numbers of concurrent processes by stage.
+#
+CONCURRENT_CREATE=5           # create statements
+CONCURRENT_DROP=1             # drop statements for target tables (should
+                              #   now be 1 to prevent deadlocks with FK)
+CONCURRENT_GATHER=6	      # number of gatherers (extracting data from mgd)
+CONCURRENT_CONVERT=4	      # output file cleanup
+CONCURRENT_BCPIN=3            # bcp in statements
+CONCURRENT_INDEX=6            # create index statements
+CONCURRENT_FOREIGN_KEY=4      # create foreign key statements
+
+export CONCURRENT_DROP CONCURRENT_CREATE
+export CONCURRENT_BCPIN CONCURRENT_INDEX
+export CONCURRENT_GATHER CONCURRENT_CONVERT
+export CONCURRENT_FOREIGN_KEY
+
+#
+# Logging levels.
+#
+LOG_DEBUG=True
+LOG_INFO=True
+
+export LOG_DEBUG LOG_INFO
+
+#
+# settings for retrieving IMSR counts of strains and cell lines
+#
+IMSR_COUNT_URL=http://lindon.informatics.jax.org:18080/imsr/fetch?page=imsrReport&report=mgiCounts
+IMSR_COUNT_TIMEOUT=300		# number of seconds before a timeout occurs
+
+export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
+
+#
+# Miscellaneous settings
+#
+CHUNK_SIZE=100000	# for large tables, how many rows to do at once
+BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
+SOURCE_TYPE=postgres	# build from postgres, mysql, or sybase
+TARGET_TYPE=postgres	# build into postgres or mysql
+
+export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
+
+# path to data file for short papers' Full Text links
+FULL_TEXT_LINKS_PATH=/home/jsb/fullTextLinks.txt
+export FULL_TEXT_LINKS_PATH
+
+PYTHONPATH=${FEMOVER}/lib/python:.:${PYTHONPATH}
+export PYTHONPATH
