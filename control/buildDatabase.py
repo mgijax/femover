@@ -28,6 +28,9 @@ import database_info
 import types
 import getopt
 
+if '.' not in sys.path:
+	sys.path.insert (0, '.')
+
 ###--- Globals ---###
 
 USAGE = '''Usage: %s [-a|-A|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
