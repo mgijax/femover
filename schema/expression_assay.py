@@ -25,7 +25,7 @@ createStatement = '''CREATE TABLE %s  (
 	probe_preparation	varchar(1024)	null,
 	visualized_with		varchar(300)	null,
 	reporter_gene		varchar(50)	null,
-	note			varchar(768)	null,
+	note			varchar(2048)	null,
 	has_image		int		not null,
 	reference_key		int		not null,
 	marker_key		int		null,
