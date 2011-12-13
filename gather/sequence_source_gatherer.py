@@ -144,9 +144,11 @@ cmds = [
 	'''select _Sequence_key, rawStrain, rawTissue, rawAge, rawSex,
 		rawCellLine
 	from seq_sequence_raw r
-	where _Sequence_key >= %d and _Sequence_key < %d
-		and exists (select 1 from seq_sequence s
-			where r._Sequence_key = s._Sequence_key)''',
+	where _Sequence_key >= %d and _Sequence_key < %d''',
+
+# no longer needed:
+#		and exists (select 1 from seq_sequence s
+#			where r._Sequence_key = s._Sequence_key)''',
 
 	'''select ssa._Sequence_key,
 		s.strain,
@@ -161,9 +163,10 @@ cmds = [
 	where ssa._Sequence_key >= %d and ssa._Sequence_key < %d
 		and ssa._Source_key = ps._Source_key
 		and ps._Strain_key = s._Strain_key
-		and exists (select 1 from seq_sequence ss
-			where ssa._Sequence_key = ss._Sequence_key)
 		and ps._CellLine_key = c._Term_key'''
+# no longer needed:
+#		and exists (select 1 from seq_sequence ss
+#			where ssa._Sequence_key = ss._Sequence_key)
 	]
 
 # order of fields (from the query results) to be written to the
