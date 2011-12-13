@@ -254,8 +254,6 @@ class AccessionGatherer:
 			where c._Refs_key = a._Object_key
 				and a._MGIType_key = 1
 				and a.private = 0
-				and (a.prefixPart != 'MGI:' or
-					a.prefixPart is null)
 				and (c.journal != 'Submission'
 					or c.journal is null)'''
 
