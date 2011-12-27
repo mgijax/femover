@@ -375,7 +375,7 @@ def dropTables (
 		if config.TARGET_TYPE == 'mysql':
 			cmd = 'show tables'
 		elif config.TARGET_TYPE == 'postgres':
-			cmd = "select TABLE_NAME from information_schema.tables where table_type='BASE TABLE' and table_schema='public'"
+			cmd = "select TABLE_NAME from information_schema.tables where table_type='BASE TABLE' and table_schema='fe'"
 		else:
 			raise error, 'Unknown value for TARGET_TYPE'
 
