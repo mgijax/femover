@@ -1,3 +1,9 @@
+TAG: femover-5-0-0-3
+DATE: 12/27/2011
+STAFF: dbm
+CHANGES:
+1) buildDatabase.py: get table list from "fe" schema
+
 TAG: femover-5-0-0-2
 DATE: 12/21/2011
 STAFF: dbm
