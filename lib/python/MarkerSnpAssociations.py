@@ -113,6 +113,17 @@ def _loadDistanceAssociations():
 		startCol = dbAgnostic.columnNumber (cols, 'startCoordinate')
 		endCol = dbAgnostic.columnNumber (cols, 'endCoordinate')
 
+		# need to track the first marker on the chromosome to overlap
+		# each Mb.  This will allow us to quickly find a rough start
+		# marker when looking for overlaps for any given SNP.  (The
+		# cached marker may not overlap the SNP, but it will be
+		# relatively close and there will be no other overlapping
+		# markers before it.)
+		# Update: revised to be more granular, according to 'factor'
+		byMb = {}		# mb -> index into 'markers'
+
+		factor = 1000000	# size of chunks for 'byMb'
+
 		markers = []
 
 		for row in rows:
@@ -120,6 +131,16 @@ def _loadDistanceAssociations():
 
 			markers.append ( (row[mrkCol], row[startCol] - 2000,
 				row[endCol] + 2000) )
+
+			# flag each Mb which this marker overlaps, if not
+			# already flagged by an earlier marker
+
+			startMb = int(row[startCol] - 2000) / factor
+			endMb = int(row[endCol] + 2000) / factor
+
+			for mb in range(startMb, endMb + 1):
+				if not byMb.has_key(mb):
+					byMb[mb] = len(markers) - 1
 
 		markerCount = len(markers) 
 
@@ -145,20 +166,21 @@ def _loadDistanceAssociations():
 		for row in rows:
 			snpStart = row[startCol]
 
-			# SNPs are ordered, so markers matching the current
-			# SNP should be near the prior marker we looked at
+			# lookup the first marker which overlaps the Mb in
+			# which this SNP occurs
 
-			# go back to find a marker that precedes the SNP, as
-			# we will start there
+			mb = int(snpStart) / factor
+			if not byMb.has_key(mb):
+				# no markers overlapping this Mb, go to the
+				# next SNP
+				continue
 
+			m = byMb[mb]
 			(mrkKey, mrkStart, mrkEnd) = markers[m]
 
-			while (m > 0) and (mrkEnd > snpStart):
-				m = m - 1
-				(mrkKey, mrkStart, mrkEnd) = markers[m]
-
 			# now traverse markers to the right until we find the
-			# first one that starts to the right of the SNP
+			# first one that starts to the right of the SNP.  At
+			# that point, we're done with this SNP.
 
 			while (m < markerCount) and (mrkStart <= snpStart):
 
@@ -174,9 +196,6 @@ def _loadDistanceAssociations():
 
 				if m < markerCount:
 					(mrkKey,mrkStart,mrkEnd) = markers[m]
-
-			if m >= markerCount:
-				m = markerCount - 1
 
 		logger.debug ('Found %d distance assoc for chr %s' % (added,
 			chromosome))
