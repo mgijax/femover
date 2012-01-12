@@ -158,16 +158,10 @@ cmds = [
 	'''select _Marker_key
 		from mrk_marker''',
 
-	# 1. count of references for each marker
+	# 1. count of references for each marker (no longer de-emphasizing
+	# curatorial refs, load refs, etc.)
 	'''select r._Marker_key, count(r._Refs_key) as numRef
 	from mrk_reference r
-	where not exists (select 1 from mgi_setmember msm, mgi_set ms
-		where r._Refs_key = msm._Object_key
-		and msm._Set_key = ms._Set_key
-		and ms.name in ('Load References',
-			'Personal References',
-			'Genbank References',
-			'Curatorial References') )
 	group by r._Marker_key''',
 
 	# 2. count of sequences for each marker
