@@ -122,7 +122,7 @@ def _loadDistanceAssociations():
 		# Update: revised to be more granular, according to 'factor'
 		byMb = {}		# mb -> index into 'markers'
 
-		factor = 1000000	# size of chunks for 'byMb'
+		factor = 100000		# size of chunks for 'byMb'
 
 		markers = []
 
