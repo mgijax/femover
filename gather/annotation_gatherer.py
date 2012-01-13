@@ -225,7 +225,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Loaded %d sorting maps' % len(toDo))
 		return byVocab, byAnnotType, byTermAlpha
 
-	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
+	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha,
+		musHumOrtho):
 		# build the extra rows from query 9, where we pull a summary
 		# of annotations up from genotypes through alleles to markers
 
@@ -279,6 +280,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			annotType = Gatherer.resolve (row[typeKeyCol],
 				'voc_annottype', '_AnnotType_key', 'name')
 			annotType = annotType.replace ('Genotype', 'Marker')
+
+			# We only want to annotate OMIM terms to markers which
+			# have human orthologs.
+			if annotType == 'OMIM/Marker':
+				if not musHumOrtho.has_key(markerKey):
+					continue
 
 			aRow = [ annotationKey, None, None, vocab,
 				row[termCol], termID, None, 'Marker',
@@ -396,7 +403,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		return mRows
 
 	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
-		annotationEvidence, annotationRefs, inferredFromIDs):
+		annotationEvidence, annotationRefs, inferredFromIDs,
+		musHumOrtho):
 
 		# We will produe rows for four tables on the first pass:
 
@@ -434,7 +442,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# genotype annotations
 
 		aRows, mRows, sRows = self.buildQuery9Rows(byVocab,
-			byAnnotType, byTermAlpha)
+			byAnnotType, byTermAlpha, musHumOrtho)
 
 		# fill in the Protein Ontology data
 		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
@@ -573,6 +581,21 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			% (len(aRows), len(iRows), len(rRows), len(mRows) ) )
 		return
 
+	def getMouseGenesWithHumanOrthologs(self):
+		cols, rows = self.results[12]
+
+		musHumOrtho = {}	# mouse marker key -> 1
+
+		# only one column (marker key)
+
+		for row in rows:
+			musHumOrtho[row[0]] = 1
+
+		logger.debug ('%d mouse markers with human orthologs' % \
+			len(musHumOrtho))
+
+		return musHumOrtho
+
 	def collateResults (self):
 		# cache some of our base annotation data for use later
 		self.cacheAnnotationData()
@@ -590,9 +613,14 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# process queries 3 and 4 - inferred-from IDs
 		inferredFromIDs = self.getInferredFromIDs()
 
+		# process query 12 - set of mouse marker keys with human
+		# orthologs
+		musHumOrtho = self.getMouseGenesWithHumanOrthologs()
+
 		# process query 5 and join with prior results
 		self.buildRows (termKeyToID, termKeyToDagKey, mgdToNewKeys,
-			annotationEvidence, annotationRefs, inferredFromIDs)
+			annotationEvidence, annotationRefs, inferredFromIDs,
+			musHumOrtho)
 		return
 
 ###--- globals ---###
@@ -740,6 +768,13 @@ cmds = [
 
 	# 11. get the valid marker keys
 	'''select _Marker_key from mrk_marker''',
+
+	# 12. get the mouse marker keys which have orthologous human markers
+	'''select distinct m._Marker_key
+	from mrk_homology_cache m, mrk_homology_cache h
+	where m._Class_key = h._Class_key
+		and m._Organism_key = 1
+		and h._Organism_key = 2''',
 	]
 
 # definition of output files, each as:
