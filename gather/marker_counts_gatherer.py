@@ -204,8 +204,10 @@ cmds = [
 #		group by _Object_key''',
 
 	# 5. count of expression assays for each marker
+	# (omit Recombinase reporter assays)
 	'''select _Marker_key, count(_Assay_key) as numAssay
 		from gxd_assay
+		where _AssayType_key != 11
 		group by _Marker_key''',
 
 	# 6. count of orthologs for each marker
