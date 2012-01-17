@@ -45,6 +45,12 @@ CONTROL_DIR = os.path.join(INSTALL_DIR, 'control/')
 LIB_DIR = os.path.join(INSTALL_DIR, 'lib/python/')
 LOG_DIR = os.environ['LOG_DIR']
 
+# if we don't specify a GO_GRAPH_PATH, then just default to the standard one
+if os.environ.has_key('GO_GRAPH_PATH'):
+	GO_GRAPH_PATH = os.environ['GO_GRAPH_PATH']
+else:
+	GO_GRAPH_PATH = '/data/GOgraphs'
+
 FULL_TEXT_LINKS = os.environ['FULL_TEXT_LINKS_PATH']
 
 ###--- general ---###
