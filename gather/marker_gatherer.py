@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import GOGraphs
 
 ###--- Classes ---###
 
@@ -103,6 +104,12 @@ class MarkerGatherer (Gatherer.Gatherer):
 			self.addColumn ('organism', Gatherer.resolve (
 				r[orgCol], 'mgi_organism', '_Organism_key',
 				'commonName'), r, self.finalColumns)
+			self.addColumn ('hasGOGraph',
+				GOGraphs.hasGOGraph(accid),
+				r, self.finalColumns)
+			self.addColumn ('hasGOOrthologyGraph',
+				GOGraphs.hasGOOrthologyGraph(accid),
+				r, self.finalColumns)
 		return
 
 ###--- globals ---###
@@ -147,7 +154,8 @@ cmds = [
 # order of fields (from the Sybase query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
-	'organism', 'accID', 'logicalDB', 'status' ]
+	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
+	'hasGOOrthologyGraph' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker'

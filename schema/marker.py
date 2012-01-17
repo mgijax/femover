@@ -18,6 +18,8 @@ createStatement = '''CREATE TABLE %s  (
 	primary_id     	varchar(30) NULL,
 	logical_db	varchar(80) NULL,
 	status       	varchar(255) NULL,
+	has_go_graph	int	NOT NULL,
+	has_go_orthology_graph	int	NOT NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
