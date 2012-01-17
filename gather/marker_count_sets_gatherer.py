@@ -180,11 +180,14 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 sortVal = '''case
-	when gat.assayType = 'RT-PCR' then 'a'
+	when gat.assayType = 'Immunohistochemistry' then 'a'
 	when gat.assayType = 'RNA in situ' then 'b'
-	when gat.assayType = 'Immunohistochemistry' then 'c'
+	when gat.assayType = 'In situ reporter (knock in)' then 'c'
 	when gat.assayType = 'Northern blot' then 'd'
-	when gat.assayType = 'RNase protection' then 'e'
+	when gat.assayType = 'Western blot' then 'e'
+	when gat.assayType = 'RT-PCR' then 'f'
+	when gat.assayType = 'RNase protection' then 'g'
+	when gat.assayType = 'Nuclease S1' then 'h'
 	else gat.assayType
 	end as typeSort
 '''
