@@ -43,9 +43,11 @@ class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
+# note there should be no associated SNPs for QTL markers
 cmds = [ '''select distinct _Marker_key
 	from mrk_marker
 	where _Organism_key = 1
+		and _Marker_Type_key != 6
 		and _Marker_Status_key in (1,3)
 		and _Marker_key >= %d and _Marker_key < %d''',
 	]
