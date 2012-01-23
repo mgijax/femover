@@ -1,3 +1,13 @@
+TAG: femover-5-0-0-4
+DATE: 01/23/2012
+STAFF: jsb
+CHANGES:
+1) updated annotations_gatherer.py to exclude OMIM annotations for markers without human orthologies
+2) added GOGraphs.py library to get GO graph flags for marker table, and updated marker_gatherer.py to include them
+3) updated MarkerSnpAssociations.py and batch_marker_snps_gatherer.py to exclude SNPs for QTL markers
+4) updated ordering of GXD assay types in marker_count_sets_gatherer.py
+5) updated marker_counts_gatherer.py to include all references and not exclude the formerly de-emphasized ones
+
 TAG: femover-5-0-0-3
 DATE: 12/27/2011
 STAFF: dbm
