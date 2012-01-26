@@ -139,6 +139,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_counts', 'expression_assay',
 		'marker_to_expression_assay',
 		'marker_tissue_expression_counts',
+		'anatomy_structures_synonyms',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
@@ -1003,6 +1004,12 @@ def main():
 	dbInfoTable.setInfo ('target', '%s:%s:%s' % (config.TARGET_TYPE,
 		config.TARGET_HOST, config.TARGET_DATABASE))
 	dbInfoTable.setInfo ('log directory', config.LOG_DIR)
+
+	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE,
+		config.SOURCE_HOST, config.SOURCE_DATABASE))
+	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE,
+		config.TARGET_HOST, config.TARGET_DATABASE))
+	logger.info ('log directory: %s' % config.LOG_DIR)
 
 	if FULL_BUILD:
 		dbInfoTable.setInfo ('build type', 'full build')
