@@ -27,13 +27,16 @@ class MarkerToAlleleGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
+	# we only want alleles that are actually in the allele table...
 	'''select m._Marker_key,
 		m._Allele_key,
 		m._Refs_key,
 		m._Qualifier_key
 	from all_marker_assoc m, voc_term t
 	where m._Status_key = t._Term_key
-		and t.term != 'deleted' ''',
+		and t.term != 'deleted'
+		and exists (select 1 from all_allele a
+			where a._Allele_key = m._Allele_key)''',
 	]
 
 # order of fields (from the query results) to be written to the
