@@ -196,7 +196,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			if not ids.has_key(newAnnotKey):
 				ids[newAnnotKey] = [ tpl ]
-			else:
+			elif not tpl in ids[newAnnotKey]:
 				ids[newAnnotKey].append(tpl)
 
 		logger.debug ('Found inferred-from IDs for %d records' % \
