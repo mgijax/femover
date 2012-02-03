@@ -83,3 +83,4 @@ if [ $? -ne 0 ]; then
 	echo "Build failed.  See logs for details."
 	exit 1
 fi
+dbExecute.py 'grant select on all tables in schema fe to public'
