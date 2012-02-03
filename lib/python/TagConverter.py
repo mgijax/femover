@@ -39,6 +39,38 @@ def _initialize():
 	logger.debug ('Found %d alleles' % len(ALLELES))
 	return
 
+def _superscript(s):
+	# handles multiple superscript indicators (angle brackets) in 's',
+	# assuming that they are not nested.
+	#	eg: 'A<b><c>' is okay, but 'A<b<c>>' is not
+
+	inSuperScript = False
+	t = ''
+
+	for c in s:
+		if (c == '<'):
+			if not inSuperScript:
+				inSuperScript = True
+				c = '<SUP>'
+			else:
+				# escape a redundant open bracket
+				c = '&lt;'
+
+		elif (c == '>'):
+			if inSuperScript:
+				inSuperScript = False
+				c = '</SUP>'
+			else:
+				# escape a redundant close bracket
+				c = '&gt;'
+		t = t + c
+	
+	# just to be friendly...  if we have an unclosed open bracket, then
+	# add a close bracket so the rest of the page isn't superscripted
+
+	if inSuperScript:
+		t = t + '</SUP>'
+	return t
 
 def _convertString (s):
 	match = ALLELE_SYMBOL.search(s)
@@ -50,7 +82,7 @@ def _convertString (s):
 		alleleID = match.group(1)
 
 		if ALLELES.has_key(alleleID):
-			symbol = ALLELES[alleleID]
+			symbol = _superscript(ALLELES[alleleID])
 		else:
 			symbol = alleleID
 
