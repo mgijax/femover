@@ -18,10 +18,12 @@ createStatement = '''CREATE TABLE %s  (
 	term		varchar(255)	null,
 	primary_id	varchar(30)	null,
 	vocab_name	varchar(255)	not null,
+	display_vocab_name varchar(255)	not null,
 	definition	varchar(2048)	null,
 	sequence_num	int		null,
 	is_root		int		not null,
 	is_leaf		int		not null,
+	is_obsolete	int		not null,
 	PRIMARY KEY(term_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
