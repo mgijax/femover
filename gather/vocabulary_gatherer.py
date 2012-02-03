@@ -271,18 +271,21 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached %d term definitions' % len(defs))
 		return defs
 
-	def findTerms (self, ids, defs, isRoot, edges):
+	def findTerms (self, ids, defs, isRoot, edges, goOntologies):
 		kCol = Gatherer.columnNumber (self.results[4][0], '_Term_key')
 		vCol = Gatherer.columnNumber (self.results[4][0],
 			'_Vocab_key')
 		tCol = Gatherer.columnNumber (self.results[4][0], 'term')
 		sCol = Gatherer.columnNumber (self.results[4][0],
 			'sequenceNum')
+		isObsoleteCol = Gatherer.columnNumber (self.results[4][0],
+			'isObsolete')
 
 		terms = {}		# terms[term key] = term
 
-		columns = [ 'termKey', 'term', 'accID', 'vocab', 'def',
-			'sequenceNum', 'isRoot', 'isLeaf' ]
+		columns = [ 'termKey', 'term', 'accID', 'vocab',
+			'displayVocab', 'def', 'sequenceNum', 'isRoot',
+			'isLeaf', 'isObsolete' ]
 
 		# produce a sorted list of terms, for those vocabularies
 		# without a pre-assigned set of sequence numbers
@@ -320,8 +323,18 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			else:
 				row.append (None)
 
-			row.append (Gatherer.resolve (voc, 'voc_vocab',
-				'_Vocab_key', 'name') )
+			# We need both the raw vocab name and, for some cases,
+			# a special display-only vocab name.
+
+			vocabName = Gatherer.resolve (voc, 'voc_vocab',
+				'_Vocab_key', 'name')
+
+			row.append (vocabName)
+
+			if goOntologies.has_key(key):
+				row.append (goOntologies[key])
+			else:
+				row.append (vocabName)
 
 			if defs.has_key (key):
 				row.append (defs[key])
@@ -349,6 +362,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				if not edges[voc].has_key(key):
 					flag = 1
 			row.append (flag)
+
+			row.append (r[isObsoleteCol])
 			rows.append (row)
 
 		logger.debug ('Found %d terms' % len(rows))
@@ -717,6 +732,18 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Collated %d rows for siblings' % len(rows))
 		return columns, rows
 
+	def getGOOntologies (self):
+		columns, rows = self.results[9]
+
+		tKey = Gatherer.columnNumber (columns, '_Term_key')
+		ontologyKey = Gatherer.columnNumber (columns, 'dagShorthand')
+
+		go = {}
+		for row in rows:
+			go[row[tKey]] = row[ontologyKey]
+
+		return go
+
 	def collateResults (self):
 
 		# step 1 -- vocabulary table
@@ -729,6 +756,9 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		ids = self.collectIDs()
 
+		# step 3 -- get special display overrides for GO terms
+		goOntologies = self.getGOOntologies()
+
 		# step 4 -- cache term definitions
 		
 		defs = self.collectDefinitions()
@@ -736,7 +766,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		# step 5 -- term table
 
 		terms, sequenceNum, columns, rows = self.findTerms (ids, defs,
-			isRoot, edges)
+			isRoot, edges, goOntologies)
 		self.output.append ( (columns, rows) )
 
 		# step 3 -- term_child table (moved to 5a)
@@ -811,9 +841,8 @@ cmds = [
 		order by sequenceNum''',
 
 	# query 4 - terms
-	'''select _Term_key, _Vocab_key, term, sequenceNum
+	'''select _Term_key, _Vocab_key, term, sequenceNum, isObsolete
 		from voc_term''',
-#		where isObsolete = 0''',
 
 	# query 5 - descendent counts
 	'''select _AncestorObject_key, count(1) as ct
@@ -843,6 +872,20 @@ cmds = [
 		from voc_annot a, voc_annottype t, voc_evidence e
 		where a._AnnotType_key = t._AnnotType_key
 			and a._Annot_key = e._Annot_key''',
+
+	# query 9 - shorthand notation for display (instead of vocab name)
+	# for GO terms
+	'''select t._Term_key, case
+			when d.abbreviation = 'C' then 'Component'
+			when d.abbreviation = 'F' then 'Function'
+			when d.abbreviation = 'P' then 'Process'
+			when d.abbreviation = 'O' then 'Obsolete'
+			else 'Gene Ontology'
+			end as dagShorthand
+		from voc_term t, dag_node n, dag_dag d
+		where t._Term_key = n._Object_key 
+			and n._DAG_key = d._DAG_key
+			and t._Vocab_key = 4''',
 	]
 
 files = [
@@ -851,8 +894,8 @@ files = [
 		'vocabulary'),
 
 	('term',
-		[ 'termKey', 'term', 'accID', 'vocab', 'def', 'sequenceNum',
-			'isRoot', 'isLeaf' ],
+		[ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 'def',
+			'sequenceNum', 'isRoot', 'isLeaf', 'isObsolete' ],
 		'term'),
 
 	('term_child',
