@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import TermCounts
 
 ###--- Functions ---###
 
@@ -388,7 +389,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		rows = []
 		columns = [ 'termKey', 'pathCount', 'descendentCount',
-			'childCount' ]
+			'childCount', 'markerCount', 'expressionMarkerCount',
+			'gxdLitMarkerCount' ]
 
 		for r in self.results[4][1]:
 			key = r[kCol]
@@ -406,6 +408,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				row.append (len(edges[vocab][key]))
 			else:
 				row.append (0)
+
+			row.append (TermCounts.getMarkerCount(key))
+			row.append (TermCounts.getExpressionMarkerCount(key))
+			row.append (TermCounts.getLitIndexMarkerCount(key))
+
 			rows.append (row)
 
 		logger.debug ('Got %d term_counts' % len(rows))
@@ -904,7 +911,9 @@ files = [
 		'term_child'),
 
 	('term_counts',
-		[ 'termKey', 'pathCount', 'descendentCount', 'childCount' ],
+		[ 'termKey', 'pathCount', 'descendentCount', 'childCount',
+			'markerCount', 'expressionMarkerCount',
+			'gxdLitMarkerCount' ],
 		'term_counts'),
 
 	('term_ancestor',
