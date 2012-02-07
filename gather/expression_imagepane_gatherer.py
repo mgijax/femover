@@ -72,6 +72,35 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Sorted %d %s assays' % (len(assays), label))
 		return assays
 
+	def getIDs (self, panes):
+		# get the columns and rows for the table of IDs; ensure that
+		# we only include IDs for keys in the given set of 'panes'
+
+		# distinct set of unique pane keys
+		paneKeys = {}
+		for [ imageKey, paneLabel, paneKey ] in panes:
+			paneKeys[paneKey] = 1
+
+		cols, rows = self.results[3]
+
+		keyCol = Gatherer.columnNumber (cols, '_Object_key')
+		idCol = Gatherer.columnNumber (cols, 'accID')
+		privateCol = Gatherer.columnNumber (cols, 'private')
+		preferredCol = Gatherer.columnNumber (cols, 'preferred')
+		logicalDbCol = Gatherer.columnNumber (cols, 'name')
+
+		outputCols = [ '_Object_key', 'logicalDb', 'accID',
+				'preferred', 'private', 'sequence_num' ]
+		outputRows = []
+		seqNum = 0
+
+		for row in rows:
+			seqNum = seqNum + 1
+			outputRows.append ( [ row[keyCol], row[logicalDbCol],
+				row[idCol], row[preferredCol],
+				row[privateCol], seqNum ] ) 
+		return outputCols, outputRows
+
 	def collateResults (self):
 		self.cacheMarkers()
 		gelAssays = self.getAssays (1, 'Gel')
@@ -169,6 +198,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		details.sort()
 		panes.sort()
 
+		idCols, idRows = self.getIDs(panes)
+
 		for dataset in [ details, panes ]:
 			i = 0
 			for row in dataset:
@@ -179,12 +210,13 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		self.output.append ( (paneCols, panes) )
 		self.output.append ( (paneSetCols, paneSets) )
 		self.output.append ( (detailCols, details) )
+		self.output.append ( (idCols, idRows) )
 		return
 
 ###--- globals ---###
 
 cmds = [
-	# cache all markers cited in GXD assays
+	# 0. cache all markers cited in GXD assays
 	'''select m._Marker_key, m.symbol, acc.accID
 	from mrk_marker m,
 		acc_accession acc,
@@ -195,7 +227,7 @@ cmds = [
 		and acc._LogicalDB_key = 1
 		and acc.preferred = 1''',
 
-	# pick up images for gel assays
+	# 1. pick up images for gel assays
 	'''select distinct i._Image_key,
 		a._Assay_key,
 		a._Marker_key,
@@ -218,7 +250,7 @@ cmds = [
 		and a._AssayType_key = gat._AssayType_key
 	order by a._Marker_key, i._Image_key, p.paneLabel''',
 
-	# pick up images for in situ assays
+	# 2. pick up images for in situ assays
 	'''select distinct i._Image_key,
 		a._Assay_key,
 		a._Marker_key,
@@ -245,7 +277,21 @@ cmds = [
 		and acc._MGIType_key = 8
 		and acc.preferred = 1
 		and a._AssayType_key = gat._AssayType_key
-	order by a._Marker_key, i._Image_key, p.paneLabel'''
+	order by a._Marker_key, i._Image_key, p.paneLabel''',
+
+	# 3. get accession IDs for image panes
+
+	'''select a._Object_key,
+		a.accID,
+		a.private, 
+		a.preferred, 
+		d.name, 
+		a.numericPart
+	from acc_accession a, 
+		acc_logicaldb d
+	where a._MGIType_key = 35
+		and a._LogicalDB_key = d._LogicalDB_key
+	order by a._Object_key, a.numericPart''', 
 	]
 
 # order of fields (from the query results) to be written to the
@@ -267,6 +313,11 @@ files = [
 		'assayID', '_Marker_key', 'markerID', 'markerSymbol',
 		'sequenceNum' ],
 		'expression_imagepane_details'),
+
+	('expression_imagepane_id',
+		[ Gatherer.AUTO, '_Object_key', 'logicalDb', 'accID',
+		'preferred', 'private', 'sequence_num' ],
+		'expression_imagepane_id'),
 	]
 
 # global instance of a ExpressionImagePaneGatherer
