@@ -18,6 +18,9 @@ createStatement = '''CREATE TABLE %s  (
 	path_count		int	not null,
 	descendent_count	int	not null,
 	child_count		int	not null,
+	marker_count		int	not null,
+	expression_marker_count	int	not null,
+	gxdlit_marker_count	int	not null,
 	PRIMARY KEY(term_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
