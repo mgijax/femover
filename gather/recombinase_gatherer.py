@@ -133,11 +133,20 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			affectedCols, affected, unaffectedCols, unaffected, \
 			systemKeys
 
-	def findOtherSystems (self, alleleSystemMap, alleleData, systemKeys):
+	def findOtherSystems (self, alleleSystemMap, alleleData, systemKeys,
+			affectedCols, affected):
 		# Purpose: processes 'alleleSystemMap' to find other systems
 		#	involved with the allele for each allele/system pair
 		#	(does not touch query results in self.results)
 		# Returns: columns, rows
+
+		# for quick access, get a dictionary of allele/system keys
+		# where expression was 1
+
+		asKey = affectedCols.index('alleleSystemKey')
+		positives = {}
+		for row in affected:
+			positives[row[asKey]] = 1
 
 		# we need to generate the data set for
 		# the recombinase_other_system table (for each allele/system
@@ -153,10 +162,18 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			alleleID = alleleData[allele][0]
 
 			for (system, otherSystems) in explode(systems):
-				alleleSystemKey = \
-					alleleSystemMap[allele][system]
-				for otherSystem in otherSystems:
-				    if otherSystem:
+			    # allele/system key for the current a/s pair
+			    alleleSystemKey = alleleSystemMap[allele][system]
+
+			    # Now walk through the other systems for this
+			    # allele.  If any were expressed, then they need
+			    # to go in the 'out' bin as other systems which
+			    # showed expression for this allele.
+
+			    for otherSystem in otherSystems:
+				if otherSystem:
+				    k = alleleSystemMap[allele][otherSystem]
+				    if positives.has_key(k):
 					i = i + 1
 					systemKey = systemKeys[otherSystem]
 					out.append ( (i, alleleSystemKey,
@@ -170,22 +187,40 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		return columns, out
 
-	def findOtherAlleles (self, alleleSystemMap, alleleData, systemKeys):
+	def findOtherAlleles (self, alleleSystemMap, alleleData, systemKeys,
+			affectedCols, affected):
 		# Purpose: processes 'alleleSystemMap' to find other alleles
 		#	involved with the system for each allele/system pair
 		#	(does not touch query results in self.results)
 		# Returns: columns, rows
+
+		# for quick access, get a dictionary of allele/system keys
+		# where expression was 1
+
+		asKey = affectedCols.index('alleleSystemKey')
+		positives = {}
+		for row in affected:
+			positives[row[asKey]] = 1
 
 		# we will generate the data set for the
 		# recombinase_other_allele table (for each allele/system pair,
 		# list the other alleles associated with each system)
 
 		bySystem = {}		# bySystem[system] = list of alleles
+					# with expressed = 1 for this system
 
 		alleles = alleleSystemMap.keys()
 		for allele in alleles:
 			systems = alleleSystemMap[allele].keys()
 			for system in systems:
+				asKey = alleleSystemMap[allele][system]
+
+				# if this allele/system did not have expressed
+				# = 1, then skip it
+
+				if not positives.has_key(asKey):
+					continue
+
 				if not bySystem.has_key (system):
 					bySystem[system] = [ allele ]
 				else:
@@ -539,13 +574,13 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		# step 2 -- recombinase_other_system table
 
 		columns, rows = self.findOtherSystems (alleleSystemMap,
-			alleleData, systemKeys)
+			alleleData, systemKeys, affectedCols, affected)
 		self.output.append ( (columns, rows) )
 
 		# step 3 -- recombinase_other_allele table
 
 		columns, rows = self.findOtherAlleles (alleleSystemMap,
-			alleleData, systemKeys)
+			alleleData, systemKeys, affectedCols, affected)
 		self.output.append ( (columns, rows) )
 
 		# step 4 -- recombinase_assay_result table
