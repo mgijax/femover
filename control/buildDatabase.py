@@ -117,7 +117,7 @@ FK_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
-ACCESSION = [ 'accession',
+ACCESSION = [ 'accession', 'actual_databases',
 	]
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
@@ -153,7 +153,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_orthology', 'marker_location', 'marker_counts',
 		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
-		'marker_biotype_conflict',
+		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
