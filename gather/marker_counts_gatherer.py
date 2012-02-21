@@ -329,7 +329,7 @@ cmds = [
 		group by m._Marker_key''',
 
 	# 19. count of alleles for the marker which are associated with
-	# human diseases
+	# human diseases.  omit markers that have no human orthologs.
 	'''select a._Marker_key, count(distinct a._Allele_key) as alleleCount
 		from all_allele a,
 			gxd_allelegenotype gag,
@@ -341,6 +341,13 @@ cmds = [
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key
 			and vt.term is null
+			and exists (select 1
+				from mrk_homology_cache h1,
+					mrk_homology_cache h2
+				where a._Marker_key = h1._Marker_key
+				and h1._Organism_key = 1
+				and h1._Class_key = h2._Class_key
+				and h2._Organism_key = 2)
 		group by a._Marker_key''',
 
 	# 20. count of antibodies for the marker
