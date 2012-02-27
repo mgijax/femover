@@ -1,3 +1,11 @@
+TAG: femover-5-0-0-6
+DATE: 02/27/2012
+STAFF: jsb
+CHANGES:
+1) fixed count of alleles modeling human diseases to require human orthologs
+2) added actual_database table
+3) added marker_searchable_nomenclature table for 5.x expression QF
+
 TAG: femover-5-0-0-5
 DATE: 02/15/2012
 STAFF: jsb
