@@ -40,10 +40,12 @@
 #	subprocess, it may be that it's waiting to write a larger amount than
 #	the buffer size allows.
 
+
 import time
 import types
 import subprocess
 import sys
+import os
 
 ###--------------------------------------------###
 ###--- status values for scheduled commands ---###
@@ -121,7 +123,8 @@ class Dispatcher:
 					# ...command to be executed.  (If a
 					# ...list, each parameter is its own
 					# ...separate string in that list.)
-		bufsize = None		# buffer size for I/O from subprocs
+		bufsize = None,		# buffer size for I/O from subprocs
+		hold = False		# start in a hold state?
 		):
 		# Purpose: constructor; build a Dispatcher
 		# Returns: nothing
@@ -162,6 +165,9 @@ class Dispatcher:
 						  # ...seconds) for the cmd
 		self.bufsize = bufsize		  # buffer size for inter-
 						  # ...process communication
+		self.hold = hold		  # are we in a "hold" state?
+						  # ...(can collect commands
+						  # ...but not execute them)
 
 		# grab an ID for this Dispatcher and advance the counter
 
@@ -202,6 +208,15 @@ class Dispatcher:
 				time.time() - START_TIME,
 				self.dispatcherID,
 				message))
+		return
+
+	def inHoldState (self):
+		return self.hold
+
+	def setHoldState (self,
+		hold		# True to enter hold state, False to free it
+		):
+		self.hold = hold
 		return
 
 	def getActiveProcessCount (self):
@@ -251,6 +266,26 @@ class Dispatcher:
 
 		self.__manageDispatchers()	# housekeeping
 		return self.nextID - 1
+
+	def terminateProcesses (self):
+		# Purpose: to terminate any active processes running from this
+		#	Dispatcher and to prevent others from starting up
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+
+		self.setHoldState(True)	# prevent more process startups
+
+		for (process, id) in self.activeProcesses:
+			# I would prefer to do this, but it's not available
+			# until Python 2.6:
+			# process.kill()
+
+			# So, in the meantime:
+			os.system('kill -9 %s' % process.pid)
+			self.debug ('killed process %s' % process.pid)
+		return
 
 	def getElapsedTime (self,
 		id		# integer; ID for the desired command
@@ -374,7 +409,8 @@ class Dispatcher:
 		# start new subprocesses for them (up to the limit on the
 		# number of subprocesses)
 
-		while (self.nextID > (self.lastStartedID + 1)) and \
+		if not self.hold:
+		    while (self.nextID > (self.lastStartedID + 1)) and \
 			(len(self.activeProcesses) < self.maxProcesses):
 
 				self.debug ('starting command: %s' % \
@@ -384,6 +420,7 @@ class Dispatcher:
 				# then start a new subprocess for it
 
 				self.lastStartedID = self.lastStartedID + 1
+
 				if self.bufsize != None:
 				    # specify a buffer size for I/O from the
 				    # subprocess, to avoid hangs
