@@ -117,7 +117,7 @@ FK_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
-ACCESSION = [ 'accession', 'actual_databases',
+ACCESSION = [ 'accession', 'actual_database',
 	]
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
@@ -1075,6 +1075,14 @@ if __name__ == '__main__':
 		(excType, excValue, excTraceback) = sys.exc_info()
 		traceback.print_exception (excType, excValue, excTraceback)
 		status = 'failed'
+
+		# terminate any existing subprocesses
+
+		GATHER_DISPATCHER.terminateProcesses()
+		CONVERT_DISPATCHER.terminateProcesses()
+		BCPIN_DISPATCHER.terminateProcesses()
+		INDEX_DISPATCHER.terminateProcesses()
+		FK_DISPATCHER.terminateProcesses()
 
 	elapsed = hms(time.time() - START_TIME)
 	try:
