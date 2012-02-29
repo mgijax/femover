@@ -1,3 +1,10 @@
+TAG: femover-5-0-0-7
+DATE: 02/29/2012
+STAFF: jsb
+CHANGES:
+1) fixed typo in buildDatabase.py
+2) upgraded Dispatcher and added termination of orphaned subprocesses
+
 TAG: femover-5-0-0-6
 DATE: 02/27/2012
 STAFF: jsb
