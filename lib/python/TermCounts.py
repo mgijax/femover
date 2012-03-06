@@ -154,17 +154,29 @@ def _initialize():
 			and va._Qualifier_key not in (2181424, 1614157)
 			and vat._MGIType_key = 12''',
 
-		# 6. markers with full coded expression data
+		# 6. markers are associated with Protein Ontology terms as
+		# marker accession IDs, rather than through the annotation
+		# tables.  So, pick them up separately.
+		'''select ta._Object_key as _Term_key,
+			ma._Object_key as _Marker_key
+		from acc_accession ma, acc_accession ta
+		where ma._MGIType_key = 2
+			and ma._LogicalDB_key = 135
+			and ma.private = 0
+			and ma.accID = ta.accID
+			and ta._MGIType_key = 13''',
+
+		# 7. markers with full coded expression data
 		'''select distinct _Marker_key
 		from gxd_expression''',
 
-		# 7. markers in GXD literature index
+		# 8. markers in GXD literature index
 		'''select distinct _Marker_key
 		from gxd_index''',
 	]
 
-	# queries 1-5 to collect marker/term relationships
-	for cmd in cmds[:6]:
+	# queries 1-6 to collect marker/term relationships
+	for cmd in cmds[:7]:
 		(cols, rows) = dbAgnostic.execute (cmd)
 
 		termCol = dbAgnostic.columnNumber (cols, '_Term_key')
@@ -178,16 +190,16 @@ def _initialize():
 
 	logger.debug ('Found marker counts for %d terms' % len(markersPerTerm))
 
-	# query 6 to find markers with expression data
-	(cols, rows) = dbAgnostic.execute (cmds[6])
+	# query 7 to find markers with expression data
+	(cols, rows) = dbAgnostic.execute (cmds[7])
 	for row in rows:
 		markersWithExpressionData[row[0]] = 1
 
 	logger.debug ('Found %d markers with expression data' % \
 		len(markersWithExpressionData))
 
-	# query 7 to find markers in the GXD literature index
-	(cols, rows) = dbAgnostic.execute (cmds[7])
+	# query 8 to find markers in the GXD literature index
+	(cols, rows) = dbAgnostic.execute (cmds[8])
 	for row in rows:
 		markersInGxdIndex[row[0]] = 1
 
