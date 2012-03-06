@@ -5,6 +5,7 @@
 import Gatherer
 import logger
 import TermCounts
+import ADVocab
 
 ###--- Functions ---###
 
@@ -182,6 +183,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Compiled %d vocab rows' % len(rows))
 
+		rows = rows + ADVocab.getVocabularyRows (columns)
 		return edges, upEdges, isRoot, vocabs, columns, rows
 
 	def collectIDs (self):
@@ -244,6 +246,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			rows.append (row)
 
 		logger.debug ('Found %d parent/child pairs' % len(rows))
+		rows = rows + ADVocab.getTermChildRows(columns)
 		return columns, rows
 
 	def collectDefinitions (self):
@@ -369,6 +372,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d terms' % len(rows))
 
+		rows = rows + ADVocab.getTermRows(columns)
 		return terms, sequenceNum, columns, rows
 
 	def collectDescendentCounts (self):
@@ -416,6 +420,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			rows.append (row)
 
 		logger.debug ('Got %d term_counts' % len(rows))
+		rows = rows + ADVocab.getTermCountsRows(columns)
 		return columns, rows
 
 	def findTermAncestors (self, upEdges, ids, termByKey):
@@ -480,6 +485,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 						row.append (edgeType)
 						rows.append (row)
 		logger.debug ('Found %d ancestors' % len(rows))
+		rows = rows + ADVocab.getTermAncestorRows(columns)
 		return pathCache, columns, rows
 
 	def extractCountsToTerm (self):
@@ -699,6 +705,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				rows.append (row)
 			
 		logger.debug ('Collated %d rows for annot counts' % len(rows))
+		rows = rows + ADVocab.getTermAnnotationCountsRows(columns)
 		return columns, rows
 
 	def findSiblings (self, pathCache, terms, ids, edges, vocabs,
@@ -737,6 +744,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 						isLeaf, edgeType, pathNum ]
 					rows.append (row)
 		logger.debug ('Collated %d rows for siblings' % len(rows))
+		rows = rows + ADVocab.getTermSiblingRows(columns)
 		return columns, rows
 
 	def getGOOntologies (self):
@@ -805,6 +813,12 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		columns, rows = self.findSiblings (pathCache, terms, ids,
 			edges, vocabs, sequenceNum)
 		self.output.append ( (columns, rows) ) 
+
+		# step 11 -- term_anatomy_extras table
+		columns = [ 'termKey', 'system', 'stage', 'structureKey',
+			'edinburghKey' ]
+		rows = ADVocab.getTermAnatomyExtrasRows(columns)
+		self.output.append ( (columns, rows) )
 		return
 
 ###--- globals ---###
@@ -930,6 +944,11 @@ files = [
 		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
 			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ],
 		'term_sibling'),
+
+	('term_anatomy_extras',
+		[ 'termKey', 'system', 'stage', 'structureKey',
+			'edinburghKey' ],
+		'term_anatomy_extras'),
 	]
 
 # global instance of a VocabularyGatherer

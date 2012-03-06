@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import ADVocab
 
 ###--- Classes ---###
 
@@ -47,6 +48,9 @@ class TermDescendentGatherer (Gatherer.Gatherer):
 				id = None
 
 			self.addColumn ('accID', id, row, self.finalColumns)
+
+		self.finalResults = self.finalResults + \
+			ADVocab.getTermDescendentRows (self.finalColumns)
 		return
 
 ###--- globals ---###
