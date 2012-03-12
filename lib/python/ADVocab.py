@@ -47,7 +47,7 @@ TERMKEY = '_Term_key'
 
 ###--- Private Functions ---###
 
-def _getConstants():
+def _loadConstants():
 	global AD_VOCAB_KEY, AD_TERM_KEY_OFFSET
 
 	if AD_VOCAB_KEY != None:
@@ -77,7 +77,7 @@ def _getConstants():
 	logger.debug ('AD term key offset: %d' % AD_TERM_KEY_OFFSET)
 	return 
 
-def _getIDs():
+def _loadIDs():
 	global MGI_ID
 
 	if len(MGI_ID) > 0:
@@ -103,7 +103,7 @@ def _getIDs():
 	logger.debug ('Found IDs for %d AD terms' % len(MGI_ID))
 	return
 
-def _getSynonyms():
+def _loadSynonyms():
 	global SYNONYMS
 
 	if len(SYNONYMS) > 0:
@@ -138,7 +138,7 @@ def _getSynonyms():
 		len(SYNONYMS)) )
 	return
 
-def _getDescendentCounts():
+def _loadDescendentCounts():
 	global DESCENDENT_COUNT
 
 	if len(DESCENDENT_COUNT) > 0:
@@ -163,13 +163,13 @@ def _getDescendentCounts():
 		len(DESCENDENT_COUNT))
 	return DESCENDENT_COUNT
 
-def _getTermData():
+def _loadTermData():
 	global TERM, MAX_DEPTH
 
 	if (len(TERM) > 0) and (MAX_DEPTH > 0):
 		return
 
-	_getConstants()
+	_loadConstants()
 
 	# get the basic term data
 
@@ -235,13 +235,13 @@ def _getTermData():
 	logger.debug ('Got basic data for %d AD terms' % len(TERM))
 	return
 
-def _getChildren():
+def _loadChildren():
 	global CHILDREN, ROOTS
 
 	if len(CHILDREN) > 0:
 		return CHILDREN
 
-	_getTermData()
+	_loadTermData()
 
 	for childKey in _getStructureKeys():
 
@@ -258,20 +258,20 @@ def _getChildren():
 	logger.debug ('Got %d root terms' % len(ROOTS))
 	return CHILDREN
 
-def _getRoots():
+def _loadRoots():
 	if len(ROOTS) > 0:
 		return ROOTS
 
-	_getChildren()
+	_loadChildren()
 	return ROOTS
 
-def _getAncestors():
+def _loadAncestors():
 	global ANCESTORS
 
 	if len(ANCESTORS) > 0:
 		return ANCESTORS
 
-	_getTermData()
+	_loadTermData()
 
 	for childKey in _getStructureKeys():
 		termAncestors = []
@@ -286,14 +286,14 @@ def _getAncestors():
 	logger.debug ('Got ancestors for %d terms' % len(ANCESTORS))
 	return ANCESTORS
 
-def _getLeaves():
+def _loadLeaves():
 	global LEAVES
 
 	if len(LEAVES) > 0:
 		return LEAVES
 
-	_getTermData()
-	_getChildren()
+	_loadTermData()
+	_loadChildren()
 
 	for structureKey in _getStructureKeys():
 		if not CHILDREN.has_key(structureKey):
@@ -302,7 +302,7 @@ def _getLeaves():
 	logger.debug ('Got %d leaf terms' % len(LEAVES))
 	return LEAVES
 
-def _getDescendents():
+def _loadDescendents():
 	global DESCENDENTS
 
 	if len(DESCENDENTS) > 0:
@@ -328,48 +328,26 @@ def _getDescendents():
 	logger.debug ('Got descendents for %d AD terms' % len(DESCENDENTS))
 	return DESCENDENTS
 
-def _getTermKey (structureKey):
-	# Assumes: _getTermData() has been called
-
-	if TERM.has_key(structureKey):
-		return TERM[structureKey][TERMKEY]
-	return None
-
 def _getStructureKeys():
 	global STRUCTURE_KEYS
 
 	if len(STRUCTURE_KEYS) > 0:
 		return STRUCTURE_KEYS
 
-	_getTermData()
+	_loadTermData()
 
 	STRUCTURE_KEYS = TERM.keys()
 	STRUCTURE_KEYS.sort()
 
 	return STRUCTURE_KEYS
 
-def _getMgiID(structureKey):
-	# Assumes: _getIDs() has been called
-
-	if MGI_ID.has_key(structureKey):
-		return MGI_ID[structureKey]
-	logger.debug ('Missing MGI ID for structure key: %d' % structureKey)
-	return None
-
-def _getSequenceNum(structureKey):
-	# Assumes: _getTermData() has been called
-
-	if TERM.has_key(structureKey):
-		return TERM[structureKey][SORT]
-	return 0
-
 def _isLeaf(structureKey):
-	leaves = _getLeaves()
+	leaves = _loadLeaves()
 	if leaves.has_key(structureKey):
 		return 1
 	return 0
 
-def morph (inputCols, inputRows, outputCols):
+def _morph (inputCols, inputRows, outputCols):
 	# re-orders columns in 'inputRows', which come in with the ordering
 	# from 'inputCols' and should go out with the ordering of
 	# 'outputCols'.  Note that any name in 'outputCols' must also appear
@@ -389,7 +367,7 @@ def morph (inputCols, inputRows, outputCols):
 		elif col in lowerInputCols:
 			desiredIndices.append (lowerInputCols.index(col))
 		else:
-			raise error, 'Unknown column in morph: %s' % col
+			raise error, 'Unknown column in _morph: %s' % col
 
 	outputRows = []
 
@@ -405,15 +383,58 @@ def morph (inputCols, inputRows, outputCols):
 
 ###--- Functions ---###
 
+def getTermKey (structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][TERMKEY]
+	return None
+
+def getMgiID(structureKey):
+	_loadIDs()
+	if MGI_ID.has_key(structureKey):
+		return MGI_ID[structureKey]
+	logger.debug ('Missing MGI ID for structure key: %d' % structureKey)
+	return None
+
+def getSequenceNum(structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][SORT]
+	return 0
+
+def getStructure (structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][STRUCTURE]
+	return None
+
+def getStage (structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][STAGE]
+	return None
+
+def getPrintname (structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][PRINTNAME]
+	return None
+
+def getSystem (structureKey):
+	_loadTermData()
+	if TERM.has_key(structureKey):
+		return TERM[structureKey][SYSTEM]
+	return None
+
 def getTermRows(outputColumns):
 	# get rows for the term table.
 	# columns:  term key, term, accID, vocab, display vocab, definition,
 	#	sequence num, is root, is leaf, is obsolete
 
-	_getConstants()
-	_getTermData()
-	_getIDs()
-	_getDescendentCounts()
+	_loadConstants()
+	_loadTermData()
+	_loadIDs()
+	_loadDescendentCounts()
 
 	myCols = [ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 'def',
 		'sequenceNum', 'isRoot', 'isLeaf', 'isObsolete' ]
@@ -455,7 +476,7 @@ def getTermRows(outputColumns):
 		row.append(0)
 		rows.append(row)
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d AD rows for term table' % len(rows))
 	return rows
 
@@ -463,14 +484,14 @@ def getVocabularyRows(outputColumns):
 	# get rows for the vocabulary table.
 	# columns:  vocab key, name, term count, is simple?, max depth
 
-	_getConstants()
-	_getTermData()
+	_loadConstants()
+	_loadTermData()
 
 	myCols = [ '_Vocab_key', 'name', 'termCount', 'isSimple', 'maxDepth' ]
 
 	rows = [ [ AD_VOCAB_KEY, AD_VOCAB_NAME, len(TERM), 0, MAX_DEPTH ] ]
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d AD rows for vocabulary table' % len(rows))
 	return rows
 
@@ -478,8 +499,8 @@ def getSynonymRows(outputColumns):
 	# get rows for the term_synonym table.
 	# columns:  term key, synonym, synonym type
 
-	_getTermData()
-	_getSynonyms()
+	_loadTermData()
+	_loadSynonyms()
 
 	myCols = [ 'termKey', 'synonym', 'synonymType' ]
 
@@ -487,12 +508,12 @@ def getSynonymRows(outputColumns):
 
 	for structureKey in _getStructureKeys():
 		if SYNONYMS.has_key(structureKey):
-			termKey = _getTermKey(structureKey)
+			termKey = getTermKey(structureKey)
 
 			for synonym in SYNONYMS[structureKey]:
 				rows.append ( [ termKey, synonym, 'AD' ] )
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 
 	logger.debug ('Returning %d synonyms for AD terms' % len(rows))
 	return rows
@@ -504,19 +525,19 @@ def getIDRows(outputColumns):
 	myCols = [ 'termKey', 'logicalDB', 'accID', 'preferred', 'private',
 		'_LogicalDB_key' ]
 
-	_getTermData()
-	_getIDs()
+	_loadTermData()
+	_loadIDs()
 
 	rows = []
 
 	for structureKey in _getStructureKeys():
 		if MGI_ID.has_key(structureKey):
-			termKey = _getTermKey(structureKey)
+			termKey = getTermKey(structureKey)
 
 			rows.append ( [ termKey, 'MGI', MGI_ID[structureKey],
 				1, 0, 1 ] )
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 
 	logger.debug ('Returning %d IDs for AD terms' % len(rows))
 	return rows
@@ -526,7 +547,7 @@ def getTermAnatomyExtrasRows(outputColumns):
 	# columns:  term key, system, Theiler stage, structure key from mgd,
 	#	edinburgh key
 
-	_getTermData()
+	_loadTermData()
 
 	myCols = [ 'termKey', 'system', 'stage', 'structureKey',
 		'edinburghKey' ]
@@ -536,10 +557,10 @@ def getTermAnatomyExtrasRows(outputColumns):
 	for structureKey in _getStructureKeys():
 		term = TERM[structureKey]
 
-		rows.append ( [ _getTermKey(structureKey), term[SYSTEM],
+		rows.append ( [ getTermKey(structureKey), term[SYSTEM],
 			term[STAGE], structureKey, term[EDINBURGH] ] )
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning extra data for %d AD terms' % len(rows))
 	return rows
 
@@ -548,9 +569,9 @@ def getTermChildRows(outputColumns):
 	# columns:  term key, child term key, child term, child ID, 
 	#	sequence num, is leaf, edge label
 
-	_getIDs()
-	_getTermData()
-	_getChildren()
+	_loadIDs()
+	_loadTermData()
+	_loadChildren()
 
 	myCols = [ 'parentKey', 'childKey', 'term', 'accID', 'sequenceNum',
 		'isLeaf', 'edgeLabel' ]
@@ -559,22 +580,22 @@ def getTermChildRows(outputColumns):
 
 	for structureKey in _getStructureKeys():
 		if CHILDREN.has_key(structureKey):
-			termKey = _getTermKey(structureKey)
+			termKey = getTermKey(structureKey)
 
 			for childKey in CHILDREN[structureKey]:
 				child = TERM[childKey]
 
 				row = [ termKey,
-					_getTermKey(childKey),
+					getTermKey(childKey),
 					child[STRUCTURE],
-					_getMgiID(childKey),
-					_getSequenceNum(childKey),
+					getMgiID(childKey),
+					getSequenceNum(childKey),
 					_isLeaf(childKey),
 					EDGE_LABEL,
 					]
 				rows.append(row)
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d child rows for AD terms' % len(rows))
 	return rows
 
@@ -583,9 +604,9 @@ def getTermSiblingRows(outputColumns):
 	# columns:  term key, sibling term key, sibling term, sibling ID,
 	#	sequence num, is leaf, edge label, path number
 
-	_getIDs()
-	_getTermData()
-	_getChildren()
+	_loadIDs()
+	_loadTermData()
+	_loadChildren()
 
 	myCols = [ 'termKey', 'siblingKey', 'term', 'accID', 'sequenceNum',
 		'isLeaf', 'edgeLabel', 'pathNumber' ]
@@ -596,7 +617,7 @@ def getTermSiblingRows(outputColumns):
 		parentKey = TERM[structureKey][PARENT]
 
 		if parentKey != None:
-			termKey = _getTermKey (structureKey)
+			termKey = getTermKey (structureKey)
 
 			for siblingKey in CHILDREN[parentKey]:
 
@@ -607,17 +628,17 @@ def getTermSiblingRows(outputColumns):
 				sibling = TERM[siblingKey]
 
 				row = [ termKey,
-					_getTermKey(siblingKey),
+					getTermKey(siblingKey),
 					sibling[STRUCTURE],
-					_getMgiID(siblingKey),
-					_getSequenceNum(siblingKey),
+					getMgiID(siblingKey),
+					getSequenceNum(siblingKey),
 					_isLeaf(siblingKey),
 					EDGE_LABEL,
 					1,
 					]
 				rows.append (row) 
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d sibling rows for AD terms' % len(rows))
 	return rows
 
@@ -626,12 +647,12 @@ def getTermDescendentRows(outputCols):
 	# columns:  term key, descendent term key, descendent term,
 	#	descendent ID, sequence num
 
-	_getIDs()
-	_getTermData()
+	_loadIDs()
+	_loadTermData()
 
 	myCols = [ 'parentKey', 'childKey', 'term', 'accID', 'sequenceNum' ]
 
-	descendents = _getDescendents()
+	descendents = _loadDescendents()
 
 	rows = []
 
@@ -639,20 +660,20 @@ def getTermDescendentRows(outputCols):
 		if not descendents.has_key(structureKey):
 			continue
 
-		parentKey = _getTermKey (structureKey)
+		parentKey = getTermKey (structureKey)
 
 		for descendentKey in descendents[structureKey]:
 			descendent = TERM[descendentKey]
 
 			row = [ parentKey,
-				_getTermKey(descendentKey),
+				getTermKey(descendentKey),
 				descendent[STRUCTURE],
-				_getMgiID(descendentKey),
-				_getSequenceNum(descendentKey),
+				getMgiID(descendentKey),
+				getSequenceNum(descendentKey),
 				]
 			rows.append (row)
 
-	rows = morph (myCols, rows, outputCols)
+	rows = _morph (myCols, rows, outputCols)
 
 	logger.debug ('Returning %d descendent rows for AD terms' % len(rows))
 	return rows
@@ -662,7 +683,7 @@ def getTermAncestorRows(outputColumns):
 	# columns:  term key, ancestor term key, ancestor term,	ancestor ID,
 	#	path number, depth, edge label
 
-	ancestors = _getAncestors()
+	ancestors = _loadAncestors()
 
 	myCols = [ 'termKey', 'ancestorTermKey', 'ancestorTerm', 'ancestorID',
 		'pathNumber', 'depth', 'edgeLabel' ]
@@ -673,22 +694,22 @@ def getTermAncestorRows(outputColumns):
 		if not ancestors.has_key(structureKey):
 			continue
 
-		childKey = _getTermKey(structureKey)
+		childKey = getTermKey(structureKey)
 
 		for ancestorKey in ancestors[structureKey]:
 			ancestor = TERM[ancestorKey]
 
 			row = [ childKey,
-				_getTermKey(ancestorKey),
+				getTermKey(ancestorKey),
 				ancestor[STRUCTURE],
-				_getMgiID(ancestorKey),
+				getMgiID(ancestorKey),
 				1,
 				ancestor[DEPTH],
 				EDGE_LABEL,
 				]
 			rows.append(row)
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d ancestor rows for AD terms' % len(rows))
 	return rows
 
@@ -697,8 +718,8 @@ def getTermCountsRows(outputColumns):
 	# columns:  term key, path count, descendent count, child count,
 	#	marker count, expression marker count, gxdlit marker count
 
-	descendentCounts = _getDescendentCounts()
-	children = _getChildren()
+	descendentCounts = _loadDescendentCounts()
+	children = _loadChildren()
 
 	myCols = [ 'termKey', 'pathCount', 'descendentCount', 'childCount',
 		'markerCount', 'expressionMarkerCount', 'gxdLitMarkerCount' ]
@@ -714,10 +735,10 @@ def getTermCountsRows(outputColumns):
 		if children.has_key(structureKey):
 			childrenCount = len(children[structureKey])
 
-		rows.append ( [ _getTermKey(structureKey), 1,
+		rows.append ( [ getTermKey(structureKey), 1,
 			descendentCount, childrenCount, 0, 0, 0 ] )
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d term count rows for AD terms' % len(rows))
 	return rows
 
@@ -735,7 +756,7 @@ def getTermAnnotationCountsRows(outputColumns):
 
 	# TBD - insert logic here to compute any needed counts
 
-	rows = morph (myCols, rows, outputColumns)
+	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d term annotation counts rows for AD terms'\
 		% len(rows))
 	return rows
