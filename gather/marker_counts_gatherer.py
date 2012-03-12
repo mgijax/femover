@@ -319,13 +319,7 @@ cmds = [
 	'''select m._Marker_key, count(distinct m._Term_key) as diseaseCount
 		from mrk_omim_cache m
 		where m.qualifier is null
-			and exists (select 1
-				from mrk_homology_cache h1,
-					mrk_homology_cache h2
-				where m._Marker_key = h1._Marker_key
-				and h1._Organism_key = 1
-				and h1._Class_key = h2._Class_key
-				and h2._Organism_key = 2)
+			and m._Organism_key in (1,2)
 		group by m._Marker_key''',
 
 	# 19. count of alleles for the marker which are associated with

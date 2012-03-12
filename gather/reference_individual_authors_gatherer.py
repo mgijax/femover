@@ -51,11 +51,27 @@ def formatAuthor (x):
 
 	tokens = map (lambda y : y.lower().capitalize(), x.split() )
 
-	lastToken = len(tokens) - 1
+	# if a token is a hyphenated name, then we also need to capitalize the
+	# first letter of the second name.  if multiple hyphens, just
+	# capitalize the final name, not all the intervening ones (which is
+	# correct for most cases).
+
+	t = []
+	for token in tokens:
+		if token.find('-') >= 0:
+			items = token.split('-')
+			items[-1] = items[-1].capitalize()
+			token = '-'.join(items)
+
+		t.append (token)
+
+	tokens = t 
 
 	# if the last token has < 4 charcters and is 'Jr' or begins with a
 	# digit (like '3d', '4th'), then we need to look at the next to last
 	# token for initials
+
+	lastToken = len(tokens) - 1
 
 	if len(tokens[lastToken]) < 4:
 		if (tokens[lastToken] == 'Jr') or \
