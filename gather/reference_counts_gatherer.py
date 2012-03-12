@@ -106,7 +106,9 @@ cmds = [
 
 	# count of markers for each reference
 	'''select m._Refs_key, count(1) as numMarkers
-		from mrk_reference m
+		from mrk_reference m, mrk_marker mm
+		where m._Marker_key = mm._Marker_key
+			and mm._Marker_Status_key in (1,3)
 		group by m._Refs_key''',
 
 	# count of probes
