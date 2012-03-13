@@ -43,9 +43,12 @@ def _initialize():
 	# special cases:
 	#	a. no obsolete terms
 	#	b. no "normal" annotations for MP terms (term key 2181424)
-	#	c. no "not" annotations for GO terms (term key 1614151)
+	#	c. no "not" annotations for GO terms (term keys 1614151,
+	#		1614153, 1614155)
 	#	d. no "not" annotations for OMIM terms (term key 1614157)
 	#		to genotypes
+	#	e. no annotations to top-level GO terms (term keys 120, 6112, 
+	#		6113, 1098)
 
 	cmds = [
 		# 0. mouse markers annotated to the terms themselves
@@ -60,7 +63,8 @@ def _initialize():
 			and va._Term_key = t._Term_key
 			and t.isObsolete = 0
 			and va._Object_key = m._Marker_key
-			and va._Qualifier_key != 1614151
+			and va._Qualifier_key not in (1614151, 1614153, 1614155)
+			and va._Term_key not in (120, 6112, 6113, 1098)
 			and m._Organism_key = 1
 			and vat._MGIType_key = 2''',
 
@@ -78,45 +82,20 @@ def _initialize():
 			and va._Term_key = t._Term_key
 			and t.isObsolete = 0
 			and va._Object_key = m._Marker_key
-			and va._Qualifier_key != 1614151
+			and va._Qualifier_key not in (1614151, 1614153, 1614155)
 			and m._Organism_key = 1
 			and vat._MGIType_key = 2''',
 
-		# 2. mouse markers orthologous to human markers which are
-		# annotated to OMIM terms
-		'''select distinct va._Term_key,
-			m._Marker_key
+		# 2. mouse markers with alleles which are directly annotated
+		# to OMIM terms (no restriction on qualifier)
+		'''select va._Term_key,
+			aa._Marker_key
 		from voc_annot va,
-			voc_term t,
-			mrk_homology_cache h,
-			mrk_homology_cache m
-		where va._AnnotType_key = 1006
-			and va._Term_key = t._Term_key
-			and t.isObsolete = 0
-			and va._Object_key = h._Marker_key
-			and h._Organism_key = 2
-			and h._Class_key = m._Class_key
-			and m._Organism_key = 1''',
+			all_allele aa
+		where va._AnnotType_key = 1012
+			and aa._Allele_key = va._Object_key''',
 
-		# 3. mouse markers orthologous to human markers which are
-		# annotated to descendents of OMIM terms
-		'''select distinct dc._AncestorObject_key as _Term_key,
-			m._Marker_key
-		from voc_annot va,
-			dag_closure dc,
-			voc_term t,
-			mrk_homology_cache h,
-			mrk_homology_cache m
-		where va._AnnotType_key = 1006
-			and va._Term_key = t._Term_key
-			and va._Term_key = dc._DescendentObject_key
-			and t.isObsolete = 0
-			and va._Object_key = h._Marker_key
-			and h._Organism_key = 2
-			and h._Class_key = m._Class_key
-			and m._Organism_key = 1''',
-
-		# 4. markers for alleles involved in genotypes which are
+		# 3. markers for alleles involved in genotypes which are
 		# annotated to the terms themselves
 		# (all annotation types which go to genotypes)
 		'''select distinct va._Term_key,
@@ -134,7 +113,7 @@ def _initialize():
 			and va._Qualifier_key not in (2181424, 1614157)
 			and vat._MGIType_key = 12''',
 
-		# 5. markers for alleles involved in genotypes which are
+		# 4. markers for alleles involved in genotypes which are
 		# annotated to the terms' descendents
 		# (all annotation types which go to genotypes)
 		'''select distinct dc._AncestorObject_key as _Term_key,
@@ -154,7 +133,7 @@ def _initialize():
 			and va._Qualifier_key not in (2181424, 1614157)
 			and vat._MGIType_key = 12''',
 
-		# 6. markers are associated with Protein Ontology terms as
+		# 5. markers are associated with Protein Ontology terms as
 		# marker accession IDs, rather than through the annotation
 		# tables.  So, pick them up separately.
 		'''select ta._Object_key as _Term_key,
@@ -166,17 +145,17 @@ def _initialize():
 			and ma.accID = ta.accID
 			and ta._MGIType_key = 13''',
 
-		# 7. markers with full coded expression data
+		# 6. markers with full coded expression data
 		'''select distinct _Marker_key
 		from gxd_expression''',
 
-		# 8. markers in GXD literature index
+		# 7. markers in GXD literature index
 		'''select distinct _Marker_key
 		from gxd_index''',
 	]
 
-	# queries 1-6 to collect marker/term relationships
-	for cmd in cmds[:7]:
+	# queries 1-5 to collect marker/term relationships
+	for cmd in cmds[:6]:
 		(cols, rows) = dbAgnostic.execute (cmd)
 
 		termCol = dbAgnostic.columnNumber (cols, '_Term_key')
@@ -190,16 +169,16 @@ def _initialize():
 
 	logger.debug ('Found marker counts for %d terms' % len(markersPerTerm))
 
-	# query 7 to find markers with expression data
-	(cols, rows) = dbAgnostic.execute (cmds[7])
+	# query 6 to find markers with expression data
+	(cols, rows) = dbAgnostic.execute (cmds[6])
 	for row in rows:
 		markersWithExpressionData[row[0]] = 1
 
 	logger.debug ('Found %d markers with expression data' % \
 		len(markersWithExpressionData))
 
-	# query 8 to find markers in the GXD literature index
-	(cols, rows) = dbAgnostic.execute (cmds[8])
+	# query 7 to find markers in the GXD literature index
+	(cols, rows) = dbAgnostic.execute (cmds[7])
 	for row in rows:
 		markersInGxdIndex[row[0]] = 1
 
