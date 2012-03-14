@@ -5,6 +5,7 @@ CHANGES:
 1) fixed a few counts
 2) integrated the anatomical dictionary into the vocab & term tables
 3) added expression results
+4) reduced parallelization when writing to database to avoid errors on falas
 
 TAG: femover-5-0-0-7
 DATE: 02/29/2012
