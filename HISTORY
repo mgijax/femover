@@ -1,3 +1,11 @@
+TAG: femover-5-0-0-8
+DATE: 03/14/2012
+STAFF: jsb
+CHANGES:
+1) fixed a few counts
+2) integrated the anatomical dictionary into the vocab & term tables
+3) added expression results
+
 TAG: femover-5-0-0-7
 DATE: 02/29/2012
 STAFF: jsb
