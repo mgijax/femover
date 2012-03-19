@@ -77,10 +77,12 @@ def _loadDistanceAssociations():
 			and endCoordinate is not null
 		order by startCoordinate, endCoordinate'''
 
-	# SNPs on a given chromosome, ordered by start coordinate
+	# SNPs on a given chromosome, ordered by start coordinate.  exclude
+	# SNPs with multiple coordinates
 	snpQuery = '''select distinct _ConsensusSnp_key, startCoordinate
 		from snp_coord_cache
 		where chromosome = '%s'
+			and isMultiCoord = 0
 			and startCoordinate is not null
 		order by startCoordinate'''
 
