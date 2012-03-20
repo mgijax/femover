@@ -182,7 +182,8 @@ cmds = [
 	# for each marker, since the 'distinct' determines the rows displayed
 	# on marker/GO).  Note that postgres could do this all with a
 	# count(distinct (a, b, c)) but sybase and mysql do not allow the
-	# combination within the distinct clause.
+	# combination within the distinct clause.  Also note that we must
+	# exclude annotations with an "ND" qualifier, as those show "no data".
 	'''select distinct a._Object_key as _Marker_key,
 			a._Term_key,
 			a._Qualifier_key,
@@ -192,16 +193,12 @@ cmds = [
 			voc_evidence e
 		where a._AnnotType_key = 1000
 			and a._Annot_key = e._Annot_key
+			and e._EvidenceTerm_key != 118
 		order by a._Object_key,
 			a._Term_key,
 			a._Qualifier_key,
 			e.inferredFrom,
 			e._EvidenceTerm_key''',
-#	'''select _Object_key as _Marker_key,
-#			count(distinct _Term_key) as numGO
-#		from voc_annot
-#		where _AnnotType_key = 1000
-#		group by _Object_key''',
 
 	# 5. count of expression assays for each marker
 	# (omit Recombinase reporter assays)
