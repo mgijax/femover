@@ -100,6 +100,10 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		# 2) polymorphisms
 
+		markersWithSNPs = MarkerSnpAssociations.getMarkerKeys()
+		logger.debug ('Found %d markers with SNPs' % \
+			len(markersWithSNPs))
+
 		(columns, rows) = self.results[1]
 		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 		termCol = Gatherer.columnNumber (columns, 'term')
@@ -116,6 +120,20 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		else:
 			snp = 'SNPs'		# not counted in 'all'
 
+		multiSnp = '%s including multiple locations' % snp
+
+		# first populate SNP counts for markers with SNPs
+
+		for key in markersWithSNPs:
+			snpCount = MarkerSnpAssociations.getSnpCount (key) 
+			byMarker[key] = { snp : snpCount }
+
+			multiSnpCount = \
+			    MarkerSnpAssociations.getMultiCoordSnpCount (key)
+
+			if multiSnpCount > 0:
+				byMarker[key][multiSnp] = multiSnpCount
+
 		# collate counts per marker
 
 		for row in rows:
@@ -124,9 +142,10 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			key = row[keyCol]
 
 			if not byMarker.has_key (key):
-				byMarker[key] = {
-				  snp : MarkerSnpAssociations.getSnpCount(key)
-				}
+				# note that it has no SNPs (they would have
+				# already been populated otherwise)
+
+				byMarker[key] = { snp : 0 }
 
 			if term == 'primer':
 				byMarker[key][pcr] = ct
@@ -145,7 +164,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			
 		# generate rows, one per marker/count pair
 
-		orderedTerms = [ all, pcr, rflp, snp ]
+		orderedTerms = [ all, pcr, rflp, snp, multiSnp ]
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):
