@@ -344,7 +344,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
 		systemCol = Gatherer.columnNumber (cols, 'system')
-		structureCol = Gatherer.columnNumber (cols, 'structure')
+		structureCol = Gatherer.columnNumber (cols, 'printName')
 		assayTypeCol = Gatherer.columnNumber (cols, '_AssayType_key')
 		reporterCol = Gatherer.columnNumber (cols,
 			'_ReporterGene_key')
@@ -689,7 +689,7 @@ cmds = [
 	order by acc._LogicalDB_key''',		# MGI IDs preferred
 
 	# main cre assay result data
-	'''select distinct c._Allele_key, c.system, c.structure,
+	'''select distinct c._Allele_key, c.system, pn.printName,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
@@ -700,11 +700,13 @@ cmds = [
 		gxd_specimen s,
 		gxd_insituresult r,
 		gxd_isresultstructure rs,
-		bib_citation_cache b
+		bib_citation_cache b,
+		gxd_structure pn
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
 		and c._Structure_key = rs._Structure_key
+		and c._Structure_key = pn._Structure_key
 		and rs._Result_key = r._Result_key
 		and a._Refs_key = b._Refs_key''',
 
