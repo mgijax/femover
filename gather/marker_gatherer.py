@@ -17,6 +17,7 @@ class MarkerGatherer (Gatherer.Gatherer):
 	def collateResults (self):
 		self.featureTypes = {}	# marker key -> [ feature types ]
 		self.ids = {}		# marker key -> (id, logical db key)
+		self.inRefGenome = {}	# marker key -> 0/1
 
 		# feature types from MCV vocab are in query 0 results
 
@@ -48,6 +49,18 @@ class MarkerGatherer (Gatherer.Gatherer):
 	
 		logger.debug ('Found %d primary IDs for markers' % \
 			len(self.ids))
+
+		# reference genome flags are in query 2
+
+		cols, rows = self.results[2]
+		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		flagCol = Gatherer.columnNumber (cols, 'isReferenceGene')
+
+		for row in rows:
+			self.inRefGenome[row[keyCol]] = row[flagCol]
+	
+		logger.debug ('Found %d reference genome flags' % \
+			len(self.inRefGenome))
 
 		# last query has the bulk of the data
 		self.finalColumns = self.results[-1][0]
@@ -89,6 +102,11 @@ class MarkerGatherer (Gatherer.Gatherer):
 				ldb = None
 				ldbName = None
 
+			if self.inRefGenome.has_key(markerKey):
+				isInRefGenome = self.inRefGenome[markerKey]
+			else:
+				isInRefGenome = 0
+
 			self.addColumn ('accid', accid, r, self.finalColumns)
 			self.addColumn ('subtype', feature, r,
 				self.finalColumns)
@@ -109,6 +127,8 @@ class MarkerGatherer (Gatherer.Gatherer):
 				r, self.finalColumns)
 			self.addColumn ('hasGOOrthologyGraph',
 				GOGraphs.hasGOOrthologyGraph(accid),
+				r, self.finalColumns)
+			self.addColumn ('isInReferenceGenome', isInRefGenome,
 				r, self.finalColumns)
 		return
 
@@ -145,7 +165,10 @@ cmds = [
 		and a._LogicalDB_key = ldb._LogicalDB_key
 		and ldb._Organism_key = m._Organism_key''',
 
-	# all markers
+	# 2. markers in the reference genome project
+	'select _Marker_key, isReferenceGene from GO_Tracking',
+
+	# 3. all markers
 	'''select _Marker_key, symbol, name, _Marker_Type_key, _Organism_key,
 		_Marker_Status_key
 	from mrk_marker''',
@@ -155,7 +178,7 @@ cmds = [
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
 	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
-	'hasGOOrthologyGraph' ]
+	'hasGOOrthologyGraph', 'isInReferenceGenome' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker'
