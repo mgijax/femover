@@ -25,19 +25,24 @@ except:
 #	SNP_CACHE[markerKey] = { snpKey : 1 }
 SNP_CACHE = {}
 
+# maps from marker key to a dictionary keyed by its associated SNP keys where
+# those SNPs map to multiple locations in the genome
+#	MULTI_SNP_CACHE[markerKey] = { snpKey : 1 }
+MULTI_SNP_CACHE = {}
+
 # maps from SNP key to its accession ID
 SNP_IDS = {}
 LOADED_IDS = False
 
 ###--- Private Functions ---###
 
-def _addAssoc (markerKey, snpKey):
-	global SNP_CACHE, SNP_IDS
+def _addAssoc (snpCache, markerKey, snpKey):
+	global SNP_IDS
 
-	if SNP_CACHE.has_key(markerKey):
-		SNP_CACHE[markerKey][snpKey] = 1
+	if snpCache.has_key(markerKey):
+		snpCache[markerKey][snpKey] = 1
 	else:
-		SNP_CACHE[markerKey] = { snpKey : 1 }
+		snpCache[markerKey] = { snpKey : 1 }
 
 	# initially, no ID found yet
 	SNP_IDS[snpKey] = None
@@ -57,7 +62,7 @@ def _loadDbSnpAssociations():
 	snpCol = dbAgnostic.columnNumber (cols, '_ConsensusSnp_key')
 
 	for row in rows:
-		_addAssoc (row[mrkCol], row[snpCol])
+		_addAssoc (SNP_CACHE, row[mrkCol], row[snpCol])
 
 	logger.debug ('Cached %d dbSNP associations' % len(rows))
 	return
@@ -79,10 +84,10 @@ def _loadDistanceAssociations():
 
 	# SNPs on a given chromosome, ordered by start coordinate.  exclude
 	# SNPs with multiple coordinates
-	snpQuery = '''select distinct _ConsensusSnp_key, startCoordinate
+	snpQuery = '''select distinct _ConsensusSnp_key, startCoordinate,
+			isMultiCoord
 		from snp_coord_cache
 		where chromosome = '%s'
-			and isMultiCoord = 0
 			and startCoordinate is not null
 		order by startCoordinate'''
 
@@ -159,6 +164,7 @@ def _loadDistanceAssociations():
 
 		snpCol = dbAgnostic.columnNumber (cols, '_ConsensusSnp_key')
 		startCol = dbAgnostic.columnNumber (cols, 'startCoordinate')
+		multiCol = dbAgnostic.columnNumber (cols, 'isMultiCoord')
 
 		added = 0
 
@@ -167,6 +173,11 @@ def _loadDistanceAssociations():
 
 		for row in rows:
 			snpStart = row[startCol]
+
+			if row[multiCol] == 0:
+				cache = SNP_CACHE
+			else:
+				cache = MULTI_SNP_CACHE
 
 			# lookup the first marker which overlaps the Mb in
 			# which this SNP occurs
@@ -191,7 +202,7 @@ def _loadDistanceAssociations():
 				# overlap
 
 				if mrkStart <= snpStart <= mrkEnd:
-					_addAssoc (mrkKey, row[snpCol])
+					_addAssoc (cache, mrkKey, row[snpCol])
 					added = added + 1
 
 				m = m + 1
@@ -251,6 +262,17 @@ def getSnps (markerKey):
 def getSnpCount (markerKey):
 	return len(getSnps(markerKey))
 
+def getMultiCoordSnps (markerKey):
+	if not SNP_CACHE:
+		_initialize()
+
+	if MULTI_SNP_CACHE.has_key(markerKey):
+		return MULTI_SNP_CACHE[markerKey].keys()
+	return []
+
+def getMultiCoordSnpCount (markerKey):
+	return len(getMultiCoordSnps(markerKey))
+
 def getSnpIDs (markerKey):
 	global LOADED_IDS
 	snpKeys = getSnps(markerKey)
@@ -270,3 +292,19 @@ def getSnpIDs (markerKey):
 
 def isInSync():
 	return IN_SYNC
+
+def getMarkerKeys():
+	# get all marker keys which have SNPs
+	if not SNP_CACHE:
+		_initialize()
+
+	markerKeys = {}
+
+	for cache in [ SNP_CACHE, MULTI_SNP_CACHE ]:
+		for key in cache.keys():
+			markerKeys[key] = 1
+
+	keys = markerKeys.keys()
+	keys.sort()
+
+	return keys
