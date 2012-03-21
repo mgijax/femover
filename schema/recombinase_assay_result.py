@@ -13,7 +13,7 @@ tableName = 'recombinase_assay_result'
 createStatement = '''CREATE TABLE %s  ( 
 	result_key		int		not null,
 	allele_system_key	int		not null,
-	structure		varchar(80)	null,
+	structure		varchar(255)	null,
 	age			varchar(50)	null,
 	level			varchar(20)	null,
 	pattern			varchar(30)	null,
