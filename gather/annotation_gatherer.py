@@ -283,9 +283,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			# We only want to annotate OMIM terms to markers which
 			# have human orthologs.
-			if annotType == 'OMIM/Marker':
-				if not musHumOrtho.has_key(markerKey):
-					continue
+# commented out; invalid requirement
+#			if annotType == 'OMIM/Marker':
+#				if not musHumOrtho.has_key(markerKey):
+#					continue
 
 			aRow = [ annotationKey, None, None, vocab,
 				row[termCol], termID, None, 'Marker',
@@ -723,9 +724,7 @@ cmds = [
 
 	# 9. get OMIM and MP annotations made to genotypes, and pull a brief
 	# set of info for them up through their alleles to their markers
-	# (only null qualifiers, to avoid NOT and "normal" annotations).  The
-	# union would also pull in OMIM annotations to orthologous human
-	# markers, but is commented-out for the time being.
+	# (only null qualifiers, to avoid NOT and "normal" annotations).
 	'''select distinct va._Annot_key,
 		vt._Term_key,
 		vt.term,
