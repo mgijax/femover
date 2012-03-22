@@ -1,3 +1,10 @@
+TAG: femover-5-0-0-9
+DATE: 03/22/2012
+STAFF: jsb
+CHANGES:
+1) various bug fixes after alpha 2
+2) changed handling of GO annotations with ND evidence code
+
 TAG: femover-5-0-0-8
 DATE: 03/14/2012
 STAFF: jsb
