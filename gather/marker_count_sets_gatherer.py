@@ -131,7 +131,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			multiSnpCount = snpCount + \
 			    MarkerSnpAssociations.getMultiCoordSnpCount (key)
 
-			if multiSnpCount > 0:
+			if multiSnpCount > snpCount:
 				byMarker[key][multiSnp] = multiSnpCount
 
 		# collate counts per marker
