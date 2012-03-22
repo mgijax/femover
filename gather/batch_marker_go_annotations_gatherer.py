@@ -4,6 +4,8 @@
 # database
 
 import Gatherer
+import GOFilter
+import logger
 
 ###--- Classes ---###
 
@@ -22,6 +24,28 @@ class BatchMarkerGOGatherer (Gatherer.Gatherer):
 			self.addColumn ('sequence_num', i, row,
 				self.finalColumns)
 			i = i + 1
+
+		# omit any GO annotations that should be skipped due to ND
+		# evidence codes
+
+		annotKeyCol = Gatherer.columnNumber (self.finalColumns,
+			'_Annot_key')
+
+		j = len(self.finalResults) - 1
+		excluded = 0
+
+		while j >= 0:
+			annotKey = self.finalResults[j][annotKeyCol]
+
+			if not GOFilter.shouldInclude(annotKey):
+				del self.finalResults[j]
+				excluded = excluded + 1
+
+			j = j - 1
+
+		if excluded > 0:
+			logger.debug ('Omitted %d GO ND annotations' % \
+				excluded)
 		return
 
 ###--- globals ---###
@@ -30,7 +54,8 @@ cmds = [
 	'''select distinct an._Object_key as _Marker_key,
 		ag.accID as go_id,
 		vt.term as term,
-		evt.abbreviation as evidence_code
+		evt.abbreviation as evidence_code,
+		an._Annot_key
 	from voc_annot an
 	left outer join acc_accession ag on (an._Term_key = ag._Object_key)
 	left outer join voc_term vt on (an._Term_key = vt._Term_key)
