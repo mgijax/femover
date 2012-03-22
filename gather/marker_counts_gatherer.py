@@ -13,6 +13,7 @@ import Gatherer
 import logger
 import config
 import MarkerSnpAssociations
+import GOFilter
 
 ###--- Globals ---###
 
@@ -55,20 +56,12 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 
 		# pre-process the GO annotation data
 
-		# marker key -> count of rows
-		goAnnot = {}
+		goAnnot = []
+		for key in GOFilter.getMarkerKeys():
+			goAnnot.append ( (key,
+				GOFilter.getAnnotationCount(key)) )
 
-		cols, rows = self.results[4]
-		mrkKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-
-		for row in rows:
-			markerKey = row[mrkKeyCol]
-			if goAnnot.has_key(markerKey):
-				goAnnot[markerKey] = goAnnot[markerKey] + 1
-			else:
-				goAnnot[markerKey] = 1 
-
-		goData = [ ['_Marker_key', 'numGO'], goAnnot.items() ]
+		goData = [ ['_Marker_key', 'numGO'], goAnnot ]
 		logger.debug ('Pre-processed %d GO counts' % len(goAnnot))
 
 		# list of count types (like field names)
@@ -87,6 +80,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[2], SequenceCount, 'numSeq'),
 			(self.results[3], AlleleCount, 'numAll'),
 			(goData, GOCount, 'numGO'),
+			(self.results[4], AntibodyCount, 'antibodyCount'),
 			(self.results[5], GxdAssayCount, 'numAssay'),
 			(self.results[6], OrthologCount, 'numOrtho'),
 			(self.results[7], GeneTrapCount, 'numGeneTraps'),
@@ -103,7 +97,6 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[18], HumanDiseaseCount, 'diseaseCount'),
 			(self.results[19], AllelesWithDiseaseCount,
 				'alleleCount'),
-			(self.results[20], AntibodyCount, 'antibodyCount'),
 			# SnpCount will be processed separately
 			]
 
@@ -178,27 +171,10 @@ cmds = [
 			and a.isWildType != 1
 		group by m._Marker_key''',
 
-	# 4. count of GO annotations for each marker (must manually count rows
-	# for each marker, since the 'distinct' determines the rows displayed
-	# on marker/GO).  Note that postgres could do this all with a
-	# count(distinct (a, b, c)) but sybase and mysql do not allow the
-	# combination within the distinct clause.  Also note that we must
-	# exclude annotations with an "ND" qualifier, as those show "no data".
-	'''select distinct a._Object_key as _Marker_key,
-			a._Term_key,
-			a._Qualifier_key,
-			e.inferredFrom,
-			e._EvidenceTerm_key 
-		from voc_annot a, 
-			voc_evidence e
-		where a._AnnotType_key = 1000
-			and a._Annot_key = e._Annot_key
-			and e._EvidenceTerm_key != 118
-		order by a._Object_key,
-			a._Term_key,
-			a._Qualifier_key,
-			e.inferredFrom,
-			e._EvidenceTerm_key''',
+	# 4. count of antibodies for the marker
+	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
+		from gxd_antibodymarker
+		group by _Marker_key''',
 
 	# 5. count of expression assays for each marker
 	# (omit Recombinase reporter assays)
@@ -340,11 +316,6 @@ cmds = [
 				and h1._Class_key = h2._Class_key
 				and h2._Organism_key = 2)
 		group by a._Marker_key''',
-
-	# 20. count of antibodies for the marker
-	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
-		from gxd_antibodymarker
-		group by _Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
