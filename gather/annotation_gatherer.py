@@ -6,6 +6,7 @@
 import Gatherer
 import VocabSorter
 import logger
+import GOFilter
 
 ###--- Constants ---###
 
@@ -15,6 +16,10 @@ MARKER = 2		# MGI Type for markers
 
 # annotKey -> (annotTypeKey, objectKey, termKey, qualifierKey)
 annotKeyAttributes = {}
+
+# annotation keys to be omitted (for GO ND annotations)
+# 	annotKeyToSkip[annot key] = 1
+annotKeyToSkip = {}
 
 def putAnnotAttributes (annotKey, annotType, objectKey, termKey, qualifier):
 	global annotKeyAttributes
@@ -106,6 +111,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			annotKey = row[annotKeyCol]
+
+			# if we need to skip this, just move on
+			if annotKeyToSkip.has_key(annotKey):
+				continue
+
 			evidenceTermKey = row[evidenceTermCol]
 			inferredFrom = row[inferredFromCol]
 
@@ -170,6 +180,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			annotKey = row[akeyCol]
+
+			# if we need to skip this, just move on
+			if annotKeyToSkip.has_key(annotKey):
+				continue
+
 			evidence = row[evidenceCol]
 			id = row[idCol]
 			ldbKey = row[ldbKeyCol]
@@ -225,8 +240,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Loaded %d sorting maps' % len(toDo))
 		return byVocab, byAnnotType, byTermAlpha
 
-	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha,
-		musHumOrtho):
+	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
 		# build the extra rows from query 9, where we pull a summary
 		# of annotations up from genotypes through alleles to markers
 
@@ -253,10 +267,16 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		done = {}	# (marker key, term ID) -> 1
 
 		for row in rows:
+			annotKey = row[annotKeyCol]
+
+			# if we need to skip this, just move on
+			# (should not happen here, but we add it just in case)
+			if annotKeyToSkip.has_key(annotKey):
+				continue
+
 			markerKey = row[markerCol]
 			termID = row[accIDCol]
 			pair = (markerKey, termID)
-			annotKey = row[annotKeyCol]
 
 			if done.has_key(pair):
 				continue
@@ -280,13 +300,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			annotType = Gatherer.resolve (row[typeKeyCol],
 				'voc_annottype', '_AnnotType_key', 'name')
 			annotType = annotType.replace ('Genotype', 'Marker')
-
-			# We only want to annotate OMIM terms to markers which
-			# have human orthologs.
-# commented out; invalid requirement
-#			if annotType == 'OMIM/Marker':
-#				if not musHumOrtho.has_key(markerKey):
-#					continue
 
 			aRow = [ annotationKey, None, None, vocab,
 				row[termCol], termID, None, 'Marker',
@@ -363,6 +376,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	def cacheAnnotationData (self):
 		# our base data is in the results from query 5
+
+		global annotKeyToSkip
+
 		cols, rows = self.results[5]
 
 		annotCol = Gatherer.columnNumber (cols, '_Annot_key')
@@ -374,11 +390,24 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		objectTypeCol = Gatherer.columnNumber (cols, '_MGIType_key')
 
 		for row in rows:
+			# for GO annotations (type 1000), we need to check
+			# that we should keep it
+
+			annotKey = row[annotCol]
+			annotType = row[annotTypeKeyCol]
+
+			if annotType == 1000:
+				if not GOFilter.shouldInclude(annotKey):
+					annotKeyToSkip[annotKey] = 1
+					continue
+
 			putAnnotAttributes (row[annotCol],
 				row[annotTypeKeyCol], row[objectCol],
 				row[termKeyCol], row[qualifierCol])
 
 		logger.debug ('Cached data for %d annotations' % len(rows))
+		logger.debug ('Skipped %d GO ND annotations' % \
+			len(annotKeyToSkip))
 		return
 
 	def filterInvalidMarkers (self, mRows):
@@ -404,8 +433,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		return mRows
 
 	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
-		annotationEvidence, annotationRefs, inferredFromIDs,
-		musHumOrtho):
+		annotationEvidence, annotationRefs, inferredFromIDs):
 
 		# We will produe rows for four tables on the first pass:
 
@@ -443,7 +471,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# genotype annotations
 
 		aRows, mRows, sRows = self.buildQuery9Rows(byVocab,
-			byAnnotType, byTermAlpha, musHumOrtho)
+			byAnnotType, byTermAlpha)
 
 		# fill in the Protein Ontology data
 		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
@@ -469,6 +497,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			# base values that we'll need later
 			annotKey = row[annotCol]
+
+			# if we need to skip this, just move on
+			if annotKeyToSkip.has_key(annotKey):
+				continue
+
 			mgiType = row[objectTypeCol]
 			objectKey = row[objectCol]
 			termKey = row[termKeyCol]
@@ -582,21 +615,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			% (len(aRows), len(iRows), len(rRows), len(mRows) ) )
 		return
 
-	def getMouseGenesWithHumanOrthologs(self):
-		cols, rows = self.results[12]
-
-		musHumOrtho = {}	# mouse marker key -> 1
-
-		# only one column (marker key)
-
-		for row in rows:
-			musHumOrtho[row[0]] = 1
-
-		logger.debug ('%d mouse markers with human orthologs' % \
-			len(musHumOrtho))
-
-		return musHumOrtho
-
 	def collateResults (self):
 		# cache some of our base annotation data for use later
 		self.cacheAnnotationData()
@@ -614,14 +632,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# process queries 3 and 4 - inferred-from IDs
 		inferredFromIDs = self.getInferredFromIDs()
 
-		# process query 12 - set of mouse marker keys with human
-		# orthologs
-		musHumOrtho = self.getMouseGenesWithHumanOrthologs()
-
 		# process query 5 and join with prior results
 		self.buildRows (termKeyToID, termKeyToDagKey, mgdToNewKeys,
-			annotationEvidence, annotationRefs, inferredFromIDs,
-			musHumOrtho)
+			annotationEvidence, annotationRefs, inferredFromIDs)
 		return
 
 ###--- globals ---###
@@ -767,13 +780,6 @@ cmds = [
 
 	# 11. get the valid marker keys
 	'''select _Marker_key from mrk_marker''',
-
-	# 12. get the mouse marker keys which have orthologous human markers
-	'''select distinct m._Marker_key
-	from mrk_homology_cache m, mrk_homology_cache h
-	where m._Class_key = h._Class_key
-		and m._Organism_key = 1
-		and h._Organism_key = 2''',
 	]
 
 # definition of output files, each as:
