@@ -83,6 +83,14 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		for (key, alleleList) in genotypeList:
 			i = i + 1
 			self.finalResults.append ( [ key, i ] )
+
+		# now add those without alleles
+		cols, rows = self.results[-1]
+
+		for row in rows:
+			i = i + 1
+			self.finalResults.append ( [ row[0], i ] )
+
 		return
 
 ###--- globals ---###
@@ -101,7 +109,15 @@ cmds = [
 	# get all allele pairs for all genotypes
 	'''select _Genotype_key, _Allele_key_1, _Allele_key_2, sequenceNum
 	from gxd_allelepair
-	order by _Genotype_key, sequenceNum'''
+	order by _Genotype_key, sequenceNum''',
+
+	# get all genotypes which do not have allele pairs, so we can add
+	# them, too
+	'''select g._Genotype_key
+	from gxd_genotype g
+	where not exists (select 1 from gxd_allelepair p
+		where g._Genotype_key = p._Genotype_key)
+	order by 1''',
 	]
 
 # order of fields (from the query results) to be written to the
