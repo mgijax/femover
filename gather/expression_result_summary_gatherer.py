@@ -224,6 +224,18 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			len(extras))
 		return extras
 
+	def sortSystems(self):
+		cols, rows = self.results[10]
+
+		self.systemSequenceNum = {}
+		i = 0
+
+		for row in rows:
+			i = i + 1
+			self.systemSequenceNum[row[0]] = i
+		logger.debug ('Sorted %d systems' % i)
+		return
+
 	def sortGenotypeData(self):
 		cols, rows = self.results[9]
 
@@ -433,6 +445,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			return 2
 		return 3
 
+	def getSystemSequenceNum (self, system):
+		if self.systemSequenceNum.has_key(system):
+			return self.systemSequenceNum[system]
+		return len(self.systemSequenceNum) + 1
+
 	def getGenotypeSequenceNum (self, genotypeKey):
 		if self.byGenotype.has_key(genotypeKey):
 			return self.byGenotype[genotypeKey]
@@ -442,6 +459,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# build and return the rows (and columns) for the
 		# expression_result_sequence_num table
 
+		self.sortSystems()
 		self.sortGenotypeData()
 
 		cols = [ 'result_key', 'by_assay_type', 'by_gene_symbol',
@@ -498,7 +516,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    expressed = self.getExpressedSequenceNum (row[expressedCol])
 		    symbol = self.getSymbolSequenceNum (row[symbolCol])
 		    assay = self.getAssayTypeSequenceNum (row[assayTypeCol])
-		    system = row[systemCol].lower()
+		    system = self.getSystemSequenceNum(row[systemCol])
 		    mutants = self.getGenotypeSequenceNum (row[genotypeKeyCol])
 		    refs = ReferenceCitations.getSequenceNum (row[refsKeyCol])
 
@@ -696,6 +714,13 @@ cmds = [
 		or exists (select 1 from GXD_GelLane g
 			where g._Genotype_key = gap._Genotype_key)
 	order by gap.sequenceNum''',
+
+	# 10. ordered list of systems
+	'''select distinct t.term
+	from GXD_Structure s,
+		VOC_Term t
+	where s._System_key = t._Term_key
+	order by t.term''',
 	]
 
 files = [
