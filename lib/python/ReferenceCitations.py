@@ -11,6 +11,8 @@ MINI = {}	# reference key -> mini citation
 SHORT = {}	# reference key -> short citation
 LONG = {}	# reference key -> long citation
 
+SEQUENCE_NUM = {}	# reference key -> integer for ordering by citation
+
 ###--- Private Functions ---###
 
 def _getBooks():
@@ -286,7 +288,7 @@ def _getArticleCitations (refsKey, refs, books):
 	return miniCitation, shortCitation, longCitation
 
 def _initialize():
-	global MINI, SHORT, LONG
+	global MINI, SHORT, LONG, SEQUENCE_NUM
 
 	MINI = {}
 	SHORT = {}
@@ -294,6 +296,8 @@ def _initialize():
 
 	books = _getBooks()
 	refs = _getRefs()
+
+	toOrder = []
 
 	referenceKeys = refs.keys()
 
@@ -309,7 +313,18 @@ def _initialize():
 		SHORT[key] = shortCitation
 		LONG[key] = longCitation
 
+		toOrder.append ( (longCitation, key) )
+
 	logger.debug ('Built citations for %d refs' % len(MINI))
+
+	toOrder.sort()
+
+	i = 0
+	for (citation, key) in toOrder:
+		i = i + 1
+		SEQUENCE_NUM[key] = i
+
+	logger.debug ('Ordered %d refs by citation' % i)
 	return
 
 ###--- Functions ---###
@@ -338,3 +353,10 @@ def getLongCitation (refsKey):
 		return LONG[refsKey]
 	return None
 
+def getSequenceNum (refsKey):
+	if not SEQUENCE_NUM:
+		_initialize()
+
+	if SEQUENCE_NUM.has_key(refsKey):
+		return SEQUENCE_NUM[refsKey]
+	return len(SEQUENCE_NUM) + 1
