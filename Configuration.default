@@ -37,7 +37,7 @@ CONCURRENT_GATHER=4	      # number of gatherers (extracting data from mgd)
 CONCURRENT_CONVERT=4	      # output file cleanup
 CONCURRENT_BCPIN=1            # bcp in statements
 CONCURRENT_INDEX=2            # create index statements
-CONCURRENT_FOREIGN_KEY=2      # create foreign key statements
+CONCURRENT_FOREIGN_KEY=1      # create foreign key statements
 
 export CONCURRENT_DROP CONCURRENT_CREATE
 export CONCURRENT_BCPIN CONCURRENT_INDEX
