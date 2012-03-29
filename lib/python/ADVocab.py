@@ -402,6 +402,13 @@ def getSequenceNum(structureKey):
 		return TERM[structureKey][SORT]
 	return 0
 
+def getStructureKey(termKey):
+	_loadTermData()
+	structureKey = termKey - AD_TERM_KEY_OFFSET
+	if TERM.has_key(structureKey):
+		return structureKey
+	return 0
+
 def getStructure (structureKey):
 	_loadTermData()
 	if TERM.has_key(structureKey):
