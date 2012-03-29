@@ -509,7 +509,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for row in ersRows:
 		    resultKey = row[resultKeyCol]
 
-		    structure = ADVocab.getSequenceNum (row[structureKeyCol])
+		    # before getting the sequence number for the structure, we
+		    # need to convert from a term key for the structure to its
+		    # original structure key in mgd
+		    structure = ADVocab.getSequenceNum (
+			ADVocab.getStructureKey (row[structureKeyCol]) )
+
 		    stage = self.getStageSequenceNum (row[stageCol])
 		    ageMin = ageMinMax[resultKey][0]
 		    ageMax = ageMinMax[resultKey][1]
