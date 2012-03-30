@@ -670,7 +670,7 @@ cmds = [
 	# 7. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
 
-	'''select distinct s._Assay_key,
+	'''select s._Assay_key,
 		s._Genotype_key,
 		s.age,
 		r._Strength_key,
@@ -690,7 +690,7 @@ cmds = [
 	# 8. additional data for gel assays (skip control lanes)  (note that
 	# there can be > 1 structures per gel lane)
 
-	'''select distinct g._Assay_key,
+	'''select g._Assay_key,
 		g._Genotype_key,
 		g.age,
 		st._Strength_key,
