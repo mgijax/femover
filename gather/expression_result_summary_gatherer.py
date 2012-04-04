@@ -10,6 +10,14 @@ import symbolsort
 import ReferenceCitations
 import types
 
+###--- Globals ---###
+
+# list of strengths, in order of increasing strength
+ORDERED_STRENGTHS = [ 'Not Applicable', 'Not Specified', 'Absent',
+	'Ambiguous', 'Present', 'Trace', 'Weak', 'Moderate', 'Strong',
+	'Very Strong',
+	]
+
 ###--- Functions ---###
 
 def getIsExpressed(strength):
@@ -22,6 +30,74 @@ def getIsExpressed(strength):
 	elif s in [ 'ambiguous', 'not specified' ]:
 		return 'Unknown/Ambiguous'
 	return 'Yes'
+
+# list of (old, new) pairs for use in seek-and-replace loops in abbreviate()
+TIMES = [ (' day ',''), ('week ','w '), ('month ','m '), ('year ','y ') ]
+
+# list of (old, new) pairs for use in seek-and-replace loops in abbreviate()
+QUALIFIERS = [ ('embryonic', 'E'), ('postnatal', 'P') ]
+
+def abbreviate (
+	s		# string; specimen's age from GXD_Expression.age
+	):
+	# Purpose: convert 's' to a more condensed format for display on a
+	#	query results page
+	# Returns: string; with substitutions made as given in 'TIMES' and
+	#	'QUALIFIERS' above.
+	# Assumes: 's' contains at most one value from 'TIMES' and one value
+	#	from 'QUALIFIERS'.  This is for efficiency, so we don't have
+	#	to check every one for every invocation.
+	# Effects: nothing
+	# Throws: nothing
+
+	# we have two different lists of (old, new) strings to check...
+	for items in [ TIMES, QUALIFIERS ]:
+		for (old, new) in items:
+
+			# if we do not find 'old' in 's', then we just go back
+			# up to continue the inner loop.
+
+			pos = s.find(old)
+			if pos == -1:
+				continue
+
+			# otherwise, we replace 'old' with 'new' and break out
+			# of the inner loop to go back to the outer one.
+
+			s = s.replace(old, new)
+			break
+	return s
+
+def maxStrength (strength1, strength2):
+	# combine two strengths (from gel bands for the same gel lane) to get
+	# a strength for the gel lane as a whole.  At the moment, we choose
+	# the stronger of the two strengths, as defined in ORDERED_STRENGTHS.
+	# All strengths should appear in ORDERED_STRENGTHS.  In case new
+	# strengths are added to the database, they will be sorted after ones
+	# in ORDERED_STRENGTHS.  If both are not in ORDERED_STRENGTHS, then
+	# they are sorted alphabetially.
+
+	if strength1 == strength2:		# if they match, just pick one
+		return strength1
+
+	if strength1 in ORDERED_STRENGTHS:
+		if strength2 in ORDERED_STRENGTHS:
+			if ORDERED_STRENGTHS.index(strength1) > \
+				ORDERED_STRENGTHS.index(strength2):
+					return strength1
+			else:
+				return strength2
+
+		else:
+			return strength1
+
+	elif strength2 in ORDERED_STRENGTHS:
+		return strength2
+
+	elif strength1 > strength2:
+		return strength1
+
+	return strength2
 
 ###--- Classes ---###
 
@@ -60,7 +136,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			jnum[row[keyCol]] = row[idCol]
 
-		logger.debug ('Got %d assay IDs' % len(jnum))
+		logger.debug ('Got %d Jnum IDs' % len(jnum))
 		return jnum
 
 	def getMarkerSymbols(self):
@@ -206,17 +282,59 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		structureCol = Gatherer.columnNumber (cols,'_Structure_key')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
+		gelLaneCol = Gatherer.columnNumber (cols, '_GelLane_key')
+
+		# as a pre-processing step, compute the strength for each
+		# gel lane / structure pair
+
+		strengths = {}		# gel lane, structure -> strength
+
+		for row in rows:
+			gelLane = row[gelLaneCol]
+			structure = row[structureCol]
+			strength = row[strengthCol]
+
+			pair = (gelLane, structure)
+
+			if not strengths.has_key(pair):
+				strengths[pair] = strength
+			else:
+				strengths[pair] = maxStrength (strength,
+					strengths[pair])
+
+		logger.debug ('Computed strengths for %d gel results' % \
+			len(strengths))
+
+		# Now, we only want to add rows to each assay for each 
+		# gel lane / structure pair.  For each pair, we pull the
+		# strength from the dictionary we just pre-computed.
+
+		seen = {}		# gel lane, structure -> 1
 
 		for row in rows:
 		    assayKey = row[assayCol]
+		    gelLane = row[gelLaneCol]
+		    structure = row[structureCol]
+
+		    pair = (gelLane, structure)
+		    strength = strengths[pair]
+
+		    # if we have already added a row for this pair, then we
+		    # can move on to the next one
+
+		    if seen.has_key(pair):
+			    continue
+
+		    seen[pair] = 1
+
 		    if extras.has_key(assayKey):
 			extras[row[assayCol]].append( [ row[genotypeCol],
-				row[ageCol], row[strengthCol],
+				row[ageCol], strength,
 				row[structureCol], row[ageMinCol],
 				row[ageMaxCol] ] )
 		    else:
 			extras[row[assayCol]] = [ [ row[genotypeCol],
-				row[ageCol], row[strengthCol],
+				row[ageCol], strength,
 				row[structureCol], row[ageMinCol],
 				row[ageMaxCol] ] ]
 
@@ -316,7 +434,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		ersCols = [ 'result_key', '_Assay_key', 'assayType',
 			'assayID', '_Marker_key', 'symbol', 'system', 'stage',
-			'age', 'structure', 'printname', 'structureKey',
+			'age', 'ageAbbreviation', 'structure', 'printname',
+			'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
 			'jnumID', 'hasImage', '_Genotype_key' ]
 		ersRows = []
@@ -380,6 +499,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    ADVocab.getSystem(structureKey),
 			    ADVocab.getStage(structureKey),
 			    age,
+			    abbreviate(age),
 			    ADVocab.getStructure(structureKey),
 			    ADVocab.getPrintname(structureKey),
 			    ADVocab.getTermKey(structureKey),
@@ -688,7 +808,13 @@ cmds = [
 		and r._Result_key = rs._Result_key''', 
 
 	# 8. additional data for gel assays (skip control lanes)  (note that
-	# there can be > 1 structures per gel lane)
+	# there can be > 1 structures per gel lane).  A gel assay may have
+	# multiple gel lanes.  Each lane can have multiple structures, and
+	# each lane/structure pair defines an expression result (for the
+	# purposes of GXD).  Each lane can have multiple bands, but those are
+	# not defined as being separate results; we will need to consolidate
+	# the strengths for the given bands to come up with a strength for
+	# the lane as a whole.
 
 	'''select g._Assay_key,
 		g._Genotype_key,
@@ -697,7 +823,8 @@ cmds = [
 		st.strength,
 		gs._Structure_key,
 		g.ageMin,
-		g.ageMax
+		g.ageMax,
+		g._GelLane_key
 	from GXD_GelLane g,
 		GXD_GelBand b,
 		GXD_Strength st,
@@ -732,6 +859,7 @@ files = [
 	('expression_result_summary',
 		[ 'result_key', '_Assay_key', 'assayType', 'assayID',
 		'_Marker_key', 'symbol', 'system', 'stage', 'age',
+		'ageAbbreviation',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
 		'_Genotype_key' ],
