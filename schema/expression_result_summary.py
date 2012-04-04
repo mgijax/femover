@@ -23,6 +23,7 @@ createStatement = '''CREATE TABLE %s  (
 	anatomical_system	varchar(255)	null,
 	theiler_stage		varchar(5)	null,
 	age			varchar(50)	null,
+	age_abbreviation	varchar(30)	null,
 	structure		varchar(80)	null,
 	structure_printname	varchar(255)	null,
 	structure_key		int		null,
