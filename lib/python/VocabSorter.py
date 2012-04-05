@@ -11,22 +11,121 @@
 
 import dbAgnostic
 import logger
+import symbolsort
 
 ###--- Globals ---###
 
 VOCAB_SORTER = None		# singleton instance to be shared
+VOCAB_SORTER_ALPHA = None
 
 ###--- PrivateFunctions ---###
 
 def __initialize():
-	global VOCAB_SORTER
+	global VOCAB_SORTER, VOCAB_SORTER_ALPHA
 	if not VOCAB_SORTER:
 		VOCAB_SORTER = VocabSorter()
+		VOCAB_SORTER_ALPHA = VocabSorterAlpha()
 	return
+
+def _vocabNameCmp (a, b):
+	# compare two vocabulary names to order them
+
+	if a is None:
+		if b is None:
+			return 0
+		return -1
+
+	elif b is None:
+		return 1
+
+	return cmp (a.lower(), b.lower())
+
+def _dagNameCmp (a, b):
+	# compare two DAG names to order them
+
+	if a is None:
+		if b is None:
+			return 0
+		return -1
+
+	elif b is None:
+		return 1
+
+	aLower = a.lower()
+	bLower = b.lower()
+
+	# special ordering for the three GO DAGs; alphabetical otherwise
+
+	if aLower == 'molecular function':
+		aLower = 'aaaa'
+	elif aLower == 'cellular component':
+		aLower = 'bbbb'
+	elif aLower == 'biological process':
+		aLower = 'cccc'
+
+	if bLower == 'molecular function':
+		bLower = 'aaaa'
+	elif bLower == 'cellular component':
+		bLower = 'bbbb'
+	elif bLower == 'biological process':
+		bLower = 'cccc'
+
+	return cmp(aLower, bLower)
+
+def _smartTermCmp (a, b):
+	# compare two terms, ordering embedded integers correctly as well
+
+	if a is None:
+		if b is None:
+			return 0
+		return -1
+
+	elif b is None:
+		return 1
+
+	aLower = a.lower()
+	bLower = b.lower()
+
+	return symbolsort.nomenCompare(aLower, bLower)
+
+def _prepareOrderingDictionary (cmd, fn):
+	# execute the command, order the results, and return as a dictionary
+	#	{ key : sequence num }
+	# ordering of terms according to given function 'fn'
+
+	out = {}
+
+	(cols, rows) = dbAgnostic.execute (cmd)
+
+	keyCol = dbAgnostic.columnNumber (cols, 'key')
+	nameCol = dbAgnostic.columnNumber (cols, 'name')
+
+	nameToKeys = {}		# name -> [ key 1, key 2, ... ]
+
+	for row in rows:
+		name = row[nameCol]
+
+		if nameToKeys.has_key(name):
+			nameToKeys[name].append (row[keyCol])
+		else:
+			nameToKeys[name] = [ row[keyCol] ]
+
+	names = nameToKeys.keys()	# list of all names
+	names.sort(fn)
+
+	i = 0
+	for name in names:
+		i = i + 1
+		for key in nameToKeys[name]:
+			out[key] = i
+
+	return out
 
 ###--- Classes ---###
 
 class VocabSorter:
+	# manages sorting terms by depth-first search (DFS)
+
 	def __init__ (self):
 		# maps from (vocab name, term) to the respective term key
 		self.termKeys = {}
@@ -360,16 +459,123 @@ class VocabSorter:
 			len(self.ancestors))
 		return
 
+class VocabSorterAlpha:
+	# manages sorting terms two different ways:
+	#	1. vocab, term
+	#	2. vocab, DAG, term
+	# relies on VocabSorter class for some pieces
+
+	def __init__ (self):
+		self.vocabTerm = {}	# term key -> sequence num
+		self.vocabDagTerm = {}	# term key -> sequence num
+		self._loadData()
+		return
+
+	###--- private methods ---###
+
+	def _loadData (self):
+		# query the database and populate the object's instance
+		# variables
+
+		# get vocabulary names to be ordered
+		cmd1 = '''select name,
+				_Vocab_key as key
+			from voc_vocab'''
+
+		vocabSeqNum = _prepareOrderingDictionary (cmd1, _vocabNameCmp)
+
+		# get DAG names to be ordered
+		cmd2 = '''select name,
+				_DAG_key as key
+			from dag_dag'''
+			
+		dagSeqNum = _prepareOrderingDictionary (cmd2, _dagNameCmp)
+
+		# get terms to be ordered
+
+		cmd3 = '''select term as name,
+				_Term_key as key
+			from voc_term'''
+
+		termSeqNum = _prepareOrderingDictionary (cmd3, _smartTermCmp)
+
+		logger.debug (
+			'Got sort data for %d vocabs, %d dags, %d terms' % \
+			(len(vocabSeqNum), len(dagSeqNum), len(termSeqNum)) )
+
+		# now get all term data so we can order them appropriately
+
+		cmd4 = '''select t._Term_key, t._Vocab_key, d._DAG_key
+			from voc_term t
+			left outer join dag_node d on (
+				t._Term_key = d._Object_key)'''
+
+		(cols, rows) = dbAgnostic.execute (cmd4)
+
+		termCol = dbAgnostic.columnNumber (cols, '_Term_key')
+		vocabCol = dbAgnostic.columnNumber (cols, '_Vocab_key')
+		dagCol = dbAgnostic.columnNumber (cols, '_DAG_key')
+
+		vdtList = []
+		vtList = []
+
+		for row in rows:
+			termKey = row[termCol]
+			vocabKey = row[vocabCol]
+			dagKey = row[dagCol]
+
+			termVal = termSeqNum[termKey]
+			vocabVal = vocabSeqNum[vocabKey]
+
+			if dagKey == None:
+				dagVal = len(dagSeqNum) + 1
+			else:
+				dagVal = dagSeqNum[dagKey]
+
+			vdtList.append ((vocabVal, dagVal, termVal, termKey))
+			vtList.append ((vocabVal, termVal, termKey))
+
+		logger.debug ('Compiled sort data for %d terms' % len(vtList))
+
+		vdtList.sort()
+		vtList.sort()
+
+		logger.debug ('Sorted term lists')
+
+		i = 0
+		for (v, d, t, key) in vdtList:
+			i = i + 1
+			self.vocabDagTerm[key] = i
+
+		i = 0
+		for (v, t, key) in vtList:
+			i = i + 1
+			self.vocabTerm[key] = i
+
+		logger.debug ('Assigned seq nums to terms')
+		return
+
+	###--- public methods ---###
+
+	def getVocabTermSequenceNum (self, termKey):
+		if self.vocabTerm.has_key(termKey):
+			return self.vocabTerm[termKey]
+		return len(self.vocabTerm) + 1
+
+	def getVocabDagTermSequenceNum (self, termKey):
+		if self.vocabDagTerm.has_key(termKey):
+			return self.vocabDagTerm[termKey]
+		return len(self.vocabDagTerm) + 1
 
 ###--- Public Functions ---###
+
+def getTermKey (vocabName, term):
+	__initialize()
+	return VOCAB_SORTER.getTermKey (vocabName, term)
 
 def getSequenceNum (termKey):
 	__initialize()
 	return VOCAB_SORTER.sequenceNum (termKey)
-
-def getSequenceNumByTerm (vocabName, term):
-	__initialize()
-	return getSequenceNum (VOCAB_SORTER.getTermKey (vocabName, term))
 
 def getSequenceNumByID (accID):
 	__initialize()
@@ -391,3 +597,11 @@ def isChildOf (childTerm, parentTerm):
 def isDescendentOf (descendentTerm, ancestorTerm):
 	__initialize()
 	return VOCAB_SORTER.isDescendentOf (descendentTerm, ancestorTerm)
+
+def getVocabTermSequenceNum (termKey):
+	__initialize()
+	return VOCAB_SORTER_ALPHA.getVocabTermSequenceNum (termKey)
+
+def getVocabDagTermSequenceNum (termKey):
+	__initialize()
+	return VOCAB_SORTER_ALPHA.getVocabDagTermSequenceNum (termKey)
