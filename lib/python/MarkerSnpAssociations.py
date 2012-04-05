@@ -36,13 +36,17 @@ LOADED_IDS = False
 
 ###--- Private Functions ---###
 
-def _addAssoc (snpCache, markerKey, snpKey):
+def _addAssoc (snpCache, markerKey, snpKey, coord = None):
 	global SNP_IDS
 
+	# in order to count separate coordinates for a multi-coordinate SNP,
+	# we need to count the SNP key / SNP coordinate pairs
+	pair = (snpKey, coord)
+
 	if snpCache.has_key(markerKey):
-		snpCache[markerKey][snpKey] = 1
+		snpCache[markerKey][pair] = 1
 	else:
-		snpCache[markerKey] = { snpKey : 1 }
+		snpCache[markerKey] = { pair : 1 }
 
 	# initially, no ID found yet
 	SNP_IDS[snpKey] = None
@@ -171,6 +175,31 @@ def _loadDistanceAssociations():
 		logger.debug ('Found %d SNPs on chr %s' % (len(rows),
 			chromosome))
 
+		# Of note, for SNPs with multiple locations, if a marker is
+		# associated with any of the locations for the SNP, then it
+		# should be associated with all locations for the SNP.  So,
+		# we first compile a dictionary with locations for each
+		# multi-location SNP.  Currently no SNPs have locations on
+		# different chromosomes.
+
+		multiLoc = {}	# snp key -> [ coord 1, coord 2, ... ]
+
+		for row in rows:
+			if row[multiCol] == 0:
+				continue
+
+			snpStart = row[startCol]
+			snpKey = row[snpCol]
+
+			if multiLoc.has_key(snpKey):
+				multiLoc[snpKey].append (snpStart)
+			else:
+				multiLoc[snpKey] = [ snpStart ]
+
+		logger.debug ('%d SNPs have 2+ locations' % len(multiLoc))
+
+		# now go through and associate SNPs and markers
+
 		for row in rows:
 			snpStart = row[startCol]
 
@@ -202,8 +231,17 @@ def _loadDistanceAssociations():
 				# overlap
 
 				if mrkStart <= snpStart <= mrkEnd:
+				    if row[multiCol] == 0:
 					_addAssoc (cache, mrkKey, row[snpCol])
-					added = added + 1
+				    else:
+					# We need to add in all locations for
+					# this SNP, not just the location we
+					# found.
+
+					for loc in multiLoc[row[snpCol]]:
+					    _addAssoc (cache, mrkKey,
+						row[snpCol], loc)
+				    added = added + 1
 
 				m = m + 1
 
