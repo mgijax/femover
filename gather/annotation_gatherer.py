@@ -314,7 +314,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
-				0 ]
+				0,
+				VocabSorter.getVocabDagTermSequenceNum(termKey)
+				]
 			sRows.append (sRow)
 
 		logger.debug ('Pulled %d OMIM/MP terms up to markers' % \
@@ -365,7 +367,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
-				999
+				999,
+				VocabSorter.getVocabDagTermSequenceNum(termKey)
 				]
 			sRows.append (sRow)
 
@@ -461,7 +464,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# annotation_sequence_num columns and rows
 		sCols = [ 'annotation_key', 'by_dag_structure',
-			'by_term_alpha', 'by_vocab', 'by_annotation_type' ]
+			'by_term_alpha', 'by_vocab', 'by_annotation_type',
+			'by_vocab_dag_term' ]
 		sRows = []
 
 		# get our sorting maps for vocab and annotation type
@@ -588,7 +592,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
-				byAnnotType[annotTypeKey] ]
+				byAnnotType[annotTypeKey],
+				VocabSorter.getVocabDagTermSequenceNum(termKey)
+				]
 			    sRows.append (sRow)
 
 			    # remember this annotation for later use
@@ -809,7 +815,8 @@ files = [
 
 	('annotation_sequence_num',
 		[ 'annotation_key', 'by_dag_structure', 'by_term_alpha',
-			'by_vocab', 'by_annotation_type' ],
+			'by_vocab', 'by_annotation_type', 'by_vocab_dag_term'
+			],
 		'annotation_sequence_num'),
 	]
 

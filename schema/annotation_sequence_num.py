@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	by_term_alpha		int	not null,
 	by_vocab		int	not null,
 	by_annotation_type	int	not null,
+	by_vocab_dag_term	int	not null,
 	PRIMARY KEY(annotation_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
