@@ -33,6 +33,7 @@ createStatement = '''CREATE TABLE %s  (
 	jnum_id			varchar(40)	null,
 	has_image		int		not null,
 	genotype_key		int		null,
+	is_wild_type		int		not null,
 	PRIMARY KEY(result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

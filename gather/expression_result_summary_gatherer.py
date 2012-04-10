@@ -415,6 +415,39 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Sorted %d genotypes by allele pairs' % i)
 		return
 
+	def getWildTypeAssays (self):
+		# get a dictionary with two types of keys
+		#	genotype key : where the genotype is always wild-type
+		#	(genotype key, assay key) : where the genotype is
+		#		sometimes wild-type, depending partly on the
+		#		type of assay with which it is associated
+
+		wildtype = {}
+
+		# query 11 - genotypes that are always wild-type
+
+		cols, rows = self.results[11]
+
+		for row in rows:
+			wildtype[row[0]] = 1
+
+		logger.debug ('Found %d wild-type genotypes' % len(rows))
+
+		# query 12 - genotype/assay pairs that are wild-type together
+
+		cols, rows = self.results[12]
+
+		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
+
+		for row in rows:
+			wildtype[(row[genotypeCol], row[assayCol])] = 1
+
+		logger.debug ('Found %d wild-type genotype/assay pairs' % \
+			len(rows))
+
+		return wildtype
+
 	def collateResults (self):
 
 		# get caches of data
@@ -430,6 +463,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		inSituExtras = self.getInSituExtraData()
 		gelExtras = self.getGelExtraData()
 
+		wildtype = self.getWildTypeAssays()
+
 		# definitions for expression_result_summary table data
 
 		ersCols = [ 'result_key', '_Assay_key', 'assayType',
@@ -437,7 +472,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			'age', 'ageAbbreviation', 'structure', 'printname',
 			'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
-			'jnumID', 'hasImage', '_Genotype_key' ]
+			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type'
+			]
 		ersRows = []
 
 		# definitions for expression_result_to_imagepane table data
@@ -488,6 +524,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 					hasImage = 1
 					break
 
+		    	if wildtype.has_key(genotypeKey):
+				isWildType = 1
+		    	elif wildtype.has_key( (genotypeKey, assayKey) ):
+				isWildType = 1
+			else:
+		    		isWildType = 0
+
 			newKey = newKey + 1
 
 			outRow = [ newKey,
@@ -509,6 +552,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    jNumbers[refsKey],
 			    hasImage,
 			    genotypeKey,
+			    isWildType,
 			    ]
 
 			ersRows.append (outRow)
@@ -853,6 +897,43 @@ cmds = [
 		VOC_Term t
 	where s._System_key = t._Term_key
 	order by t.term''',
+
+	# 11. genotypes with no allele pairs (treat expression assays for
+	# these as wild type)
+	'''select g._Genotype_key
+	from GXD_Genotype g
+	where g._Genotype_key >= 0
+		and not exists (select 1 from GXD_AllelePair p
+			where g._Genotype_key = p._Genotype_key)''',
+
+	# 12. also treat expression assays for these genotypes as wild type;
+	# these have:
+	#	a. assay type = In situ reporter (knock in) (key 9)
+	#	b. only one allele pair
+	#	c. allele pair with one wild type allele and one other
+	#	d. both alleles for the assayed gene
+	'''select distinct s._Assay_key,
+		s._Genotype_key
+	from GXD_Specimen s,
+		GXD_Assay a,
+		GXD_AlleleGenotype gag1,
+		GXD_AlleleGenotype gag2,
+		ALL_Allele a1,
+		ALL_Allele a2
+	where s._Assay_key = a._Assay_key
+		and a._AssayType_key = 9
+		and s._Genotype_key >= 0
+		and not exists (select 1 from GXD_AllelePair gap
+			where s._Genotype_key = gap._Genotype_key
+			and gap.sequenceNum > 1)
+		and s._Genotype_key = gag1._Genotype_key
+		and gag1._Allele_key = a1._Allele_key
+		and a1.isWildType = 1
+		and s._Genotype_key = gag2._Genotype_key
+		and gag2._Allele_key = a2._Allele_key
+		and a2.isWildType = 0
+		and a1._Marker_key = a._Marker_key
+		and a2._Marker_key = a._Marker_key''',
 	]
 
 files = [
@@ -862,7 +943,7 @@ files = [
 		'ageAbbreviation',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
-		'_Genotype_key' ],
+		'_Genotype_key', 'is_wild_type' ],
 		'expression_result_summary'),
 
 	('expression_result_to_imagepane',
