@@ -9,6 +9,7 @@
 import dbAgnostic
 import logger
 import types
+import symbolsort
 
 ###--- Globals ---###
 
@@ -46,6 +47,18 @@ SORT = 'topoSort'
 TERMKEY = '_Term_key'
 
 ###--- Private Functions ---###
+
+def _vocabDagTermSort (a, b):
+	# compare two terms (stage, lowercase term, lowercase printname,
+	# term key) for sorting
+
+	if a[0] != b[0]:
+		return cmp(a[0], b[0])
+
+	if a[1] != b[1]:
+		return symbolsort.nomenCompare(a[1], b[1])
+
+	return symbolsort.nomenCompare(a[2], b[2])
 
 def _loadConstants():
 	global AD_VOCAB_KEY, AD_TERM_KEY_OFFSET
@@ -432,6 +445,51 @@ def getSystem (structureKey):
 	if TERM.has_key(structureKey):
 		return TERM[structureKey][SYSTEM]
 	return None
+
+def getTermSequenceNumRows(outputColumns):
+	# get rows for the term_sequence_num table
+	# columns: term key, default sort, dfs sort, vocab-dag-term sort
+
+	_loadConstants()
+	_loadTermData()
+
+	toSort = []
+
+	for structureKey in _getStructureKeys():
+		term = TERM[structureKey]
+
+		toSort.append ( (term[STAGE], term[STRUCTURE].lower(),
+			term[PRINTNAME].lower(), term[TERMKEY]) )
+
+	toSort.sort(_vocabDagTermSort)
+
+	i = AD_TERM_KEY_OFFSET
+	vdtSort = {}
+	for (stage, structure, printname, key) in toSort:
+		i = i + 1
+		vdtSort[key] = i
+
+	logger.debug ('Sorted %d by stage, structure' % i) 
+
+	rows = []
+	cols = [ 'term_key', 'by_default', 'by_dfs', 'by_vocab_dag_alpha' ]
+
+	for structureKey in _getStructureKeys():
+		term = TERM[structureKey]
+
+		row = [ term[TERMKEY],
+			AD_TERM_KEY_OFFSET + term[SORT],
+			AD_TERM_KEY_OFFSET + term[SORT],
+			vdtSort[getTermKey(structureKey)]
+			]
+		rows.append (row)
+
+	logger.debug ('Got %d seq num rows for AD structures' % len(rows))
+
+	rows = _morph (cols, rows, outputColumns)
+	logger.debug ('Returning %d AD rows for term_sequence_num table' % \
+		len(rows))
+	return rows
 
 def getTermRows(outputColumns):
 	# get rows for the term table.

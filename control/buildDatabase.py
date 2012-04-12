@@ -169,6 +169,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 	]
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
+	'term_sequence_num',
 	]
 
 # list of high priority gatherers, in order of precedence
