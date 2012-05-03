@@ -469,8 +469,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		ersCols = [ 'result_key', '_Assay_key', 'assayType',
 			'assayID', '_Marker_key', 'symbol', 'system', 'stage',
-			'age', 'ageAbbreviation', 'structure', 'printname',
-			'structureKey',
+			'age', 'ageAbbreviation', 'age_min', 'age_max',
+			'structure', 'printname', 'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
 			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type'
 			]
@@ -543,6 +543,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    ADVocab.getStage(structureKey),
 			    age,
 			    abbreviate(age),
+			    ageMin,
+			    ageMax,
 			    ADVocab.getStructure(structureKey),
 			    ADVocab.getPrintname(structureKey),
 			    ADVocab.getTermKey(structureKey),
@@ -940,7 +942,7 @@ files = [
 	('expression_result_summary',
 		[ 'result_key', '_Assay_key', 'assayType', 'assayID',
 		'_Marker_key', 'symbol', 'system', 'stage', 'age',
-		'ageAbbreviation',
+		'ageAbbreviation', 'age_min', 'age_max',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
 		'_Genotype_key', 'is_wild_type' ],
