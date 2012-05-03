@@ -8,13 +8,18 @@
 #	3. gather data into files (extract it from the source database)
 #	4. convert the files into an appropriate format for the target table
 #	5. load the data files into the new tables
-#	6. create indexes on the data in the new tables
-#    Steps 3-6 run in parallel.  Once data has been gathered for a table, its
+#	6. create the clustering index on the table (if it has one)
+#	7. cluster the data in the table (if it had a clustering index)
+#	8. vacuum and analyze the tables to clean them up
+#	9. create any other indexes on the data in the new tables
+#      10. create foreign keys on the tables
+#      11. add comments to tables, columns, and indexes
+#    Steps 3-11 run in parallel.  Once data has been gathered for a table, its
 #    conversion is started.  Once its file conversion finishes, its bulk
-#    load is started.  Once its load completes, its indexing process is begun.
-#    Each table's indexes are created in parallel as well.  The number of
-#    concurrent gatherers, concurrent data loads, and concurrent indexing
-#    opeartions are configurable values to allow for performance tuning.
+#    load is started.  Once its load completes, its clustering index is begun.
+#    Once the clustering index is complete, the data is clustered by it...
+#    and so on.  Many of these steps have allow a configurable amount of
+#    parallelism (how many of them to execute at a time).
 
 import config
 import sys
@@ -81,6 +86,10 @@ WAITING_FK = []
 # are not critical)
 FAILED_FK = []
 
+# error messages about failed comments (just collect them, as comments
+# are not critical)
+FAILED_COMMENTS = []
+
 # time (in seconds) at which we start the build
 START_TIME = time.time()
 
@@ -99,6 +108,11 @@ CONVERT_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_CONVERT)
 BCPIN_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_BCPIN)
 INDEX_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_INDEX)
 FK_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_FK)
+CLUSTERED_INDEX_DISPATCHER = Dispatcher.Dispatcher (
+	config.CONCURRENT_CLUSTERED_INDEX)
+CLUSTER_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_CLUSTER)
+COMMENT_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_COMMENT)
+OPTIMIZE_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_OPTIMIZE)
 
 # lists of not-yet-finished processes for each type of operation.  Each list
 # item is a tuple of (descriptive string, dispatcher process id).
@@ -107,6 +121,10 @@ CONVERT_IDS = []
 BCPIN_IDS = []
 INDEX_IDS = []
 FK_IDS = []
+CLUSTERED_INDEX_IDS = []
+CLUSTER_IDS = []
+COMMENT_IDS = []
+OPTIMIZE_IDS = []
 
 # integer status values for each type of operation.
 GATHER_STATUS = NOTYET
@@ -114,6 +132,10 @@ CONVERT_STATUS = NOTYET
 BCPIN_STATUS = NOTYET
 INDEX_STATUS = NOTYET
 FK_STATUS = NOTYET
+CLUSTERED_INDEX_STATUS = NOTYET
+CLUSTER_STATUS = NOTYET
+COMMENT_STATUS = NOTYET
+OPTIMIZE_STATUS = NOTYET
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
@@ -290,6 +312,22 @@ def processCommandLine():
 	logger.info ('Found %d gatherers to run' % len(uniqueGatherers))
 	return uniqueGatherers
 
+def checkStderr (dispatcher, id, message):
+	# check the return code for 'id' in 'dispatcher', and if it is errant
+	# then dump stderr and show the given 'message'
+
+	if dispatcher.getReturnCode(id) != 0:
+		print '\n'.join (dispatcher.getStderr(id))
+		raise error, message
+	return
+
+def dbExecuteCmd (cmd):
+	# return a string that is the unix command for calling dbExecute.py
+	# for executing the given database command 'cmd'
+
+	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
+	return "%s '%s'" % (dbExecute, cmd)
+
 def dropForeignKeyConstraints(table):
 	# Purpose: to drop the foreign key constraints that refer to the 
 	#	given table
@@ -322,9 +360,8 @@ def dropForeignKeyConstraints(table):
 
 	(columns, rows) = DBM.execute(cmd)
 	
-	logger.debug ('%d rows, %d columns' % (len(rows), len(columns)))
+#	logger.debug ('%d rows, %d columns' % (len(rows), len(columns)))
 
-	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 	dropFKDispatcher = Dispatcher.Dispatcher(1)
 
 	if not columns:
@@ -337,18 +374,16 @@ def dropForeignKeyConstraints(table):
 	    fk_table = row[tableCol]
 	    constraint_name = row[nameCol]
 
-	    s = "%s 'alter table %s drop constraint if exists %s'" % (
-			dbExecute, fk_table, constraint_name)
+	    s = dbExecuteCmd ('alter table %s drop constraint if exists %s' \
+		% (fk_table, constraint_name) )
 
 	    logger.debug ('dropping %s : %s' % (constraint_name, s))
 
 	    id = dropFKDispatcher.schedule(s)
 	    dropFKDispatcher.wait() 
 
-	    if dropFKDispatcher.getReturnCode(id):
-		print '\n'.join (dropFKDispatcher.getStderr(id))
-		raise error, 'Failed to drop constraint %s' % \
-			constraint_name
+	    checkStderr (dropFKDispatcher, id,
+		'Failed to drop constraint: %s' % constraint_name)
 	return
 
 def dropTables (
@@ -387,13 +422,12 @@ def dropTables (
 
 		dropDispatcher = Dispatcher.Dispatcher(config.CONCURRENT_DROP)
 
-		dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 		for row in rows:
 			dropForeignKeyConstraints(row[0]) 
 
 		for row in rows:
-			id = dropDispatcher.schedule (
-				"%s 'drop table %s cascade'" % (dbExecute, row[0]))
+			id = dropDispatcher.schedule (dbExecuteCmd (
+				"%s 'drop table %s cascade'" % row[0]))
 			items.append ( (row[0], id) )
 	else:
 		# specific tables were specified, so just delete them
@@ -413,10 +447,9 @@ def dropTables (
 	# report and bail out
 
 	for (table, id) in items:
-		if dropDispatcher.getReturnCode(id):
-			print '\n'.join (dropDispatcher.getStderr(id))
-			raise error, 'Failed to drop %s table %s' % (
-				config.TARGET_TYPE, table)
+		checkStderr (dropDispatcher, id, 
+			'Failed to drop %s table %s' % (config.TARGET_TYPE,
+				table) )
 
 	# report how many tables were dropped
 	if FULL_BUILD:
@@ -456,10 +489,9 @@ def createTables (
 	# look for and report errors; if one is found, exit
 
 	for (table, id) in items:
-		if createDispatcher.getReturnCode(id):
-			print '\n'.join (createDispatcher.getStderr(id))
-			raise error, 'Failed to create %s table %s' % (
-				config.TARGET_TYPE, table)
+		checkStderr (createDispatcher, id, 
+			'Failed to create %s table %s' % (
+				config.TARGET_TYPE, table) )
 
 	logger.info ('Created %d table(s): %s' % (len(items),
 		', '.join (tables)) )
@@ -483,22 +515,26 @@ def dispatcherReport():
 	if (time.time() - 60) <= REPORT_TIME:
 		return
 
-	# produce reports for the three concurrent processes
+	# produce reports for the concurrent processes
 
 	dispatchers = [ ('gather', GATHER_DISPATCHER),
 			('convert', CONVERT_DISPATCHER),
 			('load', BCPIN_DISPATCHER),
+			('cluster index', CLUSTERED_INDEX_DISPATCHER),
+			('cluster', CLUSTER_DISPATCHER),
+			('analyze', OPTIMIZE_DISPATCHER),
 			('index', INDEX_DISPATCHER),
-			('foreign keys', FK_DISPATCHER)
+			('foreign keys', FK_DISPATCHER),
+			('comment', COMMENT_DISPATCHER),
 			]
 
 	for (name, dispatcher) in dispatchers:
-		logger.debug ('%-14s : %d active : %d waiting' % (name,
+		logger.debug ('%-13s : %d active : %d waiting' % (name,
 			dispatcher.getActiveProcessCount(),
 			dispatcher.getWaitingProcessCount() ) )
 
 	if WAITING_FK:
-		logger.debug ('%-14s : %d not scheduled' % (
+		logger.debug ('%-13s : %d not scheduled' % (
 			'foreign keys', len(WAITING_FK)) )
 
 	REPORT_TIME = time.time() 	# update time of last report
@@ -591,23 +627,23 @@ def checkForFinishedGathering():
 
 		if GATHER_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del GATHER_IDS[i]
-			if GATHER_DISPATCHER.getReturnCode(id) == 0:
-				for line in GATHER_DISPATCHER.getStdout(id):
-					line = line.strip()
 
-					[ inputFile, table ] = line.split()
+			checkStderr (GATHER_DISPATCHER, id,
+				'Gathering failed for %s' % table)
 
-					if not FULL_BUILD:
-						dropTables( [table] )
-					createTables (table)
-					scheduleConversion (table, inputFile)
+			for line in GATHER_DISPATCHER.getStdout(id):
+				line = line.strip()
 
-					logger.debug ('Scheduled conversion of %s for %s' % (inputFile, table))
-			else:
-				# an error occurred in gathering, so bail out
-				print '\n'.join (
-					GATHER_DISPATCHER.getStderr(id) )
-				raise error, 'Gathering failed for %s' % table
+				[ inputFile, table ] = line.split()
+
+				if not FULL_BUILD:
+					dropTables( [table] )
+				createTables (table)
+				scheduleConversion (table, inputFile)
+
+				logger.debug (
+					'Scheduled conversion of %s for %s' \
+						% (inputFile, table) )
 		i = i - 1
 
 	# if the last gatherer finished, then report that our gathering stage
@@ -665,15 +701,13 @@ def checkForFinishedConversion():
 
 		if CONVERT_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del CONVERT_IDS[i]
-			if CONVERT_DISPATCHER.getReturnCode(id) == 0:
-				scheduleLoad(table, path)
-			else:
-				# conversion failed, so report it and bail out
 
-				print '\n'.join (
-					CONVERT_DISPATCHER.getStderr(id))
-				raise error, 'Conversion failed for %s' % \
-					table
+			checkStderr (CONVERT_DISPATCHER, id,
+				'Conversion failed for %s' % table)
+
+			logger.debug ('Finished conversion of %s' % table)
+			scheduleLoad(table, path)
+
 		i = i - 1
 
 	# if the gathering stage finished and there are no more unfinished
@@ -684,6 +718,52 @@ def checkForFinishedConversion():
 		dbInfoTable.setInfo ('status',
 			'finished file conversions')
 		logger.debug ('Last file conversion finished')
+	return
+
+def askTable (table, flag, description):
+	# interrogate the script representing 'table' for the given
+	# command-line 'flag' and return its output, if any.  In case of
+	# error, use 'description' to compose an error message.
+
+	script = os.path.join (config.SCHEMA_DIR, table + '.py')
+	myDispatcher = Dispatcher.Dispatcher()
+	id = myDispatcher.schedule ('%s %s' % (script, flag))
+	myDispatcher.wait()
+
+	checkStderr (myDispatcher, id, 'Failed to %s for %s' % (description,
+		table) )
+
+	lines = myDispatcher.getStdout(id)
+	return lines 
+		
+def scheduleClusteredIndex (table):
+	global CLUSTERED_INDEX_DISPATCHER, CLUSTERED_INDEX_IDS
+	global CLUSTERED_INDEX_STATUS
+
+	# ask the table's script for its clustered index
+
+	stmts = askTable(table, '--sci', 'get clustered index statement')
+
+	hasClusteredIndex = False
+
+	if stmts:
+		stmt = stmts[0].strip()
+		if stmt:
+			id = CLUSTERED_INDEX_DISPATCHER.schedule (
+				dbExecuteCmd (stmt))
+			CLUSTERED_INDEX_IDS.append ( (table, stmt, id) )
+			hasClusteredIndex = True
+
+			if CLUSTERED_INDEX_STATUS != WORKING:
+				CLUSTERED_INDEX_STATUS = WORKING
+				logger.debug ('Began first clustered index') 
+
+	if not hasClusteredIndex:
+		# if there was no clustered index on this table, then we do
+		# not need the cluster and optimize steps, either, so skip
+		# ahead and add the other indexes
+
+		scheduleIndexes(table)
 	return
 
 def scheduleIndexes (
@@ -700,27 +780,16 @@ def scheduleIndexes (
 
 	# ask the table's script for its list of indexes
 
-	script = os.path.join (config.SCHEMA_DIR, table + '.py')
-	indexDispatcher = Dispatcher.Dispatcher()
-	id = indexDispatcher.schedule ('%s --si' % script)
-	indexDispatcher.wait()
-
-	if indexDispatcher.getReturnCode(id):
-		print '\n'.join (indexDispatcher.getStderr(id))
-		raise error, 'Failed to get index creation scripts for %s' % \
-			table
+	statements = askTable (table, '--si', 'get index creation scripts')
 
 	# each index creation statement will appear on a separate line; as we
 	# find them, schedule execution of that 'create index' command
 
-	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
-
 	INDEXING_TABLES[table] = []
 
 	hadIndex = False
-	for stmt in indexDispatcher.getStdout(id):
-		id = INDEX_DISPATCHER.schedule ("%s '%s'" % (dbExecute,
-			stmt.strip() ) )
+	for stmt in statements:
+		id = INDEX_DISPATCHER.schedule (dbExecuteCmd (stmt.strip() ) )
 		INDEX_IDS.append ( (stmt.strip(), id) )
 		INDEXING_TABLES[table].append(id)
 		TABLE_BY_INDEX_ID[id] = table
@@ -728,6 +797,7 @@ def scheduleIndexes (
 
 	if not hadIndex:
 		scheduleForeignKeys(table)
+		scheduleComments(table)
 
 	# if this is our first index creation, report it
 
@@ -758,15 +828,13 @@ def checkForFinishedLoad():
 
 		if BCPIN_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del BCPIN_IDS[i]
-			if BCPIN_DISPATCHER.getReturnCode(id) == 0:
-				scheduleIndexes(table)
-				os.remove(path)
-			else:
-				# the load failed, so report it and bail out
 
-				print '\n'.join (
-					BCPIN_DISPATCHER.getStderr(id))
-				raise error, 'Load failed for %s' % table
+			checkStderr (BCPIN_DISPATCHER, id,
+				'Load failed for %s' % table)
+
+			logger.debug ('Finished loading %s' % table)
+			scheduleClusteredIndex(table)
+			os.remove(path)
 
 		i = i - 1
 
@@ -777,6 +845,178 @@ def checkForFinishedLoad():
 		BCPIN_STATUS = ENDED
 		logger.debug ('Last bulk load finished')
 		dbInfoTable.setInfo ('status', 'finished loading data')
+	return
+
+def scheduleClustering (table):
+	global CLUSTER_DISPATCHER, CLUSTER_IDS, CLUSTER_STATUS
+
+	# ask the table's script for its data clustering command
+
+	stmts = askTable(table, '--scl', 'get clustering statement')
+
+	hasClustering = False
+
+	if stmts:
+		stmt = stmts[0].strip()
+		if stmt:
+			id = CLUSTER_DISPATCHER.schedule (dbExecuteCmd (stmt))
+			CLUSTER_IDS.append ( (table, stmt, id) )
+			hasClustering = True
+
+			if CLUSTER_STATUS != WORKING:
+				CLUSTER_STATUS = WORKING
+				logger.debug ('Began clustering data') 
+
+	if not hasClustering:
+		# if there was no clustering for this table, then we do not
+		# need the optimize step, so skip ahead and add other indexes
+
+		scheduleIndexes(table)
+	return
+
+def scheduleOptimization (table):
+	global OPTIMIZE_DISPATCHER, OPTIMIZE_IDS, OPTIMIZE_STATUS
+
+	# ask the table's script for its table optimization command
+
+	script = os.path.join (config.SCHEMA_DIR, '%s.py' % table)
+	id = OPTIMIZE_DISPATCHER.schedule ('%s --opt' % script)
+	OPTIMIZE_IDS.append ( (table, id) )
+
+	if OPTIMIZE_STATUS != WORKING:
+		OPTIMIZE_STATUS = WORKING
+		logger.debug ('Began optimizing tables') 
+	return
+
+def checkForFinishedClusteredIndexes():
+	# Purpose: look for any clustered index creation processes that have
+	#	finished
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed index
+
+	global CLUSTERED_INDEX_IDS, CLUSTERED_INDEX_DISPATCHER
+	global CLUSTERED_INDEX_STATUS
+
+	# walk backward through the list of unfinished indexing processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(CLUSTERED_INDEX_IDS) - 1
+	while (i >= 0):
+		(table, cmd, id) = CLUSTERED_INDEX_IDS[i]
+
+		# if we detect a finished indexing process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then report it and bail out
+
+		if CLUSTERED_INDEX_DISPATCHER.getStatus(id) == \
+				Dispatcher.FINISHED:
+
+			del CLUSTERED_INDEX_IDS[i]
+
+			checkStderr (CLUSTERED_INDEX_DISPATCHER, id,
+				'Indexing failed on: %s' % cmd)
+
+			logger.debug('Finished clustered index on %s' % table)
+			scheduleClustering(table)
+
+		i = i - 1
+
+	# if the load processes have all finished and there are no unfinished
+	# indexing processes, then the indexing stage is done -- report it
+
+	if (BCPIN_STATUS == ENDED) and (not CLUSTERED_INDEX_IDS) and \
+			(CLUSTERED_INDEX_STATUS != ENDED):
+		CLUSTERED_INDEX_STATUS = ENDED
+		logger.debug ('Last clustered index finished')
+		dbInfoTable.setInfo ('status', 'finished clustered indexes')
+	return
+
+def checkForFinishedClustering():
+	# Purpose: look for any data clustering processes that have finished
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed command
+
+	global CLUSTER_IDS, CLUSTER_DISPATCHER, CLUSTER_STATUS
+
+	# walk backward through the list of unfinished cluster processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(CLUSTER_IDS) - 1
+	while (i >= 0):
+		(table, cmd, id) = CLUSTER_IDS[i]
+
+		# if we detect a finished clustering process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then report it and bail out
+
+		if CLUSTER_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+
+			del CLUSTER_IDS[i]
+
+			checkStderr (CLUSTER_DISPATCHER, id,
+				'Clustering failed on: %s' % cmd)
+
+			logger.debug('Finished clustering %s' % table)
+			scheduleOptimization(table)
+
+		i = i - 1
+
+	# if the clustered index processes have all finished and there are no
+	# unfinished clustering processes, then the clustering stage is done
+	# -- report it
+
+	if (CLUSTERED_INDEX_STATUS == ENDED) and (not CLUSTER_IDS) and \
+			(CLUSTER_STATUS != ENDED):
+		CLUSTER_STATUS = ENDED
+		logger.debug ('Last clustering finished')
+		dbInfoTable.setInfo ('status', 'finished clustering data')
+	return
+
+def checkForFinishedOptimization():
+	# Purpose: look for table optimization processes that have finished
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed command
+
+	global OPTIMIZE_IDS, OPTIMIZE_DISPATCHER, OPTIMIZE_STATUS
+
+	# walk backward through the list of unfinished cluster processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(OPTIMIZE_IDS) - 1
+	while (i >= 0):
+		(table, id) = OPTIMIZE_IDS[i]
+
+		# if we detect a finished clustering process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then report it and bail out
+
+		if OPTIMIZE_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+
+			del OPTIMIZE_IDS[i]
+
+			checkStderr (OPTIMIZE_DISPATCHER, id,
+				'Table optimization failed on: %s' % table)
+
+			logger.debug('Finished optimizing %s' % table)
+			scheduleIndexes(table)
+
+		i = i - 1
+
+	# if the clustering processes have all finished and there are no
+	# unfinished optimization processes, then the optimizing stage is done
+	# -- report it
+
+	if (CLUSTER_STATUS == ENDED) and (not OPTIMIZE_IDS) and \
+			(OPTIMIZE_STATUS != ENDED):
+		OPTIMIZE_STATUS = ENDED
+		logger.debug ('Last optimization finished')
+		dbInfoTable.setInfo ('status', 'finished optimizing tables')
 	return
 
 def checkForFinishedIndexes():
@@ -802,10 +1042,9 @@ def checkForFinishedIndexes():
 
 		if INDEX_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del INDEX_IDS[i]
-			if INDEX_DISPATCHER.getReturnCode(id) != 0:
-				print '\n'.join ( \
-					INDEX_DISPATCHER.getStderr(id))
-				raise error, 'Indexing failed on: %s' % cmd
+
+			checkStderr (INDEX_DISPATCHER, id, 
+				'Indexing failed on: %s' % cmd)
 
 			# see if this table's indexes are done
 
@@ -817,6 +1056,7 @@ def checkForFinishedIndexes():
 				DONE_TABLES.append(table)
 				del INDEXING_TABLES[table]
 				scheduleForeignKeys(table)
+				scheduleComments(table)
 				logger.debug ('Finished indexing %s' % table)
 		i = i - 1
 
@@ -827,6 +1067,34 @@ def checkForFinishedIndexes():
 		INDEX_STATUS = ENDED
 		logger.debug ('Last index finished')
 		dbInfoTable.setInfo ('status', 'finished indexing')
+	return
+
+def scheduleComments (table):
+	# Purpose: to schedule the creation of the comments on the given
+	#	table
+	# Returns: nothing
+	# Assumes: the given 'table' has had its indexing finished
+	# Modifies: creates comments for 'table', its columns, and its
+	#	indexes; updates globals listed	below
+	# Throws: 'error' if we cannot discover what comments to create
+
+	global COMMENT_IDS, COMMENT_STATUS, COMMENT_DISPATCHER
+
+	# ask the table's script for its list of comments
+
+	statements = askTable (table, '--sc', 'get comment statements')
+
+	# each comment statement will appear on a separate line
+
+	for stmt in statements:
+		id = COMMENT_DISPATCHER.schedule(dbExecuteCmd(stmt))
+		COMMENT_IDS.append ( (table, stmt, id) )
+
+	# if this is our first comment creation, report it
+
+	if (COMMENT_STATUS != WORKING) and statements:
+		COMMENT_STATUS = WORKING
+		logger.debug ('Began adding schema comments')
 	return
 
 def scheduleForeignKeys(table = None, doAll = False):
@@ -844,23 +1112,15 @@ def scheduleForeignKeys(table = None, doAll = False):
 	# ask the table's script for its list of foreign keys
 
 	if table:
-		script = os.path.join (config.SCHEMA_DIR, table + '.py')
-		fkDispatcher = Dispatcher.Dispatcher()
-		id = fkDispatcher.schedule ('%s --sk' % script)
-		fkDispatcher.wait()
-
-		if fkDispatcher.getReturnCode(id):
-			print '\n'.join (fkDispatcher.getStderr(id))
-			raise error, \
-			'Failed to get foreign key creation scripts for %s' \
-				% table
+		statements = askTable (table, '--sk',
+			'get foreign key creation statements')
 
 		# each fk creation statement will appear on a separate line;
 		# add them to the list of waiting commands.  We shouldn't
 		# schedule them until the tables have both been indexed, for
 		# performance reasons.
 
-		for stmt in fkDispatcher.getStdout(id):
+		for stmt in statements:
 			items = stmt.strip().split()
 			table1 = items[2]
 			table2 = items[10]
@@ -871,15 +1131,13 @@ def scheduleForeignKeys(table = None, doAll = False):
 	# indexed
 
 	ranOne = False
-	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 
 	i = len(WAITING_FK) - 1
 	while i >= 0:
 		(table1, table2, cmd) = WAITING_FK[i]
 		if ((table1 in DONE_TABLES) and (table2 in DONE_TABLES)) or \
 		    doAll:
-			id = FK_DISPATCHER.schedule ("%s '%s'" % (dbExecute,
-				cmd.strip() ) )
+			id = FK_DISPATCHER.schedule (dbExecuteCmd (cmd.strip() ))
 			FK_IDS.append ( (cmd.strip(), id) )
 			del WAITING_FK[i] 
 
@@ -897,6 +1155,59 @@ def scheduleForeignKeys(table = None, doAll = False):
 	if (FK_STATUS != WORKING) and ranOne:
 		FK_STATUS = WORKING
 		logger.debug ('Began creating foreign keys')
+	return
+
+def checkForFinishedComments():
+	# Purpose: look for any comment creation processes that are done
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: globals shown below
+	# Throws: 'error' if we detect a failed statement
+
+	global COMMENT_IDS, COMMENT_DISPATCHER, COMMENT_STATUS
+	global FAILED_COMMENTS
+
+	# walk backward through the list of unfinished comment processes,
+	# so as we delete some the loop is not disturbed
+
+	i = len(COMMENT_IDS) - 1
+	while (i >= 0):
+		(table, cmd, id) = COMMENT_IDS[i]
+
+		# if we detect a finished process, remove it from
+		# the list of unfinished processes and look to see if it
+		# failed.  if it failed, then remember it so we can report it
+		# later.  We do not want the whole build to fail just for a
+		# comment failure.
+
+		if COMMENT_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del COMMENT_IDS[i]
+			if COMMENT_DISPATCHER.getReturnCode(id) != 0:
+				FAILED_COMMENTS.append ('\n'.join ( \
+					COMMENT_DISPATCHER.getStderr(id)) )
+
+			# see if this table has any other outstanding comments
+
+			appearsAgain = False
+			for (table2, cmd2, id2) in COMMENT_IDS:
+				if table == table2:
+					appearsAgain = True
+					break
+
+			if not appearsAgain:
+				logger.debug ('Finished comments for %s' % \
+					table)
+		i = i - 1
+
+	# if the indexing processes have all finished and there are no
+	# unfinished comment processes, then the comment stage is done --
+	# report it
+
+	if (INDEX_STATUS == ENDED) and (not COMMENT_IDS) and \
+			(COMMENT_STATUS != ENDED):
+		COMMENT_STATUS = ENDED
+		logger.debug ('Last comment was added')
+		dbInfoTable.setInfo ('status', 'finished adding comments')
 	return
 
 def checkForFinishedForeignKeys():
@@ -917,16 +1228,17 @@ def checkForFinishedForeignKeys():
 
 		# if we detect a finished process, remove it from
 		# the list of unfinished processes and look to see if it
-		# failed.  if it failed, then report it and bail out
+		# failed.  if it failed, then remember it so we can report it
+		# later.  We do not want the whole build to fail just for a
+		# foreign key failure.
 
 		if FK_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del FK_IDS[i]
 			if FK_DISPATCHER.getReturnCode(id) != 0:
 				FAILED_FK.append ('\n'.join ( \
 					FK_DISPATCHER.getStderr(id)) )
-#				raise error, 'Foreign key failed on: %s' % cmd
 
-			# see if this table's foreing keys are done
+			# see if this table's foreign keys are done
 
 			table = TABLE_BY_FK_ID[id]
 			del TABLE_BY_FK_ID[id]
@@ -1025,15 +1337,22 @@ def main():
 	scheduleGatherers(gatherers)
 	dbInfoTable.setInfo ('status', 'gathering data')
 
-	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, INDEX_STATUS):
+	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, INDEX_STATUS, CLUSTERED_INDEX_STATUS, CLUSTER_STATUS, OPTIMIZE_STATUS):
 		if GATHER_STATUS != ENDED:
 			checkForFinishedGathering()
 		if CONVERT_STATUS != ENDED:
 			checkForFinishedConversion()
 		if BCPIN_STATUS != ENDED:
 			checkForFinishedLoad()
+		if CLUSTERED_INDEX_STATUS != ENDED:
+			checkForFinishedClusteredIndexes()
+		if CLUSTER_STATUS != ENDED:
+			checkForFinishedClustering()
+		if OPTIMIZE_STATUS != ENDED:
+			checkForFinishedOptimization()
 		checkForFinishedIndexes()
 		checkForFinishedForeignKeys()
+		checkForFinishedComments()
 		dispatcherReport()
 		time.sleep(0.5)
 
@@ -1043,14 +1362,22 @@ def main():
 	GATHER_DISPATCHER.wait()
 	CONVERT_DISPATCHER.wait()
 	BCPIN_DISPATCHER.wait()
+	CLUSTERED_INDEX_DISPATCHER.wait()
+	CLUSTER_DISPATCHER.wait()
+	OPTIMIZE_DISPATCHER.wait()
 	INDEX_DISPATCHER.wait()
 	scheduleForeignKeys(doAll = True)	# any remaining ones
+	COMMENT_DISPATCHER.wait(dispatcherReport)
+	checkForFinishedComments()
 	FK_DISPATCHER.wait(dispatcherReport)
 	checkForFinishedForeignKeys()
 
 	if FAILED_FK:
 		for item in FAILED_FK:
 			logger.debug ('Failed FK: %s' % item)
+	if FAILED_COMMENTS:
+		for item in FAILED_COMMENTS:
+			logger.debug ('Failed comment: %s' % item)
 	return
 
 def hms (x):
@@ -1082,7 +1409,11 @@ if __name__ == '__main__':
 		GATHER_DISPATCHER.terminateProcesses()
 		CONVERT_DISPATCHER.terminateProcesses()
 		BCPIN_DISPATCHER.terminateProcesses()
+		CLUSTERED_INDEX_DISPATCHER.terminateProcesses()
+		CLUSTER_DISPATCHER.terminateProcesses()
+		OPTIMIZE_DISPATCHER.terminateProcesses()
 		INDEX_DISPATCHER.terminateProcesses()
+		COMMENT_DISPATCHER.terminateProcesses()
 		FK_DISPATCHER.terminateProcesses()
 
 	elapsed = hms(time.time() - START_TIME)
