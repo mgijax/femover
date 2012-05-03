@@ -26,7 +26,12 @@ import subprocess
 # this string is omitted from the output (except tab and newline, which are
 # escaped)
 ACCEPTABLE_CHARACTERS = string.digits + string.letters + \
-	'''-&=#,:. _?+<>()'"/[]*;|%@'''
+	'''-&=#,:. _?+<>()'"/[]*;|%~@{}'''
+
+# which characters should be replaced with spaces?  (This is needed because
+# the MGI_Note table uses a char(255) and simply omitting these characters
+# will throw the spacing off.)
+REPLACE_WITH_SPACE = '\r'
 
 # number of subprocesses to use
 SUBPROC_COUNT = 4
@@ -80,12 +85,19 @@ def cleanLines(lines):
 		while i < lineLength:
 			if line[i] not in ACCEPTABLE_CHARACTERS:
 				if line[i] == '\t':
+					# escape the tab character
 					cleanLine = cleanLine + line[last:i] \
 						+ '\\\t'
 				elif line[i] == '\\':
+					# escape the backslash
 					cleanLine = cleanLine + line[last:i] \
 						+ '\\\\'
+				elif line[i] in REPLACE_WITH_SPACE:
+					# replace it with a space
+					cleanLine = cleanLine + line[last:i] \
+						+ ' '
 				else:
+					# skip the errant character
 					cleanLine = cleanLine + line[last:i]
 				last = i + 1
 			i = i + 1
@@ -122,6 +134,7 @@ def cleanLines(lines):
 
 	# if we ended with a partial line, write it out (should not happen, as
 	# BCP should properly terminate all records with #=#)
+	# (skip it, or postgres will likely fail anyway)
 	if partialLine:
 		output.append (partialLine)
 
