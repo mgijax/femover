@@ -36,13 +36,18 @@ CONCURRENT_DROP=1             # drop statements for target tables (should
 CONCURRENT_GATHER=4	      # number of gatherers (extracting data from mgd)
 CONCURRENT_CONVERT=4	      # output file cleanup
 CONCURRENT_BCPIN=1            # bcp in statements
+CONCURRENT_CLUSTERED_INDEX=1  # create clustered index statements
+CONCURRENT_CLUSTER=1          # cluster data statements
+CONCURRENT_OPTIMIZE=1         # table optimization statements
+CONCURRENT_COMMENT=3          # create comment statements
 CONCURRENT_INDEX=2            # create index statements
 CONCURRENT_FOREIGN_KEY=1      # create foreign key statements
 
 export CONCURRENT_DROP CONCURRENT_CREATE
 export CONCURRENT_BCPIN CONCURRENT_INDEX
 export CONCURRENT_GATHER CONCURRENT_CONVERT
-export CONCURRENT_FOREIGN_KEY
+export CONCURRENT_FOREIGN_KEY CONCURRENT_OPTIMIZE CONCURRENT_COMMENT
+export CONCURRENT_CLUSTERED_INDEX CONCURRENT_CLUSTER
 
 #
 # Logging levels.
