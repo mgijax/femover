@@ -36,8 +36,23 @@ keys = {
 	'result_key' : ('expression_result_summary', 'result_key'),
 	}
 
+comments = {
+	Table.TABLE : 'petal table for expression result flower; contains various pre-computed sorts to allow for easy ordering of expression results.  There will be exactly one row in this table for each row in expression_result_summary.',
+	Table.COLUMN : {
+	    'result_key' : 'foreign key to expression_result_summary; specifies the result to which this row corresponds',
+	    'by_assay_type' : 'sort by assay tpye, symbol, age min, age max, structure, stage, and whether expressed',
+	    'by_gene_symbol' : 'sort by symbol, assay type, age min, age max, structure, stage, and whether expressed',
+	    'by_anatomical_system' : 'sort by system, structure, stage, age min, age max, whether expressed, and symbol',
+	    'by_age' : 'sort by age min, age max, structure, stage, whether expressed, symbol, and assay type',
+	    'by_structure' : 'sort by structure, stage, age min, age max, whether expressed, symbol, and assay type',
+	    'by_expressed' : 'sort by whether expressed, symbol, assay type, age min, age max, structure, and stage',
+	    'by_mutant_alleles' : 'sort by mutant allele symbols, gene symbol, assay type, age min, age max, structure, and stage',
+	    'by_reference' : 'sort by reference citation, symbol, assay type, age min, age max, structure, and stage',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments)
 
 ###--- Main program ---###
 

@@ -25,8 +25,19 @@ indexes = {
 	'display_type' : 'create index %s on %s (display_type)',
 	}
 
+comments = {
+	Table.TABLE : 'petal table for the accession flower; contains displayable object types.  These differ from the standard object types in that they are more specific.  For example, mapping experiments are one object type, but have several displayable object types, one for each type of mapping experiment.',
+	Table.COLUMN : {
+	    'display_type_key' : 'unique key identifying an object type for display purposes',
+	    'display_type' : 'the displayable object type',
+		},
+	Table.INDEX : {
+	    'display_type' : 'for searching by the displayable object type',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, comments)
 
 ###--- Main program ---###
 

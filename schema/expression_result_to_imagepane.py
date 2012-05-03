@@ -24,8 +24,9 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
+clusteredIndex = ('result_key', 'create index %s on %s (result_key)')
+
 indexes = {
-	'result_key' : 'create index %s on %s (result_key)',
 	'imagepane_key' : 'create index %s on %s (imagepane_key)',
 	}
 
@@ -35,8 +36,23 @@ keys = {
 	'imagepane_key' : ('expression_imagepane', 'imagepane_key'),
 	}
 
+comments = {
+	Table.TABLE : 'join table; relates expression results to their associated image panes',
+	Table.COLUMN : {
+		'unique_key' : 'integer key; needed for Hibernate to have object identity, no other purpose',
+		'result_key' : 'foreign key to expression_result_summary; specifies which expression result is associated with the image pane',
+		'imagepane_key' : 'foreign key to expression_imagepane; specifies which image pane is associated with the expression result',
+		'sequence_num' : 'used to order the image panes for a given expression result',
+		},
+	Table.INDEX : {
+		'result_key' : 'clustered so image panes for a given expression result will be stored near each other',
+		'imagepane_key' : 'for quick access to all expression results for a given image pane',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+	clusteredIndex)
 
 ###--- Main program ---###
 

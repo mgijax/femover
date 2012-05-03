@@ -52,8 +52,17 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {}
 
+comments = {
+	Table.TABLE : 'standalone table; contains data about when this database was last updated, what its source database was, and other metadata.  Each record contains one property name and its associated value.',
+	Table.COLUMN : {
+	    'unique_key' : 'uniquely identifies records in this table',
+	    'name' : 'name of the property being described',
+	    'value' : 'value of the property, as a string',
+		},
+	}
+
 # global instance of this Table object
-table = databaseInfoTable (tableName, createStatement, indexes)
+table = databaseInfoTable (tableName, createStatement, indexes, comments)
 
 ###--- Main program ---###
 

@@ -24,15 +24,29 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'logical_db' : 'create index %s on %s (logical_db)',
-	}
-
+indexes = {}
+clusteredIndex = ('logical_db', 'create index %s on %s (logical_db)')
+ 
 # column name -> (related table, column in related table)
 keys = {}
 
+comments = {
+	Table.TABLE : 'standalone table; contains actual databases and their URLs for each logical database.  Each logical database can have multiple actual databases, and hence multiple rows in this table.',
+	Table.COLUMN : {
+	    'actualdb_key' : 'unique key identifying the actual database (same as _ActualDB_key in mgd)',
+	    'logical_db' : 'name of the logical database for this actual database',
+	    'actual_db' : 'name of the actual database for this row',
+	    'url' : 'URL to use when linking to an ID for this actual database (contains @@@@ where the ID should be substituted)',
+	    'sequence_num' : 'provided for ordering the actual databases of a logical database',
+		},
+	Table.INDEX : {
+	    'logical_db' : 'provided for finding the actual databases for a desired logical database.  Used to cluster the data.',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+	clusteredIndex)
 
 ###--- Main program ---###
 

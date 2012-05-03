@@ -21,6 +21,10 @@ USAGE = '''Usage: %s [--dt|--ct|--di|--ci|--dk|--ck|--dt|--ct|--lf <file>]
 	--lf : load file (with full path to file specified)
 	--si : show 'create index' statements
 	--sk : show 'create foreign key' statements
+	--sc : show 'comment' statements
+	--sci : show 'create index' statement for clustering index
+	--scl : show 'cluster' statement
+	--opt : optimize table (vacuum and analyze, for postgres)
     Notes:
     	1. At least one command-line option must be specified.
 	2. If one or more operations fail, this script will exit with a
@@ -28,7 +32,8 @@ USAGE = '''Usage: %s [--dt|--ct|--di|--ci|--dk|--ck|--dt|--ct|--lf <file>]
 	   is not guaranteed to be correct.
 	3. In the case of multiple command-line options, they are executed
 	   in a certain order (left to right):
-		--dk, --di, --dt, --ct, --lf, --ci, --ck, --si, --sk
+		--dk, --di, --dt, --ct, --lf, --ci, --ck, --si, --sk, --sc,
+		--sci, --scl, --opt
 ''' % os.path.basename(sys.argv[0])
 
 # exception raised if things go wrong
@@ -50,6 +55,12 @@ elif config.TARGET_TYPE == 'postgres':
 		config.TARGET_PASSWORD)
 else:
 	raise Error, 'Unknown value for config.TARGET_TYPE'
+
+# types of comments allowed
+
+TABLE = 'table'
+COLUMN = 'column'
+INDEX = 'index'
 
 ###--- Functions ---###
 
@@ -105,6 +116,31 @@ def loadFile (filename,	# string; full path to the data file to load
 			config.TARGET_TYPE)
 	return
 
+def optimizeTable (myTable	# Table object upon which to operate
+	):
+	if config.TARGET_TYPE == 'mysql':
+		pass
+	elif config.TARGET_TYPE == 'postgres':
+		pgDispatcher = Dispatcher.Dispatcher()
+		script = os.path.join (config.CONTROL_DIR,
+			'optimizeTablePostgres.sh')
+		id = pgDispatcher.schedule (
+			'%s %s %s %s %s %s' % (
+				script,
+				config.TARGET_HOST,
+				config.TARGET_DATABASE,
+				config.TARGET_USER,
+				config.TARGET_PASSWORD,
+				myTable.getName() ) )
+		pgDispatcher.wait()
+		if pgDispatcher.getReturnCode(id):
+			bailout ('Failed to optimize %s table in postgres' % \
+				myTable.getName() )
+	else:
+		bailout ('Unknown config.TARGET_TYPE : %s' % \
+			config.TARGET_TYPE)
+	return 
+
 def main (
 	myTable		# Table object upon which to operate
 	):
@@ -124,7 +160,7 @@ def main (
 	userFlags = sys.argv[1:]
 
 	# order in which we must execute the user's specified flags
-	flagOrder = '--dk --di --dt --ct --lf --ci --ck --si --sk'.split()
+	flagOrder = '--dk --di --dt --ct --lf --ci --ck --si --sk --sc --sci --scl --opt'.split()
 
 	# check that all user-specified flags are recognized
 	priorFlag = ''
@@ -162,6 +198,19 @@ def main (
 				stmts = myTable.getForeignKeyCreationStatements()
 				for stmt in stmts:
 					print stmt
+			elif flag == '--sc':
+				for stmt in myTable.getCommentStatements():
+					print stmt
+			elif flag == '--sci':
+				index = myTable.getClusteredIndexStatement()
+				if index:
+					print index
+			elif flag == '--scl':
+				cluster = myTable.getClusterStatement()
+				if cluster:
+					print cluster
+			elif flag == '--opt':
+				optimizeTable (myTable)
 			else:
 				# should not happen
 				bailout ('Unknown option (%s)' % flag, True)
@@ -179,11 +228,17 @@ class Table:
 	def __init__ (self, 
 		name,		# string; table name
 		createStatement,# string; SQL to create table (leave a %s
-				# ...where the table name should be filled in)
+				#    where the table name should be filled in)
 		indexes={},	# dict; index name -> SQL to create index
-				# ...(see comment above)
-		keys={}		# dict; column in this table -> (related
-				# ...table name, column in related table)
+				#    (see comment above)
+		keys={},	# dict; column in this table -> (related
+				#    table name, column in related table)
+		comments={},	# dict; keys are from [ 'table', 'column',
+				#    and 'index' ].  'table' references a
+				#    string.  Other two reference a dictionary
+				#    where { item name : comment }.
+		clusteredIndex = None	# 2-item tuple (index name, SQL to
+					# create the index)
 		):
 		# Purpose: constructor
 		# Returns: nothing
@@ -196,7 +251,15 @@ class Table:
 		self.createStatement = createStatement
 		self.indexes = indexes
 		self.fKeys = keys
+		self.comments = comments
+		self.clusteredIndex = clusteredIndex
 		return
+
+	def _indexName (self, index):
+		# get the unique name for the given 'index', internal to the
+		# database
+
+		return '%s_%s' % (self.name, index)
 
 	def getName (self):
 		# Purpose: retrieve the name of the table
@@ -238,17 +301,16 @@ class Table:
 		#	operations
 
 		for index in self.indexes.keys():
-			indexName = '%s_%s' % (self.name, index)
 			DBM.execute('DROP INDEX %s on %s' % (
-				indexName, self.name))
+				self._indexName(index), self.name))
 		DBM.commit()
 		return
 
 	def getIndexCreationStatements (self):
 		stmts = []
 		for (index, stmt) in self.indexes.items():
-			indexName = '%s_%s' % (self.name, index)
-			stmts.append(stmt % (indexName, self.name))
+			stmts.append(stmt % (self._indexName(index),
+				self.name))
 		return stmts
 
 	def createIndexes (self):
@@ -300,3 +362,39 @@ class Table:
 			DBM.execute(stmt)
 		DBM.commit()
 		return
+
+	def getCommentStatements (self):
+		cmd = """COMMENT ON %s %s IS '%s'"""
+
+		stmts = []
+
+		if self.comments.has_key(TABLE):
+			stmts.append (cmd % ('TABLE', self.name,
+				self.comments[TABLE]) )
+
+		if self.comments.has_key(COLUMN):
+			for (col, comment) in self.comments[COLUMN].items():
+				colName = '%s.%s' % (self.name, col)
+				stmts.append (cmd % ('COLUMN', colName,
+					comment))
+
+		if self.comments.has_key(INDEX):
+			for (idx, comment) in self.comments[INDEX].items():
+				stmts.append (cmd % ('INDEX',
+					self._indexName(idx), comment))
+		return stmts
+
+	def getClusteredIndexStatement (self):
+		if self.clusteredIndex == None:
+			return
+
+		(index, cmd) = self.clusteredIndex
+		return cmd % (self._indexName(index), self.name)
+
+	def getClusterStatement (self):
+		if self.clusteredIndex == None:
+			return
+
+		(index, cmd) = self.clusteredIndex
+		return 'CLUSTER %s USING %s' % (self.name,
+			self._indexName(index) )

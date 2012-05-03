@@ -25,8 +25,19 @@ indexes = {
 	'object_type' : 'create index %s on %s (object_type)',
 	}
 
+comments = {
+	Table.TABLE : 'petal table for the accession flower; contains the standard object types.  These are roughly equivalent to the MGI Types in the mgd database.',
+	Table.COLUMN : {
+	    'object_type_key' : 'unique key identifying an object type',
+	    'object_type' : 'name of the object type',
+		},
+	Table.INDEX : {
+	    'object_type' : 'for searching by the name of the object type',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, comments)
 
 ###--- Main program ---###
 
