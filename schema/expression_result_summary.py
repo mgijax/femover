@@ -36,6 +36,7 @@ createStatement = '''CREATE TABLE %s  (
 	has_image		int		not null,
 	genotype_key		int		null,
 	is_wild_type		int		not null,
+	pattern			varchar(80)	null,
 	PRIMARY KEY(result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -86,6 +87,7 @@ comments = {
 	    'has_image' : 'does this expression result have an image available for display?',
 	    'genotype_key' : 'foreign key to genotype table',
 	    'is_wild_type' : 'is this a wild-type expression result?',
+	    'pattern' : 'describes the pattern of expression observed',
 		},
 	Table.INDEX : {
 	    'clusteredIndex' : 'used to group data for a marker and its assays together, for speed of access since this is a common use-case',
