@@ -222,7 +222,10 @@ def _loadTermData():
 	for row in rows:
 		key = row[structureCol]
 
-		depth = row[depthCol]
+		# convert depth to be 1-based for consistency with other
+		# vocabularies
+
+		depth = row[depthCol] + 1
 		MAX_DEPTH = max(MAX_DEPTH, depth)
 
 		term = row[termCol]
