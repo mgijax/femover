@@ -356,12 +356,8 @@ def dropForeignKeyConstraints(table):
 				on pt.table_name = pk.table_name
 		where lower(pk.table_name) = '%s' ''' % table.lower()
 
-#	logger.debug ('finding FK for %s : %s' % (table, cmd))
-
 	(columns, rows) = DBM.execute(cmd)
 	
-#	logger.debug ('%d rows, %d columns' % (len(rows), len(columns)))
-
 	dropFKDispatcher = Dispatcher.Dispatcher(1)
 
 	if not columns:
@@ -427,7 +423,7 @@ def dropTables (
 
 		for row in rows:
 			id = dropDispatcher.schedule (dbExecuteCmd (
-				"%s 'drop table %s cascade'" % row[0]))
+				'drop table %s cascade' % row[0]))
 			items.append ( (row[0], id) )
 	else:
 		# specific tables were specified, so just delete them
