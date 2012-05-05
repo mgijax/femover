@@ -37,8 +37,33 @@ keys = {
 	'sibling_term_key' : ('term', 'term_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('term_key_seqnum',
+	'create index %s on %s (term_key, sequence_num)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'stores sibling terms for each term in the term table which is included in a DAG',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this term / sibling pair',
+		'term_key' : 'foreign key to term table, identifying the term we are considering',
+		'sibling_term_key' : 'foreign key to term table, identifying a sibling of the term',
+		'sibling_term' : 'name of the sibling, cached for convenience',
+		'sibling_primary_id' : 'ID of the sibling, cached for convenience',
+		'sequence_num' : 'sequence number, for ordering siblings of a term',
+		'is_leaf' : '1 if the sibling is a leaf node, 0 if not',
+		'edge_label' : 'type of edge between the parent node and the sibling',
+		'path_number' : 'a term can be arrived at through many paths; this number identifies the path we are considering',
+		},
+	Table.INDEX : {
+		'term_key' : 'quick retrieval of siblings of a given term',
+		'term_key_seqnum' : 'cluster data by term and sequence number, so all records for a term a together on disk',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

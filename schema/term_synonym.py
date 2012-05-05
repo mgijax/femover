@@ -21,14 +21,32 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'term_key' : 'create index %s on %s (term_key)',
 	'synonym' : 'create index %s on %s (synonym)',
 	}
 
 keys = { 'term_key' : ('term', 'term_key'), }
 
+# index used to cluster data in the table
+clusteredIndex = ('term_key', 'create index %s on %s (term_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'stores synonyms for vocabulary terms (in the term table)',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this record, needed for object identity in Hibernate',
+		'term_key' : 'foreign key to term table, identifies the term for which we have a synonym',
+		'synonym' : 'text of the synonym for the term',
+		'synonym_type' : 'type of synonym',
+		},
+	Table.INDEX : {
+		'term_key' : 'cluster by term key, so all synonyms of a term are stored together on disk',
+		'synonym' : 'quick lookup by synonym, case sensitive',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

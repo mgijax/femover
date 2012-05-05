@@ -34,8 +34,30 @@ keys = {
 	'descendent_term_key' : ('term', 'term_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('term_key_seqnum',
+	'create index %s on %s (term_key, sequence_num)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : None,
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this term / descendent pair',
+		'term_key' : 'foreign key to term table, identifies the term of interest',
+		'descendent_term_key' : 'foreign key to term table, identifies a descendent term',
+		'descendent_term' : 'name of the descendent term, cached for convenience',
+		'descendent_primary_id' : 'primary accession ID of the descendent term, cached for convenience',
+		'sequence_num' : 'sequence number, for ordering the descendents of a given term',
+		},
+	Table.INDEX : {
+		'term_key' : 'quick access to descendents of a term',
+		'term_key_seqnum' : 'cluster data by term key and sequence number so they will be ready to return',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

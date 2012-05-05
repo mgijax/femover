@@ -30,8 +30,26 @@ indexes = {}
 
 keys = { 'term_key' : ('term', 'term_key'), }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'stores several special counts for vocabulary terms, one row per vocabulary term',
+	Table.COLUMN : {
+		'term_key' : 'foreign key to term table, identifying the term with which we are concerned',
+		'path_count' : 'number of paths down a DAG that lead to this term',
+		'descendent_count' : 'number of descendents of this term',
+		'child_count' : 'number of immediate children of this term',
+		'marker_count' : 'number of markers associated with this term',
+		'expression_marker_count' : 'number of markers associated with this term which also have fully-coded expression data',
+		'gxdlit_marker_count' : 'number of markers associated with this term which are included in the GXD Literature Index',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
