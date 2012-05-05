@@ -249,6 +249,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		structureCol = Gatherer.columnNumber (cols,'_Structure_key')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
+		patternCol = Gatherer.columnNumber (cols, 'pattern')
 
 		for row in rows:
 		    assayKey = row[assayCol]
@@ -256,12 +257,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	 		extras[assayKey].append( [ row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
 				row[structureCol], row[ageMinCol],
-				row[ageMaxCol] ] )
+				row[ageMaxCol], row[patternCol] ] )
 		    else:
 	 		extras[assayKey] = [ [ row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
 				row[structureCol], row[ageMinCol],
-				row[ageMaxCol] ] ]
+				row[ageMaxCol], row[patternCol] ] ]
 
 
 		logger.debug ('Got extra data for %d in situ assays' % \
@@ -472,7 +473,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			'age', 'ageAbbreviation', 'age_min', 'age_max',
 			'structure', 'printname', 'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
-			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type'
+			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type',
+			'pattern'
 			]
 		ersRows = []
 
@@ -507,6 +509,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    [ genotypeKey, age, strength, structureKey,
 				ageMin, ageMax ] = items
 
+			    pattern = None
+
 			    if imagepaneKey:
 				panes = [ imagepaneKey ]
 
@@ -514,7 +518,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				    hasImage = 1
 			else:
 			    [ genotypeKey, age, strength, resultKey,
-				structureKey, ageMin, ageMax ] = items
+				structureKey, ageMin, ageMax, pattern ] = items
 
 			    if panesForInSituResults.has_key(resultKey):
 				panes = panesForInSituResults[resultKey]
@@ -555,6 +559,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    hasImage,
 			    genotypeKey,
 			    isWildType,
+			    pattern
 			    ]
 
 			ersRows.append (outRow)
@@ -844,13 +849,16 @@ cmds = [
 		r._Result_key,
 		rs._Structure_key,
 		s.ageMin,
-		s.ageMax
+		s.ageMax,
+		p.pattern
 	from GXD_Specimen s,
 		GXD_InSituResult r,
 		GXD_Strength st,
-		GXD_ISResultStructure rs
+		GXD_ISResultStructure rs,
+		GXD_Pattern p
 	where s._Specimen_key = r._Specimen_key
 		and r._Strength_key = st._Strength_key
+		and r._Pattern_key = p._Pattern_key
 		and r._Result_key = rs._Result_key''', 
 
 	# 8. additional data for gel assays (skip control lanes)  (note that
@@ -945,7 +953,7 @@ files = [
 		'ageAbbreviation', 'age_min', 'age_max',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
-		'_Genotype_key', 'is_wild_type' ],
+		'_Genotype_key', 'is_wild_type', 'pattern' ],
 		'expression_result_summary'),
 
 	('expression_result_to_imagepane',
