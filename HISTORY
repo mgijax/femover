@@ -1,3 +1,12 @@
+TAG: femover-5-0-1-0
+DATE: 05/10/2012
+STAFF: jsb
+CHANGES:
+1) added comments and clustering indexes to several tables
+2) allowed curly braces in data
+3) added several tables for later GXD release
+4) added extra ordering for annotations
+
 TAG: femover-5-0-0-11
 DATE: 03/29/2012
 STAFF: jsb
