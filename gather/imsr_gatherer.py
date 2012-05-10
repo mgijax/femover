@@ -16,14 +16,16 @@ def queryIMSR ():
 	(lines, err) = httpReader.getURL (config.IMSR_COUNT_URL,
 		timeout = config.IMSR_COUNT_TIMEOUT)
 
-	if not lines:
-		logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
-		raise Gatherer.Error, err
-
 	cellLines = {}
 	strains = {}
 	byMarker = {}
 
+	if not lines:
+		logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
+		logger.error ('No counts will be stored')
+
+		return cellLines, strains, byMarker
+		
 	for line in lines:
 		items = line.split()
 
