@@ -13,9 +13,9 @@ import types
 ###--- Globals ---###
 
 # list of strengths, in order of increasing strength
-ORDERED_STRENGTHS = [ 'Not Applicable', 'Not Specified', 'Absent',
-	'Ambiguous', 'Present', 'Trace', 'Weak', 'Moderate', 'Strong',
-	'Very Strong',
+ORDERED_STRENGTHS = [ 'Not Applicable', 'Absent', 'Not Specified', 
+	'Ambiguous', 'Trace', 'Weak', 'Present', 'Moderate', 'Strong',
+	'Very strong',
 	]
 
 ###--- Functions ---###
