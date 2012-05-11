@@ -37,7 +37,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, comments)
+table = Table.Table (tableName, createStatement, indexes, {}, comments)
 
 ###--- Main program ---###
 

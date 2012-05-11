@@ -62,7 +62,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = databaseInfoTable (tableName, createStatement, indexes, comments)
+table = databaseInfoTable (tableName, createStatement, indexes, {}, comments)
 
 ###--- Main program ---###
 
