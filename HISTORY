@@ -1,3 +1,9 @@
+TAG: femover-5-0-1-1
+DATE: 05/10/2012
+STAFF: jsb
+CHANGES:
+1) fixed bug for when a SNP is missing an ID
+
 TAG: femover-5-0-1-0
 DATE: 05/10/2012
 STAFF: jsb
