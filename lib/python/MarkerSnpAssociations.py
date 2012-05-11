@@ -324,7 +324,7 @@ def getSnpIDs (markerKey):
 		if SNP_IDS.has_key(key):
 			snpIds.append (SNP_IDS[key])
 		else:
-			snpIds.append ('key:%d' % key)
+			snpIds.append ('key:%s' % str(key))
 	snpIds.sort()
 	return snpIds
 
