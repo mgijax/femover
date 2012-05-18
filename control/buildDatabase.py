@@ -161,7 +161,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_counts', 'expression_assay',
 		'marker_to_expression_assay',
 		'marker_tissue_expression_counts',
-		'anatomy_structures_synonyms',
+		'anatomy_structures_synonyms', 'expression_result_summary',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
@@ -191,7 +191,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 	]
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
-	'term_sequence_num',
+	'term_sequence_num', 'term_ancestor_simple',
 	]
 
 # list of high priority gatherers, in order of precedence
