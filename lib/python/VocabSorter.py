@@ -605,3 +605,25 @@ def getVocabTermSequenceNum (termKey):
 def getVocabDagTermSequenceNum (termKey):
 	__initialize()
 	return VOCAB_SORTER_ALPHA.getVocabDagTermSequenceNum (termKey)
+
+def getAssayTypeSequenceNum (assayType):
+	# get integer for defined sorting of expression assay types
+
+	if assayType == 'Immunohistochemistry':
+		return 1
+	elif assayType == 'RNA in situ':
+		return 2
+	elif assayType == 'In situ reporter (knock in)':
+		return 3
+	elif assayType == 'Northern blot':
+		return 4
+	elif assayType == 'Western blot':
+		return 5
+	elif assayType == 'RT-PCR':
+		return 6
+	elif assayType == 'RNase protection':
+		return 7
+	elif assayType == 'Nuclease S1':
+		return 8
+	return 9
+
