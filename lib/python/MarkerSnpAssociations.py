@@ -290,22 +290,35 @@ def _initialize():
 ###--- Functions ---###
 
 def getSnps (markerKey):
+	# For the given marker key, return the keys for all the
+	# single-coordinate SNPs that are associated with it
+
 	if not SNP_CACHE:
 		_initialize()
 
 	if SNP_CACHE.has_key(markerKey):
-		return SNP_CACHE[markerKey].keys()
+		snpKeys = []
+		for (key, coord) in SNP_CACHE[markerKey].keys():
+			snpKeys.append (key)
+		return snpKeys
 	return []
 
 def getSnpCount (markerKey):
 	return len(getSnps(markerKey))
 
 def getMultiCoordSnps (markerKey):
+	# For the given marker key, return the keys for all the SNPs (either
+	# single or multi-coordinate) that are associated with it.  Multi-
+	# coordinate SNPs will appear multiple times in the list.
+
 	if not SNP_CACHE:
 		_initialize()
 
 	if MULTI_SNP_CACHE.has_key(markerKey):
-		return MULTI_SNP_CACHE[markerKey].keys()
+		snpKeys = []
+		for (key, coord) in MULTI_SNP_CACHE[markerKey].keys():
+			snpKeys.append(key)
+		return snpKeys
 	return []
 
 def getMultiCoordSnpCount (markerKey):
