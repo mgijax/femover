@@ -9,6 +9,7 @@ import ADVocab
 import symbolsort
 import ReferenceCitations
 import types
+import VocabSorter
 
 ###--- Globals ---###
 
@@ -691,7 +692,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    ageMax = ageMinMax[resultKey][1]
 		    expressed = self.getExpressedSequenceNum (row[expressedCol])
 		    symbol = self.getSymbolSequenceNum (row[symbolCol])
-		    assay = self.getAssayTypeSequenceNum (row[assayTypeCol])
+		    assay = VocabSorter.getAssayTypeSequenceNum (
+			row[assayTypeCol])
 		    system = self.getSystemSequenceNum(row[systemCol])
 		    mutants = self.getGenotypeSequenceNum (row[genotypeKeyCol])
 		    refs = ReferenceCitations.getSequenceNum (row[refsKeyCol])
