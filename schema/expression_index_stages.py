@@ -24,14 +24,31 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'index_key' : 'create index %s on %s (index_key)',
-	}
+indexes = {}
 
 keys = { 'index_key' : ('expression_index', 'index_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('index_key', 'create index %s on %s (index_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the expression literature flower, containing the age/assay_type pairs for each literature index record',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record',
+		'index_key' : 'identifies the literature index record (the marker/reference pair)',
+		'assay_type' : 'type of expression assay (Note that literature index assay types differ from full-coded assay types.  A mapping is in expressionindex_assay_type_map.)',
+		'age' : 'float equivalent of age_string',
+		'age_string' : 'age in DPC, with special values (A for adule, E for embryonic)',
+		},
+	Table.INDEX : {
+		'index_key' : 'clusters rows such that all age/assay_type pairs for a given literature index record will be together on disk for quick access',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

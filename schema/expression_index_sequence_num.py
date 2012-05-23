@@ -27,8 +27,22 @@ indexes = {}
 
 keys = { 'index_key' : ('expression_index', 'index_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the expression literature flower, containing pre-computed sorts for ordering index entries',
+	Table.COLUMN : {
+		'index_key' : 'identifies the literature index record',
+		'by_reference' : 'sort by reference (year, ID, reference key)',
+		'by_marker' : 'sort by marker symbol',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

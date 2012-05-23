@@ -27,8 +27,23 @@ indexes = {}
 
 keys = { 'index_key' : ('expression_index', 'index_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for expression literature flower, containing pre-computed counts for each literature index record',
+	Table.COLUMN : {
+		'index_key' : 'identifies the literature index record',
+		'assay_age_count' : 'count of assay/age pairs',
+		'fully_coded_assay_count' : 'count of full-coded assays',
+		'fully_coded_result_count' : 'count of full-coded assay results',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

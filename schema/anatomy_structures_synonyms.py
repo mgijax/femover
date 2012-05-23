@@ -30,8 +30,26 @@ indexes = {
 
 keys = {}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'standalone table for populating a pick-list on the expression query form, mapping from an anatomical structure to its synonyms',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record',
+		'structure' : 'an anatomical structure',
+		'synonym' : 'one of the synonyms for that structure',
+		},
+	Table.INDEX : {
+		'structure' : 'look up synonyms by structure',
+		'synonym' : 'look up structures matching a synonym',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

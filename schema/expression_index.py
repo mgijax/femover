@@ -29,7 +29,6 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'referenceKey' : 'create index %s on %s (reference_key)',
-	'markerKey' : 'create index %s on %s (marker_key)',
 	'jnum' : 'create index %s on %s (jnum_id)',
 	'markerID' : 'create index %s on %s (marker_id)',
 	}
@@ -39,8 +38,33 @@ keys = {
 	'reference_key' : ('reference', 'reference_key'),
 	} 
 
+# index used to cluster data in the table
+clusteredIndex = ('markerKey', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the expression literature flower, where each record is a marker/reference pair (showing that expression was studied for that marker in that reference)',
+	Table.COLUMN : {
+		'index_key' : 'unique identifier for this marker/reference pair, same as _Index_key from mgd',
+		'reference_key' : 'identifies the reference',
+		'jnum_id' : 'J: number ID for the reference, cached for convenience',
+		'marker_key' : 'identifies the marker',
+		'marker_symbol' : 'symbol for the marker, cached for convenience',
+		'marker_name' : 'name for the marker, cached for convenience',
+		'marker_id' : 'primary ID for the marker, cached for convenience',
+		'comments' : 'comments for this marker/reference pair',
+		},
+	Table.INDEX : {
+		'referenceKey' : 'quick access to literature index records for a particular reference',
+		'markerKey' : 'clusters data so that index records for a marker are nearby on disk, to aid quick lookups by marker',
+		'jnum' : 'quick access by J: number',
+		'markerID' : 'quick access by marker ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

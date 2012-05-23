@@ -38,8 +38,31 @@ keys = {
 	'marker_key' : ('marker', 'marker_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the image flower, containing data for pane sets (where each pane set is a unique image/marker/assay_type combination).  This allows easy display of all pane labels for a given image/marker/assay_type, for instance when showing all expression images for a gene.',
+	Table.COLUMN : {
+		'paneset_key' : 'unique key for this pane set (this image/marker/assay_type combination)',
+		'image_key' : 'identifies the image',
+		'thumbnail_key' : 'key for the thumbnail image corresponding to this image',
+		'assay_type' : 'type of expression assay',
+		'pane_labels' : 'comma-delimited list of pane labels',
+		'marker_key' : 'identifies the marker',
+		'in_pixeldb' : '1 if this image is in pixeldb (and is thus displayable), 0 if not',
+		'sequence_num' : 'used to order the pane sets for a given image',
+		},
+	Table.INDEX : {
+		'image_key' : 'quick access to pane sets for a given image',
+		'marker_key' : 'quick access to pane sets for a given marker',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

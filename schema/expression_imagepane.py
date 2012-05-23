@@ -23,12 +23,27 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = { 'image_key' : 'create index %s on %s (image_key)' }
+indexes = {}
 
 keys = { 'image_key' : ('image', 'image_key') }
 
+clusteredIndex = ('image_key', 'create index %s on %s (image_key)')
+
+comments = { Table.TABLE : 'petal table for the image flower, defining image panes (and their labels) for association with expression data',
+	Table.COLUMN : {
+		'imagepane_key' : 'unique identifier for this image pane',
+		'image_key' : 'identifies the image containing this pane',
+		'pane_label' : 'label used in the publication to identify this pane',
+		'sequence_num' : 'used to order panes for each image',
+		},
+	Table.INDEX : {
+		'image_key' : 'clusters data so that all panes for an image are stored together on disk for fast retrieval',
+		}
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+	clusteredIndex)
 
 ###--- Main program ---###
 

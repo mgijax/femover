@@ -24,14 +24,35 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'imagepane_key' : 'create index %s on %s (imagepane_key)',
 	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 keys = { 'imagepane_key' : ('expression_imagepane', 'imagepane_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('imagepane_key', 'create index %s on %s (imagepane_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the image flower, providing accession IDs assigned to image panes related to expression assays',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record, no other purpose',
+		'imagepane_key' : 'identifies the image pane',
+		'logical_db' : 'logical database (provider) that assigned the ID',
+		'acc_id' : 'unique ID for the image pane',
+		'preferred' : '1 if this is the preferred ID for this pane for this logical db, 0 if not',
+		'private' : '1 if this ID should be consiered to be private, 0 if it can be displayed',
+		'sequence_num' : 'used for ordering IDs for an image pane',
+		},
+	Table.INDEX : {
+		'imagepane_key' : 'clusters data so that all IDs for an image pane are stored together on disk, to aid quick access',
+		'acc_id' : 'quick lookup of image panes by ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
