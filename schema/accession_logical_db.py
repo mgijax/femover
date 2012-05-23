@@ -29,7 +29,7 @@ comments = {
 	Table.TABLE : 'petal table for the accession flower; contains names for logical databases.  A logical database identifies the source of a given accession ID.',
 	Table.COLUMN : {
 	    'logical_db_key' : 'unique key identifying a logical database',
-	    'logical_db_type' : 'name of the logical database',
+	    'logical_db' : 'name of the logical database',
 		},
 	Table.INDEX : {
 	    'logical_db' : 'for searching by the logical database name',
