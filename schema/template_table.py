@@ -28,8 +28,23 @@ indexes = {
 # column name -> (related table, column in related table)
 keys = {}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : None,
+	Table.COLUMN : {
+		'template' : '',
+		},
+	Table.INDEX : {
+		'template' : '',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
