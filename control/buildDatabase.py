@@ -373,8 +373,6 @@ def dropForeignKeyConstraints(table):
 	    s = dbExecuteCmd ('alter table %s drop constraint if exists %s' \
 		% (fk_table, constraint_name) )
 
-	    logger.debug ('dropping %s : %s' % (constraint_name, s))
-
 	    id = dropFKDispatcher.schedule(s)
 	    dropFKDispatcher.wait() 
 
