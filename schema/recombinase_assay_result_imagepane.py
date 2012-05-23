@@ -25,17 +25,34 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'result_key' : 'create index %s on %s (result_key)',
-	}
+indexes = {}
 
 keys = {
 	'result_key' : ('recombinase_assay_result', 'result_key'),
 	'image_key' : ('image', 'image_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('result_key', 'create index %s on %s (result_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between recombinase assay results and their associated images',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record',
+		'result_key' : 'identifies the recombinase assay result',
+		'image_key' : 'identifes an associated image',
+		'sequence_num' : 'used to order images for a recombinase assay result',
+		'pane_label' : 'label of the particular pane (within the image) that supports the assay result',
+		},
+	Table.INDEX : {
+		'result_key' : 'clusters the data so all images for an assay result are stored together on disk, for effiency',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

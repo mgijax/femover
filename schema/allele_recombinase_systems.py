@@ -48,8 +48,46 @@ indexes = {}
 
 keys = { 'allele_key' : ('allele', 'allele_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing summary data for recombinase activity of each allele',
+	Table.COLUMN : {
+		'allele_key' : 'identifies the allele',
+		'in_adipose_tissue' : '1 if activity in adipose tissue, 0 if not',
+		'in_alimentary_system' : '1 if activity in the alimentary system, 0 if not',
+		'in_branchial_arches' : '1 if activity in the branchial arches, 0 if not',
+		'in_cardiovascular_system' : '1 if activity in the cardiovascular system, 0 if not',
+		'in_cavities_and_linings' : '1 if activity in cavities and linings, 0 if not',
+		'in_endocrine_system' : '1 if activity in the endocrine system, 0 if not',
+		'in_head' : '1 if activity in the head, 0 if not',
+		'in_hemolymphoid_system' : '1 if activity in the hemolymphoid system, 0 if not',
+		'in_integumental_system' : '1 if activity in the integumental system, 0 if not',
+		'in_limbs' : '1 if activity in the limbs, 0 if not',
+		'in_liver_and_biliary_system' : '1 if activity in the liver and biliary system, 0 if not',
+		'in_mesenchyme' : '1 if activity in mesenchyme, 0 if not',
+		'in_muscle' : '1 if activity in muscle, 0 if not',
+		'in_nervous_system' : '1 if activity in the nervous system, 0 if not',
+		'in_renal_and_urinary_system' : '1 if activity in the renal and urinary system, 0 if not',
+		'in_reproductive_system' : '1 if activity in the reproductive system, 0 if not',
+		'in_respiratory_system' : '1 if activity in the respiratory system, 0 if not',
+		'in_sensory_organs' : '1 if activity in the sensory organs, 0 if not',
+		'in_skeletal_system' : '1 if activity in the skeletal system, 0 if not',
+		'in_tail' : '1 if activity in the tail, 0 if not',
+		'in_early_embryo' : '1 if activity in the early embryo, 0 if not',
+		'in_extraembryonic_component' : '1 if activity in the extraembryonic component, 0 if not',
+		'in_embryo_other' : '1 if activity in other parts of the embryo, 0 if not',
+		'in_postnatal_other' : '1 if activity in other postnatal parts, 0 if not',
+		'detected_count' : 'count of systems where recombinase activity was detected',
+		'not_detected_count' : 'count of systems where recombinase activity was studied and was not detected',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

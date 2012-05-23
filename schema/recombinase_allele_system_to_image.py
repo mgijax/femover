@@ -24,17 +24,34 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'allele_system_key' : 'create index %s on %s (allele_system_key)',
-	}
+indexes = {}
 
 keys = {
 	'allele_system_key' : ('recombinase_allele_system', 'allele_system_key'),
 	'image_key' : ('image', 'image_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('allele_system_key',
+	'create index %s on %s (allele_system_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between allele/system pairs and their associated images',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record, no other significance',
+		'allele_system_key' : 'identifies the allele/system pair',
+		'image_key' : 'identifies the associated image',
+		'sequence_num' : 'used to order images for an allele/system pair',
+		},
+	Table.INDEX : {
+		'allele_system_key' : 'clusters rows so that records involving the same allele/system pair are grouped together on disk, to aid efficiency',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
