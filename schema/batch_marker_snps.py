@@ -20,14 +20,30 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
-	}
+indexes = {}
 
 keys = { 'marker_key' : ('marker', 'marker_key') } 
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the marker flower, containing basic data for SNPs associated with each marker (to aid efficiency of batch query)',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this marker/SNP pair',
+		'marker_key' : 'identifies the marker',
+		'snp_id' : 'consensus SNP ID',
+		'sequence_num' : 'orders SNP IDs for each marker',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data together by marker key, so all SNPs for a marker will be together on disk (for speed of efficiency)',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

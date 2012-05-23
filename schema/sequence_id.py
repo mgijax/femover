@@ -23,14 +23,34 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'sequence_key' : 'create index %s on %s (sequence_key)',
 	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('sequence_key', 'create index %s on %s (sequence_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the sequence flower, containing accession IDs for sequences',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record',
+		'sequence_key' : 'identifies the sequence for this ID',
+		'logical_db' : 'entity who assigned this ID',
+		'acc_id' : 'accession ID',
+		'preferred' : '1 if this is the preferred ID for this sequence from this logical_db, 0 if not',
+		'private' : '1 if this ID should be considered to be private, 0 if it can be displayed',
+		},
+	Table.INDEX : {
+		'sequence_key' : 'clusters IDs for each sequence ID, so we can quickly retrieve all the IDs for a sequence',
+		'acc_id' : 'easily find sequences by their IDs',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

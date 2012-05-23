@@ -26,8 +26,25 @@ indexes = {
 	'logical_db' : 'create index %s on %s (logical_db)',
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'adjoins portions of the sequence flower, to supply a provider abbreviation for each logical_db assigning IDs to sequences',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record',
+		'logical_db' : 'logical database that provides IDs for sequences',
+		'provider_abbreviation' : 'abbreviation for the provider',
+		},
+	Table.INDEX : {
+		'logical_db' : 'quick lookup of provider_abbreviation by logical_db',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, {}, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

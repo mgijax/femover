@@ -19,14 +19,29 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'sequence_key' : 'create index %s on %s (sequence_key)',
-	}
+indexes = {}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('sequence_key', 'create index %s on %s (sequence_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the sequence flower, containing clone collections for each sequence (may have multiple records per sequence)',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this sequence/collection pair',
+		'sequence_key' : 'identifies the sequence',
+		'collection' : 'name of the clone collection',
+		},
+	Table.INDEX : {
+		'sequence_key' : 'clusters data so all collections for a sequence are stored near each other on disk, for quick access',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

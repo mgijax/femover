@@ -30,8 +30,29 @@ indexes = {}
 
 keys = { 'reference_key' : ('reference', 'reference_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the reference flower; contains pre-computed counts for each reference',
+	Table.COLUMN : {
+		'reference_key' : 'identifies the reference',
+		'marker_count' : 'count of markers (genes, etc.)',
+		'probe_count' : 'count of probes',
+		'mapping_expt_count' : 'count of mapping experiments',
+		'gxd_index_count' : 'count of markers indexed for expression data',
+		'gxd_result_count' : 'count of expression results',
+		'gxd_structure_count' : 'count of anatomical structures annotated for expression data',
+		'gxd_assay_count' : 'count of expression assays',
+		'allele_count' : 'count of alleles',
+		'sequence_count' : 'count of sequences',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

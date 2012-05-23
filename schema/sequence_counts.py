@@ -23,8 +23,22 @@ indexes = {}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the sequence flower, containing pre-computed counts for each sequence',
+	Table.COLUMN : {
+		'sequence_key' : 'identifies the sequence',
+		'marker_count' : 'count of associated markers',
+		'probe_count' : 'count of associated probes',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

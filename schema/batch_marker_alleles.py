@@ -24,14 +24,31 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
-	}
+indexes = {}
 
 keys = { 'marker_key' : ('marker', 'marker_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the marker flower, containing basic allele data for each marker (only has data needed to support batch query, aiding efficiency)',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this marker/allele pair',
+		'marker_key' : 'identifies the marker',
+		'allele_symbol' : 'symbol for the allele (cached here from the allele table)',
+		'allele_id' : 'primary accession ID for the allele (cached here from the allele table)',
+		'sequence_num' : 'used to order alleles for each marker by nomenclature',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data so alleles for each marker are grouped together on disk',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

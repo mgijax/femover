@@ -23,14 +23,34 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'reference_key' : 'create index %s on %s (reference_key)',
 	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 keys = { 'reference_key' : ('reference', 'reference_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('reference_key', 'create index %s on %s (reference_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the reference flower, contains accession IDs for each reference',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record, no relationship to anything else',
+		'reference_key' : 'identifies the reference with this ID',
+		'logical_db' : 'logical database (the entity assigning this ID)',
+		'acc_id' : 'accession ID',
+		'preferred' : '1 if this is the preferred ID for this reference assigned by this logical_db, or 0 if another is preferred',
+		'private' : '1 if the ID should be considered private, or 0 if it is free to display it',
+		},
+	Table.INDEX : {
+		'reference_key' : 'used to cluster IDs together, so those for a given reference can be retrieved quickly',
+		'acc_id' : 'provides lookup by accession ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

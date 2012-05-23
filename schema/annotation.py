@@ -32,8 +32,30 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the annotation petal, containing one row for each annotation',
+	Table.COLUMN : {
+		'annotation_key' : 'unique key identifying this annotation (does not correspond to _Annot_key in mgd)',
+		'dag_name' : 'name of the DAG containing the annotated term',
+		'qualifier' : 'qualifier describing this annotation',
+		'vocab_name' : 'name of the vocabulary containing the annotated term',
+		'term' : 'text of the term itself',
+		'term_id' : 'primary accession ID for the term',
+		'evidence_code' : 'type of evidence supporting the annotation',
+		'object_type' : 'type of object annotated to the term',
+		'annotation_type' : 'type of annotation',
+		'reference_count' : 'count of references for the annotation',
+		'inferred_id_count' : 'count of IDs from which this annotation was inferred',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, {}, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

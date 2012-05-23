@@ -31,8 +31,30 @@ indexes = {
 
 keys = { 'marker_key' : ('marker', 'marker_key') } 
 
+# index used to cluster data in the table
+clusteredIndex = ('clustered_lower_term',
+	'create index %s on %s (lower(term))')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for marker flower, containing all terms by which we can search for markers using the batch query interface',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record',
+		'term' : 'term by which to search',
+		'term_type' : 'identifies the type of term',
+		'marker_key' : 'identifies the marker',
+		},
+	Table.INDEX : {
+		'clustered_lower_term' : 'clusters data by lowercased version of the term, as this is the most common search case',
+		'term' : 'for searching by case sensitive term and term type',
+		'lower_term' : 'for searching by lower(term) and term type',
+		'marker_key' : 'to find all terms by which a given marker can be found',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

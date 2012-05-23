@@ -41,8 +41,43 @@ indexes = {
 	'indexed_for_gxd' : 'create index %s on %s (indexed_for_gxd)',
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the reference flower, containing basic info for various periodicals, books, and other data sources',
+	Table.COLUMN : {
+		'reference_key' : 'uniquely identifies a reference, same as _Refs_key from mgd',
+		'reference_type' : 'type of the reference',
+		'primary_author' : 'primary author',
+		'authors' : 'full list of authors',
+		'title' : 'reference title',
+		'journal' : 'name of the journal',
+		'vol' : 'volume number',
+		'issue' : 'issue number',
+		'pub_date' : 'publication date',
+		'year' : 'year of publication',
+		'pages' : 'pages cited',
+		'jnum_id' : 'J: number (accession ID)',
+		'jnum_numeric' : 'numeric part of the J: number',
+		'pubmed_id' : 'PubMed ID',
+		'mini_citation' : 'smallest-format citation',
+		'short_citation' : 'short-format citation',
+		'long_citation' : 'long-format citation',
+		'indexed_for_gxd' : '1 if reference is indexed for expression data, 0 if not',
+		},
+	Table.INDEX : {
+		'jnum_id' : 'provides quick lookup by J: number',
+		'journal' : 'lookup by journal name',
+		'refs_key_sort' : 'allows quick ordering by J: number',
+		'indexed_for_gxd' : 'allows quick lookup of all expression-related references',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, {}, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

@@ -24,8 +24,23 @@ indexes = {}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the sequence flower, containing pre-computed sorts for quick and easy sorting of sequences',
+	Table.COLUMN : {
+		'sequence_key' : 'identifies the sequence',
+		'by_length' : 'sort by sequence length',
+		'by_sequence_type' : 'sort by type of sequence',
+		'by_provider' : 'sort by sequence provider',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

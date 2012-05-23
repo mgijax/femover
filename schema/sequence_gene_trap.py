@@ -26,8 +26,25 @@ indexes = {}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the sequence flower, containing extra data for gene trap sequences',
+	Table.COLUMN : {
+		'sequence_key' : 'identifies the sequence',
+		'tag_method' : 'name of the procedure used to produce a sequence tag from a gene trap insertion in a mutant cell line',
+		'vector_end' : 'vector end (upstream, downstream, Not Specified, Not Applicable)',
+		'reverse_complement' : 'yes if the sequence is reverse-complemented, no if not',
+		'good_hit_count' : 'number of good blat hits',
+		'point_coordinate' : 'single coordinate picked to indicate where the insertion actually happened',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

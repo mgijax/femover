@@ -25,8 +25,24 @@ indexes = {}
 
 keys = { 'sequence_key' : ('sequence', 'sequence_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the sequence flower, containing extra data for gene model sequences',
+	Table.COLUMN : {
+		'sequence_key' : 'identifies the sequence',
+		'marker_type' : 'identifies the type of marker, from the standard list of MGI marker types',
+		'biotype' : 'what the provider identified the marker type to be, from their terminology',
+		'exon_count' : 'number of exons',
+		'transcript_count' : 'number of transcripts',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

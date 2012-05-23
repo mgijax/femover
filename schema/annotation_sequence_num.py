@@ -29,8 +29,25 @@ indexes = {}
 
 keys = { 'annotation_key' : ('annotation', 'annotation_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the annotation flower, containing pre-computed values for easily ordering annotations.  Contains one record per record in annotation.',
+	Table.COLUMN : {
+		'annotation_key' : 'identifies the annotation',
+		'by_dag_structure' : 'depth-first ordering of DAGs, which groups child terms under their parent terms',
+		'by_term_alpha' : 'alphabetical ordering',
+		'by_vocab' : 'sort by vocabulary name',
+		'by_annotation_type' : 'sort by type of annotation',
+		'by_vocab_dag_term' : 'sort by vocabulary, then by DAG, then by term',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

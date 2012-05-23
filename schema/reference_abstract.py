@@ -22,8 +22,21 @@ indexes = {}
 
 keys = { 'reference_key' : ('reference', 'reference_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the reference flower; contains the abstract for each reference.  This is stored separately to allow fast access to other reference data, while only getting abstracts when they are needed.',
+	Table.COLUMN : {
+		'reference_key' : 'identifies which reference',
+		'abstract' : 'a brief summary of the reference',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
