@@ -26,8 +26,22 @@ indexes = {}
 
 keys = { 'image_key' : ('image', 'image_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the image flower, providing pre-computed sorts for images',
+	Table.COLUMN : {
+		'image_key' : 'identifies the image',
+		'by_default' : 'default sort for the image (Expression, Phenotype, and Molecular images uses different sorting rules.  They are encapsulated in this field.',
+		'by_jnum' : 'sort by J: number for the reference of the image',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

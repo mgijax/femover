@@ -27,8 +27,29 @@ indexes = {
 
 keys = { 'probe_key' : ('probe', 'probe_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the probe flower, containing basic data for probes',
+	Table.COLUMN : {
+		'probe_key' : 'unique key for this probe; same as _Probe_key in mgd',
+		'name' : 'name of the probe',
+		'segment_type' : 'type of segment (genomic, oligo, primer, etc.)',
+		'primary_id' : 'primary accession ID for the probe',
+		'logical_db' : 'logical database (entity) assigning the ID',
+		'clone_id' : 'clone ID associated with the probe',
+		},
+	Table.INDEX : {
+		'clone_id' : 'lookup by clone ID',
+		'id' : 'lookup by probe ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

@@ -25,7 +25,6 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'genotype_key' : 'create index %s on %s (genotype_key)',
 	'image_key' : 'create index %s on %s (image_key)',
 	'reference_key' : 'create index %s on %s (reference_key)',
 	}
@@ -36,8 +35,29 @@ keys = {
 	'reference_key' : ('reference', 'reference_key')
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('genotype_key', 'create index %s on %s (genotype_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between the genotype and image flowers',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this genotype/image/reference trio',
+		'genotype_key' : 'identifies the genotype',
+		'image_key' : 'identifies the image',
+		'reference_key' : 'identifies the reference establishing the relationship',
+		'qualifier' : 'qualifier describing the relationship',
+		},
+	Table.INDEX : {
+		'genotype_key' : 'clusters the data so all images for a genotype will be stored together for quick access',
+		'image_key' : 'for getting genotypes for an image',
+		'reference_key' : 'for getting all genotype/image pairs supported by a particular reference',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

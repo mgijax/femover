@@ -25,7 +25,6 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
 	'image_key' : 'create index %s on %s (image_key)',
 	'reference_key' : 'create index %s on %s (reference_key)',
 	}
@@ -36,8 +35,29 @@ keys = {
 	'reference_key' : ('reference', 'reference_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between markers and phenotype images for their alleles',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record',
+		'marker_key' : 'identifies the marker',
+		'image_key' : 'identifies an image',
+		'reference_key' : 'reference supporting this relationship',
+		'qualifier' : 'qualifier describing this relationship',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters the data so images for a marker are stored together on disk for quick access',
+		'image_key' : 'look up markers involved in an image',
+		'reference_key' : 'look up all marker/image pairs for a reference',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

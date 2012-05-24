@@ -44,8 +44,37 @@ keys = {
 	'fullsize_image_key' : ('image', 'image_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the image flower, containing basic data about images',
+	Table.COLUMN : {
+		'image_key' : 'unique key for an image; same as _Image_key in mgd',
+		'reference_key' : 'identifies the reference that is the source of the image',
+		'thumbnail_image_key' : 'key for the thumbnail version of this image (if this is a full-size image)',
+		'fullsize_image_key' : 'key for the full-size version of this image (if this is a thumbnail image)',
+		'is_thumbnail' : '1 if this is a thumbnail image, 0 if not',
+		'width' : 'width of this image (in pixels)',
+		'height' : 'height of this image (in pixels)',
+		'figure_label' : 'figure label, as described in the reference',
+		'image_type' : 'type of image (Full Size, Thumbnail)',
+		'pixeldb_numeric_id' : 'numeric portion of the ID for this image in Pixel DB',
+		'mgi_id' : 'MGI ID for this image',
+		'jnum_id' : 'J: number ID for the reference, cached for convenience',
+		'copyright' : 'copyright statement',
+		'caption' : 'caption to display with the image',
+		'image_class' : 'class of the image (Expression, Phenotypes, Molecular)',
+		},
+	Table.INDEX : {
+		'reference_key' : 'look up images from a given reference',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

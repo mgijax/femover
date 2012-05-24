@@ -27,7 +27,6 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'image_key' : 'create index %s on %s (image_key)',
 	'allele_key' : 'create index %s on %s (allele_key)',
 	}
 
@@ -36,8 +35,30 @@ keys = {
 	'allele_key' : ('allele', 'allele_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('image_key', 'create index %s on %s (image_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the image flower, caching minimal data about alleles to display on an image summary/detail page',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this record',
+		'image_key' : 'identifies the image',
+		'allele_key' : 'key of an allele associated with this image',
+		'allele_symbol' : 'symbol for the allele, cached here for convenience',
+		'allele_name' : 'name of the allele, cached here for convenience',
+		'allele_id' : 'primary ID for the allele, cached here for convenience',
+		'sequence_num' : 'used to order alleles for an image',
+		},
+	Table.INDEX : {
+		'image_key' : 'clusters data so that all alleles for an image will be nearby on disk, and thus quickly returned',
+		'allele_key' : 'can be used to look up images associated with an allele, though this should really be done with the allele_to_image table',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

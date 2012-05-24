@@ -33,8 +33,29 @@ keys = {
 	'reference_key' : ('reference', 'reference_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between the probe and sequence flowers, matching probes with their sequences',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this record',
+		'probe_key' : 'identifies the probe',
+		'sequence_key' : 'identifies the sequence',
+		'reference_key' : 'identifies the reference for this association',
+		'qualifier' : 'qualifier describing this association',
+		},
+	Table.INDEX : {
+		'probe_key' : 'look up sequences for a probe',
+		'sequence_key' : 'look up probes for a sequence',
+		'reference_key' : 'look up all probe/sequence pairs described in a reference',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
