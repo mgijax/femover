@@ -48,8 +48,46 @@ keys = {
 	'primary_image_key' : ('image', 'image_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the allele flower, containing basic data for alleles',
+	Table.COLUMN : {
+		'allele_key' : 'unique key identifying the allele, same as _Allele_key in mgd',
+		'symbol' : 'gene symbol and allele symbol, as gene<allele> where the part in brackets should be superscripted',
+		'name' : 'allele name',
+		'only_allele_symbol' : 'only the superscripted piece of the symbol',
+		'gene_name' : 'name of the gene for this allele',
+		'primary_id' : 'preferred accession ID for the allele',
+		'logical_db' : 'logical database assigning the ID',
+		'allele_type' : 'type of allele',
+		'allele_subtype' : 'subtype of allele',
+		'is_recombinase' : '1 if this is a recombinase allele, 0 if not',
+		'is_wild_type' : '1 if this is a wild-type allele, 0 if not',
+		'driver' : 'driver for this allele, if it is a recombinase allele',
+		'inducible_note' : 'inducible note',
+		'molecular_description' : 'molecular description',
+		'strain' : 'strain which is the source of the allele',
+		'strain_type' : 'type of strain',
+		'inheritance_mode' : 'how is this allele passed on?',
+		'holder' : 'who has the allele',
+		'company_id' : 'ID of the company with the allele',
+		'transmission_type' : 'method of transmission',
+		'transmission_phrase' : 'phrase to use in describing transmission type on allele detail page',
+		'primary_image_key' : 'identifies the primary image for the allele',
+		'has_disease_model' : '1 if this allele is a model for at least one human disease, 0 if not',
+		},
+	Table.INDEX : {
+		'symbol' : 'look up alleles by symbol',
+		'primary_id' : 'look up alleles by primary accession ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

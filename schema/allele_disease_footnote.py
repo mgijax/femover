@@ -29,8 +29,26 @@ indexes = {
 
 keys = { 'allele_disease_key' : ('allele_disease', 'allele_disease_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing footnotes for the allele_disease table',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record, no other purpose',
+		'allele_disease_key' : 'identifies the allele/disease pair in allele_disease',
+		'number' : 'number of this footnote for the allele/disease',
+		'note' : 'text of the footnote',
+		},
+	Table.INDEX : {
+		'allele_disease' : 'quick retrieval of a given note for a given allele/disease pair',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

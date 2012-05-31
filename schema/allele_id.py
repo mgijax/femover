@@ -23,14 +23,34 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'allele_key' : 'create index %s on %s (allele_key)',
 	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 keys = { 'allele_key' : ('allele', 'allele_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('allele_key', 'create index %s on %s (allele_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing accession IDs assigned to the various alleles',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record, no other significance',
+		'allele_key' : 'identifies the allele',
+		'logical_db' : 'logical database assigning the ID',
+		'acc_id' : 'accession ID',
+		'preferred' : '1 if this is the preferred ID for this logical database for this allele, 0 if not',
+		'private' : '1 if this ID should be considered private, 0 if it can be displayed',
+		},
+	Table.INDEX : {
+		'allele_key' : 'clusters the data so all IDs for an allele are stored together on disk, to aid quick retrieval',
+		'acc_id' : 'look up alleles by ID, case sensitive',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

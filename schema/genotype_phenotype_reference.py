@@ -24,17 +24,35 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'gp_key' : 'create index %s on %s (genotype_phenotype_key, sequence_num)',
-	}
+indexes = {}
 
 keys = { 'genotype_phenotype_key' : ('genotype_phenotype',
 	'genotype_phenotype_key'),
 	'reference_key' : ('reference', 'reference_key')
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('gp_key',
+	'create index %s on %s (genotype_phenotype_key, sequence_num)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the genotype flower, containing references supporting annotations of phenotypes to genotypes',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this record, no other significance',
+		'genotype_phenotype_key' : 'identifies the phenotype annotation',
+		'reference_key' : 'identifies a reference supporting the annotation',
+		'jnum_id' : 'J: number ID for the reference, cached for convenience',
+		'sequence_num' : 'for ordering the references of an annotation',
+		},
+	Table.INDEX : {
+		'gp_key' : 'clusters data so that all references for an annotation are together on disk, for quick access',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

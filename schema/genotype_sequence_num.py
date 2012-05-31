@@ -25,8 +25,21 @@ indexes = {}
 
 keys = { 'genotype_key' : ('genotype', 'genotype_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the genotype flower, containing pre-computed sorts for genotypes',
+	Table.COLUMN : {
+		'genotype_key' : 'identifies the genotype',
+		'by_alleles' : 'pre-computed to sort by mutant alleles in the genotype',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

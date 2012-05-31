@@ -24,10 +24,7 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'disease_genotype_key' : \
-		'create index %s on %s (disease_genotype_key, sequence_num)',
-	}
+indexes = {}
 
 keys = {
 	'disease_genotype_key' : ('allele_disease_genotype',
@@ -35,8 +32,28 @@ keys = {
 	'reference_key' : ('reference', 'reference_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('disease_genotype_key',
+	'create index %s on %s (disease_genotype_key, sequence_num)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing references for each genotype/disease association',
+	Table.COLUMN : {
+		'unique_key' : 'unique identifier for this ',
+		'disease_genotype_key' : 'identifies the genotype/disease pair',
+		'reference_key' : 'identifies a reference for the genotype/disease association',
+		'jnum_id' : 'J: number ID of the reference, cached for convenience',
+		'sequence_num' : 'orders the references for each genotype/disease pair',
+		},
+	Table.INDEX : {
+		'disease_genotype_key' : 'clusters the data so all references for a genotype/disease pair are near each other on disk, to speed retrieval',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

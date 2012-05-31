@@ -34,8 +34,33 @@ indexes = {
 	'primary_id' : 'create index %s on %s (primary_id)',
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the genotype flower, containing basic data for each genotype',
+	Table.COLUMN : {
+		'genotype_key' : 'unique key identifying this genotype, same as _Genotype_key in mgd',
+		'background_strain' : 'name of the mouse strain used as a background',
+		'primary_id' : 'preferred accession ID for this genotype',
+		'is_conditional' : '1 if this is a conditional genotype, 0 if not',
+		'note' : 'note for the genotype',
+		'combination_1' : 'allele pairs put onto the background strain, format style 1',
+		'combination_2' : 'allele pairs put onto the background strain, format style 2',
+		'has_image' : '1 if this genotype has at least one displayable image, 0 if not',
+		'has_phenotype_data' : '1 if this genotype has associated phenotype annotations, 0 if not',
+		'is_disease_model' : '1 if this genotype is a mouse model for a human disaese, 0 if not',
+		'genotype_type' : 'type of genotype (homozygous, heterozygous, etc.)',
+		},
+	Table.INDEX : {
+		'primary_id' : 'quick lookup by accession ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, {}, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

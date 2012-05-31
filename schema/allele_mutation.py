@@ -22,14 +22,29 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'allele_key' : 'create index %s on %s (allele_key)',
-	}
+indexes = {}
 
 keys = { 'allele_key' : ('allele', 'allele_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('allele_key', 'create index %s on %s (allele_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the allele flower, containing mutations for each allele',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this row, no other purpose',
+		'allele_key' : 'identifies the allele',
+		'mutation' : 'one mutation for the allele',
+		},
+	Table.INDEX : {
+		'allele_key' : 'clusters data so that all mutations for an allele are stored together on disk, to aid quick retrieval',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

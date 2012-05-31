@@ -27,8 +27,23 @@ indexes = {}
 
 keys = { 'allele_key' : ('allele', 'allele_key') }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing counts of records in IMSR for each allele',
+	Table.COLUMN : {
+		'allele_key' : 'identifies the allele',
+		'cell_line_count' : 'count of cell lines in IMSR containing this allele',
+		'strain_count' : 'count of mouse strains in IMSR containing this allele',
+		'count_for_marker' : 'count of cell lines and mouse strains in IMSR which contain any allele of the same marker (gene) as this allele',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

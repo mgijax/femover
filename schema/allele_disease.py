@@ -28,14 +28,35 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'allele' : 'create index %s on %s (allele_key, sequence_num)',
-	}
+indexes = {}
 
 keys = { 'allele_key' : ('allele', 'allele_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('allele_key', 'create index %s on %s (allele_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table for the allele flower, containing data about diseases for which this allele is a mouse model',
+	Table.COLUMN : {
+		'allele_disease_key' : 'unique identifier for this row, no other significance',
+		'allele_key' : 'identifies the allele',
+		'is_heading' : '1 if this term is really a table header row, 0 if it is not (in which case it is a disease)',
+		'is_not' : '1 if this is a NOT annotation (so the disease was expected, but not found), 0 if it is a positive annotation',
+		'term' : 'name of the disease (or text of the header term if is_heading = 1)',
+		'term_id' : 'accession ID for the disease term',
+		'genotype_count' : 'number of genotypes involving this allele which are noted as mouse models of this disease',
+		'has_footnote' : '1 if this row has a footnote, 0 if not',
+		'sequence_num' : 'used to order rows for each allele',
+		},
+	Table.INDEX : {
+		'allele_key' : 'clusters data so all records for an allele are together on disk, to aid retrieval speed',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
