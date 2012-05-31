@@ -20,7 +20,9 @@ cmds = [
 		t.assocType as qualifier
 	from mgi_refassoctype t, mgi_reference_assoc a
 	where t._RefAssocType_key = a._RefAssocType_key
-		and t._MGIType_key = 11''',
+		and t._MGIType_key = 11
+		and exists (select 1 from all_allele aa
+			where a._Object_key = aa._Allele_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

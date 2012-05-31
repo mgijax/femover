@@ -16,7 +16,9 @@ AlleleMutationGatherer = Gatherer.Gatherer
 
 cmds = [ '''select m._Allele_key, t.term
 		from all_allele_mutation m, voc_term t
-		where m._Mutation_key = t._Term_key'''
+		where m._Mutation_key = t._Term_key
+			and exists (select 1 from all_allele a
+				where m._Allele_key = a._Allele_key)'''
 	]
 
 # order of fields (from the query results) to be written to the

@@ -19,7 +19,9 @@ cmds = [
 		a.accID, a.preferred, a.private, ldb.name as logicalDB
 	from acc_accession a, acc_logicaldb ldb
 	where a._MGIType_key = 11
-		and a._LogicalDB_key = ldb._LogicalDB_key'''
+		and a._LogicalDB_key = ldb._LogicalDB_key
+		and exists (select 1 from all_allele aa
+			where a._Object_key = aa._Allele_key)'''
 	]
 
 # order of fields (from the query results) to be written to the
