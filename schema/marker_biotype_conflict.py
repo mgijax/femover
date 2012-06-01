@@ -25,14 +25,32 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
-	}
+indexes = {}
 
 keys = { 'marker_key' : ('marker', 'marker_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the marker flower, containing data about biotype conflicts for markers.  These are instances where the MGI marker type does not match the biotype (marker type) called for this marker by at least one other entity.',
+	Table.COLUMN : {
+		'unique_key' : 'uniquely identifies this record, no other purpose',
+		'marker_key' : 'identifies the marker',
+		'acc_id' : 'primary ID for this marker assigned by logical_db',
+		'logical_db' : 'logical database with the different biotype',
+		'biotype' : 'biotype (marker type) assigned by the logical_db for this marker',
+		'sequence_num' : 'orders biotype conflict rows for each marker',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data so all rows for a marker are stored together on disk, to aid quick retrieval',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

@@ -23,7 +23,6 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'marker_key' : 'create index %s on %s (marker_key, annotation_key)',
 	'annotation_key' : 'create index %s on %s (annotation_key, marker_key)',
 	}
 
@@ -33,8 +32,30 @@ keys = {
 	'reference_key' : ('reference', 'reference_key'),
 	}
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key',
+	'create index %s on %s (marker_key, annotation_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'join table between the marker and annotation flowers, connecting a marker with its annotations',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this association, no other purpose',
+		'marker_key' : 'identifies the marker',
+		'annotation_key' : 'identifies an annotation for this marker',
+		'reference_key' : 'identifies the reference asserting this annotation',
+		'qualifier' : 'qualifier describing this association',
+		'annotation_type' : 'type of annotation',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data so all annotation associations for a marker are near each other on disk, aiding quick retrieval',
+		'annotation_key' : 'look up the marker for a given annotation',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

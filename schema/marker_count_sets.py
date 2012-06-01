@@ -22,14 +22,32 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
-	}
+indexes = {}
 
 keys = { 'marker_key' : ('marker', 'marker_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the marker flower, containing data for various count sets for each marker.  A count set is a named group of related counts, where each of those individual counts in the group is also named.',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this record, no other purpose',
+		'marker_key' : 'identifies the marker',
+		'set_type' : 'name of the count set (the group of related counts)',
+		'count_type' : 'name of this individual count (one member in the count set)',
+		'count' : 'the count itself',
+		'sequence_num' : 'orders count set items for each marker',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data so that all count set members for a marker are stored together on disk, aiding fast retrieval',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

@@ -26,8 +26,25 @@ indexes = {}
 
 keys = { 'marker_key' : ('marker', 'marker_key'), }
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the marker flower, containing pre-computed sorts for each marker',
+	Table.COLUMN : {
+		'marker_key' : 'identifies the marker',
+		'by_symbol' : 'sort by marker symbol, smart-alpha (handles embedded numbers intelligently)',
+		'by_marker_type' : 'sort by marker type',
+		'by_organism' : 'sort by organism containing the marker',
+		'by_primary_id' : 'sort by primary ID',
+		'by_location' : 'sort by location (preference to coordinates, then cM position, then cytogenetic band)',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

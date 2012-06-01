@@ -31,8 +31,35 @@ indexes = {
 	'primary_id' : 'create index %s on %s (primary_id)',
 	}
 
+# index used to cluster data in the table
+clusteredIndex = None
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'central table for the marker flower, containing basic information about each marker',
+	Table.COLUMN : {
+		'marker_key' : 'unique key identifying the marker, same as _Marker_key in mgd',
+		'symbol' : 'marker symbol',
+		'name' : 'descriptive name',
+		'marker_type' : 'type of marker',
+		'marker_subtype' : 'subtype of the marker',
+		'organism' : 'type of organism containing the marker',
+		'primary_id' : 'primary accession ID',
+		'logical_db' : 'logical database assigning the ID',
+		'status' : 'status for this marker',
+		'has_go_graph' : '1 if this marker has a graph of its GO associations available, 0 if not',
+		'has_go_orthology_graph' : '1 if this marker has a graph of GO associations (for it and its orthologous markers) available, 0 if not',
+		'is_in_reference_genome' : '1 if this marker is in the reference genome project, 0 if not',
+		},
+	Table.INDEX : {
+		'symbol' : 'look up markers by symbol',
+		'primary_id' : 'look up markers by primary ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes)
+table = Table.Table (tableName, createStatement, indexes, {}, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 

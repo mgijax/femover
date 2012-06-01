@@ -25,14 +25,36 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'marker_key' : 'create index %s on %s (marker_key)',
 	'acc_id' : 'create index %s on %s (acc_id)',
 	}
 
 keys = { 'marker_key' : ('marker', 'marker_key') }
 
+# index used to cluster data in the table
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
+
+# comments describing the table, columns, and indexes
+comments = {
+	Table.TABLE : 'petal table in the marker flower, containing various accession IDs assigned to markers',
+	Table.COLUMN : {
+		'unique_key' : 'unique key for this marker/ID pair',
+		'marker_key' : 'identifies the marker',
+		'logical_db' : 'logical database assigning the ID',
+		'acc_id' : 'accession ID',
+		'preferred' : '1 if this is the preferred ID for this marker by this logical database, 0 if not',
+		'private' : '1 if this ID should be considered private, 0 if it can be displayed',
+		'is_for_other_db_section' : '1 if this ID should appear in the Other Database Links section of the marker detail page, 0 if not',
+		'sequence_num' : 'orders IDs for a marker',
+		},
+	Table.INDEX : {
+		'marker_key' : 'clusters data so all IDs for a marker are stored near each other on disk, to aid quick retrieval',
+		'acc_id' : 'look up a marker by its ID',
+		},
+	}
+
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys)
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
+		clusteredIndex)
 
 ###--- Main program ---###
 
