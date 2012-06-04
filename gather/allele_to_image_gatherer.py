@@ -42,6 +42,8 @@ cmds = [
 	where i._Image_key = p._Image_key
 		and p._ImagePane_key = a._ImagePane_key
 		and a._MGIType_key = 11
+		and exists (select 1 from all_allele aa
+			where aa._Allele_key = a._Object_key)
 	union
 	select i._Image_key,
 		gag._Allele_key,
@@ -54,6 +56,8 @@ cmds = [
 		and p._ImagePane_key = a._ImagePane_key
 		and a._MGIType_key = 12
 		and a._Object_key = gag._Genotype_key
+		and exists (select 1 from all_allele aa
+			where aa._Allele_key = gag._Allele_key)
 	order by _Allele_key'''
 	]
 
