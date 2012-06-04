@@ -1,3 +1,10 @@
+TAG: femover-5-0-1-5
+DATE: 06/04/2012
+STAFF: jsb
+CHANGES:
+1) updated allele_to_image_gatherer.py to exclude image associations for 
+	alleles which have been deleted
+
 TAG: femover-5-0-1-4
 DATE: 06/01/2012
 STAFF: jsb
