@@ -154,7 +154,7 @@ BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
-	'disease',
+	'disease', 'marker_to_genotype',
 	]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
