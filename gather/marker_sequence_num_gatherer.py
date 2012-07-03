@@ -1,6 +1,11 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'markerSequenceNum' table in the front-end database
+#
+# 07/02/2012    lec
+#       GXD scrum/TR10269
+#	- added sort by 'name'
+#
 
 import Gatherer
 import logger
@@ -17,6 +22,7 @@ else:
 ###--- Classes ---###
 
 SYMBOL = 'bySymbol'
+NAME = 'byName'
 TYPE = 'byMarkerType'
 ORGANISM = 'byOrganism'
 ID = 'byPrimaryID'
@@ -54,6 +60,24 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 
 		logger.debug ('Ordered the %d organisms' % len(organismOrder))
 
+		# compute and cache the ordering for name
+
+		toSort = []	# for sorting
+		nameOrder = {}	# nameOrder[marker key] = seq num
+		keyCol = Gatherer.columnNumber (self.results[0][0], '_Marker_key')
+		nameCol = Gatherer.columnNumber (self.results[0][0], 'name')
+		for row in self.results[0][1]:
+			toSort.append( (row[nameCol].lower(), row[keyCol]) )
+		toSort.sort()
+		logger.debug ('Ordered the names: %d' % len(toSort))
+
+		i = 0
+		for (name, key) in toSort:
+			i = i + 1
+			if not nameOrder.has_key(key):
+				nameOrder[key] = i
+		logger.debug ('Assigned seq nums to name')
+
 		# start collecting the actual data to be sorted...
 
 		# dict[marker key] = [ marker key, sort 1, ... sort n ]
@@ -61,8 +85,8 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 
 		# marker symbol (assumes all markers are in this query)
 
-		symbols = []	# list of (lowercase symbol, marker key,
-				# marker type key, organism key)
+		symbols = []	# list of (lowercase symbol, lowercase name, 
+				# marker key, marker type key, organism key)
 
 		keyCol = Gatherer.columnNumber (self.results[0][0],
 			'_Marker_key')
@@ -71,10 +95,11 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		orgCol = Gatherer.columnNumber (self.results[0][0],
 			'_Organism_key')
 		symCol = Gatherer.columnNumber (self.results[0][0], 'symbol')
+		nameCol = Gatherer.columnNumber (self.results[0][0], 'name')
 
 		for row in self.results[0][1]:
 			# symbol sorting will be case-insensitive
-			symbols.append ( (row[symCol].lower(), row[keyCol],
+			symbols.append ( (row[symCol].lower(), row[keyCol], row[keyCol],
 				row[typeCol], row[orgCol]) )
 
 		# sort the tuples by comparing the nomenclature using our
@@ -84,12 +109,12 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 			symbolsort.nomenCompare(a[0], b[0]))
 
 		i = 1
-		for (symbol, markerKey, t, o) in symbols:
-			dict[markerKey] = [ markerKey, i, typeOrder[t],
+		for (symbol, n, markerKey, t, o) in symbols:
+			dict[markerKey] = [ markerKey, i, nameOrder[n], typeOrder[t],
 				organismOrder[o] ]
 			i = i + 1
 
-		self.finalColumns = [ '_Marker_key', SYMBOL, TYPE, ORGANISM ]
+		self.finalColumns = [ '_Marker_key', SYMBOL, NAME, TYPE, ORGANISM ]
 
 		logger.debug ('Sorted %d by symbol' % len(dict))
 
@@ -188,8 +213,14 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
+#
+# result 0: markers
+#	this statement is selecting all markers from all organisms (not just mouse)
+#	includes withdrawn as well as official/current nomenclature
+#
+
 cmds = [
-	'''select _Marker_key, symbol, _Marker_Type_key,
+	'''select _Marker_key, symbol, name, _Marker_Type_key,
 			_Organism_key
 		from mrk_marker''',
 
@@ -224,7 +255,7 @@ cmds = [
 # order of fields (from the Sybase query results) to be written to the
 # output file
 fieldOrder = [
-	'_Marker_key', SYMBOL, TYPE, ORGANISM, ID, LOCATION,
+	'_Marker_key', SYMBOL, NAME, TYPE, ORGANISM, ID, LOCATION,
 	]
 
 # prefix for the filename of the output file
