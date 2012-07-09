@@ -5,6 +5,7 @@
 # 07/02/2012    lec
 #       GXD scrum/TR10269
 #	- added sort by 'name'
+#	- added sort by 'symbol' to byLocation
 #
 
 import Gatherer
@@ -168,11 +169,13 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		cmCol = Gatherer.columnNumber (columns, offset)
 		cytoCol = Gatherer.columnNumber (columns, 'cytogeneticOffset')
 		chrCol = Gatherer.columnNumber (columns, 'sequenceNum')
+		symbolCol = Gatherer.columnNumber (columns, 'symbol')
 
 		for row in self.results[5][1]:
 			startCoord = row[startCol]
 			cmOffset = row[cmCol]
 			cytoband = row[cytoCol]
+			symbol = row[symbolCol].lower()
 
 			if startCoord == None:
 				startCoord = maxCoord
@@ -182,7 +185,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 				cytoband == maxCytoband
 
 			locations.append ( (row[chrCol], startCoord,
-				cmOffset, cytoband, row[keyCol]) )
+				cmOffset, cytoband, symbol, row[keyCol]) )
 		locations.sort()	
 
 		allKeys = {}
@@ -190,7 +193,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 			allKeys[key] = 1
 
 		i = 0
-		for (a,b,c,d, markerKey) in locations:
+		for (a,b,c,d,e,markerKey) in locations:
 			if allKeys.has_key (markerKey):
 				i = i + 1
 				del allKeys[markerKey]
@@ -245,11 +248,10 @@ cmds = [
 	'''select max(startCoordinate) as maxStart
 		from mrk_location_cache''',
 
-	'''select _Marker_key, chromosome, startCoordinate,
-			%s, cytogeneticOffset, sequenceNum
-		from mrk_location_cache c
-		where exists (select 1 from mrk_marker m
-			where m._Marker_key = c._Marker_key)''' % offset,
+	'''select c._Marker_key, c.chromosome, c.startCoordinate,
+			c.%s, c.cytogeneticOffset, c.sequenceNum, m.symbol
+		from mrk_location_cache c, mrk_marker m
+		where c._Marker_key = m._Marker_key''' % offset,
 	]
 
 # order of fields (from the Sybase query results) to be written to the
