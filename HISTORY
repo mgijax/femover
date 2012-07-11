@@ -2,7 +2,8 @@ TAG: no tag
 DATE: 07/11/2012
 STAFF: lec
 CHANGES:
-1) backupDB.sh: obsolete; removed
+1) backupDB.sh: obsolete
+2) printDbParameters: obsolete
 
 TAG: femover-5-0-1-5
 DATE: 06/04/2012
