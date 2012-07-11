@@ -161,7 +161,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		maxCytoband = 'ZZZZ'	# bigger than any cytoband
 
 		locations = []		# list of (chrom seq num, start coord,
-					# cM offset, cytoband, marker key)
+					# cM offset, cytoband, symbol, marker key)
 
 		columns = self.results[5][0]
 		keyCol = Gatherer.columnNumber (columns, '_Marker_key')
@@ -221,11 +221,19 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 #	this statement is selecting all markers from all organisms (not just mouse)
 #	includes withdrawn as well as official/current nomenclature
 #
+#
+# idea:  
+# 1) read the list of marker key/symbol that do not contain mrk_location_cache rows 
+#    sorty by symbol
+#    and store in a list
+#    this can be used later to help sort the main "dict" dictionary
+#
 
 cmds = [
 	'''select _Marker_key, symbol, name, _Marker_Type_key,
 			_Organism_key
-		from mrk_marker''',
+		from mrk_marker
+		''',
 
 	'''select _Marker_Type_key, name
 		from mrk_types
@@ -251,7 +259,8 @@ cmds = [
 	'''select c._Marker_key, c.chromosome, c.startCoordinate,
 			c.%s, c.cytogeneticOffset, c.sequenceNum, m.symbol
 		from mrk_location_cache c, mrk_marker m
-		where c._Marker_key = m._Marker_key''' % offset,
+		where c._Marker_key = m._Marker_key
+		''' % offset,
 	]
 
 # order of fields (from the Sybase query results) to be written to the
