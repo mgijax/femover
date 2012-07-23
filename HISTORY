@@ -1,4 +1,12 @@
 TAG: no tag
+DATE: 07/23/2012
+STAFF: lec
+CHANGES:
+1) gather/expression_result_summary_gatherer.py
+2) schema/expression_result_summary.py
+add 'mgd_structure_key', 'mgd_structureKey'
+
+TAG: no tag
 DATE: 07/11/2012
 STAFF: lec
 CHANGES:

@@ -6,6 +6,11 @@ import Table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
+#
+# 07/23/2012    lec
+#       - TR10269
+#       - added 'mgd_structure_key'
+#       - this field represents the true GXD_Structure.structure_key value
 
 ###--- Globals ---###
 
@@ -29,6 +34,7 @@ createStatement = '''CREATE TABLE %s  (
 	structure		varchar(80)	null,
 	structure_printname	varchar(255)	null,
 	structure_key		int		null,
+	mgd_structure_key	int		null,
 	detection_level		varchar(255)	null,
 	is_expressed		varchar(20)	null,
 	reference_key		int		null,
@@ -49,6 +55,7 @@ indexes = {
 	'assay_key' : 'create index %s on %s (assay_key)',
 	'marker_key' : 'create index %s on %s (marker_key)',
 	'structure_key' : 'create index %s on %s (structure_key)',
+	'mgd_structure_key' : 'create index %s on %s (mgd_structure_key)',
 	'reference_key' : 'create index %s on %s (reference_key)',
 	'genotype_key' : 'create index %s on %s (genotype_key)',
 	}
@@ -79,7 +86,8 @@ comments = {
 	    'age_max' : 'computed maximum age (in DPC), based on textual age',
 	    'structure' : 'name of the anatomical structure in which expression was studied',
 	    'structure_printname' : 'includes names of any parent nodes for structure, to establish context to uniquely identify the structure from its name',
-	    'structure_key' : 'unique key for the given structure',
+	    'structure_key' : 'unique key for the given structure/term',
+	    'mgd_structure_key' : 'unique mgd key for the given structure',
 	    'detection_level' : 'strength of expression as reported in the literature',
 	    'is_expressed' : 'summarization of detection_level -- was expression detected?',
 	    'reference_key' : 'foreign key to reference table; identifies the source of the expression data',
