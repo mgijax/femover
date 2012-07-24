@@ -1,4 +1,10 @@
 TAG: no tag
+DATE: 07/24/2012
+STAFF: lec
+CHANGES:
+1) lib/python/dbManager.py; obsolete; use lib_py_postgres/dbManager.py (library)
+
+TAG: no tag
 DATE: 07/23/2012
 STAFF: lec
 CHANGES:
