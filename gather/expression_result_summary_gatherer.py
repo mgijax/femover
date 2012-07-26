@@ -2,12 +2,6 @@
 # 
 # gathers data for the 'expression_result_summary' and 
 # 'expression_result_to_imagepane' tables in the front-end database
-#
-# 07/23/2012	lec
-#	- TR10269
-#	- added 'mgd_structureKey'
-#	- this field represents the true GXD_Structure.structure_key value
-#
 
 import Gatherer
 import logger
@@ -478,7 +472,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ersCols = [ 'result_key', '_Assay_key', 'assayType',
 			'assayID', '_Marker_key', 'symbol', 'system', 'stage',
 			'age', 'ageAbbreviation', 'age_min', 'age_max',
-			'structure', 'printname', 'structureKey', 'mgd_structureKey',
+			'structure', 'printname', 'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
 			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type',
 			'pattern'
@@ -559,7 +553,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    ADVocab.getStructure(structureKey),
 			    ADVocab.getPrintname(structureKey),
 			    ADVocab.getTermKey(structureKey),
-			    structureKey,
 			    strength,
 			    getIsExpressed(strength),
 			    refsKey,
@@ -960,8 +953,8 @@ files = [
 		[ 'result_key', '_Assay_key', 'assayType', 'assayID',
 		'_Marker_key', 'symbol', 'system', 'stage', 'age',
 		'ageAbbreviation', 'age_min', 'age_max',
-		'structure', 'printname', 'structureKey', 'mgd_structureKey', 
-		'detectionLevel', 'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
+		'structure', 'printname', 'structureKey', 'detectionLevel',
+		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
 		'_Genotype_key', 'is_wild_type', 'pattern' ],
 		'expression_result_summary'),
 

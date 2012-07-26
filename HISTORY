@@ -1,13 +1,26 @@
 TAG: no tag
+DATE: 07/26/2012
+STAFF: lec
+CHANGES:
+TR10269
+REMOVED 'mgd_structure_key' change in:
+	gather/expression_result_summary_gatherer.py
+	schema/expression_result_summary.py
+after realizing that table 'term' and 'term_anatomy_extras'
+contains the information we need
+
+TAG: no tag
 DATE: 07/24/2012
 STAFF: lec
 CHANGES:
+TR10269
 1) lib/python/dbManager.py; obsolete; use lib_py_postgres/dbManager.py (library)
 
 TAG: no tag
 DATE: 07/23/2012
 STAFF: lec
 CHANGES:
+TR10269
 1) gather/expression_result_summary_gatherer.py
 2) schema/expression_result_summary.py
 add 'mgd_structure_key', 'mgd_structureKey'
@@ -16,6 +29,7 @@ TAG: no tag
 DATE: 07/11/2012
 STAFF: lec
 CHANGES:
+TR10269
 1) backupDB.sh: obsolete
 2) printDbParameters: obsolete
 

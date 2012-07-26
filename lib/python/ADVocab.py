@@ -5,6 +5,10 @@
 # Assumptions:  Technically, the AD structure is a tree rather than a DAG.
 #	That is, each node has only one parent, so there is only a single path
 #	to get to each node.
+#
+# 07/26/2012	lec
+#	- TR10269/removed 'conceptus' hack
+#
 
 import dbAgnostic
 import logger
@@ -229,8 +233,6 @@ def _loadTermData():
 		MAX_DEPTH = max(MAX_DEPTH, depth)
 
 		term = row[termCol]
-		if (term is None) or (term.strip() == ''):
-			term = 'conceptus'
 
 		printName = row[printnameCol]
 		if (printName is None) or (printName.strip() == ''):
