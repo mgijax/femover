@@ -1,4 +1,14 @@
 TAG: no tag
+DATE: 08/01/2012
+STAFF: lec
+CHANGES:
+TR10269
+removed:
+schema/anatomy_structures_synonyms.py
+gather/anatomy_structures_synonyms_gatherer.py
+*not being used*
+
+TAG: no tag
 DATE: 07/26/2012
 STAFF: lec
 CHANGES:
