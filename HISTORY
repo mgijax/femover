@@ -1,3 +1,8 @@
+TAG: femover-tr7106-BP
+DATE: 08/16/2012
+STAFF: sc
+CHANGES: branch point for TR7106 (coordinates for any marker)
+
 TAG: femover-5-1-0-2
 DATE: 8/7/2012
 STAFF: lec
@@ -128,6 +133,7 @@ CHANGES:
 3) added expression results
 4) reduced parallelization when writing to database to avoid errors on falas
 
+>>>>>>> 1.27
 TAG: femover-5-0-0-7
 DATE: 02/29/2012
 STAFF: jsb
