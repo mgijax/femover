@@ -1,3 +1,9 @@
+TAG: femover-tr7106-1
+DATE: 08/17/2012
+STAFF: sc
+CHANGES:  marker_location_gatherer.py - updated to use 
+	genomic chromosome where appropriate
+
 TAG: femover-tr7106-BP
 DATE: 08/16/2012
 STAFF: sc
