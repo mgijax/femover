@@ -130,9 +130,9 @@ class AssaySeqNumGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. symbols for all markers cited in expression assays
 	'''select distinct m._Marker_key, m.symbol
-		from GXD_Assay a,
-			MRK_Marker m
-		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		from gxd_assay a,
+			mrk_marker m
+		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
 		and a._Marker_key = m._Marker_key''',
 
 	# 1. data needed to order assays
@@ -140,9 +140,9 @@ cmds = [
 			a._Marker_key,
 			a._Refs_key,
 			t.assayType
-		from GXD_Assay a,
-			GXD_AssayType t
-		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		from gxd_assay a,
+			gxd_assaytype t
+		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
 		and a._AssayType_key = t._AssayType_key''',
 	]
 

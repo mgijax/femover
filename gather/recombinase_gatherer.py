@@ -643,8 +643,8 @@ cmds = [
 
 	# assay notes by assay key
 	'''select distinct a._Assay_key, a.sequenceNum, a.assayNote
-	from GXD_AssayNote a,
-		ALL_Cre_Cache c
+	from gxd_assaynote a,
+		all_cre_cache c
 	where a._Assay_key = c._Assay_key
 	order by a.sequenceNum''',
 
@@ -655,10 +655,10 @@ cmds = [
 		acc.accID,
 		acc._LogicalDB_key
 	from ALL_Cre_Cache c,
-		GXD_Assay a,
-		GXD_ProbePrep g,
-		PRB_Probe p,
-		ACC_Accession acc
+		gxd_assay a,
+		gxd_probeprep g,
+		prd_probe p,
+		acc_accession acc
 	where c._Assay_key = a._Assay_key
 		and a._ProbePrep_key = g._ProbePrep_key
 		and g._Probe_key = p._Probe_key
@@ -674,11 +674,11 @@ cmds = [
 		p.antibodyName as name,
 		acc.accID,
 		acc._LogicalDB_key
-	from ALL_Cre_Cache c,
-		GXD_Assay a,
-		GXD_Antibodyprep g,
-		GXD_Antibody p,
-		ACC_Accession acc
+	from all_cre_cache c,
+		gxd_assay a,
+		gxd_antibodyprep g,
+		gxd_antibody p,
+		acc_accession acc
 	where c._Assay_key = a._Assay_key
 		and a._AntibodyPrep_key = g._AntibodyPrep_key
 		and g._Antibody_key = p._Antibody_key
@@ -695,13 +695,13 @@ cmds = [
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
 		r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
 		b.jnumID, c._System_key
-	from ALL_Cre_Cache c,
-		GXD_Assay a,
-		GXD_Specimen s,
-		GXD_InSituResult r,
-		GXD_ISResultStructure rs,
-		BIB_Citation_Cache b,
-		GXD_Structure pn
+	from all_cre_cache c,
+		gxd_assay a,
+		gxd_specimen s,
+		gxd_insituresult r,
+		gxd_iSresultstructure rs,
+		bib_citation_cache b,
+		gxd_structure pn
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
@@ -712,11 +712,11 @@ cmds = [
 
 	# image panes associated with recombinase assay results
 	'''select distinct g._Result_key, i.paneLabel, i._Image_key
-	from IMG_ImagePane i,
-		GXD_InSituResultImage g,
-		GXD_InSituResult r,
-		GXD_Specimen s,
-		ALL_Cre_Cache c
+	from img_imagepane i,
+		gxd_insituresultimage g,
+		gxd_insituresult r,
+		gxd_specimen s,
+		all_cre_cache c
 	where g._ImagePane_key = i._ImagePane_key
 		and g._Result_key = r._Result_key
 		and r._Specimen_key = s._Specimen_key

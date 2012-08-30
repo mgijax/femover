@@ -7,7 +7,7 @@
 #
 # 08/27/2012	lec
 #	- TR11150/scrum-dog TR10273
-#	add checks to GXD_Expression
+#	add checks to gxd_expression
 #	Assays that are not fully-coded will not be loaded into this gatherer
 #	
 
@@ -47,7 +47,7 @@ TIMES = [ (' day ',''), ('week ','w '), ('month ','m '), ('year ','y ') ]
 QUALIFIERS = [ ('embryonic', 'E'), ('postnatal', 'P') ]
 
 def abbreviate (
-	s		# string; specimen's age from GXD_Expression.age
+	s		# string; specimen's age from gxd_expression.age
 	):
 	# Purpose: convert 's' to a more condensed format for display on a
 	#	query results page
@@ -793,21 +793,21 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 ###--- globals ---###
 
 cmds = [
-	# While it would be nice to make use of the GXD_Expression table to
+	# While it would be nice to make use of the gxd_expression table to
 	# assemble our data, it does not provide access to some information we
 	# need, like the raw 'strength' of detection values.  So, we are left
 	# building the summary data back up from the base tables.
 
 	#
 	# TR10273/notes:
-	# The GXD_Expression cache could be changed/added to in order
+	# The gxd_expression cache could be changed/added to in order
 	# to provide the information required by this gatherer.
 	#
 
 	# 0. MGI IDs for expression assays
 	'''select _Object_key as _Assay_key,
 		accID
-	from ACC_Accession
+	from acc_accession
 	where _MGIType_key = 8
 		and _LogicalDB_key = 1
 		and private = 0
@@ -816,26 +816,26 @@ cmds = [
 	# 1. J: numbers (IDs) for references with expression data
 	'''select a._Object_key as _Refs_key,
 		a.accID
-	from ACC_Accession a
+	from acc_accession a
 	where a._MGIType_key = 1
 		and a.private = 0
 		and a.preferred = 1
 		and a._LogicalDB_key = 1
 		and a.prefixPart = 'J:'
-		and exists (select 1 from GXD_Expression g
+		and exists (select 1 from gxd_expression g
 			where a._Object_key = g._Refs_key)''',
 
 	# 2. marker symbols studied in expression data
 	'''select m._Marker_key, m.symbol
-	from MRK_Marker m
-	where exists (select 1 from GXD_Expression g
+	from mrk_marker m
+	where exists (select 1 from gxd_expression g
 		where m._Marker_key = g._Marker_key)''',
 
 	# 3. list of image panes which have dimensions (indicates whether we
 	# have the actual image available for display or not)
 
 	'''select p._ImagePane_key
-	from IMG_ImagePane p, IMG_Image i, VOC_Term t
+	from img_imagePane p, img_image i, voc_term t
 	where p._Image_key = i._Image_key
 		and i.xDim is not null
 		and i._ImageClass_key = t._Term_key
@@ -844,21 +844,21 @@ cmds = [
 	# 4. set of reporter genes which would indicate a recombinase assay
 	# (for assay types where it's not automatically a recombinase assay)
 	'''select msm._Object_key as _ReporterGene_key
-	from MGI_Set ms, MGI_SetMember msm
+	from mgi_set ms, mgi_setmember msm
 	where ms._Set_key = msm._Set_key
 		and ms.name = 'Recombinases' ''',
 
 	# 5. image panes for in situ results
 	'''select distinct i._Result_key, i._ImagePane_key
-	from GXD_InSituResultImage i''',
+	from gxd_insituresultimage i''',
 
 	# 6. basic assay data (image key here is for gel assays)
 	'''select a._Assay_key, a._AssayType_key, t.assayType,
 		a._Refs_key, a._Marker_key, a._ImagePane_key,
 		a._ReporterGene_key, t.isGelAssay
-	from GXD_Assay a, GXD_AssayType t
+	from gxd_assay a, gxd_assaytype t
 	where a._AssayType_key = t._AssayType_key
-	and exists (select 1 from GXD_Expression e where e._Assay_key = a._Assay_key)''',
+	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key)''',
 
 	# 7. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
@@ -873,11 +873,11 @@ cmds = [
 		s.ageMin,
 		s.ageMax,
 		p.pattern
-	from GXD_Specimen s,
-		GXD_InSituResult r,
-		GXD_Strength st,
-		GXD_ISResultStructure rs,
-		GXD_Pattern p
+	from gxd_specimen s,
+		gxd_insituresult r,
+		gxd_strength st,
+		gxd_isresultstructure rs,
+		gxd_pattern p
 	where s._Specimen_key = r._Specimen_key
 		and r._Strength_key = st._Strength_key
 		and r._Pattern_key = p._Pattern_key
@@ -901,10 +901,10 @@ cmds = [
 		g.ageMin,
 		g.ageMax,
 		g._GelLane_key
-	from GXD_GelLane g,
-		GXD_GelBand b,
-		GXD_Strength st,
-		GXD_GelLaneStructure gs
+	from gxd_gellane g,
+		gxd_gelband b,
+		gxd_strength st,
+		gxd_gellanestructure gs
 	where g._GelControl_key = 1
 		and g._GelLane_key = b._GelLane_key
 		and b._Strength_key = st._Strength_key
@@ -914,28 +914,28 @@ cmds = [
 	'''select gap._Genotype_key,
 		a1.symbol as symbol1,
 		a2.symbol as symbol2
-	from GXD_AllelePair gap
-	inner join ALL_Allele a1 on (gap._Allele_key_1 = a1._Allele_key)
-	left outer join ALL_Allele a2 on (gap._Allele_key_2 = a2._Allele_key)
-	where exists (select 1 from GXD_Specimen s
+	from gxd_allelepair gap
+	inner join all_allele a1 on (gap._Allele_key_1 = a1._Allele_key)
+	left outer join all_allele a2 on (gap._Allele_key_2 = a2._Allele_key)
+	where exists (select 1 from gxd_specimen s
 			where s._Genotype_key = gap._Genotype_key)
-		or exists (select 1 from GXD_GelLane g
+		or exists (select 1 from gxd_gellane g
 			where g._Genotype_key = gap._Genotype_key)
 	order by gap.sequenceNum''',
 
 	# 10. ordered list of systems
 	'''select distinct t.term
-	from GXD_Structure s,
-		VOC_Term t
+	from gxd_structure s,
+		voc_term t
 	where s._System_key = t._Term_key
 	order by t.term''',
 
 	# 11. genotypes with no allele pairs (treat expression assays for
 	# these as wild type)
 	'''select g._Genotype_key
-	from GXD_Genotype g
+	from gxd_genotype g
 	where g._Genotype_key >= 0
-		and not exists (select 1 from GXD_AllelePair p
+		and not exists (select 1 from gxd_allelepair p
 			where g._Genotype_key = p._Genotype_key)''',
 
 	# 12. also treat expression assays for these genotypes as wild type;
@@ -946,17 +946,17 @@ cmds = [
 	#	d. both alleles for the assayed gene
 	'''select distinct s._Assay_key,
 		s._Genotype_key
-	from GXD_Specimen s,
-		GXD_Assay a,
-		GXD_AlleleGenotype gag1,
-		GXD_AlleleGenotype gag2,
-		ALL_Allele a1,
-		ALL_Allele a2
+	from gxd_specimen s,
+		gxd_assay a,
+		gxd_allelegenotype gag1,
+		gxd_allelegenotype gag2,
+		all_allele a1,
+		all_allele a2
 	where s._Assay_key = a._Assay_key
 		and a._AssayType_key = 9
 		and s._Genotype_key >= 0
-		and exists (select 1 from GXD_Expression e where e._Assay_key = a._Assay_key)
-		and not exists (select 1 from GXD_AllelePair gap
+		and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key)
+		and not exists (select 1 from gxd_allelepair gap
 			where s._Genotype_key = gap._Genotype_key
 			and gap.sequenceNum > 1)
 		and s._Genotype_key = gag1._Genotype_key

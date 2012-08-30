@@ -19,8 +19,8 @@ cmds = [ '''select a._Marker_key,
 			a._Assay_key,
 			a._Refs_key,
 			null as qualifier
-		from Gxd_Assay a
-		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)''',
+		from gxd_assay a
+		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

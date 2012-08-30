@@ -128,20 +128,20 @@ cmds = [
 
 	# count of expression results
 	'''select a._Refs_key, count(distinct e._Expression_key) as numResults
-		from GXD_Assay a, GXD_Expression e
+		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
 		group by a._Refs_key''',
 
 	# count of structures with expression results
 	'''select _Refs_key, count(distinct _Structure_key) as numStructures
-		from GXD_Expression
+		from gxd_expression
 		where isForGXD = 1
 		group by _Refs_key''',
 
 	# count of expression assays
 	'''select a._Refs_key, count(distinct a._Assay_key) as numAssays
-		from GXD_Assay a, GXD_Expression e
+		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
 		group by a._Refs_key''',

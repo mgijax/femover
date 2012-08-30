@@ -677,9 +677,9 @@ class AccessionGatherer:
 	def fillAssays (self, accessionFile):
 	    cmd = '''select g._Assay_key, a.accID, a._LogicalDB_key,
 	    			a._MGIType_key, t.assayType, m.symbol
-	    		from GXD_Assay g, ACC_Accession a, MRK_Marker m,
-				GXD_AssayType t
-			where exists (select 1 from GXD_Expression e where g._Assay_key = e._Assay_key)
+	    		from gxd_assay g, ACC_Accession a, MRK_Marker m,
+				gxd_assaytype t
+			where exists (select 1 from gxd_expression e where g._Assay_key = e._Assay_key)
 				and a._MGIType_key = 8
 				and a._Object_key = g._Assay_key
 				and a.private = 0

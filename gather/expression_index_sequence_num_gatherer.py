@@ -88,12 +88,12 @@ class ExpressionIndexSequenceNumGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select distinct i._Refs_key, r.year, c.numericPart
-		from BIB_Refs r, BIB_Citation_Cache c, GXD_Index i
+		from bib_refs r, bib_citation_cache c, gxd_index i
 		where r._Refs_key = c._Refs_key
 			and r._Refs_key = i._Refs_key''',
 
 	'''select distinct i._Marker_key, m.symbol
-		from GXD_Index i, MRK_Marker m
+		from gxd_index i, mrk_marker m
 		where i._Marker_key = m._Marker_key''',
 
 	'select _Index_key, _Marker_key, _Refs_key from gxd_index',

@@ -179,8 +179,8 @@ cmds = [
 	# 5. count of expression assays for each marker
 	# (omit Recombinase reporter assays)
 	'''select a._Marker_key, count(a._Assay_key) as numAssay
-		from GXD_Assay a
-		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		from gxd_assay a
+		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
 		and a._AssayType_key != 11
 		group by a._Marker_key''',
 
