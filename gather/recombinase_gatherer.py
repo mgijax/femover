@@ -657,7 +657,7 @@ cmds = [
 	from ALL_Cre_Cache c,
 		gxd_assay a,
 		gxd_probeprep g,
-		prd_probe p,
+		prb_probe p,
 		acc_accession acc
 	where c._Assay_key = a._Assay_key
 		and a._ProbePrep_key = g._ProbePrep_key
