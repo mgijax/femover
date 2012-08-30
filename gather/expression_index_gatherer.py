@@ -17,8 +17,8 @@ ExpressionIndexGatherer = Gatherer.Gatherer
 cmds = [
 	'''select i._Index_key, i._Refs_key, c.jnumID, m._Marker_key,
 			m.symbol, m.name, a.accID, i.comments
-		from gxd_index i, bib_citation_cache c, mrk_marker m,
-			acc_accession a
+		from GXD_Index i, bib_citation_cache c, mrk_marker m,
+			ACC_Accession a
 		where i._Marker_key = m._Marker_key
 			and m._Marker_key = a._Object_key
 			and a._MGIType_key = 2

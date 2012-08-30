@@ -2,6 +2,14 @@
 # 
 # gathers data for the 'expression_result_summary' and 
 # 'expression_result_to_imagepane' tables in the front-end database
+#
+# HISTORY
+#
+# 08/27/2012	lec
+#	- TR11150/scrum-dog TR10273
+#	add checks to GXD_Expression
+#	Assays that are not fully-coded will not be loaded into this gatherer
+#	
 
 import Gatherer
 import logger
@@ -254,16 +262,17 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 		    assayKey = row[assayCol]
+
 		    if extras.has_key(assayKey):
 	 		extras[assayKey].append( [ row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
 				row[structureCol], row[ageMinCol],
 				row[ageMaxCol], row[patternCol] ] )
 		    else:
-	 		extras[assayKey] = [ [ row[genotypeCol],
-				row[ageCol], row[strengthCol], row[resultCol],
-				row[structureCol], row[ageMinCol],
-				row[ageMaxCol], row[patternCol] ] ]
+	 	 	extras[assayKey] = [ [ row[genotypeCol],
+		 		row[ageCol], row[strengthCol], row[resultCol],
+		 		row[structureCol], row[ageMinCol],
+		 		row[ageMaxCol], row[patternCol] ] ]
 
 
 		logger.debug ('Got extra data for %d in situ assays' % \
@@ -495,12 +504,17 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for [ assayKey, assayType, refsKey, markerKey, imagepaneKey,
 		    reporterGeneKey, isGel ] in assays:
 			
+		    #
+		    # select the 'extra' assay information
+		    #
+
 		    if isGel:
 			extras = gelExtras[assayKey]
 		    else:
 			extras = inSituExtras[assayKey]
 
 		    for items in extras:
+
 			hasImage = 0	# is there a displayable image for
 					# ...this result?
 
@@ -784,6 +798,12 @@ cmds = [
 	# need, like the raw 'strength' of detection values.  So, we are left
 	# building the summary data back up from the base tables.
 
+	#
+	# TR10273/notes:
+	# The GXD_Expression cache could be changed/added to in order
+	# to provide the information required by this gatherer.
+	#
+
 	# 0. MGI IDs for expression assays
 	'''select _Object_key as _Assay_key,
 		accID
@@ -802,13 +822,13 @@ cmds = [
 		and a.preferred = 1
 		and a._LogicalDB_key = 1
 		and a.prefixPart = 'J:'
-		and exists (select 1 from GXD_Assay g
+		and exists (select 1 from GXD_Expression g
 			where a._Object_key = g._Refs_key)''',
 
 	# 2. marker symbols studied in expression data
 	'''select m._Marker_key, m.symbol
 	from MRK_Marker m
-	where exists (select 1 from GXD_Assay g
+	where exists (select 1 from GXD_Expression g
 		where m._Marker_key = g._Marker_key)''',
 
 	# 3. list of image panes which have dimensions (indicates whether we
@@ -836,9 +856,9 @@ cmds = [
 	'''select a._Assay_key, a._AssayType_key, t.assayType,
 		a._Refs_key, a._Marker_key, a._ImagePane_key,
 		a._ReporterGene_key, t.isGelAssay
-	from GXD_Assay a,
-		GXD_AssayType t
-	where a._AssayType_key = t._AssayType_key''',
+	from GXD_Assay a, GXD_AssayType t
+	where a._AssayType_key = t._AssayType_key
+	and exists (select 1 from GXD_Expression e where e._Assay_key = a._Assay_key)''',
 
 	# 7. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
@@ -935,6 +955,7 @@ cmds = [
 	where s._Assay_key = a._Assay_key
 		and a._AssayType_key = 9
 		and s._Genotype_key >= 0
+		and exists (select 1 from GXD_Expression e where e._Assay_key = a._Assay_key)
 		and not exists (select 1 from GXD_AllelePair gap
 			where s._Genotype_key = gap._Genotype_key
 			and gap.sequenceNum > 1)

@@ -218,10 +218,11 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 cmds = [
 	# 0. cache all markers cited in GXD assays
 	'''select m._Marker_key, m.symbol, acc.accID
-	from mrk_marker m,
-		acc_accession acc,
-		gxd_assay a
-	where m._Marker_key = a._Marker_key
+	from MRK_Marker m,
+		ACC_Accession acc,
+		GXD_Assay a
+	where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and m._Marker_key = a._Marker_key
 		and m._Marker_key = acc._Object_key
 		and acc._MGIType_key = 2
 		and acc._LogicalDB_key = 1
@@ -237,12 +238,13 @@ cmds = [
 		i.xDim,
 		p._ImagePane_key,
 		i._ThumbnailImage_key
-	from img_image i,
-		img_imagepane p,
-		gxd_assay a,
-		acc_accession acc,
-		gxd_assaytype gat
-	where i._Image_key = p._Image_key
+	from IMG_Image i,
+		IMG_ImagePane p,
+		GXD_Assay a,
+		ACC_Accession acc,
+		GXD_AssayType gat
+	where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and i._Image_key = p._Image_key
 		and p._ImagePane_key = a._ImagePane_key
 		and a._Assay_key = acc._Object_key
 		and acc._MGIType_key = 8
@@ -260,15 +262,16 @@ cmds = [
 		i.xDim,
 		p._ImagePane_key,
 		i._ThumbnailImage_key
-	from img_image i,
-		img_imagepane p,
-		gxd_assay a,
-		acc_accession acc,
-		gxd_insituresultimage g,
-		gxd_insituresult r,
-		gxd_specimen s,
-		gxd_assaytype gat
-	where i._Image_key = p._Image_key
+	from IMG_Image i,
+		IMG_ImagePane p,
+		GXD_Assay a,
+		ACC_Accession acc,
+		GXD_InSituResultImage g,
+		GXD_InSituResult r,
+		GXD_Specimen s,
+		GXD_AssayType gat
+	where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and i._Image_key = p._Image_key
 		and p._ImagePane_key = g._ImagePane_key
 		and g._Result_key = r._Result_key
 		and r._Specimen_key = s._Specimen_key
@@ -287,8 +290,8 @@ cmds = [
 		a.preferred, 
 		d.name, 
 		a.numericPart
-	from acc_accession a, 
-		acc_logicaldb d
+	from ACC_Accession a, 
+		ACC_LogicalDB d
 	where a._MGIType_key = 35
 		and a._LogicalDB_key = d._LogicalDB_key
 	order by a._Object_key, a.numericPart''', 

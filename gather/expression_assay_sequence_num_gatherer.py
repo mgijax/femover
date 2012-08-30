@@ -132,7 +132,8 @@ cmds = [
 	'''select distinct m._Marker_key, m.symbol
 		from GXD_Assay a,
 			MRK_Marker m
-		where a._Marker_key = m._Marker_key''',
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and a._Marker_key = m._Marker_key''',
 
 	# 1. data needed to order assays
 	'''select a._Assay_key,
@@ -141,7 +142,8 @@ cmds = [
 			t.assayType
 		from GXD_Assay a,
 			GXD_AssayType t
-		where a._AssayType_key = t._AssayType_key''',
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and a._AssayType_key = t._AssayType_key''',
 	]
 
 # order of fields (from the query results) to be written to the

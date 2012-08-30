@@ -76,17 +76,17 @@ cmds = [
 	# 0. number of red balls (assay type, age pairs) for each index entry
 	'''select i._Index_key,
 		count(1) as myCount
-	from gxd_index i,
-		gxd_index_stages s
+	from GXD_Index i,
+		GXD_Index_Stages s
 	where i._Index_key = s._Index_key
 	group by i._Index_key''',
 
 	# 1. number of fully-coded assays for each index entry
 	'''select i._Index_key,
 		count(distinct ge._Assay_key) as myCount
-	from gxd_index i,
-		gxd_assay ga,
-		gxd_expression ge
+	from GXD_Index i,
+		GXD_Assay ga,
+		GXD_Expression ge
 	where i._Refs_key = ga._Refs_key
 		and i._Marker_key = ga._Marker_key
 		and ga._Assay_key = ge._Assay_key
@@ -97,9 +97,9 @@ cmds = [
 	# 2. number of fully-coded results for each index entry
 	'''select i._Index_key,
 		count(distinct ge._Expression_key) as myCount
-	from gxd_index i,
-		gxd_assay ga,
-		gxd_expression ge
+	from GXD_Index i,
+		GXD_Assay ga,
+		GXD_Expression ge
 	where i._Refs_key = ga._Refs_key
 		and i._Marker_key = ga._Marker_key
 		and ga._Assay_key = ge._Assay_key

@@ -615,7 +615,7 @@ cmds = [
 	# all allele / system pairs; order by logical db to prioritize MGI IDs
 	'''select distinct c._Allele_key, a.accID, c.system, a._LogicalDB_key,
 		c.symbol, c.expressed, c._System_key
-	from all_cre_cache c,
+	from ALL_Cre_Cache c,
 		acc_accession a
 	where c._Allele_key = a._Object_key
 		and a.preferred = 1
@@ -627,12 +627,12 @@ cmds = [
 	# genetic background info by genotype
 	'''select distinct s._Genotype_key, mnc.note, mnc.sequenceNum,
 		t.strain
-	from all_cre_cache c,
-		gxd_specimen s,
-		mgi_note mn,
-		mgi_notechunk mnc,
-		gxd_genotype g,
-		prb_strain t
+	from ALL_Cre_Cache c,
+		GXD_Specimen s,
+		MGI_Note mn,
+		MGI_NoteChunk mnc,
+		GXD_Genotype g,
+		PRB_Strain t
 	where c._Assay_key = s._Assay_key
 		and s._Genotype_key = mn._Object_key
 		and mn._NoteType_key = 1018
@@ -643,8 +643,8 @@ cmds = [
 
 	# assay notes by assay key
 	'''select distinct a._Assay_key, a.sequenceNum, a.assayNote
-	from gxd_assaynote a,
-		all_cre_cache c
+	from GXD_AssayNote a,
+		ALL_Cre_Cache c
 	where a._Assay_key = c._Assay_key
 	order by a.sequenceNum''',
 
@@ -654,11 +654,11 @@ cmds = [
 		p.name,
 		acc.accID,
 		acc._LogicalDB_key
-	from all_cre_cache c,
-		gxd_assay a,
-		gxd_probeprep g,
-		prb_probe p,
-		acc_accession acc
+	from ALL_Cre_Cache c,
+		GXD_Assay a,
+		GXD_ProbePrep g,
+		PRB_Probe p,
+		ACC_Accession acc
 	where c._Assay_key = a._Assay_key
 		and a._ProbePrep_key = g._ProbePrep_key
 		and g._Probe_key = p._Probe_key
@@ -674,11 +674,11 @@ cmds = [
 		p.antibodyName as name,
 		acc.accID,
 		acc._LogicalDB_key
-	from all_cre_cache c,
-		gxd_assay a,
-		gxd_antibodyprep g,
-		gxd_antibody p,
-		acc_accession acc
+	from ALL_Cre_Cache c,
+		GXD_Assay a,
+		GXD_Antibodyprep g,
+		GXD_Antibody p,
+		ACC_Accession acc
 	where c._Assay_key = a._Assay_key
 		and a._AntibodyPrep_key = g._AntibodyPrep_key
 		and g._Antibody_key = p._Antibody_key
@@ -695,13 +695,13 @@ cmds = [
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
 		r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
 		b.jnumID, c._System_key
-	from all_cre_cache c,
-		gxd_assay a,
-		gxd_specimen s,
-		gxd_insituresult r,
-		gxd_isresultstructure rs,
-		bib_citation_cache b,
-		gxd_structure pn
+	from ALL_Cre_Cache c,
+		GXD_Assay a,
+		GXD_Specimen s,
+		GXD_InSituResult r,
+		GXD_ISResultStructure rs,
+		BIB_Citation_Cache b,
+		GXD_Structure pn
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
@@ -712,11 +712,11 @@ cmds = [
 
 	# image panes associated with recombinase assay results
 	'''select distinct g._Result_key, i.paneLabel, i._Image_key
-	from img_imagepane i,
-		gxd_insituresultimage g,
-		gxd_insituresult r,
-		gxd_specimen s,
-		all_cre_cache c
+	from IMG_ImagePane i,
+		GXD_InSituResultImage g,
+		GXD_InSituResult r,
+		GXD_Specimen s,
+		ALL_Cre_Cache c
 	where g._ImagePane_key = i._ImagePane_key
 		and g._Result_key = r._Result_key
 		and r._Specimen_key = s._Specimen_key

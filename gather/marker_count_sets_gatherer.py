@@ -270,8 +270,8 @@ cmds = [
 		'Expression Assays by Assay Type' as %s,
 		count(distinct ge._Assay_key) as %s,
 		%s
-	from gxd_expression ge,
-		gxd_assaytype gat
+	from GXD_Expression ge,
+		GXD_AssayType gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
 		and exists (select 1 from mrk_marker m
@@ -286,8 +286,8 @@ cmds = [
 		'Expression Results by Assay Type' as %s,
 		count(distinct ge._Expression_key) as %s,
 		%s
-	from gxd_expression ge,
-		gxd_assaytype gat
+	from GXD_Expression ge,
+		GXD_AssayType gat
 	where ge._AssayType_key = gat._AssayType_key
 		and ge.isForGXD = 1
 		and exists (select 1 from mrk_marker m
@@ -301,9 +301,9 @@ cmds = [
 		ts.stage as %s,
 		'Expression Results by Theiler Stage' as %s,
 		count(distinct ge._Expression_key) as %s
-	from gxd_expression ge,
-		gxd_structure gs,
-		gxd_theilerstage ts
+	from GXD_Expression ge,
+		GXD_Structure gs,
+		GXD_TheilerStage ts
 	where ge.isForGXD = 1
 		and ge._Structure_key = gs._Structure_key
 		and gs._Stage_key = ts._Stage_key

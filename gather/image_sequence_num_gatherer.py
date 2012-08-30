@@ -182,39 +182,40 @@ class ImageSequenceNumGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. get sorting info for references first
 	'''select c._Refs_key, b.year, c.numericPart
-	from bib_citation_cache c, bib_refs b, img_image i
+	from BIB_Citation_Cache c, BIB_Refs b, IMG_Image i
 	where c._Refs_key = b._Refs_key
 		and c._Refs_key = i._Refs_key''',
 
 	# 1. get GXD images with in situ assays
 	'''select i._Image_key, i._Refs_key, i.figureLabel
-	from img_image i,
-		img_imagepane p,
-		gxd_insituresultimage g
+	from IMG_Image i,
+		IMG_ImagePane p,
+		GXD_InSituResultImage g
 	where i._Image_key = p._Image_key
 		and p._ImagePane_key = g._ImagePane_key''', 
 
 	# 2. get GXD images with gel assays (image associated directly to
 	# assay)
 	'''select i._Image_key, i._Refs_key, i.figureLabel
-	from img_image i,
-		img_imagepane p,
-		gxd_assay a
-	where i._Image_key = p._Image_key
+	from IMG_Image i,
+		IMG_ImagePane p,
+		GXD_Assay a
+	where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and i._Image_key = p._Image_key
 		and p._ImagePane_key = a._ImagePane_key''',
 
 	# 3. get phenotype images
 	'''select i._Image_key, i._Refs_key, i.figureLabel
-	from img_image i,
-		img_imagepane p,
-		img_imagepane_assoc a
+	from IMG_Image i,
+		IMG_ImagePane p,
+		IMG_ImagePane_Assoc a
 	where i._Image_key = p._Image_key
 		and p._ImagePane_key = a._ImagePane_key
 		and a._MGIType_key = 11''',
 
 	# 4. get all images (so we can catch any outliers)
 	'''select i._Image_key, i._Refs_key, i.figureLabel
-	from img_image i''',
+	from IMG_Image i''',
 	]
 
 # order of fields (from the query results) to be written to the

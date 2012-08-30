@@ -15,11 +15,12 @@ MarkerToAssayGatherer = Gatherer.Gatherer
 
 ###--- globals ---###
 
-cmds = [ '''select _Marker_key,
-			_Assay_key,
-			_Refs_key,
+cmds = [ '''select a._Marker_key,
+			a._Assay_key,
+			a._Refs_key,
 			null as qualifier
-		from gxd_assay''',
+		from Gxd_Assay a
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)''',
 	]
 
 # order of fields (from the query results) to be written to the

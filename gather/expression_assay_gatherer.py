@@ -1,6 +1,14 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'expression_assay' table in the front-end database
+#
+# HISTORY
+#
+# 08/27/2012    lec
+#       - TR11150/scrum-dog TR10273
+#       add checks to GXD_Expression
+#       Assays that are not fully-coded will not be loaded into this gatherer
+#
 
 import Gatherer
 import logger
@@ -209,9 +217,10 @@ class AssayGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select _Assay_key, sequenceNum, assayNote
-		from GXD_AssayNote
-		order by _Assay_key, sequenceNum''',
+	'''select a._Assay_key, a.sequenceNum, a.assayNote
+		from GXD_AssayNote a
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		order by a._Assay_key, a.sequenceNum''',
 
 	'''select a._Assay_key,
 			p._Probe_key,
@@ -223,7 +232,8 @@ cmds = [
 		from GXD_Assay a,
 			GXD_ProbePrep gpp,
 			PRB_Probe p
-		where a._ProbePrep_key = gpp._ProbePrep_key
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and a._ProbePrep_key = gpp._ProbePrep_key
 			and gpp._Probe_key = p._Probe_key''',
 
 	'''select a._Assay_key,
@@ -231,14 +241,15 @@ cmds = [
 			b._Antibody_key,
 			p._Secondary_key,
 			p._Label_key
-		from gxd_assay a,
-			gxd_antibodyprep p,
-			gxd_antibody b
-		where a._AntibodyPrep_key = p._AntibodyPrep_key
+		from GXD_Assay a,
+			GXD_Antibodyprep p,
+			GXD_Antibody b
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+		and a._AntibodyPrep_key = p._AntibodyPrep_key
 			and p._Antibody_key = b._Antibody_key''',
 
 	'''select distinct _Assay_key, hasImage
-		from gxd_expression''',
+		from GXD_Expression''',
 
 	'''select a._Assay_key,
 			a._AssayType_key,
@@ -248,11 +259,12 @@ cmds = [
 			ma.accID as marker_id,
 			aa.accID as assay_id,
 			a._ReporterGene_key
-		from gxd_assay a,
-			mrk_marker m,
-			acc_accession ma,
-			acc_accession aa
-		where a._Marker_key = m._Marker_key
+		from GXD_Assay a,
+			MRK_Marker m,
+			ACC_Accession ma,
+			ACC_Accession aa
+		where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+			and a._Marker_key = m._Marker_key
 			and a._Assay_key = aa._Object_key
 			and aa._MGIType_key = 8
 			and aa._LogicalDB_key = 1

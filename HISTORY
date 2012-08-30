@@ -1,3 +1,27 @@
+TAG: femover-5-1-0-3
+DATE: 08/30/2012
+STAFF: lec
+CHANGES: 
+TR11150/scrum-dog TR10273:
+added:
+where exists (select 1 from GXD_Expression e where a._Assay_key = e._Assay_key)
+
+expression_assay_gatherer.py
+expression_result_summary_gatherer.py
+expression_assay_sequence_num_gatherer.py
+expression_imagepane_gatherer.py
+expression_index_counts_gatherer.py
+expression_index_gatherer.py
+expression_index_sequence_num_gatherer.py
+expression_index_stages_gatherer.py
+recombinase_gatherer.py
+accession_gatherer.py
+image_sequence_num_gatherer.py
+marker_counts_gatherer.py
+marker_count_sets_gatherer.py
+marker_to_expression_assay_gatherer.py
+reference_counts_gatherer.py
+
 TAG: femover-tr10273-BP
 DATE: 8/24/12
 STAFF: pf
