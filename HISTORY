@@ -1,3 +1,10 @@
+TAG: femover-5-1-0-7
+DATE: 9/25/12
+STAFF: dbm
+CHANGES:
+1) schema/marker_note.py: removed the 64,000 size of the note field so it can
+   be unlimited to handle large GO text
+
 TAG: femover-5-1-0-6
 DATE: 9/21/12
 STAFF: dbm
