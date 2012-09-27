@@ -17,7 +17,7 @@ fi
 #
 # Directory and file settings.
 #
-FILE_DIR=/data/loads/femover
+FILE_DIR=${DATALOADSOUTPUT}/femover
 LOG_DIR=${FILE_DIR}/logs
 DATA_DIR=${FILE_DIR}/data
 
