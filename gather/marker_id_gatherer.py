@@ -7,9 +7,11 @@ import logger
 
 ###--- Globals ---###
 
+# logical database keys for IDs which should not appear in the 'Other IDs'
+# section of the marker detail page
 EXCLUDE_FROM_OTHER_DBS = [ 1, 9, 13, 27, 28, 41, 59, 81, 86, 88,
 		95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 122, 123,
-		131, 132, 133, 134, 135, 139, 140, 141, 144 ]
+		131, 132, 133, 134, 135, 139, 140, 141, 144, 164 ]
 
 LDB_ORDER = [ 85, 60, 55, 23, 35, 36, 53, 8, 45, 126 ]
 

@@ -24,67 +24,10 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for marker locations,
 	#	collates results, writes tab-delimited text file
 
-	def getRepSeqProviders (self):
-		# get a dictionary mapping from marker keys to the logical
-		# database key for the provider of each marker's
-		# representative genomic sequence
-
-		cols, rows = self.results[0]
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		ldbCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
-
-		d = {}
-		for row in rows:
-			d[row[markerCol]] = row[ldbCol]
-		return d
-
-
-	def getProviderString (self, markerKey, provider, ldbMap):
-		# Identifying the provider for genome coordinates is the
-		# result of a set of rules, including:
-		# 1. if not a coordinates-based location (with start & stop
-		#	coordinates), then no provider
-		# 2. if MRK_Location_Cache provider is "NCBI UniSTS" then
-		#	provider = "UniSTS"
-		# 3. if MRK_Location_Cache provider is "miRBase" then
-		#	provider = "miRBase"
-		# 4. if MRK_Location_Cache provider is "MGI QTL" then
-		#	provider = "MGI"
-		# 5. if MRK_Location_Cache provider is "Roopenian STS" then
-		#	provider = "MGI"
-		# 6. if logical db of rep genome sequence is 59, then
-		#	provider = "NCBI"
-		# 7. if logical db of rep genome sequence is 60, then
-		#	provider ="Ensembl"
-		# 8. if logical db of rep genome sequence is 85, then
-		#	provider = "VEGA"
-		# 9. otherwise provider = "unknown"
-
-		p = provider.lower()
-
-		if p == 'ncbi unists':
-			return 'UniSTS'
-		elif p == 'mirbase':
-			return 'miRBase'
-		elif p in ('mgi qtl', 'roopenian sts'):
-			return 'MGI'
-		
-		if ldbMap.has_key(markerKey):
-			ldbKey = ldbMap[markerKey]
-			if ldbKey == NCBI_GENE_MODEL:
-				return 'NCBI'
-			elif ldbKey == ENSEMBL_GENE_MODEL:
-				return 'Ensembl'
-			elif ldbKey == VEGA_GENE_MODEL:
-				return 'VEGA'
-		return 'unknown'
-
 	def collateResults (self):
 		# Purpose: go through the set of query results and assemble
 		#	the necessary records in self.finalResults
-
-		genomicSeqLDB = self.getRepSeqProviders()
-
+		
 		self.finalColumns = [ 'markerKey', 'sequenceNum',
 			'chromosome', 'cmOffset', 'cytogeneticOffset',
 			'startCoordinate', 'endCoordinate', 'buildIdentifier',
@@ -93,7 +36,10 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 
 		cols = self.results[-1][0]
 		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		# genetic chromosome
 		chrCol = Gatherer.columnNumber (cols, 'chromosome')
+		# sc - Sprint 4 added genomic chromosome
+	        gChrCol = Gatherer.columnNumber (cols, 'genomicChromosome')
 		cmCol = Gatherer.columnNumber (cols, offset)
 		cytoCol = Gatherer.columnNumber (cols, 'cytogeneticOffset')
 		startCol = Gatherer.columnNumber (cols, 'startCoordinate')
@@ -108,18 +54,19 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 			cyto = row[cytoCol]
 			key = row[keyCol]
 			chrom = row[chrCol]
+			# sc - Sprint 4 added genomic chromosome
+			gChrom = row[gChrCol]
 			strand = row[strandCol]
 			prov = row[providerCol]
 
 			seqNum = 0
 
 			if startCoordinate:
-				prov = self.getProviderString (key, prov,
-					genomicSeqLDB)
 
 				seqNum = seqNum + 1
+				# sc - Sprint 4 added genomic chromosome
 				self.finalResults.append ( [ key, seqNum,
-					chrom, None, None,
+					gChrom, None, None,
 					int(startCoordinate),
 					int(row[endCol]), row[buildCol],
 					'coordinates', 'bp', prov, strand ] )
@@ -138,21 +85,11 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 		return
 
 ###--- globals ---###
-
+# sc - Sprint 4 removed first query, added genomic chromosome to second query
 cmds = [
-	'''select c._Marker_key, a._LogicalDB_key
-	from seq_marker_cache c,
-		acc_accession a
-	where c._Sequence_key = a._Object_key
-		and a._MGIType_key = 19
-		and a.preferred = 1
-		and exists (select 1 from mrk_marker m
-			where m._Marker_key = c._Marker_key)
-		and c._Qualifier_key = 615419''',
-
-	'''select distinct _Marker_key, chromosome, %s, provider,
-		cytogeneticOffset, startCoordinate, endCoordinate, version,
-		strand, mapUnits
+	'''select distinct _Marker_key, chromosome, %s, genomicChromosome,
+		provider, cytogeneticOffset, startCoordinate, endCoordinate, 
+		version, strand, mapUnits
 	from mrk_location_cache c
 	where exists (select 1 from mrk_marker m
 		where m._Marker_key = c._Marker_key)''' % offset,

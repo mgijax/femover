@@ -20,7 +20,8 @@ cmds = [
 		_Genotype_key,
 		null as _Refs_key,
 		null as qualifier
-	from gxd_allelegenotype'''
+	from gxd_allelegenotype
+	where _Marker_key is not null'''
 	]
 
 # order of fields (from the query results) to be written to the
