@@ -144,6 +144,7 @@ ACCESSION = [ 'accession', 'actual_database',
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
+		'mp_annotation',
 	]
 ANNOTATIONS = [ 'annotation'
 	]

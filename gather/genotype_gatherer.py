@@ -4,8 +4,19 @@
 
 import Gatherer
 import logger
+import string
 import TagConverter
 import GenotypeClassifier
+
+###--- Functions ---###
+
+def genCellLineDict (rows):
+	
+	cellLineDict = {}
+	results = []
+
+	return TYPES[displayType]
+
 
 ###--- Classes ---###
 
@@ -17,15 +28,17 @@ class GenotypeGatherer (Gatherer.Gatherer):
 
 	def collateResults (self):
 
+		#
 		# final query has the basic genotype data; we will start there
 		# and augment it
-
+		#
 		self.finalColumns = self.results[-1][0]
 		self.finalResults = self.results[-1][1]
 		self.convertFinalResultsToList()
 
-		# gather which genotypes have primary images
-
+		#
+		# store which genotypes have primary images
+		#
 		cols, rows = self.results[2]
 		genotypeCol = Gatherer.columnNumber (cols, '_Object_key')
 		hasImage = {}
@@ -36,9 +49,10 @@ class GenotypeGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d genotypes with images' % \
 			len(hasImage)) 
 
+		#
 		# The two earlier queries get the allele composition strings
 		# that need to be added for each genotype
-
+		#
 		combos = [ (0, 'combo1'), (1, 'combo2') ]
 
 		for (index, id) in combos:
@@ -71,8 +85,54 @@ class GenotypeGatherer (Gatherer.Gatherer):
 
 			logger.debug ('Mapped %d %s notes' % (len(dict), id))
 
-		# handle the image and disease data, and the classification
+		#
+		# store which genotypes have cell line data
+		#
+		genoUniqueCellLines = {}
+		genoCellLineStrings = {}
+		cols, rows = self.results[3]
+		keyCol = Gatherer.columnNumber (cols, '_genotype_key')
+		cellLineCol = Gatherer.columnNumber (cols, 'cellline')
+		for row in rows:
+			key = row[keyCol]
+			logger.debug ('-key %d ' % key)
+			if genoUniqueCellLines.has_key(key):
+				cellLine = row[cellLineCol]
+				uniqueCellLines = genoUniqueCellLines[key]
+				if cellLine not in uniqueCellLines:
+					uniqueCellLines.append(cellLine)
+				genoUniqueCellLines[key] = uniqueCellLines
+			else:
+				uniqueCellLines = []
+				uniqueCellLines.append(row[cellLineCol])
+				genoUniqueCellLines[key] = uniqueCellLines
 
+
+		cols, rows = self.results[4]
+		keyCol = Gatherer.columnNumber (cols, '_genotype_key')
+		cellLineCol = Gatherer.columnNumber (cols, 'cellline')
+		for row in rows:
+			key = row[keyCol]
+			if genoUniqueCellLines.has_key(key):
+				cellLine = row[cellLineCol]
+				uniqueCellLines = genoUniqueCellLines[key]
+				if cellLine not in uniqueCellLines:
+					uniqueCellLines.append(cellLine)
+				genoUniqueCellLines[key] = uniqueCellLines
+			else:
+				uniqueCellLines = []
+				uniqueCellLines.append(row[cellLineCol])
+				genoUniqueCellLines[key] = uniqueCellLines
+
+		for key in genoUniqueCellLines:
+			genoCellLineStrings[key] = string.join(genoUniqueCellLines[key], ", ") 
+
+
+		logger.debug ('Mapping %d genotypes to celllines' % len(genoCellLineStrings))
+
+		#
+		# add final flags and data columns to final result set
+		#
 		keyCol = Gatherer.columnNumber (self.finalColumns,
 			'_Genotype_key')
 		for row in self.finalResults:
@@ -85,7 +145,11 @@ class GenotypeGatherer (Gatherer.Gatherer):
 
 			disease = GenotypeClassifier.isDiseaseModel(key)
 			pheno = GenotypeClassifier.hasPhenoData(key)
-
+			
+			cellLine = ''
+			if genoCellLineStrings.has_key(key):
+			  cellLine = genoCellLineStrings[key]
+			
 			self.addColumn ('hasImage', image, row,
 				self.finalColumns)
 			self.addColumn ('hasPhenoData', pheno, row,
@@ -95,6 +159,8 @@ class GenotypeGatherer (Gatherer.Gatherer):
 			self.addColumn ('classification',
 				GenotypeClassifier.getClass (key),
 				row, self.finalColumns) 
+			self.addColumn ('cell_lines',
+				cellLine, row, self.finalColumns) 
 		return
 
 ###--- globals ---###
@@ -122,7 +188,19 @@ cmds = [
 		where _MGIType_key = 12
 		and isPrimary = 1''',
 
-	# 3. assumes that a genotype has only one ID, that it is from MGI, and
+	# 3. cell_line_1 for genotype
+	'''select gap._genotype_key, acl.cellline 
+		from gxd_allelepair gap, all_cellline acl
+		where _mutantcellline_key_1 IS NOT NULL
+		and gap._mutantcellline_key_1 = acl._cellline_key''',
+
+	# 4. cell_line_1 for genotype
+	'''select gap._genotype_key, acl.cellline 
+		from gxd_allelepair gap, all_cellline acl
+		where _mutantcellline_key_2 IS NOT NULL
+		and gap._mutantcellline_key_2 = acl._cellline_key''',
+
+	# 5. assumes that a genotype has only one ID, that it is from MGI, and
 	# that it is both preferred and non-private
 	'''select distinct g._Genotype_key, s.strain, a.accID, g.note,
 			g.isConditional
@@ -138,7 +216,7 @@ cmds = [
 # output file
 fieldOrder = [ '_Genotype_key', 'strain', 'accID', 'isConditional', 'note',
 	'combo1', 'combo2', 'hasImage', 'hasPhenoData', 'hasDiseaseModel',
-	'classification' ]
+	'classification', 'cell_lines' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'genotype'

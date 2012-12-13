@@ -28,7 +28,7 @@ DISEASE_MODEL = {}
 HAS_PHENO_DATA = {}
 
 # ordered abbreviations for type (for sorting preference)
-TYPES = [ 'hm', 'ht', 'cx', 'tg', 'cn', 'ot' ]
+TYPES = [ 'hm', 'ht', 'cn', 'cx', 'tg',  'ot' ]
 
 ###--- Private Functions ---###
 

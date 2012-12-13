@@ -86,6 +86,8 @@ def execute (cmd):
 
 def columnNumber (columns, columnName):
 	# find the position of 'columnName' in the list of 'columns'
+	if columns and type(columns[0])==type([]):
+		columns = columns[0]
 
 	if columnName in columns:
 		return columns.index(columnName)
@@ -94,6 +96,8 @@ def columnNumber (columns, columnName):
 
 	c = columnName.lower()
 	if c not in columns:
+		logger.info('1234columns = %s'%columns);
+		logger.info('column = %s'%c);
 		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
 			', '.join (columns) ) )
 		raise Error, 'Unknown column name: %s' % columnName
