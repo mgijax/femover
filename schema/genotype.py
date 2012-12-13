@@ -25,6 +25,7 @@ createStatement = '''CREATE TABLE %s  (
 	has_phenotype_data	int		not null,
 	is_disease_model	int		not null,
 	genotype_type		varchar(2)	null,
+	cell_lines		varchar(255)	null,
 	PRIMARY KEY(genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -52,6 +53,7 @@ comments = {
 		'has_phenotype_data' : '1 if this genotype has associated phenotype annotations, 0 if not',
 		'is_disease_model' : '1 if this genotype is a mouse model for a human disaese, 0 if not',
 		'genotype_type' : 'type of genotype (homozygous, heterozygous, etc.)',
+		'cell_lines' : 'cell lines involved in genotype',
 		},
 	Table.INDEX : {
 		'primary_id' : 'quick lookup by accession ID',
