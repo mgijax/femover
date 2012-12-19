@@ -63,6 +63,7 @@ genotypeSexMap = {}
 diseaseGenotypeMap = {}
 # special map that calculates information about the genotype headers for the phenotable
 genotypeStatisticsMap = {}
+genotypeDiseaseOnly = {}
 # special map to hold all the phenocell "calls" before aggregating them
 phenoCallMap = {}
 providerRowsDict = {}
@@ -114,15 +115,18 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# annot type can be either mp or omim
 			annot_type=row[3]
 			seq = GenotypeClassifier.getSequenceNum (allele_key,genotype_key)
+			disease_only = 0
+			# add the list of genotypes with disease models
+			if annot_type=='omim':
+				diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
+				disease_only = 1
+			disease_only = self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
 			# add a default phenotable_to_genotype row, to be modified later by registering sex annotations later on
 			# set the default sex value to ""
-			genotypeRowMap[(allele_key,genotype_key)] = [count,allele_key,genotype_key,seq,0,""]
+			genotypeRowMap[(allele_key,genotype_key)] = [count,allele_key,genotype_key,seq,0,"",disease_only]
 			genotypeSeqMap[(allele_key,genotype_key)] = seq	
 			genotypeSeqMap.setdefault(allele_key,{})[genotype_key] = seq
 			genotypeIDMap[genotype_key] = genotype_id
-			# add the list of genotypes with disease models
-			if annot_type=='omim':
-			    diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
 	def buildDiseaseGenotypes(self):
 		dGenotypeCols = ['diseasetable_genotype_key','allele_key','genotype_key','genotype_seq']
 		dGenotypeRows = []
@@ -133,6 +137,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				genotype_seq = genotypeSeqMap[(allele_key,genotype_key)]	
 				dGenotypeRows.append([count,allele_key,genotype_key,genotype_seq])
 		return dGenotypeRows
+
+	# keeps track of genotypes that have omim annotations but no mp annotations
+	# will return true until a 0 is passed in
+	def registerGenotypeDiseaseOnly(self,genotype_key,has_disease):
+		if genotype_key not in genotypeDiseaseOnly:
+			genotypeDiseaseOnly[genotype_key] = has_disease
+			return has_disease
+		if not has_disease:
+			return has_disease
+		genotypeDiseaseOnly[genotype_key] = genotypeDiseaseOnly[genotype_key] and has_disease
+		return genotypeDiseaseOnly[genotype_key]
 
 	# update genotype values when sex information has been encountered
 	def registerGenotypeSex(self,allele_key,genotype_key,sex):
@@ -881,7 +896,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# by gatherer convention we create tuples of (cols,rows) for every table we want to create, and append them to self.output
 	def buildRows (self ):
 		# gather the genotype to allele relationships first. We only want genotypes with pheno data, or disease models
-		genotypeCols = ['phenotable_genotype_key','allele_key','genotype_key','genotype_seq','split_sex','sex_display']
+		genotypeCols = ['phenotable_genotype_key','allele_key','genotype_key','genotype_seq','split_sex','sex_display','disease_only']
 		genotypeRows = []
 
 		logger.debug("preparing to build list of genotypes with phenotypes or disease models")
@@ -1102,20 +1117,20 @@ cmds = [
 	# but only genotypes with mp annotations or disease models
 	'''
 	WITH genotype_ids AS (
-		select _object_key,accid genotype_id
-		from acc_accession
-		where _mgitype_key=12
-		    and preferred=1
-     	)
-	select ag._allele_key,ag._genotype_key,gid.genotype_id,'mp' 
+                select _object_key,accid genotype_id
+                from acc_accession
+                where _mgitype_key=12
+                    and preferred=1
+        )
+        select ag._allele_key,ag._genotype_key,gid.genotype_id,'mp' 
         from gxd_allelegenotype ag,genotype_ids gid
         where exists (select 1 from voc_annot va where va._object_key=ag._genotype_key and va._annottype_key=1002)
-		and gid._object_key=ag._genotype_key
-	UNION
- 	select ag._allele_key,ag._genotype_key,gid.genotype_id,'omim' 
-	from gxd_allelegenotype ag,genotype_ids gid
-	where exists (select 1 from mrk_omim_cache o where o._genotype_key=ag._genotype_key)
-		and gid._object_key=ag._genotype_key
+                and gid._object_key=ag._genotype_key
+        UNION
+        select ag._allele_key,ag._genotype_key,gid.genotype_id,'omim' 
+        from gxd_allelegenotype ag,genotype_ids gid
+        where exists (select 1 from mrk_omim_cache o where o._genotype_key=ag._genotype_key)
+                and gid._object_key=ag._genotype_key
 	''',
 	# 7. get OMIM  annotations made to genotypes
 	'''
@@ -1187,7 +1202,7 @@ files = [
                         'term_id','indentation_depth','term_seq','term_key'],
                 'phenotable_term'),
 	('phenotable_to_genotype',
-		['phenotable_genotype_key','allele_key','genotype_key','genotype_seq','split_sex','sex_display'],
+		['phenotable_genotype_key','allele_key','genotype_key','genotype_seq','split_sex','sex_display','disease_only'],
 		'phenotable_to_genotype'),
 	('phenotable_provider',
 		['phenotable_provider_key','phenotable_genotype_key','provider','provider_seq'],
