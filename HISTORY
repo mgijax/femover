@@ -1,3 +1,11 @@
+TAG: femover-5-1-1-2
+DATE: 12/31/12
+STAFF: jsb
+CHANGES:
+1) added lib/python/GroupedList.py to support #3 below
+2) updated gather/Gatherer.py's MultiFileGatherer to allow individual files to be written as they are produced, rather than saving all in memory until all are done
+3) updated gather/vocabulary_gatherer.py to use far less memory when processing annotations down the DAG, preventing memory blowout on current production data
+
 TAG: femover-tr6519-BP
 DATE: 11/28/12
 STAFF: jsb
