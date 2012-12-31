@@ -6,6 +6,7 @@ import Gatherer
 import logger
 import TermCounts
 import ADVocab
+import GroupedList
 
 ###--- Functions ---###
 
@@ -589,12 +590,24 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		# define a distinct annotation to be a unique set of:
 		# 	object, term, qualifier, evidence term
 
-		# objects[term key] = { mgitype key : { object key : 1 } }
+		# objects[term key] = { mgitype key :
+		#	GroupedList of object keys }
 		objects = {}
 
-		# annots[term key] = { mgitype key : {
-		#    (object key, qualifier key, evidence term key) : 1 } }
+		# annots[term key] = { mgitype key : GroupedList of tuples
+		#    (term key, object key, qeKey) }
 		annots = {}
+
+		# Both objects and annots have been converted to use lists
+		# inside rather than dictionaries, trading off space for
+		# performance.  (We need the space.)
+
+		# cache of (qualifier key, evidence term key) pairs, so we can
+		# consolidate two keys into a single integer and save a little
+		# memory for each row.  (There are only 58 of these pairs
+		# currently, so this will be small memory overhead for the
+		# cache itself.)
+		qeCache = {}
 
 		for r in rows:
 			termKey = r[tKey]
@@ -603,8 +616,19 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			qualifierKey = r[qKey]
 			evidenceTermKey = r[eKey]
 
-			annot = (termKey, objectKey, qualifierKey,
-				evidenceTermKey)
+			pair = (qualifierKey, evidenceTermKey)
+			if qeCache.has_key(pair):
+				qeKey = qeCache[pair]
+			else:
+				qeKey = len(qeCache) + 1
+				qeCache[pair] = qeKey
+
+			# note that it is important to keep the term key in
+			# here, because the descendent key is differnt from
+			# the ancestor key and annotations to it need to be
+			# counted even if the ancestor is also annotated to
+			# the same object
+			annot = (termKey, objectKey, qeKey)
 
 			# track which objects are associated with which terms
 			# and each term's ancestors (do likewise for
@@ -617,16 +641,24 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 			for t in toDo:
 			    if not objects.has_key(t):
-				objects[t] = {mgitypeKey : { objectKey : 1 }}
-				annots[t] = {mgitypeKey : { annot : 1 }}
+				objects[t] = { mgitypeKey :
+				    GroupedList.GroupedList (1000,
+					items = [objectKey]) }
+				annots[t] = { mgitypeKey :
+				    GroupedList.GroupedList (1000,
+					items = [annot]) }
 
 			    elif not objects[t].has_key (mgitypeKey):
-				objects[t][mgitypeKey] = { objectKey : 1 }
-				annots[t][mgitypeKey] = { annot : 1 }
+				objects[t][mgitypeKey] = \
+				    GroupedList.GroupedList (1000,
+					items = [ objectKey ])
+				annots[t][mgitypeKey] = \
+				    GroupedList.GroupedList (1000,
+					items = [ annot ])
 
 			    else:
-				objects[t][mgitypeKey][objectKey] = 1
-				annots[t][mgitypeKey][annot] = 1
+				objects[t][mgitypeKey].add(objectKey)
+				annots[t][mgitypeKey].add(annot)
 
 		logger.debug ('Found objects and annotations for %d terms' \
 			% len(objects))
@@ -789,6 +821,19 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		columns, rows = self.findChildren (ids, edges, sequenceNum)
 		self.output.append ( (columns, rows) )
 
+		# write out tables created so far, so we can free up their
+		# memory before proceeding
+
+		self.writeOneFile()
+		self.writeOneFile()
+		self.writeOneFile()
+
+		# free up memory from a few large objects before proceeding
+
+		del defs
+		del isRoot
+		del goOntologies
+
 		# step 6 -- get counts of descendents for each term
 
 		descendentCounts = self.collectDescendentCounts()
@@ -804,6 +849,17 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		pathCache, columns, rows = self.findTermAncestors (upEdges,
 			ids, terms)
 		self.output.append ( (columns, rows) )
+
+		# write out tables created so far, so we can free up their
+		# memory before proceeding
+
+		self.writeOneFile()
+		self.writeOneFile()
+
+		# free up memory from a few large objects before proceeding
+
+		del descendentCounts
+		del upEdges
 
 		# step 9 -- term_annotation_counts table
 		columns, rows = self.findAnnotationCounts ()
