@@ -359,6 +359,7 @@ class MultiFileGatherer:
 		self.output = []	# list of (list of columns, list of
 					# rows), with one per output file, to
 					# be filled in by collateResults()
+		self.lastWritten = None	# number of last file written so far
 		return
 
 	def preprocessCommands (self):
@@ -369,6 +370,31 @@ class MultiFileGatherer:
 		# Modifies: nothing
 		# Throws: nothing
 
+		return
+
+	def writeOneFile (self, deleteAfter = True):
+		if self.lastWritten == None:
+			self.lastWritten = 0
+		else:
+			self.lastWritten = 1 + self.lastWritten
+
+		if len(self.output) < (self.lastWritten + 1):
+			raise Error, \
+			'writeOneFile() failed -- data set %d not ready yet' \
+			% self.lastWritten
+
+		filename, fieldOrder, tableName = self.files[self.lastWritten]
+		columns, rows = self.output[self.lastWritten]
+
+		path = OutputFile.createAndWrite (filename, fieldOrder,
+			columns, rows)
+
+		print '%s %s' % (path, tableName)
+
+		if deleteAfter:
+			self.output[self.lastWritten] = ([], [])
+			logger.info ('Removed data set %d after writing' % \
+				self.lastWritten)
 		return
 
 	def go (self):
@@ -397,15 +423,13 @@ class MultiFileGatherer:
 			raise Error, 'Mismatch: %d files, %d output sets' % (
 				len(self.files), len(self.output) )
 
-		i = 0
+		if self.lastWritten == None:
+			i = 0
+		else:
+			i = 1 + self.lastWritten
+
 		while i < len(self.files):
-			filename, fieldOrder, tableName = self.files[i]
-			columns, rows = self.output[i]
-
-			path = OutputFile.createAndWrite (filename,
-				fieldOrder, columns, rows)
-
-			print '%s %s' % (path, tableName)
+			self.writeOneFile()
 			i = i + 1
 		return
 
