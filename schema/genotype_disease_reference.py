@@ -24,8 +24,7 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-}
+indexes = {}
 
 keys = {
 	'genotype_disease_key' : ('genotype_disease', 'genotype_disease_key'),

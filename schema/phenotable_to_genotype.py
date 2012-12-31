@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	genotype_seq		int		not null,
 	split_sex		int		not null,
         sex_display          varchar(255)    null,
+        disease_only          int    not null,
 	PRIMARY KEY(phenotable_genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -43,6 +44,7 @@ comments = {
 		'genotype_seq' : 'sequence for the corresponding genotype',
 		'split_sex' : '1 or 0 - does it need to split sex columns into M/F',
 		'sex_display' : 'blank, M, F, or Both',
+		'disease_only' : '1 or 0 if it has disease model but no mp annotations',
 		},
 	}
 

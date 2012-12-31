@@ -23,7 +23,6 @@ createStatement = '''CREATE TABLE %s  (
 	genotype_count		int		not null,
 	has_footnote		int		not null,
 	sequence_num		int		not null,
-	by_alpha		int		not null,
 	PRIMARY KEY(allele_disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -49,7 +48,6 @@ comments = {
 		'genotype_count' : 'number of genotypes involving this allele which are noted as mouse models of this disease',
 		'has_footnote' : '1 if this row has a footnote, 0 if not',
 		'sequence_num' : 'used to order rows for each allele',
-		'by_alpha' : 'used to order rows for each disease',
 		},
 	Table.INDEX : {
 		'allele_key' : 'clusters data so all records for an allele are together on disk, to aid retrieval speed',
