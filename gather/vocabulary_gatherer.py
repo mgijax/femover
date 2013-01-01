@@ -642,18 +642,18 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			for t in toDo:
 			    if not objects.has_key(t):
 				objects[t] = { mgitypeKey :
-				    GroupedList.GroupedList (1000,
+				    GroupedList.GroupedList (100,
 					items = [objectKey]) }
 				annots[t] = { mgitypeKey :
-				    GroupedList.GroupedList (1000,
+				    GroupedList.GroupedList (100,
 					items = [annot]) }
 
 			    elif not objects[t].has_key (mgitypeKey):
 				objects[t][mgitypeKey] = \
-				    GroupedList.GroupedList (1000,
+				    GroupedList.GroupedList (100,
 					items = [ objectKey ])
 				annots[t][mgitypeKey] = \
-				    GroupedList.GroupedList (1000,
+				    GroupedList.GroupedList (100,
 					items = [ annot ])
 
 			    else:
