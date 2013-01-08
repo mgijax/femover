@@ -122,7 +122,7 @@ J:137815 http://craniofacial.jax.org/publications/dionneletalnm3223hyrh.html
 J:149880 http://mousemutant.jax.org/articles/mmrmutantttrr.html
 J:149813 http://mousemutant.jax.org/articles/mmrmutantscm3j.html
 J:149729 http://mousemutant.jax.org/articles/mmrmutantdy8j.html
-J:149273 http://mousemutant.jax.org/articles/mmrmutantchky.html
+J:149273 http://mousemutant.jax.org/articles/mmrmutantchkyredo.html
 J:148753 http://mousemutant.jax.org/articles/mmrmutanthstp.html
 J:154358 http://mousemutant.jax.org/articles/mmrmutanthdlk.html
 J:154215 http://mousemutant.jax.org/articles/mmrmutantpale.html
