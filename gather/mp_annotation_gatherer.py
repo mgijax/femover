@@ -30,6 +30,8 @@ BS_NOTETYPE = 1015
 MP_NOTETYPES = ["%s"%GENERAL_NOTETYPE,"%s"%NORMAL_NOTETYPE,"%s"%BS_NOTETYPE]
 # evidence property _property_term_key
 SEX_SPECIFICITY_KEY = "8836535"
+# specific term keys
+NO_PHENOTYPIC_ANALYSIS_KEY=293594
 # the following are display related values
 NORMAL_PHENOTYPE = "normal phenotype"
 SANGER_JNUM = 'J:175295'
@@ -481,9 +483,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			evidenceKey = row[evidenceKeyCol]
                         gkey = row[gkeyCol]
                         genotypeID = row[gidCol]
+                        term = row[termCol]
+                        termKey = row[termKeyCol]
+                        if termKey not in headerTermMap:
+                                logger.info("cannot find header term for %s "%term)
+                                continue
                         qualifier = row[qualifierCol]
+			# default call is abnormal
                         call = 1
-                        if qualifier:
+			# Special case to modify "no phenotypic analysis".
+			# Per Janan on 1/11/2013 we are always displaying this term as not a Normal
+                        if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
                                 call = 0
                         jnum = row[jnumCol]
                         sourceDisplay = getSource(jnum)
@@ -491,11 +501,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			if sex not in SEX_SORT_ORDER:
 				logger.info("invalid sex value found: %s,annotKey=%s,genotypeKey=%s"%(sex,annotKey,gkey))
 				continue
-                        term = row[termCol]
-                        termKey = row[termKeyCol]
-                        if termKey not in headerTermMap:
-                                logger.info("cannot find header term for %s "%term)
-                                continue
                         termID = row[termIDCol]
                         termSeq = row[seqCol]
                         systems = headerTermMap[termKey]
@@ -611,9 +616,16 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         annotKey = row[annotCol]
                         gkey = row[gkeyCol]
                         genotypeID = row[gidCol]
+                        term = row[termCol]
+                        termKey = row[termKeyCol]
+                        if termKey not in headerTermMap:
+                                logger.info("cannot find header term for %s for genotype %s"%(term,gkey))
+                                continue
                         qualifier = row[qualifierCol]
                         call = 1
-                        if qualifier:
+			# Special case to modify "no phenotypic analysis".
+			# Per Janan on 1/11/2013 we are always displaying this term as not a Normal
+                        if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
                                 call = 0
                         jnum = row[jnumCol]
                         sourceDisplay = getSource(jnum)
@@ -621,11 +633,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			if sex not in SEX_SORT_ORDER:
 				logger.info("invalid sex value found: %s,annotKey=%s,genotypeKey=%s"%(sex,annotKey,gkey))
 				continue
-                        term = row[termCol]
-                        termKey = row[termKeyCol]
-                        if termKey not in headerTermMap:
-                                logger.info("cannot find header term for %s for allele %s"%(term,allele_key))
-                                continue
                         termID = row[termIDCol]
                         termSeq = row[seqCol]
                         systems = headerTermMap[termKey]
