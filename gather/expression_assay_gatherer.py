@@ -257,7 +257,7 @@ cmds = [
 			a._Marker_key,
 			m.symbol,
 			m.name as marker_name,
-			to_char(m.modification_date, 'MM/DD/YYYY') as modification_date,
+			to_char(a.modification_date, 'MM/DD/YYYY') as modification_date,
 			ma.accID as marker_id,
 			aa.accID as assay_id,
 			a._ReporterGene_key
