@@ -37,7 +37,6 @@ class AntigenGatherer (Gatherer.Gatherer):
 				r[ldbCol], 'acc_logicaldb', '_LogicalDB_key',
 				'name'), r, self.finalColumns)
 
-			antigenKey = r[keyCol]
 		return
 
 ###--- globals ---###

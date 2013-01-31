@@ -10,43 +10,42 @@ tableName = 'antibody'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	antibody_key    	int	NOT NULL,
-	name          	varchar(40) NULL,
-	antibodyTypes	varchar(255) NULL,
+	name          	varchar(255) NULL,
 	antibodyClass	varchar(255) NULL,
+	antibodyType	varchar(255) NULL,
 	organism	varchar(255) NULL,
 	note		varchar(255) NULL,
 	primary_id     	varchar(30) NULL,
 	logical_db	varchar(80) NULL,
-	clone_id	varchar(30) NULL,
-	PRIMARY KEY(probe_key))''' % tableName
+	PRIMARY KEY(antibody_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'clone_id' : 'create index %s on %s (clone_id)',
 	'id' : 'create index %s on %s (primary_id)',
 	}
 
-keys = { 'probe_key' : ('probe', 'probe_key') }
+keys = { 'antibody_key' : ('antibody', 'antibody_key') }
 
 # index used to cluster data in the table
 clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'central table for the probe flower, containing basic data for probes',
+	Table.TABLE : 'central table for the antibody flower, containing basic data for antibodys',
 	Table.COLUMN : {
-		'probe_key' : 'unique key for this probe; same as _Probe_key in mgd',
-		'name' : 'name of the probe',
-		'segment_type' : 'type of segment (genomic, oligo, primer, etc.)',
-		'primary_id' : 'primary accession ID for the probe',
+		'antibody_key' : 'unique key for this antibody; same as _antibody_key in mgd',
+		'name' : 'name of the antibody',
+	        'antibodyClass' : 'antibody class',
+	        'antibodyType' : 'antibody type',
+	        'organism' : 'organism',
+	        'note' : 'additional note',
+	        'primary_id' : 'primary accession ID for the antibody',
 		'logical_db' : 'logical database (entity) assigning the ID',
-		'clone_id' : 'clone ID associated with the probe',
 		},
 	Table.INDEX : {
-		'clone_id' : 'lookup by clone ID',
-		'id' : 'lookup by probe ID',
+		'id' : 'lookup by antibody ID',
 		},
 	}
 

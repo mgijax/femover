@@ -256,6 +256,8 @@ cmds = [
 			a._Refs_key,
 			a._Marker_key,
 			m.symbol,
+			m.name as marker_name,
+			to_char(m.modification_date, 'MM/DD/YYYY') as modification_date,
 			ma.accID as marker_id,
 			aa.accID as assay_id,
 			a._ReporterGene_key
@@ -282,7 +284,8 @@ cmds = [
 fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key',
 	'probe_name', 'antibody', 'detection_system', 'is_direct_detection',
 	'probe_preparation', 'visualized_with', 'reporter_gene', 'note',
-	'has_image', '_Refs_key', '_Marker_key', 'marker_id', 'symbol'
+	'has_image', '_Refs_key', 
+	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'modification_date',
 	]
 
 # prefix for the filename of the output file

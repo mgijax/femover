@@ -31,6 +31,8 @@ createStatement = '''CREATE TABLE %s  (
 	marker_key		int		null,
 	marker_id		varchar(40)	null,
 	marker_symbol		varchar(50)	null,
+	marker_name		varchar(255)	null,
+        modification_date       varchar(12)     null,
 	PRIMARY KEY(assay_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -71,6 +73,8 @@ comments = {
 		'marker_key' : 'identifies the marker studied',
 		'marker_id' : 'primary ID for the marker, cached here for convenience',
 		'marker_symbol' : 'symbol for the marker, cached here for convenience',
+		'marker_name' : 'name for the marker, cached here for convenience',
+		'modification_date' : 'last time the assay record was modified, cached here for convenience',
 		},
 	Table.INDEX : {
 		'primary_id' : 'quick access by assay ID',
