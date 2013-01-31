@@ -829,7 +829,7 @@ def checkForFinishedLoad():
 
 			logger.debug ('Finished loading %s' % table)
 			scheduleClusteredIndex(table)
-			os.remove(path)
+			#os.remove(path)
 
 		i = i - 1
 
