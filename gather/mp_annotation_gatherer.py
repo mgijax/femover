@@ -108,7 +108,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# sets all the map(lookup) data to be used later
 	def buildGenotypes(self):
 		cols, rows = self.results[6]
+		# Iterate a first time just to initialise the disease_only map	
+		for row in rows:
+			genotype_key=row[1]
+			# annot type can be either mp or omim
+			annot_type=row[3]
+			# add the list of genotypes with disease models
+			if annot_type=='omim':
+				disease_only = 1
+			self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
 		count = 0
+		# now process the genotypes proper
 		for row in rows:
 			count += 1
 			allele_key=row[0]
