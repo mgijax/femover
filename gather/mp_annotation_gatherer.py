@@ -113,6 +113,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			genotype_key=row[1]
 			# annot type can be either mp or omim
 			annot_type=row[3]
+			disease_only = 0
 			# add the list of genotypes with disease models
 			if annot_type=='omim':
 				disease_only = 1
