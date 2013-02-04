@@ -108,18 +108,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# sets all the map(lookup) data to be used later
 	def buildGenotypes(self):
 		cols, rows = self.results[6]
-		# Iterate a first time just to initialise the disease_only map	
-		for row in rows:
-			genotype_key=row[1]
-			# annot type can be either mp or omim
-			annot_type=row[3]
-			disease_only = 0
-			# add the list of genotypes with disease models
-			if annot_type=='omim':
-				disease_only = 1
-			self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
 		count = 0
-		# now process the genotypes proper
 		for row in rows:
 			count += 1
 			allele_key=row[0]
@@ -132,8 +121,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# add the list of genotypes with disease models
 			if annot_type=='omim':
 				diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
-				disease_only = 1
-			disease_only = self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
+				#disease_only = 1
+			#disease_only = self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
+			# NOTE: The disease_only method does not work very well in all cases, commenting it out for now
 			# add a default phenotable_to_genotype row, to be modified later by registering sex annotations later on
 			# set the default sex value to ""
 			genotypeRowMap[(allele_key,genotype_key)] = [count,allele_key,genotype_key,seq,0,"",disease_only]
@@ -1132,7 +1122,7 @@ cmds = [
         from gxd_allelegenotype
         ''',
 	# 6. Get the unique allele -> genotype combos
-	# but only genotypes with mp annotations or disease models
+	# but only genotypes with mp annotations and disease models
 	'''
 	WITH genotype_ids AS (
                 select _object_key,accid genotype_id
@@ -1148,6 +1138,7 @@ cmds = [
         select ag._allele_key,ag._genotype_key,gid.genotype_id,'omim' 
         from gxd_allelegenotype ag,genotype_ids gid
         where exists (select 1 from mrk_omim_cache o where o._genotype_key=ag._genotype_key)
+		and exists (select 1 from voc_annot va where va._object_key=ag._genotype_key and va._annottype_key=1002)
                 and gid._object_key=ag._genotype_key
 	''',
 	# 7. get OMIM  annotations made to genotypes
