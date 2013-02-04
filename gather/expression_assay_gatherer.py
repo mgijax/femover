@@ -178,7 +178,7 @@ class AssayGatherer (Gatherer.Gatherer):
 				probePrep = prep[key]
 			if visual.has_key(key):
 				visualizedWith = visual[key]
-			if not (probePrep or visualizedWith):
+			if not probeKey and not antibodyKey:
 				isDirectDetection = 1
 			if notes.has_key(key):
 				note = notes[key]
@@ -285,7 +285,8 @@ cmds = [
 # output file
 fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key', 'probe_name', 
         '_Antibody_key', 'antibody', 'detection_system', 'is_direct_detection',
-	'probe_preparation', 'visualized_with', 'reporter_gene', 'note',
+	'probe_preparation', 'visualized_with', 'reporter_gene', 
+	'note',
 	'has_image', '_Refs_key', 
 	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'modification_date',
 	]
