@@ -174,18 +174,18 @@ class AssayGatherer (Gatherer.Gatherer):
 
 			if probes.has_key(key):
 				(probeKey, probeName) = probes[key]
+			if antibody.has_key(key):
+				(antibodyKey, antibodyName) = antibody[key]
+			if not probeKey and not antibodyKey:
+				isDirectDetection = 1
 			if prep.has_key(key):
 				probePrep = prep[key]
 			if visual.has_key(key):
 				visualizedWith = visual[key]
-			if not probeKey and not antibodyKey:
-				isDirectDetection = 1
 			if notes.has_key(key):
 				note = notes[key]
 			if system.has_key(key):
 				detectionSystem = system[key]
-			if antibody.has_key(key):
-				(antibodyKey, antibodyName) = antibody[key]
 			if hasImage.has_key(key):
 				image = 1
 
