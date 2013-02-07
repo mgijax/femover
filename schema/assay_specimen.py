@@ -14,8 +14,8 @@ tableName = 'assay_specimen'
 
 # PgSQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	assay_key		int		not null,
 	specimen_key		int		not null,
+	assay_key		int		not null,
 	specimen_label		varchar(255)	null,
 	PRIMARY KEY(specimen_key))''' % tableName
 
