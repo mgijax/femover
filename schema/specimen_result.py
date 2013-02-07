@@ -15,7 +15,7 @@ tableName = 'specimen_result'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	specimen_key		int		not null,
-	spcimen_result_key		int		not null,
+	specimen_result_key		int		not null,
 	structure		text	not null,
 	structure_mgd_key		int		not null,
 	level			text	null,
