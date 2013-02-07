@@ -40,6 +40,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		# define result columns from mgd query
 		resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
 		structureCol = Gatherer.columnNumber (cols, 'printname')
+		stageCol = Gatherer.columnNumber (cols, '_stage_key')
 		structureKeyCol = Gatherer.columnNumber (cols, '_structure_key')
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
@@ -56,6 +57,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			resultKey = row[resultKeyCol]
 			structure = row[structureCol]
 			structureMGDKey = row[structureKeyCol]
+			stage = row[stageCol]
 			# strength = detection level
 			strength = row[strengthCol]
 			pattern = row[patternCol]
@@ -65,6 +67,9 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			# hide not specified pattern
 			if pattern == 'Not Specified':
 				pattern = ""
+	
+			# structure format is TS26: brain
+			tsStructure = "%s: %s"%(stage,structure)
 
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
@@ -72,7 +77,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				specRows.append((specimenKey,assayKey,specimenLabel))
 
 			# make a new specimen result row
-			resultRows.append((resultCount,specimenKey,structure,structureMGDKey,strength,pattern,resultNote,resultSeq))
+			resultRows.append((resultCount,specimenKey,tsStructure,structureMGDKey,strength,pattern,resultNote,resultSeq))
 	
 		#logger.debug("specimen rows = %s"%specRows)
 		#logger.debug("result rows = %s"%resultRows)
@@ -89,7 +94,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. Gather all the specimens and their results 
-	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,struct.printname,struct._structure_key,str.strength,gp.pattern, gir.resultnote,gir.sequencenum
+	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,struct.printname,struct._structure_key,struct._stage_key,str.strength,gp.pattern, gir.resultnote,gir.sequencenum
 	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, gxd_structure struct,gxd_strength str, gxd_pattern gp
 	    where gs._specimen_key=gir._specimen_key
 		and gir._result_key=girs._result_key
