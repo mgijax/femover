@@ -26,7 +26,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
                 specRows = []
 
 		resultCols = [ 'specimen_result_key', 'specimen_key', 'structure',
-			'structure_mgd_key','level','pattern','note' ]
+			'structure_mgd_key','level','pattern','note','specimen_result_seq' ]
                 resultRows = []
 
 
@@ -44,6 +44,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
+		resultSeqCol = Gatherer.columnNumber (cols, 'sequencenum')
 	
 		uniqueSpecimenKeys = set()
 		resultCount = 0
@@ -59,6 +60,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			strength = row[strengthCol]
 			pattern = row[patternCol]
 			resultNote = row[resultNoteCol]
+			resultSeq = row[resultSeqCol]
 
 			# hide not specified pattern
 			if pattern == 'Not Specified':
@@ -70,7 +72,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				specRows.append((specimenKey,assayKey,specimenLabel))
 
 			# make a new specimen result row
-			resultRows.append((resultCount,specimenKey,structure,structureMGDKey,strength,pattern,resultNote))
+			resultRows.append((resultCount,specimenKey,structure,structureMGDKey,strength,pattern,resultNote,resultSeq))
 	
 		#logger.debug("specimen rows = %s"%specRows)
 		#logger.debug("result rows = %s"%resultRows)
@@ -87,14 +89,13 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. Gather all the specimens and their results 
-	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,struct.printname,struct._structure_key,str.strength,gp.pattern, gir.resultnote
+	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,struct.printname,struct._structure_key,str.strength,gp.pattern, gir.resultnote,gir.sequencenum
 	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, gxd_structure struct,gxd_strength str, gxd_pattern gp
 	    where gs._specimen_key=gir._specimen_key
 		and gir._result_key=girs._result_key
 		and girs._structure_key=struct._structure_key
 		and gir._strength_key=str._strength_key
 		and gir._pattern_key=gp._pattern_key
-		and gs._assay_key=4820
 	''',
 	]
 
@@ -105,7 +106,7 @@ files = [
 
         ('specimen_result',
                 [ 'specimen_result_key', 'specimen_key', 'structure',
-                'structure_mgd_key','level','pattern','note' ],
+                'structure_mgd_key','level','pattern','note','specimen_result_seq' ],
                 'specimen_result'),
         ]
 
