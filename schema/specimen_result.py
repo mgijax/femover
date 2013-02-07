@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	level			text	null,
 	pattern			text	null,
 	note			text	null,
+	specimen_result_seq		int		not null,
 	PRIMARY KEY(specimen_result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -49,6 +50,7 @@ comments = {
 		'level' : 'detection level',
 		'pattern' : 'pattern of detection (blank if not specified)',
 		'note' : 'result note (if exists)',
+		'specimen_result_seq' : 'display order of results',
 		},
 	Table.INDEX : {
 		'specimen_key' : 'foreign key to assay_specimen',
