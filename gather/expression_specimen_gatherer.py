@@ -69,7 +69,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				pattern = ""
 	
 			# structure format is TS26: brain
-			tsStructure = "%s: %s"%(stage,structure)
+			tsStructure = "TS%s: %s"%(stage,structure)
 
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
