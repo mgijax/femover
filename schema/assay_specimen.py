@@ -30,7 +30,7 @@ keys = {
 	'assay_key' : ('expression_assay', 'assay_key'),
 	}
 
-clusteredIndex=()
+clusteredIndex=None
 # comments describing the table, columns, and indexes
 comments = {
 	Table.TABLE : 'Contains information about specimens for expression_assay objects',

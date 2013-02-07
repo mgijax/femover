@@ -36,7 +36,7 @@ keys = {
 	}
 
 # index used to cluster data in the table
-clusteredIndex = ()
+clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
