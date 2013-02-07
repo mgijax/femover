@@ -163,6 +163,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'marker_to_expression_assay', 'expression_assay_sequence_num',
 		'marker_tissue_expression_counts',
 		'expression_result_summary',
+		'expression_specimen',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
