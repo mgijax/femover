@@ -22,7 +22,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	def collateResults(self):
 
 		# process specimens +  results 
-		specCols = [ 'specimen_key', 'assay_key', 'specimen_label' ]
+		specCols = [ 'specimen_key', 'assay_key', 'specimen_label','specimen_seq' ]
                 specRows = []
 
 		resultCols = [ 'specimen_result_key', 'specimen_key', 'structure',
@@ -36,6 +36,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
 		specKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
 		specLabelCol = Gatherer.columnNumber (cols, 'specimenlabel')
+		specSeqCol = Gatherer.columnNumber (cols, 'specimen_seq')
 
 		# define result columns from mgd query
 		resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
@@ -45,7 +46,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
-		resultSeqCol = Gatherer.columnNumber (cols, 'sequencenum')
+		resultSeqCol = Gatherer.columnNumber (cols, 'result_seq')
 	
 		uniqueSpecimenKeys = set()
 		resultCount = 0
@@ -54,6 +55,8 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			assayKey = row[assayKeyCol]
 			specimenKey = row[specKeyCol]
 			specimenLabel = row[specLabelCol]
+			specimenSeq = row[specSeqCol]
+
 			resultKey = row[resultKeyCol]
 			structure = row[structureCol]
 			structureMGDKey = row[structureKeyCol]
@@ -74,7 +77,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
 				# make a new specimen row
-				specRows.append((specimenKey,assayKey,specimenLabel))
+				specRows.append((specimenKey,assayKey,specimenLabel,specimenSeq))
 
 			# make a new specimen result row
 			resultRows.append((resultCount,specimenKey,tsStructure,structureMGDKey,strength,pattern,resultNote,resultSeq))
@@ -94,7 +97,11 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. Gather all the specimens and their results 
-	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,struct.printname,struct._structure_key,struct._stage_key,str.strength,gp.pattern, gir.resultnote,gir.sequencenum
+	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,
+		struct.printname,struct._structure_key,struct._stage_key,str.strength,
+		gp.pattern, gir.resultnote,
+		gir.sequencenum as result_seq,
+		gs.sequencenum as specimen_seq
 	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, gxd_structure struct,gxd_strength str, gxd_pattern gp
 	    where gs._specimen_key=gir._specimen_key
 		and gir._result_key=girs._result_key
@@ -106,7 +113,7 @@ cmds = [
 
 files = [
         ('assay_specimen',
-                [ 'specimen_key', 'assay_key', 'specimen_label' ],
+                [ 'specimen_key', 'assay_key', 'specimen_label','specimen_seq' ],
                 'assay_specimen'),
 
         ('specimen_result',
