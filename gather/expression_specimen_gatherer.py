@@ -46,7 +46,9 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
 	
 		uniqueSpecimenKeys = set()
+		resultCount = 0
 		for row in rows:
+			resultCount += 1
 			assayKey = row[assayKeyCol]
 			specimenKey = row[specKeyCol]
 			specimenLabel = row[specLabelCol]
@@ -68,7 +70,10 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				specRows.append((specimenKey,assayKey,specimenLabel))
 
 			# make a new specimen result row
-			resultRows.append((resultKey,specimenKey,structure,structureMGDKey,strength,pattern,resultNote))
+			resultRows.append((resultCount,specimenKey,structure,structureMGDKey,strength,pattern,resultNote))
+	
+		#logger.debug("specimen rows = %s"%specRows)
+		#logger.debug("result rows = %s"%resultRows)
 
 		# Add all the column and row information to the output
 		self.output = [(specCols,specRows),(resultCols,resultRows)]
