@@ -17,6 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	specimen_key		int		not null,
 	assay_key		int		not null,
 	specimen_label		varchar(255)	null,
+	specimen_seq		int		not null,
 	PRIMARY KEY(specimen_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -38,6 +39,7 @@ comments = {
 		'specimen_key' : 'unique identifier for this assay, same as _Specimen_key in mgd',
 		'assay_key' : 'unique identifier for this assay, same as _Assay_key in mgd',
 		'specimen_label' : 'label for the specimen',
+		'specimen_seq' : 'sequencenum from mgd',
 		},
 	Table.INDEX : {
 		'assay_key' : 'foreign key to expression_assay',
