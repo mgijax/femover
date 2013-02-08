@@ -29,6 +29,9 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			'structure_mgd_key','level','pattern','note','specimen_result_seq' ]
                 resultRows = []
 
+		imagepaneCols = [ 'specimen_result_imagepane_key','specimen_result_key', 'imagepane_key', 'imagepane_seq']
+		imagepaneRows = []
+
 
 		(cols, rows) = self.results[0]
 
@@ -47,11 +50,13 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
 		resultSeqCol = Gatherer.columnNumber (cols, 'result_seq')
+		imagepaneKeyCol = Gatherer.columnNumber (cols, '_imagepane_key')
 	
 		uniqueSpecimenKeys = set()
+		uniqueResultKeys = {}
 		resultCount = 0
+		imagepaneCount = 0
 		for row in rows:
-			resultCount += 1
 			assayKey = row[assayKeyCol]
 			specimenKey = row[specKeyCol]
 			specimenLabel = row[specLabelCol]
@@ -67,6 +72,8 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			resultNote = row[resultNoteCol]
 			resultSeq = row[resultSeqCol]
 
+			imagepaneKey = row[imagepaneKeyCol]
+
 			# hide not specified pattern
 			if pattern == 'Not Specified':
 				pattern = ""
@@ -79,14 +86,23 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				# make a new specimen row
 				specRows.append((specimenKey,assayKey,specimenLabel,specimenSeq))
 
-			# make a new specimen result row
-			resultRows.append((resultCount,specimenKey,tsStructure,structureMGDKey,strength,pattern,resultNote,resultSeq))
+			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
+			resultGenKey = (resultKey,structureMGDKey)
+			if resultGenKey not in uniqueResultKeys:
+				resultCount += 1
+				uniqueResultKeys[resultGenKey] = resultCount
+				# make a new specimen result row
+				resultRows.append((resultCount,specimenKey,tsStructure,structureMGDKey,strength,pattern,resultNote,resultSeq))
+			if imagepaneKey:
+				imagepaneCount += 1
+				# make a new imagepane row
+				imagepaneRows.append((imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
 	
 		#logger.debug("specimen rows = %s"%specRows)
 		#logger.debug("result rows = %s"%resultRows)
 
 		# Add all the column and row information to the output
-		self.output = [(specCols,specRows),(resultCols,resultRows)]
+		self.output = [(specCols,specRows),(resultCols,resultRows),(imagepaneCols,imagepaneRows)]
 			
 		return
 
@@ -97,17 +113,29 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. Gather all the specimens and their results 
-	'''select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,
+	'''
+	WITH imagepanes AS (
+		select _result_key,_imagepane_key from gxd_insituresultimage
+		UNION
+		select _result_key,null from gxd_insituresult r1
+			where not exists (select 1 from gxd_insituresultimage i1
+				where r1._result_key=i1._result_key
+			)
+	)
+	    select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,
 		struct.printname,struct._structure_key,struct._stage_key,str.strength,
 		gp.pattern, gir.resultnote,
 		gir.sequencenum as result_seq,
-		gs.sequencenum as specimen_seq
-	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, gxd_structure struct,gxd_strength str, gxd_pattern gp
+		gs.sequencenum as specimen_seq,
+		giri._imagepane_key
+	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
+		gxd_structure struct,gxd_strength str, gxd_pattern gp, imagepanes giri
 	    where gs._specimen_key=gir._specimen_key
 		and gir._result_key=girs._result_key
 		and girs._structure_key=struct._structure_key
 		and gir._strength_key=str._strength_key
 		and gir._pattern_key=gp._pattern_key
+		and gir._result_key=giri._result_key
 	''',
 	]
 
@@ -120,6 +148,10 @@ files = [
                 [ 'specimen_result_key', 'specimen_key', 'structure',
                 'structure_mgd_key','level','pattern','note','specimen_result_seq' ],
                 'specimen_result'),
+
+        ('specimen_result_to_imagepane',
+                [ 'specimen_result_imagepane_key','specimen_result_key', 'imagepane_key', 'imagepane_seq'],
+                'specimen_result_to_imagepane'),
         ]
 
 
