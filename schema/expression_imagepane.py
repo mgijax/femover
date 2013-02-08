@@ -17,6 +17,10 @@ createStatement = '''CREATE TABLE %s  (
 	imagepane_key	int		not null,
 	image_key	int		not null,
 	pane_label	varchar(255)	null,
+	x	int		not null,
+	y	int		not null,
+	width	int		not null,
+	height	int		not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(imagepane_key))''' % tableName
 
