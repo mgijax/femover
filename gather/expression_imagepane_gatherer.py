@@ -38,6 +38,10 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		assayKeyCol = Gatherer.columnNumber (cols, '_Assay_key')
 		mrkKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		paneLabelCol = Gatherer.columnNumber (cols, 'paneLabel')
+		paneXCol = Gatherer.columnNumber (cols, 'x')
+		paneYCol = Gatherer.columnNumber (cols, 'y')
+		paneWidthCol = Gatherer.columnNumber (cols, 'width')
+		paneHeightCol = Gatherer.columnNumber (cols, 'height')
 		idCol = Gatherer.columnNumber (cols, 'assayID')
 		assayTypeCol = Gatherer.columnNumber (cols, 'assayType')
 		xDimCol = Gatherer.columnNumber (cols, 'xDim')
@@ -51,6 +55,10 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			assayKey = row[assayKeyCol]
 			markerKey = row[mrkKeyCol]
 			paneLabel = row[paneLabelCol]
+			paneX = row[paneXCol] or 0
+			paneY = row[paneYCol] or 0
+			paneWidth = row[paneWidthCol] or 0
+			paneHeight = row[paneHeightCol] or 0
 			assayID = row[idCol]
 			assayType = row[assayTypeCol]
 
@@ -63,7 +71,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			(symbol, markerID) = self.markers[markerKey]
 
 			assays.append ( (imageKey, assayType, markerKey,
-				paneLabel, assayKey, assayID, symbol,
+				paneLabel, paneX, paneY, paneWidth, paneHeight, assayKey, assayID, symbol,
 				inPixeldb, markerID, row[paneKeyCol],
 				row[thumbKeyCol]) )
 		logger.debug ('Collected %d %s assays' % (len(assays), label))
@@ -78,7 +86,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 
 		# distinct set of unique pane keys
 		paneKeys = {}
-		for [ imageKey, paneLabel, paneKey ] in panes:
+		for [ imageKey, paneLabel, paneKey, paneX, paneY, paneWidth, paneHeight ] in panes:
 			paneKeys[paneKey] = 1
 
 		cols, rows = self.results[3]
@@ -112,7 +120,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		details = []	# rows for expression_imagepane_details
 
 		# column names for rows in 'panes'
-		paneCols = [ '_Image_key', 'paneLabel', '_ImagePane_key',
+		paneCols = [ '_Image_key', 'paneLabel', '_ImagePane_key','x','y','width','height',
 			'sequenceNum' ]
 
 		# column names for rows in 'details'
@@ -134,14 +142,14 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		# contributes to a row for 'paneSets' where a pane set is
 		# defined for a unique (image key, assay type, marker key)
 		# tuple
-		for (imageKey, assayType, markerKey, paneLabel, assayKey,
+		for (imageKey, assayType, markerKey, paneLabel, paneX, paneY, paneWidth, paneHeight, assayKey,
 			assayID, symbol, inPixeldb, markerID, paneKey,
 			thumbKey) in allAssays:
 
 			i = i + 1
 			if not panesDone.has_key (paneKey):
 				# sequence num to be appended later:
-				panes.append ( [imageKey, paneLabel, paneKey,
+				panes.append ( [imageKey, paneLabel, paneKey, paneX,paneY,paneWidth,paneHeight
 					] )
 				panesDone[paneKey] = 1
 
@@ -203,6 +211,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		for dataset in [ details, panes ]:
 			i = 0
 			for row in dataset:
+				if row[0] == 1002:
+					logger.debug("row for 1002 = %s"%row)
 				i = i + 1
 				row.append (i)
 		logger.debug ('Added sequence numbers')
@@ -233,6 +243,7 @@ cmds = [
 		a._Assay_key,
 		a._Marker_key,
 		p.paneLabel,
+		p.x,p.y,p.width,p.height,
 		acc.accID as assayID,
 		gat.assaytype,
 		i.xDim,
@@ -257,6 +268,7 @@ cmds = [
 		a._Assay_key,
 		a._Marker_key,
 		p.paneLabel,
+		p.x,p.y,p.width,p.height,
 		acc.accID as assayID,
 		gat.assayType,
 		i.xDim,
@@ -301,7 +313,7 @@ cmds = [
 # output file
 files = [
 	('expression_imagepane',
-		[ '_ImagePane_key', '_Image_key', 'paneLabel', 
+		[ '_ImagePane_key', '_Image_key', 'paneLabel','x','y','width','height', 
 		'sequenceNum' ],
 		'expression_imagepane'),
 
