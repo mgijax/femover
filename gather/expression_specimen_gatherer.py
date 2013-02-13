@@ -75,7 +75,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			imagepaneKey = row[imagepaneKeyCol]
 
 			# hide not specified pattern
-			if pattern == 'Not Specified':
+			if pattern in ['Not Specified','Not Applicable']:
 				pattern = ""
 	
 			# structure format is TS26: brain
