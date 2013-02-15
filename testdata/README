@@ -1,0 +1,5 @@
+These files are read by the test_stats_gatherer.
+Each *TestData.py file should contain a list of "Queries"
+that the gatherer iterates through and saves results to the fe database
+in the test_stats table.
+Use TemplateTestData.py as a guide
