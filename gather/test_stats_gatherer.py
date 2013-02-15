@@ -12,9 +12,10 @@ import logger
 import dbAgnostic
 import re
 from TestData import *
-import GXDTestData
 
-TESTS = [GXDTestData]
+# define which groups of test data we will actually run and load
+import GXDTestData,GXDLitTestData
+TESTS = [GXDTestData,GXDLitTestData]
 
 SQL_VAR_PATTERN = "\$\{([a-zA-Z0-9]+)\}"
 # compile the regex for parsing out variable strings in the SQL statements
@@ -29,13 +30,10 @@ EXISTING_ERROR = "###ExistingError###"
 ###--- Functions to be moved into a lib module ---###
 # this function iterates the TestData SQLs and returns each row with the result data or error fields populated
 def iterateSqls():
-	group = "GXD"
-	
 	all_rows = []
 	# iterate all the tests first in order to map all the ids (necessary for resolving variables later on)
 	for testData in TESTS:
-		group = testData.__name__
-		for test_sql in GXDTestData.Queries:
+		for test_sql in testData.Queries:
 			id = test_sql[ID]
 			# sanitise input
 			test_sql[DESCRIPTION] = test_sql[DESCRIPTION].strip()
@@ -44,7 +42,7 @@ def iterateSqls():
 			test_sql[UPDATED] = False
 			test_sql[ERROR] = ""
 			test_sql[RETURNDATA] = ""
-			test_sql[GROUP] = group
+			test_sql[GROUP] = testData.__name__
 			rows_by_id[id] = test_sql
 			all_rows.append(test_sql)
 	# perform the sql statements
@@ -154,37 +152,8 @@ class TestStatsGatherer (Gatherer.Gatherer):
 			count += 1
 			dbrows.append( [count,data[ID],data[GROUP],data[DESCRIPTION],data[SQLSTATEMENT],data[RETURNDATA],data[ERROR]])
 			
-			"""
-			self.addColumn("test_stats_key",count,row,cols)
-			self.addColumn("id",data[ID],row,cols)
-			self.addColumn("group_type",data[GROUP],row,cols)
-			self.addColumn("description",data[DESCRIPTION],row,cols)
-			self.addColumn("sql_statement",data[SQLSTATEMENT],row,cols)
-			self.addColumn("test_data",data[RETURNDATA],row,cols)
-			self.addColumn("error",data[ERROR],row,cols)
-			"""
 		self.finalColumns = cols
 		self.finalResults = dbrows
-		"""
-	
-
-		self.addColumn ('_Probe_key', probeKey, row, cols)
-		self.addColumn ('probe_name', probeName, row, cols)
-		self.addColumn ('probe_preparation', probePrep, row,
-			cols)
-		self.addColumn ('visualized_with', visualizedWith,
-			row, cols)
-		self.addColumn ('is_direct_detection',
-			isDirectDetection, row, cols)
-		self.addColumn ('note', note, row, cols)
-		self.addColumn ('detection_system', detectionSystem,
-			row, cols)
-		self.addColumn ('_Antibody_key', antibodyKey, row, cols)
-		self.addColumn ('antibody', antibodyName, row, cols)
-		self.addColumn ('assay_type', assayType, row, cols)
-		self.addColumn ('reporter_gene', reporter, row, cols)
-		self.addColumn ('has_image', image, row, cols)
-		"""
 		return
 
 	def postprocessResults(self):
