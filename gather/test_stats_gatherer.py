@@ -14,6 +14,8 @@ import re
 from TestData import *
 import GXDTestData
 
+TESTS = [GXDTestData]
+
 SQL_VAR_PATTERN = "\$\{([a-zA-Z0-9]+)\}"
 # compile the regex for parsing out variable strings in the SQL statements
 sql_re = re.compile(SQL_VAR_PATTERN)
@@ -25,27 +27,31 @@ REFERENCE_ERROR = "###ReferenceError####"
 EXISTING_ERROR = "###ExistingError###"
 
 ###--- Functions to be moved into a lib module ---###
+# this function iterates the TestData SQLs and returns each row with the result data or error fields populated
 def iterateSqls():
 	group = "GXD"
 	
 	all_rows = []
-	for test_sql in GXDTestData.Queries:
-		id = test_sql[ID]
-		# sanitise input
-		test_sql[DESCRIPTION] = test_sql[DESCRIPTION].strip()
-		test_sql[SQLSTATEMENT] = test_sql[SQLSTATEMENT].strip()
-		test_sql[UPDATED] = False
-		test_sql[ERROR] = ""
-		test_sql[RETURNDATA] = ""
-		test_sql[GROUP] = group
-		rows_by_id[id] = test_sql
-		all_rows.append(test_sql)
+	# iterate all the tests first in order to map all the ids (necessary for resolving variables later on)
+	for testData in TESTS:
+		group = testData.__name__
+		for test_sql in GXDTestData.Queries:
+			id = test_sql[ID]
+			# sanitise input
+			test_sql[DESCRIPTION] = test_sql[DESCRIPTION].strip()
+			test_sql[SQLSTATEMENT] = test_sql[SQLSTATEMENT].strip()
+			# initialise some values
+			test_sql[UPDATED] = False
+			test_sql[ERROR] = ""
+			test_sql[RETURNDATA] = ""
+			test_sql[GROUP] = group
+			rows_by_id[id] = test_sql
+			all_rows.append(test_sql)
+	# perform the sql statements
 	for row in all_rows:
 		run_sql_statement(row)
 	#logger.debug(all_rows)
 	return all_rows
-	
-	
 
 # process SQL and perform any variable substitutions
 def run_sql_statement(row,idStack=[]):
