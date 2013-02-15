@@ -11,43 +11,12 @@ import Gatherer
 import logger
 import dbAgnostic
 import re
+from TestData import *
+import GXDTestData
 
 SQL_VAR_PATTERN = "\$\{([a-zA-Z0-9]+)\}"
 # compile the regex for parsing out variable strings in the SQL statements
 sql_re = re.compile(SQL_VAR_PATTERN)
-
-#column definition
-GROUP = "group" 
-ID = "id"
-DESCRIPTION = "description"
-SQLSTATEMENT = "sqlstatement" 
-RETURNDATA = "returndata"
-ERROR = "error"
-UPDATED = "updated"
-coldefs = {'1':GROUP,'2':ID,'3':DESCRIPTION,'4':SQLSTATEMENT,'5':RETURNDATA,'6':ERROR}
-
-
-test_sqls = [
-"Assay Types",
-{	
-	ID:"RNaseProtectionResultCount", 
-	DESCRIPTION:"Assay Result count for RNaseProtection assay type", 
-	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RNase protection'
-	""" },
-{	
-	ID:"WesternBlotResultCount", 
-	DESCRIPTION:"Assay Result count for Western Blot assay type", 
-	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Western blot'
-	""" },
-{	
-	ID:"NorthernBlotResultCount", 
-	DESCRIPTION:"Assay Result count for Northern Blot assay type", 
-	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Northern blot'
-	""" },
-]
 
 rows_by_id = {}
 
@@ -57,10 +26,10 @@ EXISTING_ERROR = "###ExistingError###"
 
 ###--- Functions to be moved into a lib module ---###
 def iterateSqls():
-	group = test_sqls[0]
+	group = "GXD"
 	
 	all_rows = []
-	for test_sql in test_sqls[1:]:
+	for test_sql in GXDTestData.Queries:
 		id = test_sql[ID]
 		# sanitise input
 		test_sql[DESCRIPTION] = test_sql[DESCRIPTION].strip()
