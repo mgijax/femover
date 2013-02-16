@@ -42,7 +42,7 @@ def iterateSqls():
 			test_sql[UPDATED] = False
 			test_sql[ERROR] = ""
 			test_sql[RETURNDATA] = ""
-			test_sql[GROUP] = testData.__name__
+			test_sql[GROUP] = testData.__name__.replace("TestData","")
 			rows_by_id[id] = test_sql
 			all_rows.append(test_sql)
 	# perform the sql statements
