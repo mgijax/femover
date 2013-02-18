@@ -246,11 +246,30 @@ Queries.extend([
 },
 {	ID:"countForMaturingNephronResults",
 	DESCRIPTION:"find the count of results associated to terms containing 'maturing nephron', and their children",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"maturing nephron"
+	SQLSTATEMENT:"""
+	WITH 
+	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
+		WHERE structure ilike '%maturing nephron%'),
+	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
+		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
+		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
+	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
+	SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+	"""
 },
 {	ID:"countForMatureNephronResults",
 	DESCRIPTION:"find the count of results associated to terms containing 'mature nephron', and their children",
 	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"mature nephron"
+	SQLSTATEMENT:"""
+	WITH 
+	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
+		WHERE structure ilike '%mature nephron%'),
+	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
+		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
+		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
+	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
+	SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+	"""
 },
 ])
 
