@@ -388,3 +388,150 @@ Queries.extend([
 },
 
 ])
+
+###--- Mutants Query Tests
+# NOTE: most of these queries return multi-valued (i.e. 2 column) results. These get translted into an html table in concordion
+MUTANTS_BY_GENE_TEMPLATE_SQL = """
+	Select acc.accid,count(distinct _expression_key) from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+		and ml._marker_key=ag._marker_key and ml.label = '%s' 
+		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
+		and acc._object_key=ge._assay_key and acc._mgitype_key=8 and acc.preferred=1 
+	group by acc.accid;
+"""
+Queries.extend([
+{	ID:"resultCountMutantPax4GroupByAssayId",
+	DESCRIPTION:"Gets result count for mutant Pax4 grouped by assayid",
+	SQLSTATEMENT:MUTANTS_BY_GENE_TEMPLATE_SQL%"Pax4"
+},
+{	ID:"resultCountMutantPax1GroupByAssayId",
+	DESCRIPTION:"Gets result count for mutant Pax1 grouped by assayid",
+	SQLSTATEMENT:MUTANTS_BY_GENE_TEMPLATE_SQL%"Pax1"
+},
+{	ID:"resultCountMutantPax2GroupByAssayId",
+	DESCRIPTION:"Gets result count for mutant Pax2 grouped by assayid",
+	SQLSTATEMENT:MUTANTS_BY_GENE_TEMPLATE_SQL%"Pax2"
+},
+{	ID:"resultCountMutantAscl3GroupByAssayId",
+	DESCRIPTION:"Gets result count for mutant Ascl3 grouped by assayid",
+	SQLSTATEMENT:MUTANTS_BY_GENE_TEMPLATE_SQL%"Ascl3"
+},
+{	ID:"resultCountMutantAscl3NomenAscl3GroupByAssayId",
+	DESCRIPTION:"Gets result count for mutant Ascl3, and Nomen Ascl3 grouped by assayid",
+	SQLSTATEMENT:"""
+	Select acc.accid,count(distinct _expression_key) from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc,mrk_marker m 
+	where ge._marker_key=m._marker_key and m.symbol='Ascl3' and ge.isforgxd=1 
+		and ge._genotype_key=ag._genotype_key and ml._marker_key=ag._marker_key 
+		and ml.label = 'Ascl3' and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
+		and acc._object_key=ge._assay_key and acc._mgitype_key=8 and acc.preferred=1 
+	group by acc.accid;
+	"""
+},
+{	ID:"resultCountByMutantBetaCateninGroupByAssayId",
+	DESCRIPTION:"Gets result count for 'beta catenin' grouped by assayid",
+	SQLSTATEMENT:"""
+	Select acc.accid,count(distinct _expression_key) 
+	from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+		and ml._marker_key=ag._marker_key 
+		and ml.label @@ 'beta & catenin'
+		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
+		and acc._object_key=ge._assay_key 
+		and acc._mgitype_key=8 
+		and acc.preferred=1 group by acc.accid;
+	"""
+},
+{	ID:"resultCountByMutantKrox-20GroupByAssayId",
+	DESCRIPTION:"Gets result count for 'Krox-20' grouped by assayid",
+	SQLSTATEMENT:"""
+	Select acc.accid,count(distinct _expression_key) 
+	from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+		and ml._marker_key=ag._marker_key 
+		and ml.label @@ 'Krox-20'
+		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
+		and acc._object_key=ge._assay_key 
+		and acc._mgitype_key=8 
+		and acc.preferred=1 group by acc.accid;
+	"""
+},
+{	ID:"wildtypeSpecimenCount",
+	DESCRIPTION:"non-insitu reporters specimens that are wild type",
+	SQLSTATEMENT:"""
+	select count(distinct e._assay_key) from GXD_Expression e, GXD_Specimen g 
+	where e._assaytype_key != 9 
+		and e._assay_key = g._assay_key 
+		and not exists (select 1 from GXD_AlleleGenotype ag where g._Genotype_key = ag._Genotype_key)
+	"""
+},
+{	ID:"wildtypeGelLaneCount",
+	DESCRIPTION:"non-insitu reporters gel lanes that are wild type",
+	SQLSTATEMENT:"""
+	select count(distinct e._assay_key) from GXD_Expression e, GXD_GelLane g 
+	where e._assaytype_key != 9 
+		and e._assay_key = g._assay_key 
+		and g._gelcontrol_key = 1 
+		and not exists (select 1 from GXD_AlleleGenotype ag where g._Genotype_key = ag._Genotype_key)
+	"""
+},
+{	ID:"wildtypeInSituReportersCount",
+	DESCRIPTION:"insitu reporters that are wild type",
+	SQLSTATEMENT:"""
+	select ag._genotype_key into temporary tmp_genotype 
+		from GXD_AllelePair ag group by ag._Genotype_key 
+		having count(*) = 1;create index idx1 on tmp_genotype(_genotype_key);
+	select count(distinct e._assay_key )from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+	where e._assaytype_key = 9 
+		and e._genotype_key = ag._genotype_key 
+		and ag._genotype_key = agg._genotype_key 
+		and agg._marker_key = e._marker_key 
+		and agg._allele_key = a._allele_key 
+		and a.iswildtype = 1;
+	"""
+},
+{	ID:"allWildTypeCount",
+	DESCRIPTION:"count of all the new wild type results",
+	SQLSTATEMENT:"""
+	WITH tmp_genotype AS (select ag._genotype_key from GXD_AllelePair ag group by ag._Genotype_key having count(*) = 1),
+	new_wildtypes AS (select distinct e._expression_key from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+		where e.isforgxd=1 
+			and e._assaytype_key = 9 
+			and e._genotype_key = ag._genotype_key 
+			and ag._genotype_key = agg._genotype_key 
+			and agg._marker_key = e._marker_key 
+			and agg._allele_key = a._allele_key 
+			and a.iswildtype = 1),
+	old_wildtypes AS (select distinct ge._expression_key from gxd_Expression ge 
+		where ge.isforgxd=1 
+			and ge._assaytype_key!=9 
+			and not exists (select 1 from gxd_allelegenotype ag where ag._genotype_key=ge._genotype_key))
+	select count(*) from (select * from old_wildtypes UNION select * from new_wildtypes) as all_wildtypes;
+	"""
+},
+{	ID:"wildtypeCountForAscl3GroupByAssayId",
+	DESCRIPTION:"count of all wildtype results for Ascl3 grouped by assay id",
+	SQLSTATEMENT:"""
+	WITH tmp_genotype AS (select ag._genotype_key from GXD_AllelePair ag group by ag._Genotype_key having count(*) = 1),
+	new_wildtypes AS (select e.* from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+		where e.isforgxd=1 
+		and e._assaytype_key = 9 
+		and e._genotype_key = ag._genotype_key 
+		and ag._genotype_key = agg._genotype_key 
+		and agg._marker_key = e._marker_key 
+		and agg._allele_key = a._allele_key 
+		and a.iswildtype = 1),
+	old_wildtypes AS (select ge.* from gxd_Expression ge 
+		where ge.isforgxd=1 
+			and ge._assaytype_key!=9 
+			and not exists (select 1 from gxd_allelegenotype ag where ag._genotype_key=ge._genotype_key))
+	select acc.accid,count(distinct _expression_key) from mrk_marker m,acc_accession acc,
+		(select * from old_wildtypes UNION select * from new_wildtypes) as all_wildtypes 
+	where m._marker_key=all_wildtypes._marker_key 
+		and acc._object_key=all_wildtypes._assay_key
+		and acc._mgitype_key=8 
+		and acc.preferred=1 
+		and m.symbol='Ascl3' 
+	group by acc.accid;
+	"""
+},
+])
