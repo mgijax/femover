@@ -259,7 +259,6 @@ Queries.extend([
 },
 {	ID:"countForMatureNephronResults",
 	DESCRIPTION:"find the count of results associated to terms containing 'mature nephron', and their children",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"mature nephron"
 	SQLSTATEMENT:"""
 	WITH 
 	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
