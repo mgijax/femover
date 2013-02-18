@@ -54,6 +54,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to r
 	-r : References
 	-v : Vocabularies
 	-x : eXpression (GXD Data plus GXD Literature Index)
+	-t : Test data
 	-G : run a single, specified gatherer (useful for testing)
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
@@ -195,6 +196,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple',
 	]
+TESTS = ['test_stats']
 
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
@@ -208,7 +210,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
-	'-n' : ANNOTATIONS,	'-A' : ACCESSION,
+	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-t' : TESTS
 	}
 
 # boolean; are we doing a build of the complete front-end database?
