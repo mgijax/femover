@@ -12,6 +12,7 @@ import Gatherer
 import logger
 
 ###--- Classes ---###
+NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
 
 class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
@@ -90,9 +91,16 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			resultSeq = row[resultSeqCol]
 
 			imagepaneKey = row[imagepaneKeyCol]
+	
+			# hide not specified fixation method
+			if fixation in NOT_SPECIFIED_VALUES:
+				fixation = ""
+			# hide note specified embedding method
+			if embedding in NOT_SPECIFIED_VALUES:
+				embedding = ""
 
 			# hide not specified pattern
-			if pattern in ['Not Specified','Not Applicable']:
+			if pattern in NOT_SPECIFIED_VALUES:
 				pattern = ""
 	
 			# structure format is TS26: brain
