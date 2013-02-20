@@ -5,6 +5,8 @@ CHANGES:
 1) gather/expression_gatherer.py
    schema/expression_assay.py
 
+2) Configuration.default:  BUILD_IN_SYNC = 1
+
 TAG: femover-5-1-2-5
 TAG: femover-5-1-2-4
 TAG: femover-5-1-2-3

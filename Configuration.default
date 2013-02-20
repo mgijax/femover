@@ -70,7 +70,7 @@ export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
 # Miscellaneous settings
 #
 CHUNK_SIZE=100000	# for large tables, how many rows to do at once
-BUILDS_IN_SYNC=0	# are dbSNP and MGI coords in sync?  (0/1)
+BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
 SOURCE_TYPE=postgres	# build from postgres, mysql, or sybase
 TARGET_TYPE=postgres	# build into postgres or mysql
 
