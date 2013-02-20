@@ -22,7 +22,9 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	def collateResults(self):
 
 		# process specimens +  results 
-		specCols = [ 'specimen_key', 'assay_key', 'specimen_label','specimen_seq' ]
+		specCols = [ 'specimen_key', 'assay_key', 'genotype_key','specimen_label','sex',
+			'age','fixation','embedding_method','hybridization','age_note','specimen_note',
+			'specimen_seq' ]
                 specRows = []
 
 		resultCols = [ 'specimen_result_key', 'specimen_key', 'structure',
@@ -32,13 +34,20 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		imagepaneCols = [ 'specimen_result_imagepane_key','specimen_result_key', 'imagepane_key', 'imagepane_seq']
 		imagepaneRows = []
 
-
 		(cols, rows) = self.results[0]
 
 		# define specimen columns from mgd query
 		assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
 		specKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_genotype_key')
 		specLabelCol = Gatherer.columnNumber (cols, 'specimenlabel')
+		sexCol = Gatherer.columnNumber (cols, 'sex')
+		ageCol = Gatherer.columnNumber (cols, 'age')
+		fixationCol = Gatherer.columnNumber (cols, 'fixation')
+		embeddingCol = Gatherer.columnNumber (cols, 'embeddingmethod')
+		hybridizationCol = Gatherer.columnNumber (cols, 'hybridization')
+		ageNoteCol = Gatherer.columnNumber (cols, 'agenote')
+		specimenNoteCol = Gatherer.columnNumber (cols, 'specimennote')
 		specSeqCol = Gatherer.columnNumber (cols, 'specimen_seq')
 
 		# define result columns from mgd query
@@ -59,7 +68,15 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			assayKey = row[assayKeyCol]
 			specimenKey = row[specKeyCol]
+			genotypeKey = row[genotypeKeyCol]
 			specimenLabel = row[specLabelCol]
+			sex = row[sexCol]
+			age = row[sexCol]
+			fixation = row[fixationCol]
+			embedding = row[embeddingCol]
+			hybridization = row[hybridizationCol]
+			ageNote = row[ageNoteCol]
+			specimenNote = row[specimenNoteCol]
 			specimenSeq = row[specSeqCol]
 
 			resultKey = row[resultKeyCol]
@@ -84,7 +101,8 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
 				# make a new specimen row
-				specRows.append((specimenKey,assayKey,specimenLabel,specimenSeq))
+				specRows.append((specimenKey,assayKey,genotypeKey,specimenLabel,sex,
+					age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
 
 			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
 			resultGenKey = (resultKey,structureMGDKey)
@@ -115,33 +133,47 @@ cmds = [
 	# 0. Gather all the specimens and their results 
 	'''
 	WITH imagepanes AS (
-		select _result_key,_imagepane_key from gxd_insituresultimage
-		UNION
-		select _result_key,null from gxd_insituresult r1
-			where not exists (select 1 from gxd_insituresultimage i1
-				where r1._result_key=i1._result_key
-			)
-	)
-	    select gs._assay_key,gs._specimen_key,gs.specimenlabel,gir._result_key,
-		struct.printname,struct._structure_key,struct._stage_key,str.strength,
-		gp.pattern, gir.resultnote,
-		gir.sequencenum as result_seq,
-		gs.sequencenum as specimen_seq,
-		giri._imagepane_key
-	    from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
-		gxd_structure struct,gxd_strength str, gxd_pattern gp, imagepanes giri
-	    where gs._specimen_key=gir._specimen_key
-		and gir._result_key=girs._result_key
-		and girs._structure_key=struct._structure_key
-		and gir._strength_key=str._strength_key
-		and gir._pattern_key=gp._pattern_key
-		and gir._result_key=giri._result_key
+	select _result_key,_imagepane_key from gxd_insituresultimage
+	UNION
+	select _result_key,null from gxd_insituresult r1
+		where not exists (select 1 from gxd_insituresultimage i1
+			where r1._result_key=i1._result_key
+		)
+        )
+	select gs._assay_key,gs._specimen_key,gs.specimenlabel,
+	    gs.age,
+	    gs.agenote,
+	    gfm.fixation,
+	    gs._genotype_key,
+	    gs.sex,
+	    gs.specimennote,
+	    gem.embeddingmethod,
+	    gs.hybridization,
+	    gir._result_key,
+	    struct.printname,struct._structure_key,struct._stage_key,str.strength,
+	    gp.pattern, gir.resultnote,
+	    gir.sequencenum as result_seq,
+	    gs.sequencenum as specimen_seq,
+	    giri._imagepane_key
+	from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
+	    gxd_structure struct,gxd_strength str, gxd_pattern gp, imagepanes giri,
+	    gxd_fixationmethod gfm, gxd_embeddingmethod gem
+	where gs._specimen_key=gir._specimen_key
+	    and gir._result_key=girs._result_key
+	    and girs._structure_key=struct._structure_key
+	    and gir._strength_key=str._strength_key
+	    and gir._pattern_key=gp._pattern_key
+	    and gir._result_key=giri._result_key
+	    and gfm._fixation_key=gs._fixation_key
+	    and gem._embedding_key=gs._embedding_key
 	''',
 	]
 
 files = [
         ('assay_specimen',
-                [ 'specimen_key', 'assay_key', 'specimen_label','specimen_seq' ],
+		[ 'specimen_key', 'assay_key', 'genotype_key','specimen_label','sex',
+			'age','fixation','embedding_method','hybridization','age_note','specimen_note',
+			'specimen_seq' ],
                 'assay_specimen'),
 
         ('specimen_result',
