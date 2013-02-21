@@ -72,7 +72,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			genotypeKey = row[genotypeKeyCol]
 			specimenLabel = row[specLabelCol]
 			sex = row[sexCol]
-			age = row[sexCol]
+			age = row[ageCol]
 			fixation = row[fixationCol]
 			embedding = row[embeddingCol]
 			hybridization = row[hybridizationCol]
