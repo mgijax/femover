@@ -48,7 +48,6 @@ comments = {
 		'error' : 'error message if test_data could not be generated for any reason',
 		},
 	Table.INDEX : {
-		'assay_key' : 'foreign key to expression_assay',
 		},
 	}
 
