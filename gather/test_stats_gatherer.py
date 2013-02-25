@@ -14,8 +14,8 @@ import re
 from TestData import *
 
 # define which groups of test data we will actually run and load
-import GXDTestData,GXDLitTestData
-TESTS = [GXDTestData,GXDLitTestData]
+import GXDTestData,GXDLitTestData,VocabTestData
+TESTS = [GXDTestData,GXDLitTestData,VocabTestData]
 
 SQL_VAR_PATTERN = "\$\{([a-zA-Z0-9]+)\}"
 # compile the regex for parsing out variable strings in the SQL statements
