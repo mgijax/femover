@@ -35,12 +35,12 @@ GXD_VOCAB_TERM_CHILDREN_TEMPLATE_SQL="""
       and (qualifier.term is null or qualifier.term not like 'NOT%%')
       and va._AnnotType_key = t._AnnotType_key
       and t.name = 'GO/Marker'
-      and exists (select 1 from GXD_Index ge
-	where ge._Marker_key = va._Object_key)
+      and exists (select 1 from GXD_Expression ge
+	where ge._Marker_key = va._Object_key and ge.isforgxd=1)
     order by 1
 """
 GXD_VOCAB_MPID_TEMPLATE_SQL="""
-    select distinct v._marker_key, m.symbol
+    select distinct m.symbol
     from mgd.acc_accession a , mgd.voc_marker_cache v, mgd.mrk_marker m, mgd.voc_term t, gxd_expression e
     where a.accid = '%s'
 	and a._object_key = v._term_key
