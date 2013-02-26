@@ -13,6 +13,7 @@ import logger
 
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
+CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant specimen."
 
 class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
@@ -42,6 +43,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		specKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_genotype_key')
 		specLabelCol = Gatherer.columnNumber (cols, 'specimenlabel')
+		conditionalGenotypeCol = Gatherer.columnNumber (cols, 'conditional_genotype')
 		sexCol = Gatherer.columnNumber (cols, 'sex')
 		ageCol = Gatherer.columnNumber (cols, 'age')
 		fixationCol = Gatherer.columnNumber (cols, 'fixation')
@@ -71,6 +73,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			specimenKey = row[specKeyCol]
 			genotypeKey = row[genotypeKeyCol]
 			specimenLabel = row[specLabelCol]
+			isConditionalGenotype = row[conditionalGenotypeCol]
 			sex = row[sexCol]
 			age = row[ageCol]
 			fixation = row[fixationCol]
@@ -105,6 +108,10 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	
 			# structure format is TS26: brain
 			tsStructure = "TS%s: %s"%(stage,structure)
+
+			# add conditional genotype note, if applicable
+			if isConditionalGenotype == 1:
+				specimenNote = "%s %s"%(specimenNote,CONDITIONAL_GENOTYPE_NOTE)
 
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
@@ -153,6 +160,7 @@ cmds = [
 	    gs.agenote,
 	    gfm.fixation,
 	    gs._genotype_key,
+	    gg.isconditional conditional_genotype,
 	    gs.sex,
 	    gs.specimennote,
 	    gem.embeddingmethod,
@@ -165,7 +173,7 @@ cmds = [
 	    giri._imagepane_key
 	from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
 	    gxd_structure struct,gxd_strength str, gxd_pattern gp, imagepanes giri,
-	    gxd_fixationmethod gfm, gxd_embeddingmethod gem
+	    gxd_fixationmethod gfm, gxd_embeddingmethod gem,gxd_genotype gg
 	where gs._specimen_key=gir._specimen_key
 	    and gir._result_key=girs._result_key
 	    and girs._structure_key=struct._structure_key
@@ -174,6 +182,7 @@ cmds = [
 	    and gir._result_key=giri._result_key
 	    and gfm._fixation_key=gs._fixation_key
 	    and gem._embedding_key=gs._embedding_key
+	    and gg._genotype_key=gs._genotype_key
 	''',
 	]
 
