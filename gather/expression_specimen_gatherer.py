@@ -111,7 +111,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 
 			# add conditional genotype note, if applicable
 			if isConditionalGenotype == 1:
-				specimenNote = specimenNote and "%s %s"%(specimenNote,CONDITIONAL_GENOTYPE_NOTE) or CONDITIONAL_GENOTYPE_NOTE
+				specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
 
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
