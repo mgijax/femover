@@ -13,7 +13,7 @@ import logger
 
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
-CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant specimen."
+CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant."
 
 class SpecimenGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
