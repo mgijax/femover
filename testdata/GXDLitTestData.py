@@ -6,7 +6,7 @@ from TestData import *
 # The list of queries to generate GXD Lit test data
 Queries = [
 ###--- Miscellaneous GXD Lit tests
-{	ID:"gxdLitPax1Count",
+{	ID:"gxdlitPax1Count",
 	DESCRIPTION:"Count of gxdlit records for Pax1",
 	SQLSTATEMENT:"""
 	select count(distinct _index_key) from gxd_index i, mrk_marker m where m._marker_key=i._marker_key and m.symbol='Pax1';
@@ -30,7 +30,7 @@ Queries = [
 	select count(distinct _index_key) from gxd_index_stages ins where ins._indexassay_key in (74717,74719);
 	"""
 },
-{	ID:"gxdlistPostnatalCount",
+{	ID:"gxdlitPostnatalCount",
 	DESCRIPTION:"Count of gxdlit records for Postnatal",
 	SQLSTATEMENT:"""
 	select count(distinct _index_key) from gxd_index_stages ins 
