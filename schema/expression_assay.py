@@ -28,6 +28,7 @@ createStatement = '''CREATE TABLE %s  (
 	reporter_gene		varchar(50)	null,
 	note			varchar(2048)	null,
 	has_image		int		not null,
+	gel_imagepane_key		int		null,
 	reference_key		int		not null,
 	marker_key		int		null,
 	marker_id		varchar(40)	null,
@@ -45,6 +46,7 @@ indexes = {
 	}
 
 keys = {
+	'gel_imagepane_key' : ('expression_imagepane', 'imagepane_key'),
 	'probe_key' : ('probe', 'probe_key'),
 	'marker_key' : ('marker', 'marker_key'),
 	'reference_key' : ('reference', 'reference_key'),
@@ -71,6 +73,7 @@ comments = {
 		'reporter_gene' : 'symbol of the reporter gene',
 		'note' : 'assay note',
 		'has_image' : '1 if this assay has at least one displayable image, 0 if not',
+		'gel_imagepane_key' : 'foreign key to expression_imagepane table. Null for in situ assays',
 		'reference_key' : 'identifies the reference',
 		'marker_key' : 'identifies the marker studied',
 		'marker_id' : 'primary ID for the marker, cached here for convenience',
