@@ -103,8 +103,8 @@ cmds = [
 		gl.age,
 		gl.agenote,
 		gl.lanenote,
-		CASE WHEN gl._gelcontrol_key=1 THEN 1
-			ELSE 0
+		CASE WHEN gl._gelcontrol_key=1 THEN 0
+			ELSE 1
 		END is_control,
 		glc.gellanecontent,
 		glrna.rnatype
