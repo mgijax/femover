@@ -47,7 +47,7 @@ clusteredIndex=None
 comments = {
 	Table.TABLE : 'Contains information about specimens for expression_assay objects',
 	Table.COLUMN : {
-		'specimen_key' : 'unique identifier for this assay, same as _Specimen_key in mgd',
+		'gellane_key' : 'unique identifier for this assay, same as _Specimen_key in mgd',
 		'assay_key' : 'unique identifier for this assay, same as _Assay_key in mgd',
 		'genotype_key' : 'unique identifier for this genotype, same as _Genotype_key in mgd',
 		'sex' : 'sex for the specimen',
