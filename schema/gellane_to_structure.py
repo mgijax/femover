@@ -10,7 +10,7 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'gelllane_to_structure'
+tableName = 'gellane_to_structure'
 
 # PgSQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
