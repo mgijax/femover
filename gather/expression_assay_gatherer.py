@@ -156,6 +156,7 @@ class AssayGatherer (Gatherer.Gatherer):
 		keyCol = Gatherer.columnNumber (cols, '_Assay_key')
 		typeCol = Gatherer.columnNumber (cols, '_AssayType_key')
 		reporterCol = Gatherer.columnNumber(cols, '_ReporterGene_key')
+		gelImagePaneKeyCol = Gatherer.columnNumber(cols, 'gel_imagepane_key')
 
 		for row in self.finalResults:
 			key = row[keyCol]
@@ -211,6 +212,7 @@ class AssayGatherer (Gatherer.Gatherer):
 			self.addColumn ('assay_type', assayType, row, cols)
 			self.addColumn ('reporter_gene', reporter, row, cols)
 			self.addColumn ('has_image', image, row, cols)
+			self.addColumn ('gel_imagepane_key', row[gelImagePaneKeyCol], row, cols)
 		return
 
 	def postprocessResults(self):
@@ -262,7 +264,8 @@ cmds = [
 			to_char(a.modification_date, 'MM/DD/YYYY') as modification_date,
 			ma.accID as marker_id,
 			aa.accID as assay_id,
-			a._ReporterGene_key
+			a._ReporterGene_key,
+			a._imagepane_key gel_imagepane_key
 		from gxd_assay a,
 			mrk_marker m,
 			acc_accession ma,
@@ -287,7 +290,7 @@ fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key', 'probe_name
         '_Antibody_key', 'antibody', 'detection_system', 'is_direct_detection',
 	'probe_preparation', 'visualized_with', 'reporter_gene', 
 	'note',
-	'has_image', '_Refs_key', 
+	'has_image', 'gel_imagepane_key','_Refs_key', 
 	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'modification_date',
 	]
 
