@@ -20,6 +20,35 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for assays,
 	#	collates results, writes tab-delimited text file
+	
+	# build all the lane structure relationships
+	# sort them here if GXD decides they want to
+	def getLaneStructures(self):
+		sCols = [ 'unique_key','gellane_key', 'mgd_structure_key', 'printname',
+                        'structure_seq']
+		sRows = []
+		(cols, rows) = self.results[1]
+		
+		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
+		stageKeyCol = Gatherer.columnNumber (cols, '_stage_key')
+		printnameCol = Gatherer.columnNumber (cols, 'printname')
+		structureKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+
+		rowCount = 0
+		for row in rows:
+			rowCount += 1
+			laneKey = row[laneKeyCol]
+			stageKey = row[stageKeyCol]
+			printname = row[printnameCol]
+			structureKey = row[structureKeyCol]
+
+			# structure format is TS26: brain
+			tsStructure = "TS%s: %s"%(stageKey,printname)
+
+			# TODO: if GXD wants these sorted, you would need to do that in here
+			sRows.append((rowCount,laneKey,structureKey,tsStructure,1))
+	
+		return (sCols,sRows)
 
 	def collateResults(self):
 
@@ -66,9 +95,6 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			controlText = row[controlTextCol]
 			rnaType = row[rnaTypeCol]
 
-			# structure format is TS26: brain
-			#tsStructure = "TS%s: %s"%(stage,structure)
-
 			# add conditional genotype note, if applicable
 			#if isConditionalGenotype == 1:
 			#	specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
@@ -80,8 +106,10 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 					age,ageNote,laneNote,sampleAmount,laneLabel,
 					controlText,isControl,rnaType,laneSeq))
 
+		
 		# Add all the column and row information to the output
-		self.output = [(laneCols,laneRows)]
+		self.output = [(laneCols,laneRows),
+			self.getLaneStructures()]
 			
 		return
 
@@ -114,6 +142,16 @@ cmds = [
 	where gl._gelcontrol_key=glc._gelcontrol_key
 		and gl._gelrnatype_key=glrna._gelrnatype_key
 	''',
+	# 1. Gather all the lane structures
+	'''
+	select s.printName,
+		gs._gellane_key,
+		gs._structure_key,
+		s._stage_key
+	from GXD_GelLaneStructure gs,
+		GXD_Structure s
+	where gs._Structure_key = s._Structure_key
+	''',
 	]
 
 files = [
@@ -124,6 +162,10 @@ files = [
 			'rna_type',
 			'lane_seq' ],
                 'gellane'),
+        ('gellane_to_structure',
+		[ 'unique_key','gellane_key', 'mgd_structure_key', 'printname',
+			'structure_seq'],
+                'gellane_to_structure'),
         ]
 
 
