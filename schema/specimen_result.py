@@ -45,7 +45,7 @@ comments = {
 	Table.COLUMN : {
 		'specimen_result_key' : 'unique identifier for this specimen_result',
 		'specimen_key' : 'unique identifier for this specimen, same as _specimen_key in mgd',
-		'structure' : 'the display text for the result\'s structure, includes TS and printname',
+		'structure' : 'the display text for the result structure, includes TS and printname',
 		'structure_mgd_key' : '_structure_key from mgd (for linking purposes)',
 		'level' : 'detection level',
 		'pattern' : 'pattern of detection (blank if not specified)',
