@@ -130,7 +130,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 				uniqueLaneKeys.add(laneKey)
 				# make a new gellane row
 				# display Not Specified for null sample amounts
-				sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s µg"%sampleAmount
+				sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s &micro;g"%sampleAmount
 				sampleAmountDisplay = "%s; %s RNA"%(sampleAmount,rnaType)
 
 				laneRows.append((laneKey,assayKey,genotypeKey,sex,
