@@ -27,6 +27,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		sCols = [ 'unique_key','gellane_key', 'mgd_structure_key', 'printname',
                         'structure_seq']
 		sRows = []
+
 		(cols, rows) = self.results[1]
 		
 		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
@@ -58,6 +59,10 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
                         'lane_label','control_text','is_control',
                         'rna_type','lane_seq']
                 laneRows = []
+		bandCols = ['gelband_key','gellane_key','gelrow_key','assay_key',
+                        'rowsize','row_note','strength','band_note',
+                        'row_seq']
+		bandRows = []
 
 		(cols, rows) = self.results[0]
 
@@ -77,8 +82,19 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		controlTextCol = Gatherer.columnNumber (cols, 'gellanecontent')
 		rnaTypeCol = Gatherer.columnNumber (cols, 'rnatype')
 
+		# define the band related columns
+		rowKeyCol = Gatherer.columnNumber (cols, '_gelrow_key')
+		rowNoteCol = Gatherer.columnNumber (cols, 'rownote')
+		rowSeqCol = Gatherer.columnNumber (cols, 'row_seq')
+		rowSizeCol = Gatherer.columnNumber (cols, 'size')
+		rowUnitsCol = Gatherer.columnNumber (cols, 'units')
+		bandKeyCol = Gatherer.columnNumber (cols, '_gelband_key')
+		bandNoteCol = Gatherer.columnNumber (cols, 'bandnote')
+		bandStrengthCol = Gatherer.columnNumber (cols, 'strength')
+
 	
 		uniqueLaneKeys = set()
+		uniqueBandKeys = set()
 		for row in rows:
 			assayKey = row[assayKeyCol]
 			laneKey = row[laneKeyCol]
@@ -95,6 +111,15 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			controlText = row[controlTextCol]
 			rnaType = row[rnaTypeCol]
 
+			rowKey = row[rowKeyCol] 
+			rowNote = row[rowNoteCol] 
+			rowSeq = row[rowSeqCol] 
+			rowSize = row[rowSizeCol] 
+			rowUnits = row[rowUnitsCol] 
+			bandKey = row[bandKeyCol] 
+			bandNote = row[bandNoteCol] 
+			bandStrength = row[bandStrengthCol] 
+
 			# add conditional genotype note, if applicable
 			#if isConditionalGenotype == 1:
 			#	specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
@@ -106,9 +131,16 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 					age,ageNote,laneNote,sampleAmount,laneLabel,
 					controlText,isControl,rnaType,laneSeq))
 
-		
+			if bandKey not in uniqueBandKeys:
+				uniqueBandKeys.add(bandKey)
+				# make a new gelband row
+				rowSizeDisplay = "%s %s"%(rowSize,rowUnits) 
+
+				bandRows.append((bandKey,laneKey,rowKey,assayKey,
+					rowSizeDisplay,rowNote,bandStrength,bandNote,rowSeq))
+
 		# Add all the column and row information to the output
-		self.output = [(laneCols,laneRows),
+		self.output = [(laneCols,laneRows),(bandCols,bandRows),
 			self.getLaneStructures()]
 			
 		return
@@ -122,25 +154,41 @@ cmds = [
 	# 0. Gather all the gellanes and their bands
 	'''
 	select gl._gellane_key,
-		gl._assay_key,
-		gl._genotype_key,
-		gl.sequencenum lane_seq,
-		gl.lanelabel,
-		gl.sampleamount,
-		gl.sex,
-		gl.age,
-		gl.agenote,
-		gl.lanenote,
-		CASE WHEN gl._gelcontrol_key=1 THEN 0
-			ELSE 1
-		END is_control,
-		glc.gellanecontent,
-		glrna.rnatype
-	from gxd_gellane gl,
-		gxd_gelcontrol glc,
-		gxd_gelrnatype glrna
-	where gl._gelcontrol_key=glc._gelcontrol_key
-		and gl._gelrnatype_key=glrna._gelrnatype_key
+                gl._assay_key,
+                gl._genotype_key,
+                gl.sequencenum lane_seq,
+                gl.lanelabel,
+                gl.sampleamount,
+                gl.sex,
+                gl.age,
+                gl.agenote,
+                gl.lanenote,
+                CASE WHEN gl._gelcontrol_key=1 THEN 0
+                        ELSE 1
+                END is_control,
+                glc.gellanecontent,
+                glrna.rnatype,
+	    gr.size,
+	    gr.sequencenum row_seq,
+	    gr.rownote,
+	    gr._gelrow_key,
+	   gunits.units,
+	   gb.bandnote,
+	   gb._gelband_key,
+	   gstr.strength
+        from gxd_gellane gl,
+                gxd_gelcontrol glc,
+                gxd_gelrnatype glrna,
+	   gxd_gelband gb,
+	   gxd_gelrow gr,
+	  gxd_gelunits gunits,
+	  gxd_strength gstr
+        where gl._gelcontrol_key=glc._gelcontrol_key
+                and gl._gelrnatype_key=glrna._gelrnatype_key
+	   and gunits._gelunits_key=gr._gelunits_key
+	   and gb._gellane_key=gl._gellane_key
+	   and gb._gelrow_key=gr._gelrow_key
+	  and gb._strength_key=gstr._strength_key
 	''',
 	# 1. Gather all the lane structures
 	'''
@@ -162,6 +210,11 @@ files = [
 			'rna_type',
 			'lane_seq' ],
                 'gellane'),
+	('gelband',
+		['gelband_key','gellane_key','gelrow_key','assay_key',
+			'rowsize','row_note','strength','band_note',
+			'row_seq'],
+		'gelband'),
         ('gellane_to_structure',
 		[ 'unique_key','gellane_key', 'mgd_structure_key', 'printname',
 			'structure_seq'],
