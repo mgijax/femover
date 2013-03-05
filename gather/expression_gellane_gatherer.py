@@ -15,6 +15,7 @@ import logger
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
 CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant."
 NOT_SPECIFIED_SIZE = "Size Not Specified"
+NOT_SPECIFIED = "Not Specified"
 
 class GelLaneGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
@@ -128,6 +129,9 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			if laneKey not in uniqueLaneKeys:
 				uniqueLaneKeys.add(laneKey)
 				# make a new gellane row
+				# display Not Specified for null sample amounts
+				sampleAmount = sampleAmount==None and NOT_SPECIFIED or sampleAmount
+
 				laneRows.append((laneKey,assayKey,genotypeKey,sex,
 					age,ageNote,laneNote,sampleAmount,laneLabel,
 					controlText,isControl,rnaType,laneSeq))
