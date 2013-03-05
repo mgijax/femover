@@ -14,6 +14,7 @@ import logger
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
 CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant."
+NOT_SPECIFIED_SIZE = "Size Not Specified"
 
 class GelLaneGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
@@ -134,7 +135,8 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			if bandKey not in uniqueBandKeys:
 				uniqueBandKeys.add(bandKey)
 				# make a new gelband row
-				rowSizeDisplay = "%s %s"%(rowSize,rowUnits) 
+				# when the amount(size) is Null the display is going to say something like 'Size Not Specified'
+				rowSizeDisplay = rowSize==None and NOT_SPECIFIED_SIZE or "%s %s"%(rowSizeAmount,rowUnits) 
 
 				bandRows.append((bandKey,laneKey,rowKey,assayKey,
 					rowSizeDisplay,rowNote,bandStrength,bandNote,rowSeq))
