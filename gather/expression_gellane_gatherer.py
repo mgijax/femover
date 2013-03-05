@@ -136,7 +136,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 				uniqueBandKeys.add(bandKey)
 				# make a new gelband row
 				# when the amount(size) is Null the display is going to say something like 'Size Not Specified'
-				rowSizeDisplay = rowSize==None and NOT_SPECIFIED_SIZE or "%s %s"%(rowSizeAmount,rowUnits) 
+				rowSizeDisplay = rowSize==None and NOT_SPECIFIED_SIZE or "%s %s"%(rowSize,rowUnits) 
 
 				bandRows.append((bandKey,laneKey,rowKey,assayKey,
 					rowSizeDisplay,rowNote,bandStrength,bandNote,rowSeq))
