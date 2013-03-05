@@ -130,10 +130,11 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 				uniqueLaneKeys.add(laneKey)
 				# make a new gellane row
 				# display Not Specified for null sample amounts
-				sampleAmount = sampleAmount==None and NOT_SPECIFIED or sampleAmount
+				sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s µg"%sampleAmount
+				sampleAmountDisplay = "%s; %s RNA"%(sampleAmount,rnaType)
 
 				laneRows.append((laneKey,assayKey,genotypeKey,sex,
-					age,ageNote,laneNote,sampleAmount,laneLabel,
+					age,ageNote,laneNote,sampleAmountDisplay,laneLabel,
 					controlText,isControl,rnaType,laneSeq))
 
 			if bandKey not in uniqueBandKeys:
