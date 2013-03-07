@@ -133,7 +133,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 				laneLabel = not laneLabel and "Lane %s"%laneSeq or laneLabel 
 
 				# display Not Specified for null sample amounts
-				if not sampleAmount and (not rnaType or rnaType==NOT_SPECIFIED):
+				if not sampleAmount and (not rnaType or rnaType in NOT_SPECIFIED_VALUES):
 					sampleAmountDisplay = NOT_SPECIFIED
 				else:
 					sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s &micro;g"%sampleAmount
