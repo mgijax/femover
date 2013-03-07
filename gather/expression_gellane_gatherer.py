@@ -129,9 +129,15 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			if laneKey not in uniqueLaneKeys:
 				uniqueLaneKeys.add(laneKey)
 				# make a new gellane row
+				# for null/empty lanes we need special text
+				laneLabel = not laneLabel and "Lane %s"%laneSeq or laneLabel 
+
 				# display Not Specified for null sample amounts
-				sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s &micro;g"%sampleAmount
-				sampleAmountDisplay = "%s; %s RNA"%(sampleAmount,rnaType)
+				if not sampleAmount and (not rnaType or rnaType==NOT_SPECIFIED):
+					sampleAmountDisplay = NOT_SPECIFIED
+				else:
+					sampleAmount = sampleAmount==None and NOT_SPECIFIED or "%s &micro;g"%sampleAmount
+					sampleAmountDisplay = "%s; %s RNA"%(sampleAmount,rnaType)
 
 				laneRows.append((laneKey,assayKey,genotypeKey,sex,
 					age,ageNote,laneNote,sampleAmountDisplay,laneLabel,
