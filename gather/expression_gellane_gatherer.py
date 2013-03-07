@@ -72,7 +72,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
 		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_genotype_key')
-		#conditionalGenotypeCol = Gatherer.columnNumber (cols, 'conditional_genotype')
+		conditionalGenotypeCol = Gatherer.columnNumber (cols, 'conditional_genotype')
 		laneSeqCol = Gatherer.columnNumber (cols, 'lane_seq')
 		laneLabelCol = Gatherer.columnNumber (cols, 'lanelabel')
 		sampleAmountCol = Gatherer.columnNumber (cols, 'sampleamount')
@@ -101,7 +101,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			assayKey = row[assayKeyCol]
 			laneKey = row[laneKeyCol]
 			genotypeKey = row[genotypeKeyCol]
-			#isConditionalGenotype = row[conditionalGenotypeCol]
+			isConditionalGenotype = row[conditionalGenotypeCol]
 			laneSeq = row[laneSeqCol]
 			laneLabel = row[laneLabelCol]
 			sampleAmount = row[sampleAmountCol]
@@ -123,8 +123,8 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			bandStrength = row[bandStrengthCol] 
 
 			# add conditional genotype note, if applicable
-			#if isConditionalGenotype == 1:
-			#	specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
+			if isConditionalGenotype == 1:
+				laneNote = laneNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,laneNote) or CONDITIONAL_GENOTYPE_NOTE
 
 			if laneKey not in uniqueLaneKeys:
 				uniqueLaneKeys.add(laneKey)
@@ -175,27 +175,30 @@ cmds = [
                 END is_control,
                 glc.gellanecontent,
                 glrna.rnatype,
-	    gr.size,
-	    gr.sequencenum row_seq,
-	    gr.rownote,
-	    gr._gelrow_key,
-	   gunits.units,
-	   gb.bandnote,
-	   gb._gelband_key,
-	   gstr.strength
+		gr.size,
+		gr.sequencenum row_seq,
+		gr.rownote,
+		gr._gelrow_key,
+		gunits.units,
+		gb.bandnote,
+		gb._gelband_key,
+		gstr.strength,
+		gg.isconditional conditional_genotype
         from gxd_gellane gl,
                 gxd_gelcontrol glc,
                 gxd_gelrnatype glrna,
 	   gxd_gelband gb,
 	   gxd_gelrow gr,
 	  gxd_gelunits gunits,
-	  gxd_strength gstr
+	  gxd_strength gstr,
+		gxd_genotype gg
         where gl._gelcontrol_key=glc._gelcontrol_key
                 and gl._gelrnatype_key=glrna._gelrnatype_key
-	   and gunits._gelunits_key=gr._gelunits_key
-	   and gb._gellane_key=gl._gellane_key
-	   and gb._gelrow_key=gr._gelrow_key
-	  and gb._strength_key=gstr._strength_key
+		and gunits._gelunits_key=gr._gelunits_key
+		and gb._gellane_key=gl._gellane_key
+		and gb._gelrow_key=gr._gelrow_key
+		and gb._strength_key=gstr._strength_key
+		and gl._genotype_key=gg._genotype_key
 	''',
 	# 1. Gather all the lane structures
 	'''
