@@ -201,8 +201,11 @@ TESTS = ['test_stats']
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
-HIGH_PRIORITY_TABLES = [ 'accession', 'sequence', 'sequence_sequence_num',
-	'sequence_id', ]
+HIGH_PRIORITY_TABLES = os.environ['HIGH_PRIORITY_TABLES'].split(' ')
+
+# list of single priority gatherers
+# those that run as single/non-multitasked events
+SINGLE_PRIORITY_TABLES = os.environ['SINGLE_PRIORITY_TABLES'].split(' ')
 
 # dictionary mapping each command-line flag to the list of gatherers that it
 # would regenerate
@@ -549,13 +552,19 @@ def shuffle (
 	# Throws: nothing
 
 	toDo = []
+
 	for table in HIGH_PRIORITY_TABLES:
 		if table in gatherers:
 			toDo.append(table)
 
 	for table in gatherers:
 		if table not in toDo:
-			toDo.append(table)
+			if FULL_BUILD and table not in SINGLE_PRIORITY_TABLES:
+				toDo.append(table)
+			elif not FULL_BUILD:
+				toDo.append(table)
+
+        print toDo
 	return toDo 
 
 def scheduleGatherers (
@@ -1302,6 +1311,7 @@ def main():
 	# Modifies: the target database, writes files to the file system
 	# Throws: propagates 'error' if problems occur
 
+	logger.info ('Beginning Date/Time: %s' % (time.asctime()))
 	logger.info ('Beginning %s script' % sys.argv[0])
 	gatherers = shuffle(processCommandLine())
 	dbInfoTable.dropTable()
@@ -1426,6 +1436,7 @@ if __name__ == '__main__':
 	report = 'Build %s in %s' % (status, elapsed)
 	print report
 	logger.info (report)
+	logger.info ('Ending Date/Time: %s' % (time.asctime()))
 
 	if excType != None:
 		raise excType, excValue
