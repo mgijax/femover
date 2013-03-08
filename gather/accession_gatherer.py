@@ -982,8 +982,8 @@ class AccessionGatherer:
 		self.fillAntigens (accessionFile)
 		self.fillTerms (accessionFile)
 		self.fillMapping (accessionFile)
-		self.fillConsensusSnps (accessionFile)
-		self.fillSubSnps (accessionFile)
+		#self.fillConsensusSnps (accessionFile)
+		#self.fillSubSnps (accessionFile)
 
 		accessionFile.close() 
 		logger.debug ('Wrote %d rows (%d columns) to %s' % (

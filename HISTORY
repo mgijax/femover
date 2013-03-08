@@ -1,11 +1,14 @@
-TAG: femover-5-1-4-?
-DATE: 02/01/2013-
+TAG: femover-5-1-4-1
+DATE: 02/01/2013-03/08/2013
 STAFF: lec/dbm/pf
 CHANGES:
 1) gather/expression_gatherer.py
    schema/expression_assay.py
-
-2) Configuration.default:  BUILD_IN_SYNC = 1
+2) Configuration.default:  
+	BUILD_IN_SYNC = 1
+	HIGH_PRIORITY_TABLES : moved from control/buildDatabases.py
+	SINGLE_PRIORITY_TABLES : new 
+3) gather/accession_gatherer.py: comment out call to SNP accession ids
 
 TAG: femover-5-1-2-5
 TAG: femover-5-1-2-4
