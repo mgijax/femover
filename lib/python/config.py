@@ -59,6 +59,8 @@ CHUNK_SIZE = int(os.environ['CHUNK_SIZE'])
 IMSR_COUNT_TIMEOUT = int(os.environ['IMSR_COUNT_TIMEOUT'])
 IMSR_COUNT_URL = os.environ['IMSR_COUNT_URL']
 BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])
+VISTA_POINT_URL = os.environ['VISTA_POINT_URL']
+GENE_TREE_URL = os.environ['GENE_TREE_URL']
 
 ###--- source database connection (read-only) ---###
 

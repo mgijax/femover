@@ -688,10 +688,12 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		rows = []
 
 		toTerm = self.extractCountsToTerm()
-		#logger.debug ('Extracted counts to term')
 
-		withDescendents = self.extractCountsDownDAG()
-		#logger.debug ('extracted counts with descendents')
+		# This method needs to be fixed, as it uses tons of memory.
+		# For now, the data is not used, so we'll just skip it.  Ideas
+		# for a fix are documented in note 3 of TR11250.
+		#withDescendents = self.extractCountsDownDAG()
+		withDescendents = {}
 		
 		# get unified list of term keys which have annotations to
 		# themselves directly, or to their descendents, or both

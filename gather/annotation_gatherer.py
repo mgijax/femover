@@ -7,10 +7,21 @@ import Gatherer
 import VocabSorter
 import logger
 import GOFilter
+import GenotypeClassifier
+import symbolsort
 
 ###--- Constants ---###
 
 MARKER = 2		# MGI Type for markers
+OMIM_GENOTYPE = 1005	# VOC_AnnotType : OMIM/Genotype
+GT_ROSA = 37270		# marker Gt(ROSA)26Sor
+DRIVER_NOTE = 1034	# MGI_NoteType Driver
+NOT_QUALIFIER = 1614157	# VOC_Term NOT
+
+###--- Globals ---###
+
+MARKER_DATA = {}	# marker key : [ symbol, name, ID, logical db, chrom,
+			# 	sequence number]
 
 ###--- Functions ---###
 
@@ -38,7 +49,9 @@ def getAnnotAttributes (annotKey):
 
 newAnnotKeys = {}
 
-def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
+def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom,
+		noWarn = False):
+
 	# look up (or generate) a "new annotation key" to identify the
 	# annotation described by the input parameters
 
@@ -50,12 +63,53 @@ def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
 		tpl = (annotType, objectKey, termKey, qualifier,
 			evidenceTermKey, inferredFrom)
 	else:
-		logger.debug ('Unknown annotation key: %d' % annotKey)
+		if not noWarn:
+			logger.debug ('Unknown annotation key: %d' % annotKey)
 		tpl = (annotKey, evidenceTermKey, inferredFrom)
 
 	if not newAnnotKeys.has_key(tpl):
 		newAnnotKeys[tpl] = len(newAnnotKeys) + 1
 	return newAnnotKeys[tpl]
+
+def getMarker (markerKey):
+	if MARKER_DATA.has_key(markerKey):
+		return MARKER_DATA[markerKey]
+	return None, None, None, None, None, None
+	
+def getSymbol (markerKey):
+	return getMarker(markerKey)[0]
+
+def getName (markerKey):
+	return getMarker(markerKey)[1]
+
+def getChromosome (markerKey):
+	return getMarker(markerKey)[4]
+
+def getID (markerKey):
+	return getMarker(markerKey)[2]
+
+def getLogicalDB (markerKey):
+	return getMarker(markerKey)[3]
+
+def getMarkerSeqNum (markerKey):
+	return getMarker(markerKey)[5]
+
+def compareMarkers (a, b):
+	# sort marker tuples (symbol, name, key) as smart-alpha on symbol then
+	# name, and fall back on marker key if symbol + name match
+
+	aSym, aName, aKey = a
+	bSym, bName, bKey = b
+
+	sCmp = symbolsort.nomenCompare(aSym, bSym)
+	if sCmp != 0:
+		return sCmp
+	
+	nCmp = symbolsort.nomenCompare(aName, bName)
+	if nCmp != 0:
+		return nCmp
+
+	return cmp(aKey, bKey) 
 
 ###--- Classes ---###
 
@@ -64,6 +118,52 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for markers' GO
 	#	annotations, collates results, writes tab-delimited text files
+
+	def buildMarkerCache (self):
+		global MARKER_DATA
+
+		cols, rows = self.results[13]
+
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+		nameCol = Gatherer.columnNumber (cols, 'name')
+		ldbCol = Gatherer.columnNumber (cols, 'logical_db')
+		idCol = Gatherer.columnNumber (cols, 'accID')
+		chromCol = Gatherer.columnNumber (cols, 'chromosome')
+
+		for row in rows:
+			markerKey = row[markerKeyCol]
+			if MARKER_DATA.has_key(markerKey):
+				continue
+
+			MARKER_DATA[markerKey] = [
+				row[symbolCol], row[nameCol], row[idCol],
+				row[ldbCol], row[chromCol],
+				]
+
+		logger.debug ('Cached basic data for %d markers' % \
+			len(MARKER_DATA))
+
+		toSort = []	# [ (symbol, name, marker key), ... ]
+		for (key, (symbol, name, accID, ldb, chrom)) \
+			in MARKER_DATA.items():
+
+			toSort.append ( (symbol.lower(), name.lower(), key) )
+
+		toSort.sort (compareMarkers)
+
+		i = 0
+		for (symbol, name, key) in toSort:
+			i = i + 1
+			MARKER_DATA[key].append (i)
+
+		logger.debug ('Sorted %d markers' % len(toSort)) 
+
+		# remember what the highest marker sort value is, so we can
+		# put other object types after it for sorts by marker
+
+		self.maxMarkerSequenceNum = i
+		return
 
 	def getTermIDs (self):
 		cols, rows = self.results[0]
@@ -242,7 +342,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
 		# build the extra rows from query 9, where we pull a summary
-		# of annotations up from genotypes through alleles to markers
+		# of MP annotations up from genotypes through alleles to
+		# markers
 
 		# see aCols, mCols, and sCols in buildRows() for column order
 		# for these three lists, respectively:
@@ -310,16 +411,21 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				None, None, annotType ]
 			mRows.append (mRow)
 
+			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
+
 			sRow = [ annotationKey,
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
 				0,
-				VocabSorter.getVocabDagTermSequenceNum(termKey)
+				vdt,
 				]
 			sRows.append (sRow)
 
-		logger.debug ('Pulled %d OMIM/MP terms up to markers' % \
+			self.byMarker.append ( (annotationKey,
+				getMarkerSeqNum(markerKey), vdt) )
+
+		logger.debug ('Pulled %d MP terms up to markers' % \
 			len(aRows) )
 		return aRows, mRows, sRows
 
@@ -350,7 +456,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			accKey = row[accKeyCol]
 
 			annotationKey = getNewAnnotationKey (accKey,
-				termID, markerKey)
+				termID, markerKey, noWarn = True)
 
 			annotType = 'Protein Ontology/Marker'
 
@@ -363,18 +469,116 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				None, None, annotType ]
 			mRows.append (mRow)
 
+			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
+
 			sRow = [ annotationKey,
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
 				999,
-				VocabSorter.getVocabDagTermSequenceNum(termKey)
+				vdt,
 				]
 			sRows.append (sRow)
+
+			self.byMarker.append ( (annotationKey,
+				getMarkerSeqNum(markerKey), vdt) )
 
 		logger.debug ('Pulled in %d Protein Ontology terms' % \
 			len(rows) )
 
+		return aRows, mRows, sRows
+
+	def buildQuery12Rows (self, aRows, mRows, sRows,
+			byVocab, byAnnotType, byTermAlpha):
+		# build the extra rows from query 12, where we pull a summary
+		# of OMIM annotations up from genotypes through alleles to
+		# markers
+
+		# see aCols, mCols, and sCols in buildRows() for column order
+		# for these three lists, respectively:
+
+		cols, rows = self.results[12]
+
+		termCol = Gatherer.columnNumber (cols, 'term')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		accIDCol = Gatherer.columnNumber (cols, 'accID')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
+		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
+		typeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
+
+		# We only want to keep the first annotation for a given
+		# (marker, term) pair, so we need to track what ones we have
+		# kept so far:
+		done = {}	# (marker key, term ID) -> 1
+
+		for row in rows:
+			annotKey = row[annotKeyCol]
+
+			# if we need to skip this, just move on
+			# (should not happen here, but we add it just in case)
+			if annotKeyToSkip.has_key(annotKey):
+				continue
+
+			genotypeKey = row[genotypeCol]
+
+			# skip 'complex not conditional' genotypes
+			if GenotypeClassifier.getClass(genotypeKey) == 'cx':
+				continue
+
+			markerKey = row[markerCol]
+			termID = row[accIDCol]
+			pair = (markerKey, termID)
+
+			if done.has_key(pair):
+				continue
+			done[pair] = 1
+
+			termKey = row[termKeyCol]
+			vocabKey = row[vocabKeyCol]
+			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
+				'_Vocab_key', 'name')
+
+			# use termID and markerKey to distinguish genotypes
+			# with multiple allele pairs and different markers
+			annotationKey = getNewAnnotationKey (annotKey, 
+				termID, markerKey)
+
+			if done.has_key(annotationKey):
+				continue
+			done[annotationKey] = 1
+
+			annotTypeKey = row[typeKeyCol]
+			annotType = Gatherer.resolve (row[typeKeyCol],
+				'voc_annottype', '_AnnotType_key', 'name')
+			annotType = annotType.replace ('Genotype', 'Marker')
+
+			aRow = [ annotationKey, None, None, vocab,
+				row[termCol], termID, None, 'Marker',
+				annotType, 0, 0 ]
+			aRows.append (aRow)
+
+			mRow = [ len(mRows), markerKey, annotationKey,
+				None, None, annotType ]
+			mRows.append (mRow)
+
+			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
+
+			sRow = [ annotationKey,
+				VocabSorter.getSequenceNum(termKey),
+				byTermAlpha[termKey],
+				byVocab[vocabKey],
+				0,
+				vdt,
+				]
+			sRows.append (sRow)
+
+			self.byMarker.append ( (annotationKey,
+				getMarkerSeqNum(markerKey), vdt) )
+
+		logger.debug ('Pulled %d OMIM terms up to markers' % \
+			len(aRows) )
 		return aRows, mRows, sRows
 
 	def cacheAnnotationData (self):
@@ -465,8 +669,14 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# annotation_sequence_num columns and rows
 		sCols = [ 'annotation_key', 'by_dag_structure',
 			'by_term_alpha', 'by_vocab', 'by_annotation_type',
-			'by_vocab_dag_term' ]
+			'by_vocab_dag_term', 'by_marker_dag_term' ]
 		sRows = []
+
+		# marker/dag/term sorting to be done later; just collect the
+		# needed data for now.  We need to put this in an instance
+		# variable so other methods can populate it as well. Contains:
+		# [ (annot key, marker seq num, vocab/dag/term seq num), ... ]
+		self.byMarker = []
 
 		# get our sorting maps for vocab and annotation type
 		byVocab, byAnnotType, byTermAlpha = self.getSortingMaps()
@@ -479,6 +689,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# fill in the Protein Ontology data
 		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
+			sRows, byVocab, byAnnotType, byTermAlpha)
+
+		# fill in the OMIM data
+		aRows, mRows, sRows = self.buildQuery12Rows (aRows, mRows,
 			sRows, byVocab, byAnnotType, byTermAlpha)
 
 		# our base data is in the results from query 5
@@ -588,14 +802,24 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			    # populate annotation_sequence_num table
 
+			    vdt = VocabSorter.getVocabDagTermSequenceNum(
+				termKey)
+
 			    sRow = [ annotationKey,
 				VocabSorter.getSequenceNum(termKey),
 				byTermAlpha[termKey],
 				byVocab[vocabKey],
 				byAnnotType[annotTypeKey],
-				VocabSorter.getVocabDagTermSequenceNum(termKey)
+				vdt,
 				]
 			    sRows.append (sRow)
+			
+			    if mgiType == 2:
+				self.byMarker.append ( (annotationKey,
+				    getMarkerSeqNum(objectKey), vdt) )
+			    else:
+				self.byMarker.append ( (annotationKey,
+				    self.maxMarkerSequenceNum + 1, vdt) )
 
 			    # remember this annotation for later use
 
@@ -613,7 +837,30 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				    annotationKey, None, qualifier,
 				    annotType) )
 
+		logger.debug ('Collected basic data')
+
 		mRows = self.filterInvalidMarkers(mRows)
+
+		logger.debug ('Filtered invalid markers')
+
+		# now we need to go back, compute, and append to 'sRows' the
+		# sorting by marker and vocab/dag/term for each annotation;
+		# sort by marker nomen, then vocab/dag/term, then annot key
+
+		self.byMarker.sort (lambda a, b : cmp(
+			(a[1], a[2], a[0]),
+			(b[1], b[2], b[0]) ) )
+
+		i = 0
+		byAnnotation = {}
+		for (annotationKey, mrkSeqNum, termSeqNum) in self.byMarker:
+			i = i + 1
+			byAnnotation[annotationKey] = i 
+
+		for sRow in sRows:
+			sRow.append(byAnnotation[sRow[0]])
+
+		logger.debug ('Appended extra marker/dag sort')
 
 		self.output = [ (aCols, aRows), (iCols, iRows),
 			(rCols, rRows), (mCols, mRows), (sCols, sRows) ]
@@ -622,6 +869,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		return
 
 	def collateResults (self):
+		# cache marker data
+		self.buildMarkerCache()
+
 		# cache some of our base annotation data for use later
 		self.cacheAnnotationData()
 
@@ -741,7 +991,7 @@ cmds = [
 	from voc_term
 	order by term''',
 
-	# 9. get OMIM and MP annotations made to genotypes, and pull a brief
+	# 9. get MP annotations made to genotypes, and pull a brief
 	# set of info for them up through their alleles to their markers
 	# (only null qualifiers, to avoid NOT and "normal" annotations).
 	'''select distinct va._Annot_key,
@@ -757,7 +1007,7 @@ cmds = [
 		voc_term vq,
 		acc_accession aa
 	where gag._Genotype_key = va._Object_key
-		and va._AnnotType_key in (1005, 1002)
+		and va._AnnotType_key = 1002
 		and va._Term_key = vt._Term_key
 		and va._Qualifier_key = vq._Term_key
 		and va._Term_key = aa._Object_key
@@ -786,6 +1036,61 @@ cmds = [
 
 	# 11. get the valid marker keys
 	'''select _Marker_key from mrk_marker''',
+
+	# 12. get OMIM annotations made to genotypes, and pull a brief
+	# set of info for them up through their alleles to their markers.
+	# Exclude:
+	#	a. recombinase alleles (ones with driver notes)
+	#	b. wild-type alleles
+	#	c. complex not conditional genotypes
+	#	d. complex not conditional genotypes including transgenes
+	#	e. marker Gt(ROSA)
+	'''select distinct va._Annot_key,
+		vt._Term_key,
+		vt.term,
+		aa.accID,
+		vt._Vocab_key,
+		gag._Marker_key,
+		va._AnnotType_key,
+		gag._Genotype_key
+	from gxd_allelegenotype gag,
+		voc_annot va,
+		voc_term vt,
+		voc_term vq,
+		acc_accession aa,
+		all_allele a
+	where gag._Genotype_key = va._Object_key
+		and gag._Allele_key = a._Allele_key
+		and a.isWildType = 0
+		and va._AnnotType_key = %d
+		and va._Qualifier_key != %d
+		and va._Term_key = vt._Term_key
+		and va._Qualifier_key = vq._Term_key
+		and va._Term_key = aa._Object_key
+		and aa._MGIType_key = 13
+		and aa.preferred = 1
+		and gag._Marker_key is not null
+		and not exists (select 1 from MGI_Note mn
+			where mn._NoteType_key = %d
+				and mn._Object_key = gag._Allele_key)
+		and gag._Marker_key != %d
+		and vq.term is null''' % (OMIM_GENOTYPE, NOT_QUALIFIER,
+			DRIVER_NOTE, GT_ROSA),
+
+	# 13. get a set of basic data about markers so we can cache the marker
+	# data for each annotation (order by logical db key so MGI IDs come
+	# first and are preferred)
+	'''select m._Marker_key, m.symbol, m.name, m.chromosome,
+		ldb._LogicalDB_key, ldb.name as logical_db, a.accID
+	from mrk_marker m,
+		acc_accession a,
+		acc_logicaldb ldb
+	where m._Marker_key = a._Object_key
+		and a._MGIType_key = 2
+		and a.private = 0
+		and a.preferred = 1
+		and a._LogicalDB_key = ldb._LogicalDB_key
+	order by 1, 4''',
 	]
 
 # definition of output files, each as:
@@ -815,7 +1120,8 @@ files = [
 
 	('annotation_sequence_num',
 		[ 'annotation_key', 'by_dag_structure', 'by_term_alpha',
-			'by_vocab', 'by_annotation_type', 'by_vocab_dag_term'
+			'by_vocab', 'by_annotation_type', 'by_vocab_dag_term',
+			'by_marker_dag_term',
 			],
 		'annotation_sequence_num'),
 	]

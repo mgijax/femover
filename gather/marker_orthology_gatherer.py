@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import utils
 
 ###--- Classes ---###
 
@@ -30,7 +31,7 @@ class MarkerOrthologyGatherer (Gatherer.Gatherer):
 		for row in rows:
 			mouseKey = row[mouseKeyCol]
 			otherOrganismKey = row[organismKeyCol]
-			otherOrganism = row[organismCol]
+			otherOrganism = utils.cleanupOrganism(row[organismCol])
 
 			# To bring human and rat to the front of the list, we
 			# use a smaller priority value.  Others are grouped

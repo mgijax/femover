@@ -5,6 +5,7 @@
 import Gatherer
 import logger
 import GOGraphs
+import utils
 
 ###--- Classes ---###
 
@@ -119,9 +120,10 @@ class MarkerGatherer (Gatherer.Gatherer):
 			self.addColumn ('markerType', Gatherer.resolve (
 				r[typeCol], 'mrk_types', '_Marker_Type_key',
 				'name'), r, self.finalColumns)
-			self.addColumn ('organism', Gatherer.resolve (
-				r[orgCol], 'mgi_organism', '_Organism_key',
-				'commonName'), r, self.finalColumns)
+			self.addColumn ('organism', utils.cleanupOrganism(
+				Gatherer.resolve (r[orgCol], 'mgi_organism',
+				'_Organism_key', 'commonName')),
+				r, self.finalColumns)
 			self.addColumn ('hasGOGraph',
 				GOGraphs.hasGOGraph(accid),
 				r, self.finalColumns)

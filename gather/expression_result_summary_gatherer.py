@@ -766,7 +766,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				for row in orderingList:
 					i = i + 1
 					output[row[-1]].append(i)
-					del notDone[row[-1]]
+					if notDone.has_key(row[-1]):
+						del notDone[row[-1]]
 
 				# order those left over in 'notDone'
 

@@ -115,8 +115,8 @@ def _initialize():
 	queries = [ (allQuery, 'ot'),
 			(homozygoteQuery, 'hm'),
 			(heterozygoteQuery, 'ht'),
-			(complexQuery, 'cx'),
 			(transgeneQuery, 'tg'),
+			(complexQuery, 'cx'),
 			(conditionalQuery, 'cn') ]
 
 	for (query, abbrev) in queries:

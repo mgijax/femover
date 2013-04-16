@@ -1,3 +1,64 @@
+TAG: femover-5-1-3-1
+DATE: 03/16/2013
+STAFF: sc
+CHANGES: N2MO merge tr6519 changes to trunk
+
+TAG: femover-5-1-2-6
+DATE: 02/06/2013
+STAFF: kstone
+CHANGES:
+1) bug fix for TR11280
+
+TAG: femover-tr11248-BP
+DATE: 01/30/2013
+STAFF: lec
+CHANGES:
+1) branch point for GXD-Cre-SNP release (TR11248)
+
+TAG: femover-5-1-2-5
+TAG: femover-5-1-2-4
+TAG: femover-5-1-2-3
+TAG: femover-5-1-2-2
+TAG: femover-5-1-2-1
+DATE: 1/3/13 -> 1/14/13
+STAFF: lec/dbm/pf
+CHANGES:
+1) 5.12 build tag
+2) lib/python/Dispatcher.py removed; same as lib_py_misc/Dispatcher.py
+
+TAG: femover-5-1-1-3
+DATE: 12/31/12
+STAFF: jsb
+CHANGES:
+1) added lib/python/GroupedList.py to support #3 below
+2) updated gather/Gatherer.py's MultiFileGatherer to allow individual files to be written as they are produced, rather than saving all in memory until all are done
+3) updated gather/vocabulary_gatherer.py to use far less memory when processing annotations down the DAG, preventing memory blowout on current production data
+
+TAG: femover-tr11248-BP
+DATE: 01/30/2013
+STAFF: lec
+CHANGES:
+1) branch point for GXD-Cre-SNP release (TR11248)
+
+TAG: femover-5-1-2-5
+TAG: femover-5-1-2-4
+TAG: femover-5-1-2-3
+TAG: femover-5-1-2-2
+TAG: femover-5-1-2-1
+DATE: 1/3/13 -> 1/14/13
+STAFF: lec/dbm/pf
+CHANGES:
+1) 5.12 build tag
+2) lib/python/Dispatcher.py removed; same as lib_py_misc/Dispatcher.py
+
+TAG: femover-5-1-1-3
+DATE: 12/31/12
+STAFF: jsb
+CHANGES:
+1) added lib/python/GroupedList.py to support #3 below
+2) updated gather/Gatherer.py's MultiFileGatherer to allow individual files to be written as they are produced, rather than saving all in memory until all are done
+3) updated gather/vocabulary_gatherer.py to use far less memory when processing annotations down the DAG, preventing memory blowout on current production data
+
 TAG: femover-5-1-2-6
 DATE: 02/06/2013
 STAFF: kstone

@@ -15,6 +15,7 @@ import logger
 import OutputFile
 import dbAgnostic
 import ReferenceCitations
+import utils
 
 ###--- Globals ---###
 
@@ -30,9 +31,34 @@ CHUNK_SIZE = 50000	# note that when we are chunking, we are doing the
 			# same key restriction in multiple tables; while this
 			# appears odd, it improves performance a lot
 
+HOMOLOGENE_LDB_KEY = 81 # ACC_LogicalDB
+MARKER_CLUSTER_KEY = 39	# ACC_MGIType
 ORTHOLOGY_TYPE = 18
+HOMOLOGENE_CLASS = 'HomoloGene Class'	# display type
+
+OMIM = 15		# ACC_LogicalDB
+ENTREZ_GENE = 55
+HGNC = 64
+
+ORGANISM_ORDER = [
+	'mouse, laboratory', 'human', 'rat',
+	'cattle', 'chicken', 'chimpanzee', 'dog, domestic', 'rhesus macaque',
+	'zebrafish',
+	]
 
 ###--- Functions ---###
+
+def compareOrganisms (o1, o2):
+	if o1 in ORGANISM_ORDER:
+		if o2 not in ORGANISM_ORDER:
+			return -1
+
+		return cmp(ORGANISM_ORDER.index(o1), ORGANISM_ORDER.index(o2))
+
+	elif o2 in ORGANISM_ORDER:
+		return 1
+
+	return cmp(o1, o2)
 
 def splitID (accID):
 	# Purpose: split the given 'accID' into a string of letters and an
@@ -155,6 +181,8 @@ class AccessionGatherer:
 	def buildMGITypeFile (self):
 		cmd = '''select _MGIType_key, case
 				when name = 'Segment' then 'Probe/Clone'
+				when name = 'Orthology' then 'Homology'
+				when name = 'Marker Cluster' then 'Homology'
 				else name
 				end as name
 			from acc_mgitype
@@ -180,14 +208,15 @@ class AccessionGatherer:
 		print '%s %s' % (path, DISPLAY_TYPE_FILE)
 		return
 
-	def fillMarkers (self, accessionFile):
-		# both mouse and non-mouse markers
+	def fillMouseMarkers (self, accessionFile):
+		# only mouse markers
 		cmd = '''select m._Marker_key, a.accID, m.symbol, m.name,
 				m.chromosome, a._LogicalDB_key,
 				a._MGIType_key, m._Marker_Type_key,
 				m._Organism_key
 			from acc_accession a, mrk_marker m
 			where m._Marker_key = a._Object_key
+				and m._Organism_key = 1
 				and a._MGIType_key = 2
 				and a.private = 0'''
 
@@ -216,21 +245,89 @@ class AccessionGatherer:
 			displayType = Gatherer.resolve (row[displayTypeCol],
 				'mrk_types', '_Marker_Type_key', 'name')
 
-			# non-mouse markers should use the fake orthology type
-			organism = ''
-			if row[organismKey] != 1:
-				mgiType = ORTHOLOGY_TYPE
-				organism = Gatherer.resolve (row[organismKey],
-					'mgi_organism', '_Organism_key',
-					'commonName')
-				if organism:
-					organism = '(%s)' % organism
-				else:
-					organism = ''
-			else:
-				mgiType = row[mgiTypeCol]
+			mgiType = row[mgiTypeCol]
 
 			out = [ row[keyCol], accID, accID, sequenceNum(accID),
+				'%s, %s, Chr %s' % (row[symbolCol],
+					row[nameCol], row[chromosomeCol]),
+				row[ldbCol],
+				displayTypeNum(displayType),
+				mgiType,
+				]
+			outputRows.append (out) 
+
+		logger.debug ('Found %d mouse marker IDs' % len(rows))
+
+		accessionFile.writeToFile (outputCols, outputCols[1:],
+			outputRows)
+		logger.debug ('Wrote mouse marker IDs to file')
+		return
+
+	def fillNonMouseMarkers (self, accessionFile):
+		# only non-mouse markers, directed to HomoloGene class detail
+		# page
+
+		cmd = '''select mc.clusterID, mc._Cluster_key, o.commonName,
+				m._Marker_key, a.accID, m.symbol, m.name,
+				m.chromosome, a._LogicalDB_key,
+				a._MGIType_key, m._Marker_Type_key
+			from mrk_cluster mc,
+				mrk_clustermember mcm,
+				voc_term vt,
+				mrk_marker m,
+				mgi_organism o,
+				acc_accession a
+			where mc._Cluster_key = mcm._Cluster_key
+				and mc._ClusterSource_key = vt._Term_key
+				and vt.term = 'HomoloGene'
+				and mcm._Marker_key = m._Marker_key
+				and m._Organism_key = o._Organism_key
+				and m._Marker_key = a._Object_key
+				and a._MGIType_key = 2
+				and m._Organism_key != 1
+				and a._LogicalDB_key = %d''' % HGNC
+
+# only use HGNC for now, because of OMIM/EG/HomoloGene overlaps (they do not
+# use prefixes)
+#				and a._LogicalDB_key in (%d, %d, %d)''' % (
+#					OMIM, ENTREZ_GENE, HGNC)
+
+		cols, rows = dbAgnostic.execute(cmd)
+
+		clusterIdCol = dbAgnostic.columnNumber (cols, 'clusterID')
+		clusterKeyCol = dbAgnostic.columnNumber (cols, '_Cluster_key')
+		organismCol = dbAgnostic.columnNumber (cols, 'commonName')
+		keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+		symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
+		nameCol = dbAgnostic.columnNumber (cols, 'name')
+		chromosomeCol = dbAgnostic.columnNumber (cols, 'chromosome')
+		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+		displayTypeCol = dbAgnostic.columnNumber (cols,
+			'_Marker_Type_key')
+
+		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
+			'sequenceNum', 'description', '_LogicalDB_key',
+			'_DisplayType_key', '_MGIType_key' ]
+		outputRows = []
+
+		for row in rows:
+			accID = row[idCol]
+			clusterID = row[clusterIdCol]
+
+			displayType = Gatherer.resolve (row[displayTypeCol],
+				'mrk_types', '_Marker_Type_key', 'name')
+
+			# non-mouse markers should use the fake orthology type
+			organism = '(%s)' % row[organismCol]
+			mgiType = ORTHOLOGY_TYPE
+
+			# translate from non-mouse ID to its HomoloGene 
+			# cluster ID
+			out = [ row[keyCol], accID, clusterID,
+				sequenceNum(clusterID),
 				'%s, %s, Chr %s%s' % (row[symbolCol],
 					row[nameCol], row[chromosomeCol],
 					organism),
@@ -240,11 +337,91 @@ class AccessionGatherer:
 				]
 			outputRows.append (out) 
 
-		logger.debug ('Found %d marker IDs' % len(rows))
+		logger.debug ('Found %d non-mouse marker IDs' % len(rows))
 
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
-		logger.debug ('Wrote marker IDs to file')
+		logger.debug ('Wrote non-marker IDs to file')
+		return
+
+	def fillHomologies (self, accessionFile):
+		# fill in HomoloGene class IDs for homology classes
+
+		cmd = '''select mc.clusterID, mc._Cluster_key, o.commonName,
+				m._Marker_key
+			from mrk_cluster mc,
+				mrk_clustermember mcm,
+				voc_term vt,
+				mrk_marker m,
+				mgi_organism o
+			where mc._Cluster_key = mcm._Cluster_key
+				and mc._ClusterSource_key = vt._Term_key
+				and vt.term = 'HomoloGene'
+				and mcm._Marker_key = m._Marker_key
+				and m._Organism_key = o._Organism_key'''
+
+		cols, rows = dbAgnostic.execute(cmd)
+
+		keyCol = dbAgnostic.columnNumber (cols, '_Cluster_key')
+		idCol = dbAgnostic.columnNumber (cols, 'clusterID')
+		organismCol = dbAgnostic.columnNumber (cols, 'commonName')
+		markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+
+		# need to consolidate rows to allow us to collect per-organism
+		# marker counts for each HomoloGene ID
+
+		hgKey = {}	# homologene ID -> cluster key
+		hgOrg = {}	# homologene ID -> {organism : [marker keys]}
+
+		for row in rows:
+			hgId = row[idCol]
+			organism = row[organismCol]
+			marker = row[markerCol]
+			clusterKey = row[keyCol]
+
+			if not hgKey.has_key(hgId):
+				hgKey[hgId] = clusterKey
+				hgOrg[hgId] = { organism : [ marker ] }
+			elif not hgOrg[hgId].has_key(organism):
+				hgOrg[hgId][organism] = [ marker ]
+			elif not marker in hgOrg[hgId][organism]:
+				hgOrg[hgId][organism].append(marker)
+
+		# now we can compile the row for each HomoloGene ID
+
+		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID',
+			'sequenceNum', 'description', '_LogicalDB_key',
+			'_DisplayType_key', '_MGIType_key' ]
+		outputRows = []
+
+		hgIds = hgKey.keys()
+		hgIds.sort()
+
+		for hgId in hgIds:
+			organisms = hgOrg[hgId].keys()
+			organisms.sort(compareOrganisms)
+
+			counts = []
+			for organism in organisms:
+				counts.append ('%d %s' % (
+					len(hgOrg[hgId][organism]), 
+					utils.cleanupOrganism(organism)))
+
+			description = 'Class with ' + ', '.join(counts)
+
+			row = [ hgKey[hgId], hgId, hgId, sequenceNum(hgId),
+				description, HOMOLOGENE_LDB_KEY, 
+				displayTypeNum(HOMOLOGENE_CLASS),
+				MARKER_CLUSTER_KEY ]
+
+			outputRows.append (row)
+
+		logger.debug ('Found %d HomoloGene IDs' % len(outputRows))
+
+		accessionFile.writeToFile (outputCols, outputCols[1:],
+			outputRows)
+		logger.debug ('Wrote HomoloGene IDs to file')
 		return
 
 	def fillReferences (self, accessionFile):
@@ -971,7 +1148,9 @@ class AccessionGatherer:
 		# build the large file
 
 		accessionFile = OutputFile.OutputFile (ACCESSION_FILE)
-		self.fillMarkers (accessionFile)
+		self.fillMouseMarkers (accessionFile)
+		self.fillNonMouseMarkers (accessionFile)
+		self.fillHomologies (accessionFile)
 		self.fillReferences (accessionFile)
 		self.fillAlleles (accessionFile)
 		self.fillProbes (accessionFile)
@@ -982,8 +1161,8 @@ class AccessionGatherer:
 		self.fillAntigens (accessionFile)
 		self.fillTerms (accessionFile)
 		self.fillMapping (accessionFile)
-		self.fillConsensusSnps (accessionFile)
-		self.fillSubSnps (accessionFile)
+		#self.fillConsensusSnps (accessionFile)
+		#self.fillSubSnps (accessionFile)
 
 		accessionFile.close() 
 		logger.debug ('Wrote %d rows (%d columns) to %s' % (

@@ -4,6 +4,7 @@
 
 import config
 import Gatherer
+import utils
 
 ###--- Classes ---###
 
@@ -106,7 +107,8 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 				if organismDict.has_key(seqKey):
 					organism = organismDict[seqKey] + '*'
 
-			self.addColumn ('organism', organism, row,
+			self.addColumn ('organism',
+				utils.cleanupOrganism(organism), row,
 				self.finalColumns)
 
 			# primary accession ID and logicalDB

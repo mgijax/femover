@@ -14,8 +14,16 @@ import logger
 import config
 import MarkerSnpAssociations
 import GOFilter
+import GenotypeClassifier
 
 ###--- Globals ---###
+
+OMIM_GENOTYPE = 1005		# from VOC_AnnotType
+OMIM_HUMAN_MARKER = 1006	# from VOC_AnnotType
+NOT_QUALIFIER = 1614157		# from VOC_Term
+TERM_MGITYPE = 13		# from ACC_MGIType
+DRIVER_NOTE = 1034		# from MGI_NoteType
+GT_ROSA = 37270			# MRK_Marker for 'Gt(ROSA)26Sor'
 
 ReferenceCount = 'referenceCount'
 SequenceCount = 'sequenceCount'
@@ -94,9 +102,14 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[15], CdnaSourceCount, 'cdnaCount'),
 			(self.results[16], MicroarrayCount, 'affyCount'),
 			(self.results[17], PhenotypeImageCount, 'imageCount'),
-			(self.results[18], HumanDiseaseCount, 'diseaseCount'),
 			(self.results[19], AllelesWithDiseaseCount,
 				'alleleCount'),
+
+			# HumanDiseaseCount will be processed separately for
+			# mouse markers; this is only for human markers:
+
+			(self.results[20], HumanDiseaseCount, 'diseaseCount'),
+
 			# SnpCount will be processed separately
 			]
 
@@ -128,6 +141,47 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		for mrk in markerKeys:
 			d[mrk][SnpCount] = MarkerSnpAssociations.getSnpCount(
 				mrk)
+
+		# compile the count of human diseases associated with each
+		# mouse marker (taking care to skip any a via complex not
+		# conditional genotypes) and add it to the counts in 'd'
+
+		cols, rows = self.results[18]
+
+		genoCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+		termCol = Gatherer.columnNumber (cols, '_Term_key')
+
+		# first need to collate disease terms by marker
+
+		diseasesByMarker = {}
+
+		for row in rows:
+			genoKey = row[genoCol]
+			termKey = row[termCol]
+			markerKey = row[markerCol]
+
+			if GenotypeClassifier.getClass(genoKey) == 'cx':
+				continue
+
+			if diseasesByMarker.has_key(markerKey):
+				diseasesByMarker[markerKey][termKey] = 1
+			else:
+				diseasesByMarker[markerKey] = { termKey : 1 } 
+
+		# skip adding this, as it was already added above:
+		# counts.append (HumanDiseaseCount)
+
+		for mrkKey in diseasesByMarker.keys():
+			diseaseCount = len(diseasesByMarker[mrkKey])
+
+			if d.has_key(mrkKey):
+				d[mrkKey][HumanDiseaseCount] = diseaseCount
+			elif mrkKey != None:
+				d[mrkKey] = { HumanDiseaseCount : diseaseCount }
+
+		logger.debug ('Found OMIM diseases for %d markers' % \
+			len(diseasesByMarker))
 
 		# compile the list of collated counts in self.finalResults
 		self.finalResults = []
@@ -288,16 +342,33 @@ cmds = [
 			and _MGIType_key = 2
 		group by _Marker_key''',
 
-	# 18. count of human diseases for the marker.  omit markers that have
-	# no human orthologs.
-	'''select m._Marker_key, count(distinct m._Term_key) as diseaseCount
-		from mrk_omim_cache m
-		where m.qualifier is null
-			and m._Organism_key in (1,2)
-		group by m._Marker_key''',
+	# 18. pull OMIM annotations up from genotypes to mouse markers.
+	#    Exclude paths from markers to genotypes which involve:
+	#	a. recombinase alleles (ones with driver notes)
+	#	b. wild-type alleles
+	#	c. complex, not conditional genotypes
+	#	d. complex, not conditional genotypes with transgenes
+	#	e. marker Gt(ROSA)
+	'''select distinct gag._Marker_key,
+		gag._Genotype_key,
+		va._Term_key
+	from gxd_allelegenotype gag,
+		voc_annot va,
+		all_allele a
+	where gag._Genotype_key = va._Object_key
+		and va._AnnotType_key = %d
+		and va._Qualifier_key != %d
+		and gag._Allele_key = a._Allele_key
+		and a.isWildType = 0
+		and not exists (select 1 from MGI_Note mn
+			where mn._NoteType_key = %d
+			and mn._Object_key = gag._Allele_key)
+		and gag._Marker_key != %d
+	order by gag._Marker_key''' % (
+		OMIM_GENOTYPE, NOT_QUALIFIER, DRIVER_NOTE, GT_ROSA),	
 
 	# 19. count of alleles for the marker which are associated with
-	# human diseases.  omit markers that have no human orthologs.
+	# human diseases.
 	'''select a._Marker_key, count(distinct a._Allele_key) as alleleCount
 		from all_allele a,
 			gxd_allelegenotype gag,
@@ -309,14 +380,18 @@ cmds = [
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key
 			and vt.term is null
-			and exists (select 1
-				from mrk_homology_cache h1,
-					mrk_homology_cache h2
-				where a._Marker_key = h1._Marker_key
-				and h1._Organism_key = 1
-				and h1._Class_key = h2._Class_key
-				and h2._Organism_key = 2)
 		group by a._Marker_key''',
+
+	# 20. OMIM annotations to human markers
+	'''select mm._Marker_key, count(q._Term_key) as diseaseCount
+	from voc_annot va,
+		mrk_marker mm,
+		voc_term q
+	where va._AnnotType_key = %d
+		and va._Object_key = mm._Marker_key
+		and va._Qualifier_key = q._Term_key
+		and q.term is null
+	group by mm._Marker_key''' % OMIM_HUMAN_MARKER,
 	]
 
 # order of fields (from the query results) to be written to the

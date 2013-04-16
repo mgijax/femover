@@ -38,12 +38,13 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
 	-b : Batch Query tables
 	-c : Cre (Recombinases)
+	-d : Disease tables (disease detail page)
 	-g : Genotypes
 	-h : IMSR counts (via HTTP)
 	-i : Images
@@ -154,6 +155,7 @@ BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 	]
 CRE = [ 'allele_recombinase_systems', 'recombinase', 
 	]
+DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
 	'disease', 'marker_to_genotype',
 	]
@@ -172,11 +174,12 @@ IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 IMSR = [ 'imsr',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
-		'marker_to_sequence', 'marker_to_reference',
+		'marker_to_sequence', 'marker_to_reference', 'marker_link',
 		'marker_orthology', 'marker_location', 'marker_counts',
-		'marker_note', 'marker_sequence_num', 
+		'marker_note', 'marker_sequence_num', 'marker_disease',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
+		'homology_cluster',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
@@ -207,7 +210,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
-	'-n' : ANNOTATIONS,	'-A' : ACCESSION,
+	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	}
 
 # boolean; are we doing a build of the complete front-end database?

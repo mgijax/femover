@@ -16,6 +16,7 @@ usage()
     echo "    -A : Accession IDs"
     echo "    -b : Batch Query Tables"
     echo "    -c : Cre (Recombinases)"
+    echo "    -d : Disease tables (disease detail page)"
     echo "    -g : Genotypes"
     echo "    -h : IMSR counts (via HTTP)"
     echo "    -i : Images"
@@ -52,7 +53,7 @@ export TARGET_TYPE
 # handle the other (optional) parameters
 
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -g -h -i -m -n -p -s -r -v -x -G"
+POSSIBLE_FLAGS="-a -A -b -c -d -g -h -i -m -n -p -s -r -v -x -G"
 while [ $# -gt 0 ]; do
 	found=0
 	for flag in ${POSSIBLE_FLAGS}

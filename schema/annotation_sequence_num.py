@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	by_vocab		int	not null,
 	by_annotation_type	int	not null,
 	by_vocab_dag_term	int	not null,
+	by_marker_dag_term	int	not null,
 	PRIMARY KEY(annotation_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -42,6 +43,7 @@ comments = {
 		'by_vocab' : 'sort by vocabulary name',
 		'by_annotation_type' : 'sort by type of annotation',
 		'by_vocab_dag_term' : 'sort by vocabulary, then by DAG, then by term',
+		'by_marker_dag_term' : 'sort by marker nomenclature, then by DAG, then by term',
 		},
 	}
 

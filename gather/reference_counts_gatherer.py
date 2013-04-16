@@ -12,6 +12,7 @@
 
 import Gatherer
 import logger
+import GOFilter
 
 ###--- Globals ---###
 
@@ -24,6 +25,7 @@ GxdStructureCount = 'gxdStructureCount'
 GxdAssayCount = 'gxdAssayCount'
 AlleleCount = 'alleleCount'
 SequenceCount = 'sequenceCount'
+GoAnnotCount = 'goAnnotationCount'
 
 error = 'referenceCountsGatherer.error'
 
@@ -77,6 +79,15 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
 				else:
 					raise error, \
 					'Unknown reference key: %d' % refKey
+
+		# add in GO annotation counts
+
+		for refKey in GOFilter.getReferenceKeys():
+			if d.has_key(refKey):
+				d[refKey][GoAnnotCount] = \
+				    GOFilter.getAnnotationCountForRef(refKey)
+
+		counts.append(GoAnnotCount)
 
 		# compile the list of collated counts in self.finalResults
 		# and the list of columns in self.finalColumns
@@ -166,7 +177,7 @@ cmds = [
 # order of fields (from the query results) to be written to the output file
 fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
 	GxdIndexCount, GxdResultCount, GxdStructureCount,
-	GxdAssayCount, AlleleCount, SequenceCount ]
+	GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'reference_counts'

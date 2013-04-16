@@ -28,18 +28,23 @@ KEEPER_ANNOTATIONS = {}
 # 	PER_MARKER[marker key] = { (annotation tuple) : 1 }
 PER_MARKER = {}
 
+# stores tuples which define the annotations kept so far for each reference
+#	PER_REF[ref key] = { (annotation tuple) : 1 }
+PER_REF = {}
+
 ###--- Private Functions ---###
 
 def _loadAnnotationsNoND():
 	# load global variables with data from all GO annotations except those
 	# with a ND (No data) evidence code
 
-	global MARKER_DAGS, KEEPER_ANNOTATIONS, PER_MARKER
+	global MARKER_DAGS, KEEPER_ANNOTATIONS, PER_MARKER, PER_REF
 
 	# all GO annotations where evidence term is not ND
 	cmd1 = '''select distinct a._Object_key as _Marker_key,
 			a._Term_key, n._DAG_key, a._Annot_key,
-			a._Qualifier_key, e.inferredFrom, e._EvidenceTerm_key
+			a._Qualifier_key, e.inferredFrom, e._EvidenceTerm_key,
+			e._Refs_key
 		from voc_annot a, voc_evidence e, dag_node n
 		where a._AnnotType_key = 1000
 			and a._Annot_key = e._Annot_key
@@ -52,6 +57,7 @@ def _loadAnnotationsNoND():
 	markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
 	termCol = dbAgnostic.columnNumber (cols, '_Term_key')
 	dagCol = dbAgnostic.columnNumber (cols, '_DAG_key')
+	refsCol = dbAgnostic.columnNumber (cols, '_Refs_key')
 	annotCol = dbAgnostic.columnNumber (cols, '_Annot_key')
 	qualifierCol = dbAgnostic.columnNumber (cols, '_Qualifier_key')
 	inferredCol = dbAgnostic.columnNumber (cols, 'inferredFrom')
@@ -84,19 +90,35 @@ def _loadAnnotationsNoND():
 		else:
 			PER_MARKER[markerKey][annotTuple] = 1
 
+		# track unique annotations for this reference.  A unique
+		# annotation is defined as a unique set of marker key, term,
+		# qualifier, evidence code, and inferred-from value.
+
+		refsKey = row[refsCol]
+
+		refAnnotTuple = (markerKey, row[termCol], row[qualifierCol],
+			row[evidenceCol], row[inferredCol])
+
+		if not PER_REF.has_key(refsKey):
+			PER_REF[refsKey] = { refAnnotTuple : 1 }
+		else:
+			PER_REF[refsKey][refAnnotTuple] = 1
+
 	logger.debug ('Processed %d non-ND GO annotations' % len(rows)) 
+	logger.debug ('Found non-ND GO annotations for %d refs' % len(PER_REF))
 	return
 
 def _loadAnnotationsOnlyND():
 	# load global variables with data from all GO annotations which have
 	# a ND (No data) evidence code
 
-	global MARKER_DAGS, KEEPER_ANNOTATIONS, PER_MARKER
+	global MARKER_DAGS, KEEPER_ANNOTATIONS, PER_MARKER, PER_REF
 
 	# all GO annotations where evidence term is ND
 	cmd2 = '''select distinct a._Object_key as _Marker_key,
 			a._Term_key, n._DAG_key, a._Annot_key,
-			a._Qualifier_key, e.inferredFrom, e._EvidenceTerm_key
+			a._Qualifier_key, e.inferredFrom, e._EvidenceTerm_key,
+			e._Refs_key
 		from voc_annot a, voc_evidence e, dag_node n
 		where a._AnnotType_key = 1000
 			and a._Annot_key = e._Annot_key
@@ -113,6 +135,7 @@ def _loadAnnotationsOnlyND():
 	qualifierCol = dbAgnostic.columnNumber (cols, '_Qualifier_key')
 	inferredCol = dbAgnostic.columnNumber (cols, 'inferredFrom')
 	evidenceCol = dbAgnostic.columnNumber (cols, '_EvidenceTerm_key')
+	refsCol = dbAgnostic.columnNumber (cols, '_Refs_key')
 
 	kept = 0
 
@@ -149,6 +172,24 @@ def _loadAnnotationsOnlyND():
 		else:
 			PER_MARKER[markerKey][annotTuple] = 1
 
+		# All ND annotations are using J:73796; we could exclude them
+		# here, but we do want them for an 'all annotations for a
+		# reference' page.
+
+		# track unique annotations for this reference.  A unique
+		# annotation is defined as a unique set of marker key, term,
+		# qualifier, evidence code, and inferred-from value.
+
+		refsKey = row[refsCol]
+
+		refAnnotTuple = (markerKey, row[termCol], row[qualifierCol],
+			row[evidenceCol], row[inferredCol])
+
+		if not PER_REF.has_key(refsKey):
+			PER_REF[refsKey] = { refAnnotTuple : 1 }
+		else:
+			PER_REF[refsKey][refAnnotTuple] = 1
+
 	logger.debug ('Processed %d ND GO annotations, kept %d' % (len(rows),
 		kept) ) 
 	return
@@ -179,6 +220,16 @@ def getAnnotationCount (markerKey):
 		return len(PER_MARKER[markerKey])
 	return 0
 	
+def getAnnotationCountForRef (refsKey):
+	# get a count of GO annotations for the given 'refsKey'
+
+	if not INITIALIZED:
+		_initialize()
+
+	if PER_REF.has_key(refsKey):
+		return len(PER_REF[refsKey])
+	return 0
+	
 def shouldInclude (annotKey):
 	# determine if the annotation with this 'annotKey' should be included
 	# in the front-end database (True) or not (False)
@@ -197,6 +248,17 @@ def getMarkerKeys():
 		_initialize()
 
 	keys = PER_MARKER.keys()
+	keys.sort()
+
+	return keys
+
+def getReferenceKeys():
+	# return the list of reference keys which have GO annotations
+
+	if not INITIALIZED:
+		_initialize()
+
+	keys = PER_REF.keys()
 	keys.sort()
 
 	return keys

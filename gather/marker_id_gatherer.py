@@ -92,6 +92,29 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Collected IDs for %d markers' % len(ids))
 
+		# grab the non-mouse markers' HomoloGene IDs
+
+		cols, rows = self.results[2]
+
+		ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
+		ldbNameCol = Gatherer.columnNumber (cols, 'logicalDB')
+		idCol = Gatherer.columnNumber (cols, 'accID')
+		keyCol = Gatherer.columnNumber (cols, 'markerKey')
+		preferredCol = Gatherer.columnNumber (cols, 'preferred')
+		privateCol = Gatherer.columnNumber (cols, 'private')
+
+		for row in rows:
+			key = row[keyCol]
+			if ids.has_key(key):
+				ids[key].append (row)
+			else:
+				ids[key] = [ row ]
+
+		logger.debug ('Added %d HomoloGene IDs from clusters' % \
+			len(rows))
+
+		# proceed with processing...
+
 		markerKeys = ids.keys()
 		markerKeys.sort()
 
@@ -202,6 +225,21 @@ cmds = [
 		and c._MGIType_key = 2
 		and c._LogicalDB_key = 1
 		and c.preferred = 1''',
+
+	# 2. we need to bring HomoloGene IDs over for non-mouse markers,
+	# getting them from the homology clusters involving those markers
+	'''select mm._Marker_key as markerKey, aa._LogicalDB_key, aa.accID,
+		aa.preferred, aa.private, ldb.name as logicalDB
+	from voc_term vt, mrk_cluster mc, mrk_clustermember mcm,
+		mrk_marker mm, acc_accession aa, acc_logicaldb ldb
+	where vt.term = 'HomoloGene'
+		and vt._Term_key = mc._ClusterSource_key
+		and mc._Cluster_key = mcm._Cluster_key
+		and mcm._Marker_key = mm._Marker_key
+		and mm._Organism_key != 1
+		and mc._Cluster_key = aa._Object_key
+		and aa._MGIType_key = 39
+		and aa._LogicalDB_key = ldb._LogicalDB_key''',
 	]
 
 # order of fields (from the query results) to be written to the
