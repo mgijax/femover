@@ -7,6 +7,7 @@ import Gatherer
 import symbolsort
 import utils
 import logger
+import GOGraphs
 
 ###--- Globals ---###
 
@@ -193,7 +194,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 		# our result sets.
 
 		hcCols = [ 'clusterKey', 'clusterID', 'version',
-			'cluster_date', 'source' ]
+			'cluster_date', 'source', 'hasComparativeGOGraph' ]
 		hcRows = []
 
 		hcoCols = [ 'clusterOrganismKey', 'clusterKey', 'organism',
@@ -208,7 +209,8 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 		hccCols = [ 'clusterKey', 'mouseMarkerCount',
 			'humanMarkerCount', 'ratMarkerCount',
 			'cattleMarkerCount', 'chimpMarkerCount',
-			'dogMarkerCount', ]
+			'dogMarkerCount', 'monkeyMarkerCount',
+			'chickenMarkerCount', 'zebrafishMarkerCount', ]
 		hccRows = []
 
 		clusterKeys = clusters.keys()
@@ -224,7 +226,8 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 			(key, accID, clusterType, source, version, date) = \
 				cluster.getClusterData()
 
-			hcRows.append ( [key, accID, version, date, source] )
+			hcRows.append ( [key, accID, version, date, source,
+				GOGraphs.hasComparativeGOGraph(accID) ] )
 			coSeqNum = 0
 			hcotmSeqNum = 0
 
@@ -250,7 +253,8 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 
 			hccRow = [ clusterKey ]
 			for organism in [ 'mouse', 'human', 'rat', 'cattle',
-					'chimpanzee', 'dog' ]:
+					'chimpanzee', 'dog', 'rhesus macaque',
+					'chicken', 'zebrafish', ]:
 				if counts.has_key(organism):
 					hccRow.append (counts[organism])
 				else:
@@ -295,7 +299,7 @@ cmds = [
 files = [
 	('homology_cluster',
 		[ 'clusterKey', 'clusterID', 'version', 'cluster_date',
-			'source', ],
+			'source', 'hasComparativeGOGraph', ],
 		'homology_cluster'),
 
 	('homology_cluster_organism',
@@ -310,7 +314,9 @@ files = [
 	('homology_cluster_counts',
 		[ 'clusterKey', 'mouseMarkerCount', 'humanMarkerCount',
 			'ratMarkerCount', 'cattleMarkerCount',
-			'chimpMarkerCount', 'dogMarkerCount', ],
+			'chimpMarkerCount', 'dogMarkerCount', 
+			'monkeyMarkerCount', 'chickenMarkerCount',
+			'zebrafishMarkerCount', ],
 		'homology_cluster_counts'),
 	]
 
