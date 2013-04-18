@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	version		varchar(255)	null,
 	cluster_date	varchar(12)	null,
 	source		varchar(255)	not null,
+	has_comparative_go_graph	int	not null,
 	PRIMARY KEY(cluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -44,6 +45,7 @@ comments = {
 		'version' : 'data version number for this cluster',
 		'cluster_date' : 'date for this cluster',
 		'source' : 'source for this cluster - what group compiled the data',
+		'has_comparative_go_graph' : '1 if this cluster has a comparative GO graph available, 0 if not',
 		},
 	Table.INDEX : {
 		'primary_id' : 'look up clusters by ID',

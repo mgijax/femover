@@ -19,7 +19,6 @@ createStatement = '''CREATE TABLE %s  (
 	logical_db	varchar(80) NULL,
 	status       	varchar(255) NULL,
 	has_go_graph	int	NOT NULL,
-	has_go_orthology_graph	int	NOT NULL,
 	is_in_reference_genome	int	NOT NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
@@ -48,7 +47,6 @@ comments = {
 		'logical_db' : 'logical database assigning the ID',
 		'status' : 'status for this marker',
 		'has_go_graph' : '1 if this marker has a graph of its GO associations available, 0 if not',
-		'has_go_orthology_graph' : '1 if this marker has a graph of GO associations (for it and its orthologous markers) available, 0 if not',
 		'is_in_reference_genome' : '1 if this marker is in the reference genome project, 0 if not',
 		},
 	Table.INDEX : {
