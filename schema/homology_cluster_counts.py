@@ -21,6 +21,9 @@ createStatement = '''CREATE TABLE %s  (
 	cattle_marker_count	int	not null,
 	chimp_marker_count	int	not null,
 	dog_marker_count	int	not null,
+	monkey_marker_count	int	not null,
+	chicken_marker_count	int	not null,
+	zebrafish_marker_count	int	not null,
 	PRIMARY KEY(cluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -45,6 +48,9 @@ comments = {
 		'cattle_marker_count' : 'count of cattle markers in the cluster',
 		'chimp_marker_count' : 'count of chimp markers in the cluster',
 		'dog_marker_count' : 'count of dog markers in the cluster',
+		'monkey_marker_count' : 'count of monkey (rhesus macaque) markers in the cluster',
+		'chicken_marker_count' : 'count of chicken markers in the cluster',
+		'zebrafish_marker_count' : 'count of zebrafish markers in the cluster',
 		},
 	Table.INDEX : {},
 	}
