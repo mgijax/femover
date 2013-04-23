@@ -1,3 +1,10 @@
+TAG: femover-5-1-3-2
+DATE: 04/23/2013
+STAFF: jsb
+CHANGES: 
+1) revised handling of GO comparative graphs (orthology)
+2) added organisms to homology_cluster_counts
+
 TAG: femover-5-1-3-1
 DATE: 03/16/2013
 STAFF: sc
