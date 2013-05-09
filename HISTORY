@@ -1,3 +1,11 @@
+TAG: ?
+DATE: 2013/05/09
+STAFF:  kstone
+CHANGES: 
+1) Merge TR11248 to trunk
+2) Moved dynamic test data from google doc to femover (gets populated during standard mover run)
+
+
 TAG: femover-5-1-3-2
 DATE: 04/23/2013
 STAFF: jsb
@@ -5,11 +13,35 @@ CHANGES:
 1) revised handling of GO comparative graphs (orthology)
 2) added organisms to homology_cluster_counts
 
+TAG: femover-
+DATE: 04/2013
+STAFF: lec/pf/kstone
+CHANGES: TR11248 (GXD/Cre/SNP)
+1) gather/recombinase_gatherer.py
+   schema/recombinase_allele_system.py
+   which affects:
+   fe: recombinase_allele_system
+   fe: recombinase_system_structure
+
 TAG: femover-5-1-3-1
 DATE: 03/16/2013
 STAFF: sc
 CHANGES: N2MO merge tr6519 changes to trunk
 
+TAG: femover-5-1-4-1
+DATE: 02/01/2013-03/08/2013
+STAFF: lec/dbm/pf
+CHANGES:
+1) gather/expression_gatherer.py
+   schema/expression_assay.py
+   gather/expression_result_summary_gatherer.py
+2) Configuration.default:  
+	BUILD_IN_SYNC = 1
+	HIGH_PRIORITY_TABLES : moved from control/buildDatabases.py
+	SINGLE_PRIORITY_TABLES : new 
+3) gather/accession_gatherer.py: comment out call to SNP accession ids
+
+
 TAG: femover-5-1-2-6
 DATE: 02/06/2013
 STAFF: kstone
@@ -65,12 +97,6 @@ CHANGES:
 1) added lib/python/GroupedList.py to support #3 below
 2) updated gather/Gatherer.py's MultiFileGatherer to allow individual files to be written as they are produced, rather than saving all in memory until all are done
 3) updated gather/vocabulary_gatherer.py to use far less memory when processing annotations down the DAG, preventing memory blowout on current production data
-
-TAG: femover-5-1-2-6
-DATE: 02/06/2013
-STAFF: kstone
-CHANGES:
-1) bug fix for TR11280
 
 TAG: femover-tr11248-BP
 DATE: 01/30/2013

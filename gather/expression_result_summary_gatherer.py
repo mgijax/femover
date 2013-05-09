@@ -188,23 +188,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Got %d displayable image panes' % len(panes))
 		return panes
 
-	def getRecombinaseReporterGeneKeys(self):
-		# handle query 4 : returns { recomb. reporter gene key : 1 }
-		genes = {}
-
-		cols, rows = self.results[4]
-
-		for row in rows:
-			genes[row[0]] = 1
-
-		logger.debug('Got %d recombinase reporter genes' % len(genes))
-		return genes
-
 	def getPanesForInSituResults(self):
-		# handle query 5 : returns { assay key : [ image pane keys ] }
+		# handle query 4 : returns { assay key : [ image pane keys ] }
 		panes = {}
 
-		cols, rows = self.results[5]
+		cols, rows = self.results[4]
 
 		assayCol = Gatherer.columnNumber (cols, '_Result_key')
 		paneCol = Gatherer.columnNumber (cols, '_ImagePane_key')
@@ -220,12 +208,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		return panes
 
 	def getBasicAssayData(self):
-		# handle query 6 : returns [ [ assay key, assay type,
+		# handle query 5 : returns [ [ assay key, assay type,
 		#	reference key, marker key, image pane key,
 		#	reporter gene key, is gel flag ], ... ]
 		assays = []
 
-		cols, rows = self.results[6]
+		cols, rows = self.results[5]
 
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
 		assayTypeCol = Gatherer.columnNumber (cols, 'assayType')
@@ -244,11 +232,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		return assays
 
 	def getInSituExtraData(self):
-		# handle query 7 : returns { assay key : [ genotype key,
+		# handle query 6 : returns { assay key : [ genotype key,
 		#	age, strength, result key, structure key ] }
 		extras = {}
 
-		cols, rows = self.results[7]
+		cols, rows = self.results[6]
 
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -259,32 +247,25 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
+		specimenKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
 
 		for row in rows:
-		    assayKey = row[assayCol]
-
-		    if extras.has_key(assayKey):
-	 		extras[assayKey].append( [ row[genotypeCol],
+			assayKey = row[assayCol]
+			extras.setdefault(assayKey,[]).append( [row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
 				row[structureCol], row[ageMinCol],
-				row[ageMaxCol], row[patternCol] ] )
-		    else:
-	 	 	extras[assayKey] = [ [ row[genotypeCol],
-		 		row[ageCol], row[strengthCol], row[resultCol],
-		 		row[structureCol], row[ageMinCol],
-		 		row[ageMaxCol], row[patternCol] ] ]
-
+				row[ageMaxCol], row[patternCol],row[specimenKeyCol] ])
 
 		logger.debug ('Got extra data for %d in situ assays' % \
 			len(extras))
 		return extras
 
 	def getGelExtraData(self):
-		# handle query 8 : returns { assay key : [ genotype key,
+		# handle query 7 : returns { assay key : [ genotype key,
 		#	age, strength, structure key ] }
 		extras = {}
 
-		cols, rows = self.results[8]
+		cols, rows = self.results[7]
 
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -354,7 +335,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		return extras
 
 	def sortSystems(self):
-		cols, rows = self.results[10]
+		cols, rows = self.results[9]
 
 		self.systemSequenceNum = {}
 		i = 0
@@ -366,7 +347,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		return
 
 	def sortGenotypeData(self):
-		cols, rows = self.results[9]
+		cols, rows = self.results[8]
 
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		allele1Col = Gatherer.columnNumber (cols, 'symbol1')
@@ -435,18 +416,18 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		wildtype = {}
 
-		# query 11 - genotypes that are always wild-type
+		# query 10 - genotypes that are always wild-type
 
-		cols, rows = self.results[11]
+		cols, rows = self.results[10]
 
 		for row in rows:
 			wildtype[row[0]] = 1
 
 		logger.debug ('Found %d wild-type genotypes' % len(rows))
 
-		# query 12 - genotype/assay pairs that are wild-type together
+		# query 11 - genotype/assay pairs that are wild-type together
 
-		cols, rows = self.results[12]
+		cols, rows = self.results[11]
 
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
@@ -467,7 +448,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		jNumbers = self.getJnumbers()
 		symbols = self.getMarkerSymbols()
 		displayablePanes = self.getDisplayableImagePanes()
-		recombinaseReporters = self.getRecombinaseReporterGeneKeys()
 		panesForInSituResults = self.getPanesForInSituResults()
 
 		assays = self.getBasicAssayData()
@@ -484,7 +464,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			'structure', 'printname', 'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
 			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type',
-			'pattern'
+			'pattern','_Specimen_key'
 			]
 		ersRows = []
 
@@ -525,6 +505,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				ageMin, ageMax ] = items
 
 			    pattern = None
+			    specimenKey = None
 
 			    if imagepaneKey:
 				panes = [ imagepaneKey ]
@@ -533,7 +514,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				    hasImage = 1
 			else:
 			    [ genotypeKey, age, strength, resultKey,
-				structureKey, ageMin, ageMax, pattern ] = items
+				structureKey, ageMin, ageMax, pattern,specimenKey ] = items
 
 			    if panesForInSituResults.has_key(resultKey):
 				panes = panesForInSituResults[resultKey]
@@ -574,7 +555,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    hasImage,
 			    genotypeKey,
 			    isWildType,
-			    pattern
+			    pattern,
+			    specimenKey
 			    ]
 
 			ersRows.append (outRow)
@@ -842,18 +824,11 @@ cmds = [
 		and i._ImageClass_key = t._Term_key
 		and t.term = 'Expression' ''',
 
-	# 4. set of reporter genes which would indicate a recombinase assay
-	# (for assay types where it's not automatically a recombinase assay)
-	'''select msm._Object_key as _ReporterGene_key
-	from mgi_set ms, mgi_setmember msm
-	where ms._Set_key = msm._Set_key
-		and ms.name = 'Recombinases' ''',
-
-	# 5. image panes for in situ results
+	# 4. image panes for in situ results
 	'''select distinct i._Result_key, i._ImagePane_key
 	from gxd_insituresultimage i''',
 
-	# 6. basic assay data (image key here is for gel assays)
+	# 5. basic assay data (image key here is for gel assays)
 	'''select a._Assay_key, a._AssayType_key, t.assayType,
 		a._Refs_key, a._Marker_key, a._ImagePane_key,
 		a._ReporterGene_key, t.isGelAssay
@@ -861,7 +836,7 @@ cmds = [
 	where a._AssayType_key = t._AssayType_key
 	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key)''',
 
-	# 7. additional data for in situ assays (note that there can be > 1
+	# 6. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
 
 	'''select s._Assay_key,
@@ -873,7 +848,8 @@ cmds = [
 		rs._Structure_key,
 		s.ageMin,
 		s.ageMax,
-		p.pattern
+		p.pattern,
+		s._specimen_key
 	from gxd_specimen s,
 		gxd_insituresult r,
 		gxd_strength st,
@@ -884,7 +860,7 @@ cmds = [
 		and r._Pattern_key = p._Pattern_key
 		and r._Result_key = rs._Result_key''', 
 
-	# 8. additional data for gel assays (skip control lanes)  (note that
+	# 7. additional data for gel assays (skip control lanes)  (note that
 	# there can be > 1 structures per gel lane).  A gel assay may have
 	# multiple gel lanes.  Each lane can have multiple structures, and
 	# each lane/structure pair defines an expression result (for the
@@ -911,7 +887,7 @@ cmds = [
 		and b._Strength_key = st._Strength_key
 		and g._GelLane_key = gs._GelLane_key''',
 
-	# 9. allele pairs for genotypes cited in GXD data
+	# 8. allele pairs for genotypes cited in GXD data
 	'''select gap._Genotype_key,
 		a1.symbol as symbol1,
 		a2.symbol as symbol2
@@ -924,14 +900,14 @@ cmds = [
 			where g._Genotype_key = gap._Genotype_key)
 	order by gap.sequenceNum''',
 
-	# 10. ordered list of systems
+	# 9. ordered list of systems
 	'''select distinct t.term
 	from gxd_structure s,
 		voc_term t
 	where s._System_key = t._Term_key
 	order by t.term''',
 
-	# 11. genotypes with no allele pairs (treat expression assays for
+	# 10. genotypes with no allele pairs (treat expression assays for
 	# these as wild type)
 	'''select g._Genotype_key
 	from gxd_genotype g
@@ -939,7 +915,7 @@ cmds = [
 		and not exists (select 1 from gxd_allelepair p
 			where g._Genotype_key = p._Genotype_key)''',
 
-	# 12. also treat expression assays for these genotypes as wild type;
+	# 11. also treat expression assays for these genotypes as wild type;
 	# these have:
 	#	a. assay type = In situ reporter (knock in) (key 9)
 	#	b. only one allele pair
@@ -977,7 +953,7 @@ files = [
 		'ageAbbreviation', 'age_min', 'age_max',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
-		'_Genotype_key', 'is_wild_type', 'pattern' ],
+		'_Genotype_key', 'is_wild_type', 'pattern' , '_Specimen_key'],
 		'expression_result_summary'),
 
 	('expression_result_to_imagepane',

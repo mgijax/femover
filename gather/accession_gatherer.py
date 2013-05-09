@@ -9,6 +9,12 @@
 # producing multiple tables, but it would also be good to use a ChunkGatherer
 # because of the size of the data set for the main "accession" table.  So,
 # this will be an entirely custom Gatherer, drawing ideas from them both.
+#
+# History
+#
+# 03/07/2013	lec
+#	TR11248/commented out fillConsensusSnps, fillSubSnps (SNP accessions)
+#
 
 import Gatherer
 import logger

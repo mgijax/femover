@@ -1,9 +1,21 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'reference' table in the front-end database
+#
+# 05/02/2013	lec
+#	- TR11248 (cre/gxd/snp): add journalTranslation dictionary
+#
 
 import Gatherer
 import ReferenceCitations
+import logger
+
+#
+# translate some journal names
+#
+journalTranslation = {'PLoS One': 'PLoS ONE',
+	'Cell Mol Biol (Noisy-le-grand)': 'Cell Mol Biol (Noisy-Le-Grand)'}
+
 
 ###--- Classes ---###
 
@@ -48,6 +60,8 @@ class ReferenceGatherer (Gatherer.Gatherer):
 
 		pubmedCol = Gatherer.columnNumber (self.finalColumns,
 			'pubmedID')
+
+		journalCol = Gatherer.columnNumber (self.finalColumns, 'journal')
 
 		for r in self.finalResults:
 			# combine two partial authors fields
@@ -98,6 +112,13 @@ class ReferenceGatherer (Gatherer.Gatherer):
 				(r[pubmedCol].lower() == 'null'):
 					r[pubmedCol] = None
 
+			# translate journal names (if necessary)
+			journal = r[journalCol]
+			if (journalTranslation.has_key(journal)):
+				logger.debug(r[journalCol])
+				r[journalCol] = journalTranslation[journal]
+				logger.debug(r[journalCol])
+
 			# add the flag for the GXD Literature Index
 
 			if self.gxdRefs.has_key(refsKey):
@@ -122,6 +143,7 @@ cmds = [ '''select distinct _Refs_key
 		r.title,
 		r.title2,
 		r.journal,
+		lower(r.journal) as lowerJournal,
 		r.vol,
 		r.issue,
 		r.date as pubDate,

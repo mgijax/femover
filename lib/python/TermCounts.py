@@ -22,17 +22,22 @@ markersInGxdIndex = {}
 # term key -> { marker key : 1 } where those markers have expression data
 markersWithExpressionData = {}
 
+# term key -> { marker key : 1 } where those markers have expression data
+markersWithCreData = {}
+
+
 # has this module been initialized?
 isInitialized = False
 
 ###--- Private Functions ---###
 
 def _initialize():
-	global markersPerTerm, markersWithExpressionData, markersInGxdIndex, isInitialized
+	global markersPerTerm, markersWithExpressionData, markersWithCreData,markersInGxdIndex, isInitialized
 
 	isInitialized = True
 	markersPerTerm = {}
 	markersWithExpressionData = {}
+	markersWithCreData = {}
 	markersInGxdIndex = {}
 
 	# Due to the nature of the DAG, it could be problematic to compute
@@ -152,6 +157,11 @@ def _initialize():
 		# 7. markers in GXD literature index
 		'''select distinct _Marker_key
 		from gxd_index''',
+		
+		# 8. markers with cre expression data
+		''' select distinct _Marker_key
+			from gxd_expression where isrecombinase=1
+		''',
 	]
 
 	# queries 1-5 to collect marker/term relationships
@@ -184,6 +194,14 @@ def _initialize():
 
 	logger.debug ('Found %d markers in GXD lit index' % \
 		len(markersInGxdIndex))
+
+	# query 8 to find markers with Cre data
+	(cols, rows) = dbAgnostic.execute (cmds[8])
+	for row in rows:
+		markersWithCreData[row[0]] = 1
+
+	logger.debug ('Found %d markers with cre data' % \
+		len(markersWithCreData))
 	return
 
 def filterBy (fullset, subset):
@@ -231,3 +249,24 @@ def getExpressionMarkerCount (termKey):
 		return len(filterBy(markersPerTerm[termKey],
 			markersWithExpressionData))
 	return 0
+
+def getCreMarkerCount (termKey):
+	# get the count of markers associated to the given term, where those
+	# markers also have cre expression data
+	global markersWithCreData
+
+	if not isInitialized:
+		_initialize()
+
+	if markersPerTerm.has_key(termKey):
+		return len(filterBy(markersPerTerm[termKey],
+			markersWithCreData))
+	return 0
+
+def markerHasCre (markerKey):
+	global markersWithCreData
+
+	if not isInitialized:
+		_initialize()
+	
+	return markerKey in markersWithCreData

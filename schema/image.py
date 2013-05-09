@@ -28,6 +28,7 @@ createStatement = '''CREATE TABLE %s  (
 	jnum_id			varchar(30)	null,
 	copyright		varchar(768)	null,
 	caption			varchar(4500)	null,
+	external_link		varchar(4500)	null,
 	image_class		varchar(20)	null,
 	PRIMARY KEY(image_key))''' % tableName
 
@@ -65,6 +66,7 @@ comments = {
 		'jnum_id' : 'J: number ID for the reference, cached for convenience',
 		'copyright' : 'copyright statement',
 		'caption' : 'caption to display with the image',
+		'external_link' : 'external link to display with the image',
 		'image_class' : 'class of the image (Expression, Phenotypes, Molecular)',
 		},
 	Table.INDEX : {

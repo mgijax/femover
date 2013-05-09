@@ -105,7 +105,7 @@ class AssayGatherer (Gatherer.Gatherer):
 			key = row[assayCol]
 
 			if row[nameCol]:
-				antibody[key] = row[nameCol]
+				antibody[key] = (row[antibodyCol], row[nameCol])
 
 				secondary = Gatherer.resolve (
 					row[secondaryCol],
@@ -156,6 +156,7 @@ class AssayGatherer (Gatherer.Gatherer):
 		keyCol = Gatherer.columnNumber (cols, '_Assay_key')
 		typeCol = Gatherer.columnNumber (cols, '_AssayType_key')
 		reporterCol = Gatherer.columnNumber(cols, '_ReporterGene_key')
+		gelImagePaneKeyCol = Gatherer.columnNumber(cols, 'gel_imagepane_key')
 
 		for row in self.finalResults:
 			key = row[keyCol]
@@ -167,24 +168,25 @@ class AssayGatherer (Gatherer.Gatherer):
 			isDirectDetection = 0
 			note = None
 			detectionSystem = None
+			antibodyKey = None
 			antibodyName = None
 			reporter = None
 			image = 0
 
 			if probes.has_key(key):
 				(probeKey, probeName) = probes[key]
+			if antibody.has_key(key):
+				(antibodyKey, antibodyName) = antibody[key]
+			if not probeKey and not antibodyKey:
+				isDirectDetection = 1
 			if prep.has_key(key):
 				probePrep = prep[key]
 			if visual.has_key(key):
 				visualizedWith = visual[key]
-			if not (probePrep or visualizedWith):
-				isDirectDetection = 1
 			if notes.has_key(key):
 				note = notes[key]
 			if system.has_key(key):
 				detectionSystem = system[key]
-			if antibody.has_key(key):
-				antibodyName = antibody[key]
 			if hasImage.has_key(key):
 				image = 1
 
@@ -205,10 +207,12 @@ class AssayGatherer (Gatherer.Gatherer):
 			self.addColumn ('note', note, row, cols)
 			self.addColumn ('detection_system', detectionSystem,
 				row, cols)
+			self.addColumn ('_Antibody_key', antibodyKey, row, cols)
 			self.addColumn ('antibody', antibodyName, row, cols)
 			self.addColumn ('assay_type', assayType, row, cols)
 			self.addColumn ('reporter_gene', reporter, row, cols)
 			self.addColumn ('has_image', image, row, cols)
+			self.addColumn ('gel_imagepane_key', row[gelImagePaneKeyCol], row, cols)
 		return
 
 	def postprocessResults(self):
@@ -256,9 +260,12 @@ cmds = [
 			a._Refs_key,
 			a._Marker_key,
 			m.symbol,
+			m.name as marker_name,
+			to_char(a.modification_date, 'MM/DD/YYYY') as modification_date,
 			ma.accID as marker_id,
 			aa.accID as assay_id,
-			a._ReporterGene_key
+			a._ReporterGene_key,
+			a._imagepane_key gel_imagepane_key
 		from gxd_assay a,
 			mrk_marker m,
 			acc_accession ma,
@@ -279,10 +286,12 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key',
-	'probe_name', 'antibody', 'detection_system', 'is_direct_detection',
-	'probe_preparation', 'visualized_with', 'reporter_gene', 'note',
-	'has_image', '_Refs_key', '_Marker_key', 'marker_id', 'symbol'
+fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key', 'probe_name', 
+        '_Antibody_key', 'antibody', 'detection_system', 'is_direct_detection',
+	'probe_preparation', 'visualized_with', 'reporter_gene', 
+	'note',
+	'has_image', 'gel_imagepane_key','_Refs_key', 
+	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'modification_date',
 	]
 
 # prefix for the filename of the output file

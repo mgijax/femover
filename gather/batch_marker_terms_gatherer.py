@@ -2,6 +2,7 @@
 # 
 # gathers data for the 'batch_marker_terms' table in the front-end database
 
+import os
 import Gatherer
 import logger
 import config

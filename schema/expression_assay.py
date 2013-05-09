@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	primary_id		varchar(40)	null,
 	probe_key		int		null,
 	probe_name		varchar(40)	null,
+	antibody_key		int		null,
 	antibody		varchar(255)	null,
 	detection_system	varchar(510)	null,
 	is_direct_detection	int		not null,
@@ -27,10 +28,13 @@ createStatement = '''CREATE TABLE %s  (
 	reporter_gene		varchar(50)	null,
 	note			varchar(2048)	null,
 	has_image		int		not null,
+	gel_imagepane_key		int		null,
 	reference_key		int		not null,
 	marker_key		int		null,
 	marker_id		varchar(40)	null,
 	marker_symbol		varchar(50)	null,
+	marker_name		varchar(255)	null,
+        modification_date       varchar(12)     null,
 	PRIMARY KEY(assay_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -42,6 +46,7 @@ indexes = {
 	}
 
 keys = {
+	'gel_imagepane_key' : ('expression_imagepane', 'imagepane_key'),
 	'probe_key' : ('probe', 'probe_key'),
 	'marker_key' : ('marker', 'marker_key'),
 	'reference_key' : ('reference', 'reference_key'),
@@ -59,6 +64,7 @@ comments = {
 		'primary_id' : 'primary accession ID for this assay',
 		'probe_key' : 'identifies the probe used',
 		'probe_name' : 'name of the probe, cached here from the probe table for convenience',
+		'antibody_key' : 'identifies the antibody used',
 		'antibody' : 'name of the antibody',
 		'detection_system' : 'name of the detection system',
 		'is_direct_detection' : '1 if this used direct detecction, 0 if not',
@@ -67,10 +73,13 @@ comments = {
 		'reporter_gene' : 'symbol of the reporter gene',
 		'note' : 'assay note',
 		'has_image' : '1 if this assay has at least one displayable image, 0 if not',
+		'gel_imagepane_key' : 'foreign key to expression_imagepane table. Null for in situ assays',
 		'reference_key' : 'identifies the reference',
 		'marker_key' : 'identifies the marker studied',
 		'marker_id' : 'primary ID for the marker, cached here for convenience',
 		'marker_symbol' : 'symbol for the marker, cached here for convenience',
+		'marker_name' : 'name for the marker, cached here for convenience',
+		'modification_date' : 'last time the assay record was modified, cached here for convenience',
 		},
 	Table.INDEX : {
 		'primary_id' : 'quick access by assay ID',

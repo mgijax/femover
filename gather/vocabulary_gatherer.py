@@ -394,7 +394,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		rows = []
 		columns = [ 'termKey', 'pathCount', 'descendentCount',
-			'childCount', 'markerCount', 'expressionMarkerCount',
+			'childCount', 'markerCount', 'expressionMarkerCount','creMarkerCount',
 			'gxdLitMarkerCount' ]
 
 		for r in self.results[4][1]:
@@ -416,6 +416,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 			row.append (TermCounts.getMarkerCount(key))
 			row.append (TermCounts.getExpressionMarkerCount(key))
+			row.append (TermCounts.getCreMarkerCount(key))
 			row.append (TermCounts.getLitIndexMarkerCount(key))
 
 			rows.append (row)
@@ -984,7 +985,7 @@ files = [
 
 	('term_counts',
 		[ 'termKey', 'pathCount', 'descendentCount', 'childCount',
-			'markerCount', 'expressionMarkerCount',
+			'markerCount', 'expressionMarkerCount','creMarkerCount',
 			'gxdLitMarkerCount' ],
 		'term_counts'),
 

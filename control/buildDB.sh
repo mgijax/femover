@@ -73,15 +73,43 @@ while [ $# -gt 0 ]; do
 			shift
 			FLAGS="${FLAGS} $1"
 		fi
+
+		# if setting flags, then ignore single priority tables
+		# that is, we don't want the single  priority tables to execute
+		# if user has provided flags
+		SINGLE_PRIORITY_TABLES=""
+		export SINGLE_PRIORITY_TABLES
 	fi
 	shift
 done
 
 # run the mover with any specified flags
+echo "${FEMOVER}/control/buildDatabase.py ${FLAGS}"
 ${FEMOVER}/control/buildDatabase.py ${FLAGS}
 
 if [ $? -ne 0 ]; then
 	echo "Build failed.  See logs for details."
 	exit 1
 fi
+
+# copy log file so subsequent calls (see below) will not overwrite
+rm -rf ${LOG_DIR}/buildDatabase.log.1
+mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.log.1
+
+# for each table in SINGLE_PRIORITY_TABLES
+echo ${SINGLE_PRIORITY_TABLES}
+for table in ${SINGLE_PRIORITY_TABLES}
+do
+echo ${FEMOVER}/control/buildDatabase.py -G ${table}
+${FEMOVER}/control/buildDatabase.py -G ${table}
+# copy table build files into new table name so they won't be ovewritten
+rm -rf ${LOG_DIR}/buildDatabase.${table}.log
+mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.${table}.log
+done
+
+if [ $? -ne 0 ]; then
+        echo "Single-Priority Build failed.  See logs for details."
+        exit 1
+fi
+
 dbExecute.py 'grant select on all tables in schema fe to public'

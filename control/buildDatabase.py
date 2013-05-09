@@ -55,6 +55,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer t
 	-r : References
 	-v : Vocabularies
 	-x : eXpression (GXD Data plus GXD Literature Index)
+	-t : Test data
 	-G : run a single, specified gatherer (useful for testing)
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
@@ -165,11 +166,11 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'marker_to_expression_assay', 'expression_assay_sequence_num',
 		'marker_tissue_expression_counts',
 		'expression_result_summary',
+		'expression_specimen','expression_gellane',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
 		'expression_imagepane', 'allele_to_image', 'image_id',
-		'marker_to_expression_image',
 	]
 IMSR = [ 'imsr',
 	]
@@ -197,12 +198,16 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple',
 	]
+TESTS = ['test_stats']
 
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
 # critical path)
-HIGH_PRIORITY_TABLES = [ 'accession', 'sequence', 'sequence_sequence_num',
-	'sequence_id', ]
+HIGH_PRIORITY_TABLES = os.environ['HIGH_PRIORITY_TABLES'].split(' ')
+
+# list of single priority gatherers
+# those that run as single/non-multitasked events
+SINGLE_PRIORITY_TABLES = os.environ['SINGLE_PRIORITY_TABLES'].split(' ')
 
 # dictionary mapping each command-line flag to the list of gatherers that it
 # would regenerate
@@ -211,6 +216,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
+	'-t' : TESTS
 	}
 
 # boolean; are we doing a build of the complete front-end database?
@@ -549,13 +555,19 @@ def shuffle (
 	# Throws: nothing
 
 	toDo = []
+
 	for table in HIGH_PRIORITY_TABLES:
 		if table in gatherers:
 			toDo.append(table)
 
 	for table in gatherers:
 		if table not in toDo:
-			toDo.append(table)
+			if FULL_BUILD and table not in SINGLE_PRIORITY_TABLES:
+				toDo.append(table)
+			elif not FULL_BUILD:
+				toDo.append(table)
+
+        #print toDo
 	return toDo 
 
 def scheduleGatherers (
@@ -832,7 +844,7 @@ def checkForFinishedLoad():
 
 			logger.debug ('Finished loading %s' % table)
 			scheduleClusteredIndex(table)
-			os.remove(path)
+			#os.remove(path)
 
 		i = i - 1
 
@@ -1426,6 +1438,7 @@ if __name__ == '__main__':
 	report = 'Build %s in %s' % (status, elapsed)
 	print report
 	logger.info (report)
+	logger.info ('Ending Date/Time: %s' % (time.asctime()))
 
 	if excType != None:
 		raise excType, excValue

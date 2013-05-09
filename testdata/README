@@ -1,0 +1,15 @@
+These files are read by the test_stats_gatherer.
+Each *TestData.py file should contain a list of "Queries"
+that the gatherer iterates through and saves results to the fe database
+in the test_stats table.
+Use TemplateTestData.py as a guide
+
+Each test has an "id" which is the id you will use to reference the test from concordion.
+Each test then has a brief description, followed by the SQL to execute.
+
+NOTE: You can actually reference other tests from within the SQL by using this type of variable notation ${id}.
+	Example: randomStructure = select structure from GXD_Structure order by random() limit 1;
+		randomStructureResultsCount = select count(*) from GXD_Expression where structure=${randomStructure}
+
+
+		

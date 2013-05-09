@@ -16,27 +16,28 @@ tableName = 'expression_result_summary'
 createStatement = '''CREATE TABLE %s  ( 
 	result_key		int		not null,
 	assay_key		int		not null,
-	assay_type		varchar(80)	not null,
-	assay_id		varchar(40)	null,
+	assay_type		text		not null,
+	assay_id		text		null,
 	marker_key		int		null,
-	marker_symbol		varchar(50)	null,
-	anatomical_system	varchar(255)	null,
-	theiler_stage		varchar(5)	null,
-	age			varchar(50)	null,
-	age_abbreviation	varchar(30)	null,
+	marker_symbol		text		null,
+	anatomical_system	text		null,
+	theiler_stage		text		null,
+	age			text		null,
+	age_abbreviation	text		null,
 	age_min			float		null,
 	age_max			float		null,
-	structure		varchar(80)	null,
-	structure_printname	varchar(255)	null,
+	structure		text		null,
+	structure_printname	text		null,
 	structure_key		int		null,
-	detection_level		varchar(255)	null,
-	is_expressed		varchar(20)	null,
+	detection_level		text		null,
+	is_expressed		text		null,
 	reference_key		int		null,
-	jnum_id			varchar(40)	null,
+	jnum_id			text		null,
 	has_image		int		not null,
 	genotype_key		int		null,
 	is_wild_type		int		not null,
-	pattern			varchar(80)	null,
+	pattern			text		null,
+	specimen_key		int		null,
 	PRIMARY KEY(result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -51,6 +52,7 @@ indexes = {
 	'structure_key' : 'create index %s on %s (structure_key)',
 	'reference_key' : 'create index %s on %s (reference_key)',
 	'genotype_key' : 'create index %s on %s (genotype_key)',
+	'specimen_key' : 'create index %s on %s (specimen_key)',
 	}
 
 # column name -> (related table, column in related table)
@@ -60,6 +62,7 @@ keys = {
 	'structure_key' : ('term', 'term_key'),
 	'reference_key' : ('reference', 'reference_key'),
 	'genotype_key' : ('genotype', 'genotype_key'),
+	'specimen_key' : ('assay_specimen', 'specimen_key'),
 	}
 
 comments = {
@@ -88,6 +91,7 @@ comments = {
 	    'genotype_key' : 'foreign key to genotype table',
 	    'is_wild_type' : 'is this a wild-type expression result?',
 	    'pattern' : 'describes the pattern of expression observed',
+	    'specimen_key' : 'link to assay_specimen table (also same as _specimen_key in MGD)',
 		},
 	Table.INDEX : {
 	    'clusteredIndex' : 'used to group data for a marker and its assays together, for speed of access since this is a common use-case',

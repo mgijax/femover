@@ -103,14 +103,12 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 
 				flagValues.append (flagValue)
 
-			row = [ allele, ] + flagValues + [ 
-				detected, notDetected, ]
+			row = [ allele, detected, notDetected, ]
 
 			logger.debug ('allele %d, %d flag values, %d cols' % (allele, len(flagValues), len(row)) )
 			self.finalResults.append (row)
 
-		self.finalColumns = [ '_Allele_key', ] + FLAGS + [
-			'detectedCount', 'notDetectedCount', ]
+		self.finalColumns = [ '_Allele_key', 'detectedCount', 'notDetectedCount', ]
 		logger.debug ('Found %d alleles' % len(self.finalResults))
 		return
 
@@ -128,8 +126,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Allele_key', ] + FLAGS + [
-	'detectedCount', 'notDetectedCount', ]
+fieldOrder = [ '_Allele_key', 'detectedCount', 'notDetectedCount', ]
 logger.debug ('%d requested fields' % len(fieldOrder))
 
 # prefix for the filename of the output file

@@ -6,12 +6,34 @@
 # database, and because we need those keys to drive relationships among the
 # recombinase tables, we generate all those connected tables within this
 # single script.  (This allows us to keep the keys in sync.)
+#
+# 04/24/2013	lec
+#	- TR11248
+#		: added alleleSystemOtherMap (added 'age', other info)
+#		: added alleleStructureMap
+#		: re-organized some data structures/logic
+#
+# An age row of data can match more than one translation,
+# but a translation can only match one range of numbers.
+#
+# That is, "postnatal 3-24" can match p1, p2
+# but p1 and p2 must have unique min/max values
+#
 
 import Gatherer
 import logger
-import symbolsort
 import re
 import TagConverter
+
+# ageTranslation : used to translate an all_cre_cache.age/ageMin/ageMax
+# to the appropriate age/ageMin/ageMax bucket for recombinase display
+ageTranslation = {'e1': [0.0, 8.9],
+             'e2': [8.91, 13.9],
+             'e3': [14.0, 21.0],
+             'p1': [21.01, 42.01],
+             'p2': [42.02, 63.01],
+             'p3': [63.02, 1846.0],
+	};
 
 ###--- Functions ---###
 
@@ -44,15 +66,49 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 	#	collates results, writes multiple tab-delimited text files
 
 	def findAlleleSystemPairs (self):
-		# Purpose: processes query 0 to identify allele/system pairs
-		# Returns: alleleSystemMap, alleleData, columns, rows,
-		#	systemKeys
+		# Purpose: processes query 0 to identify allele/system/structure objects
+		# Returns: alleleSystemMap, alleleStructureMap, \
+		# 	alleleData, columns, out, \
+		# 	affectedCols, affected, unaffectedCols, unaffected, \
+		# 	systemKeys
 
-		# alleleSystemMap[allele key] = {system : all/sys key}
+		#
+		# alleleSystemMap[allele key] = {system : allele_system_key}
+		#
 		alleleSystemMap = {}
 
-		# systemKeys[system name] = system key
-		systemKeys = {}
+		#
+		# alleleSystemOtherMap[allele_system_key] = 
+		#	{'e1': '', 'e2':''..., 'p3':'', 'image':''}
+		# for a given age range (e1...p3), set the value
+		# 	'' = null
+		# 	0 = not affected/not expressed
+		# 	1 = affected/expressed
+		#
+		# for a given image, set the value
+		# 	0 = does not have image
+		# 	1 = has image
+		#
+		# alleleSystemOtherMap should realy be merged with alleleSystemMap
+		# however alleleSystemMap has many dependencies
+		# and re-organizing this dictionary will require changes
+		# to other functions.  so, if I have more time..I will do this
+		#
+		alleleSystemOtherMap = {}
+
+		#
+		#
+		# Structure information for a given allele/system
+		#
+		# alleleStructureMap[key][system] = { structure : {
+		# 	'e1':'', 'e2':'', 'e3':'',
+		# 	'p1':'', 'p2':'', 'p3':'',
+		# 	'alleleSystemKey': the allele/system key (see alleleSystemMap)
+		# 	'image':0,
+		# 	'printName':'',
+		# 	'expressed':0,
+		#
+		alleleStructureMap = {}
 
 		# query 0 - defines allele / system pairs.  We need to number
 		# these and store them in data set 0
@@ -62,74 +118,318 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		sysCol = Gatherer.columnNumber (cols, 'system')
 		systemKeyCol = Gatherer.columnNumber (cols, '_System_key')
+		structCol = Gatherer.columnNumber (cols, 'structure')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
+		ageCol = Gatherer.columnNumber (cols, 'age')
+		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
+		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		expCol = Gatherer.columnNumber (cols, 'expressed')
+		hasImageCol = Gatherer.columnNumber (cols, 'hasImage')
+		printNameCol = Gatherer.columnNumber (cols, 'printName')
 
-		alleleData = {}		# alleleData[key] = (ID, symbol)
+		#
+		# alleleData: dictonary of unique allele id:symbol for use in other functions
+		# (findOtherSystems, findOtherAlleles)
+		#
+		alleleData = {}
 
+		#
+		# dictionary of affected (expressed) allele : system
+		# dictionary of unaffected (not expressed) allele : system
+		# for use in other functions
+		#
 		affectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
 		unaffectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
-
 		affected = []
 		unaffected = []
 
-		lastKey = None
-		out = []
-		i = 0
-		for row in rows:
+		#
+		# systemKeys[system name] = system key
+		#
+		systemKeys = {}
 
-			# make sure to add the system for the allele key
+		#
+		# out: dictionary of output data
+		#
+		out = []
+
+		#
+		# allele_system_key
+		#
+		alleleSystemKey = 0
+
+		#
+		# iterate thru each row of allele/system/structure/age
+		#
+		for row in rows:
 
 			key = row[keyCol]
 			system = convert(row[sysCol])
-			i = i + 1
+			structure = convert(row[structCol])
+			age = row[ageCol]
+			ageMin = row[ageMinCol]
+			ageMax = row[ageMaxCol]
+			hasImage = row[hasImageCol]
+			printName = row[printNameCol]
+			expressed = row[expCol]
 
-			if alleleSystemMap.has_key(key):
-				# already seen this allele/system pair, so
-				# skip doing it again.  (useful for when both
-				# expressed = 1 and expressed = 0 for the same
-				# allele / system pair)
-				if alleleSystemMap[key].has_key(system):
-					continue
-				alleleSystemMap[key][system] = i
+			#
+			# alleleSystemMap
+			#
+			# if existing allele...
+			#
+                        if alleleSystemMap.has_key(key):
+
+				# if no existing system...
+                                if not alleleSystemMap[key].has_key(system):
+
+					# update allele_system_key count
+			                alleleSystemKey = alleleSystemKey + 1
+
+					# add new system/new alele_system_key
+                                	alleleSystemMap[key][system] = alleleSystemKey
+
+					# add new allele_system_key/age values
+                                	alleleSystemOtherMap[alleleSystemKey] = { 
+						'row':row,
+						'e1':'', 'e2':'', 'e3':'',
+					  	'p1':'', 'p2':'', 'p3':'',
+						'image':0}
+
+			# if new allele, then add new allele + system
+                        else:
+				# update allele_system_key count
+			        alleleSystemKey = alleleSystemKey + 1
+
+				# new allele/new system
+                                alleleSystemMap[key] = { system : alleleSystemKey }
+
+				# new allele_system_key/age values
+                                alleleSystemOtherMap[alleleSystemKey] = { 
+					  'row':row,
+					  'e1':'', 'e2':'', 'e3':'',
+					  'p1':'', 'p2':'', 'p3':'',
+					  'image':0}
+
+			#
+			# alleleStructureMap
+			#
+			# if existing allele...
+			#
+                        if alleleStructureMap.has_key(key):
+
+				# if no existing system...
+                        	if not alleleStructureMap[key].has_key(system):
+                                      	alleleStructureMap[key][system] = { structure : {
+			          	'e1':'', 'e2':'', 'e3':'',
+			          	'p1':'', 'p2':'', 'p3':'',
+					'isPostnatal':0,
+					'isPostnatalOther':0,
+				        'alleleSystemKey':alleleSystemKey,
+				        'image':0,
+					'printName':'',
+					'expressed':0}}
+
+				# if structure...
+                        	elif not alleleStructureMap[key][system].has_key(structure):
+                                       	alleleStructureMap[key][system][structure] = {
+				          	'e1':'', 'e2':'', 'e3':'',
+				          	'p1':'', 'p2':'', 'p3':'',
+						'isPostnatal':0,
+						'isPostnatalOther':0,
+					        'alleleSystemKey':alleleSystemKey,
+					        'image':0,
+						'printName':'',
+						'expressed':0}
+
 			else:
-				alleleSystemMap[key] = { system : i }
+				# new allele/new system/new structure/ages
+                                alleleStructureMap[key] = { system : { structure : {
+					  'e1':'', 'e2':'', 'e3':'',
+					  'p1':'', 'p2':'', 'p3':'',
+					  'isPostnatal':0,
+					  'isPostnatalOther':0,
+					  'alleleSystemKey':alleleSystemKey,
+					  'image':0,
+					  'printName':'',
+					  'expressed':0}}}
 
-			out.append ( (i, key, row[idCol], system,
-				row[systemKeyCol]) )
+			#
+			# process age information
+			#
 
-			# add this allele/system pair to either the list of
-			# affected systems or unaffected systems
+			#
+			# if age == 'postnatal adult', assign to 'p3' (Adult)
+			# if age == 'postnatal', assign to 'p3' (Postnatal-not specified) 
+			# else use translation
+			#
 
-			triple = (key, i, system)
-			if row[expCol] == 1:
-				affected.append (triple)
+			if age in ['postnatal adult', 'postnatal']:
+				alleleStructureMap[key][system][structure]['p3'] = row[expCol]
+				alleleStructureMap[key][system][structure]['isPostnatal'] = 1
+
+			#
+			# use translation
+			#
 			else:
-				unaffected.append (triple)
 
-			# if we've not seen this system before, we need to
-			# cache its key
+                                # keep track of age if it contains 'postnatal %'
+                                if age.find('postnatal') >= 0:
+                                        alleleStructureMap[key][system][structure]['isPostnatalOther'] = 1
+
+				# search the ageTranslation translation
+				for ageName in ageTranslation:
+
+			    		ageMinTrans = ageTranslation[ageName][0]
+			    		ageMaxTrans = ageTranslation[ageName][1]
+
+					#
+			    		# ages may fall within an ageMin/ageMax area
+					# if both are outside the box, continue
+					# else process
+					#
+					# ageMin between ageMinTrans and ageMaxTrans
+					# ageMax between ageMinTrans and ageMaxTrans
+					#
+
+			    		if (ageMin >= ageMinTrans and ageMin <= ageMaxTrans) \
+						or \
+			    		   (ageMax >= ageMinTrans and ageMax <= ageMaxTrans):
+
+						# null or 0 : can always be turned on
+						# 1 : cannot be turned off
+						# that is, 1 trumps
+		
+						for ageVal in ['e1', 'e2', 'e3', 'p1', 'p2', 'p3']:
+		        				if ageName == ageVal and \
+						   	   alleleStructureMap[key][system][structure][ageVal] != 1:
+			    					alleleStructureMap[key][system][structure][ageVal] = \
+										row[expCol]
+
+							#
+							# if the age falls into the 'p3' category
+							# then set isPostnatal = true
+							#
+							if ageName == ageVal and ageName == 'p3':
+								alleleStructureMap[key][system][structure]['isPostnatal'] = 1
+
+                        #
+                        # if structure contains a 'postnatal %' but no 'postnatal' value
+                        #       then turn off the 'p3'/postnatal-not specified value
+                        #
+                        # example:
+                        #        "postnatal", "postnatal month 1-2" : p3 on
+                        #        "postnatal" : p3 on
+                        #        "postnatal month 1-2": p3 off
+                        #
+                        if alleleStructureMap[key][system][structure]['p3'] == 1 \
+                           and alleleStructureMap[key][system][structure]['isPostnatalOther'] == 1 \
+                           and alleleStructureMap[key][system][structure]['isPostnatal'] == 0:
+                               alleleStructureMap[key][system][structure]['p3'] = ''
+
+			#
+			# set alleleSystemOtherMap (system) age-value to alleleStructureMap (structure) age-value
+			# that is, push the structure age-values up-to the system level
+			#
+			# an existing 1 cannot be overriden
+			# an existing 0 cannot be overriden
+			# 1 trumps 0 which trumps ''
+			# 
+			for ageVal in ['e1', 'e2', 'e3', 'p1', 'p2', 'p3']:
+
+				if alleleSystemOtherMap[alleleSystemKey][ageVal] != 1 \
+				   and alleleStructureMap[key][system][structure][ageVal] != '':
+					alleleSystemOtherMap[alleleSystemKey][ageVal] = \
+						alleleStructureMap[key][system][structure][ageVal]
+
+			#
+			# set alleleSystemOtherMap:hasImage (system)
+			#
+			if hasImage == 1 and alleleSystemOtherMap[alleleSystemKey]['image'] == 0:
+				alleleSystemOtherMap[alleleSystemKey]['image'] = hasImage
+
+			#
+			# set alleleStructureMap:hasImage (
+			#
+			if hasImage == 1 and alleleStructureMap[key][system][structure]['image'] == 0:
+				alleleStructureMap[key][system][structure]['image'] = hasImage
+
+			#
+			# set structure/printName
+			# this does not really need to be repeated...
+			#
+			alleleStructureMap[key][system][structure]['printName'] = printName
+
+			#
+			# affected
+			# unaffected
+			#
+			# dictionaries to track affected/unaffected (expression)
+			# by allele_key:allele_system_key:system
+			# for use in other functions
+			#
+			# assumes that "expressed = 1" order comes before "expressed = 0"
+			#
+
+			triple = (key, alleleSystemKey, system)
+			if expressed == 0 and not triple in affected:
+				if not triple in unaffected:
+					unaffected.append (triple)
+			else:
+				if not triple in affected:
+					affected.append (triple)
+
+			#
+			# systemKeys : dictionary of unique system keys
+			# for use in other functions
+			#
 
 			if system and (not systemKeys.has_key(system)):
 				systemKeys[system] = row[systemKeyCol]
 
-			# if this is not the same as the last allele, then
-			# we need to cache its ID and symbol
+			#
+			# alleleData: dictonary of unique allele id:symbol 
+			# for use in other functions
+			#
+			if not alleleData.has_key(key):
+				alleleData[key] = (row[idCol], row[symCol])
 
-			if key == lastKey:
-				continue
-			alleleData[key] = (row[idCol], row[symCol])
+		#
+		# all data has been read into dictionaries
+                #
+                # write all of the alleleSystemOther information into the output file
+                #
+                for key in alleleSystemOtherMap.keys():
 
-			lastKey = key
+                        out.append ( (key, alleleSystemOtherMap[key]['row'][keyCol],
+                                alleleSystemOtherMap[key]['row'][idCol],
+                                convert(alleleSystemOtherMap[key]['row'][sysCol]),
+                                alleleSystemOtherMap[key]['row'][systemKeyCol],
+                                alleleSystemOtherMap[key]['e1'],
+                                alleleSystemOtherMap[key]['e2'],
+                                alleleSystemOtherMap[key]['e3'],
+                                alleleSystemOtherMap[key]['p1'],
+                                alleleSystemOtherMap[key]['p2'],
+                                alleleSystemOtherMap[key]['p3'],
+                                alleleSystemOtherMap[key]['image']))
 
 		columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
-			'system', 'systemKey', ]
+			'system', 'systemKey', 
+			'age_e1', 'age_e2', 'age_e3',
+			'age_p1', 'age_p2', 'age_p3',
+			'has_image']
 
-		logger.debug ('Found %d allele/system pairs' % i)
+		logger.debug ('Found %d allele/system pairs' % alleleSystemKey)
 		logger.debug ('Found %d alleles' % len(alleleData))
 		logger.debug ('Found %d systems' % len(systemKeys))
 
-		return alleleSystemMap, alleleData, columns, out, \
+		#
+		# note that other dictionaries that were generated by this
+		# processing are returned and used by other functions
+		#
+
+		return alleleSystemMap, alleleStructureMap, \
+			alleleData, columns, out, \
 			affectedCols, affected, unaffectedCols, unaffected, \
 			systemKeys
 
@@ -327,6 +627,40 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 				ids[key] = r[idCol]
 				names[key] = r[nameCol] 
 		return ids, names
+
+	def findDistinctStructures (self, alleleStructureMap):
+		# Purpose: processes 'alleleStructureMap' to build 
+		#	'recombinase_system_structure' columns/rows
+		# Returns: columns, rows
+
+		sCols = ['alleleSystemKey','structure','structureSeq',
+			 'age_e1', 'age_e2', 'age_e3',
+			 'age_p1', 'age_p2', 'age_p3',
+			 'has_image']
+
+		sRows = []
+		count = 0
+
+		for allele in alleleStructureMap:
+		 	for system in alleleStructureMap[allele]:
+				sorted_list = list(alleleStructureMap[allele][system])
+				sorted_list.sort(key=lambda s : s)
+				count = 0
+				for structure in sorted_list:
+					count += 1
+					sRows.append((alleleStructureMap[allele][system][structure]['alleleSystemKey'],
+						alleleStructureMap[allele][system][structure]['printName'],
+						count,
+						alleleStructureMap[allele][system][structure]['e1'],
+						alleleStructureMap[allele][system][structure]['e2'],
+						alleleStructureMap[allele][system][structure]['e3'],
+						alleleStructureMap[allele][system][structure]['p1'],
+						alleleStructureMap[allele][system][structure]['p2'],
+						alleleStructureMap[allele][system][structure]['p3'],
+						alleleStructureMap[allele][system][structure]['image']))
+
+		logger.debug ('Found %d recombinase_system_structures' % len(sRows))
+		return sCols,sRows 
 
 	def findAssayResults (self, alleleSystemMap):
 
@@ -565,7 +899,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		# step 1 -- recombinase_allele_system table
 
-		alleleSystemMap, alleleData, columns, rows, \
+		alleleSystemMap, alleleStructureMap, \
+			alleleData, columns, rows, \
 			affectedCols, affected, unaffectedCols, unaffected, \
 			systemKeys = self.findAlleleSystemPairs()
 		logger.debug ('Systems: %s' % ', '.join(systemKeys.keys()))
@@ -606,34 +941,40 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		self.output.append ( (affectedCols, affected) )
 		self.output.append ( (unaffectedCols, unaffected) )
+
+		# step 8 - recombinase_system_structure
+		columns, rows = self.findDistinctStructures(alleleStructureMap)
+		self.output.append((columns,rows))
+
 		return
 
 ###--- globals ---###
 
 # SQL commands to be executed against the source database
 cmds = [
-	# all allele / system pairs; order by logical db to prioritize MGI IDs
-	'''select distinct c._Allele_key, a.accID, c.system, a._LogicalDB_key,
-		c.symbol, c.expressed, c._System_key
-	from ALL_Cre_Cache c,
-		acc_accession a
-	where c._Allele_key = a._Object_key
-		and a.preferred = 1
-		and a.private = 0
-		and a._MGIType_key = 11
-	order by c._Allele_key, a._LogicalDB_key, c.system,
-		c.expressed desc''',
+	#
+	# all allele / system / structure / age information
+	# make sure 'expression' is ordered descending so that the '1' are encountered first
+	#
+	'''select c._Allele_key, c.accID, c.system, c.structure,
+		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
+		c._System_key, c.hasImage, c.printName
+	from all_cre_cache c
+	where c.system is not null
+	order by c._Allele_key, c.system, c.expressed desc''',
 
-	# genetic background info by genotype
+	#
+	# genetic strain/background info by genotype
+	#
 	'''select distinct s._Genotype_key, mnc.note, mnc.sequenceNum,
 		t.strain
-	from ALL_Cre_Cache c,
-		GXD_Specimen s,
-		MGI_Note mn,
-		MGI_NoteChunk mnc,
-		GXD_Genotype g,
-		PRB_Strain t
-	where c._Assay_key = s._Assay_key
+	from all_cre_cache c,
+		gxd_specimen s,
+		mgi_note mn,
+		mgi_notechunk mnc,
+		gxd_genotype g,
+		prb_strain t
+	where c._Assay_key = s._assay_key
 		and s._Genotype_key = mn._Object_key
 		and mn._NoteType_key = 1018
 		and mn._Note_key = mnc._Note_key
@@ -641,20 +982,22 @@ cmds = [
 		and g._Strain_key = t._Strain_key
 	order by mnc.sequenceNum''',
 
+	#
 	# assay notes by assay key
+	#
 	'''select distinct a._Assay_key, a.sequenceNum, a.assayNote
 	from gxd_assaynote a,
 		all_cre_cache c
 	where a._Assay_key = c._Assay_key
 	order by a.sequenceNum''',
 
+	#
 	# probes for each Cre probe prep key
-
-	'''select g._ProbePrep_key,
+	#
+	'''select distinct g._ProbePrep_key,
 		p.name,
-		acc.accID,
-		acc._LogicalDB_key
-	from ALL_Cre_Cache c,
+		acc.accID
+	from all_cre_cache c,
 		gxd_assay a,
 		gxd_probeprep g,
 		prb_probe p,
@@ -663,17 +1006,18 @@ cmds = [
 		and a._ProbePrep_key = g._ProbePrep_key
 		and g._Probe_key = p._Probe_key
 		and g._Probe_key = acc._Object_key
+		and acc._LogicalDB_key = 1
 		and acc._MGIType_key = 3
 		and acc.preferred = 1
-		and acc.private = 0
-	order by acc._LogicalDB_key''',		# MGI IDs preferred
+		and acc.prefixPart = 'MGI:'
+		''',
 
+	#
 	# antibodies for each Cre antibody key
-
-	'''select g._AntibodyPrep_key as _ProbePrep_key,
+	#
+	'''select distinct g._AntibodyPrep_key as _ProbePrep_key,
 		p.antibodyName as name,
-		acc.accID,
-		acc._LogicalDB_key
+		acc.accID
 	from all_cre_cache c,
 		gxd_assay a,
 		gxd_antibodyprep g,
@@ -683,34 +1027,37 @@ cmds = [
 		and a._AntibodyPrep_key = g._AntibodyPrep_key
 		and g._Antibody_key = p._Antibody_key
 		and g._Antibody_key = acc._Object_key
+		and acc._LogicalDB_key = 1
 		and acc._MGIType_key = 6
 		and acc.preferred = 1
-		and acc.private = 0
-	order by acc._LogicalDB_key''',		# MGI IDs preferred
+		and acc.prefixPart = 'MGI:'
+		''',
 
+	#
 	# main cre assay result data
-	'''select distinct c._Allele_key, c.system, pn.printName,
+	#
+	'''select distinct c._Allele_key, c.system, c._System_key, c.printName,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
 		r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
-		b.jnumID, c._System_key
+		b.jnumID
 	from all_cre_cache c,
 		gxd_assay a,
 		gxd_specimen s,
 		gxd_insituresult r,
 		gxd_iSresultstructure rs,
-		bib_citation_cache b,
-		gxd_structure pn
+		bib_citation_cache b
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
 		and c._Structure_key = rs._Structure_key
-		and c._Structure_key = pn._Structure_key
 		and rs._Result_key = r._Result_key
 		and a._Refs_key = b._Refs_key''',
 
+	#
 	# image panes associated with recombinase assay results
+	#
 	'''select distinct g._Result_key, i.paneLabel, i._Image_key
 	from img_imagepane i,
 		gxd_insituresultimage g,
@@ -728,7 +1075,10 @@ cmds = [
 files = [
 	('recombinase_allele_system',
 		[ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system',
-			'systemKey', ],
+			'systemKey',
+			'age_e1', 'age_e2', 'age_e3',
+			'age_p1', 'age_p2', 'age_p3',
+			'has_image'],
 		'recombinase_allele_system'),
 
 	('recombinase_other_system',
@@ -773,6 +1123,14 @@ files = [
 	('allele_recombinase_unaffected_system',
 		[ Gatherer.AUTO, 'alleleKey', 'alleleSystemKey', 'system' ],
 		'allele_recombinase_unaffected_system'),
+
+	('recombinase_system_structure',
+		[ Gatherer.AUTO, 'alleleSystemKey', 'structure','structureSeq',
+			'age_e1', 'age_e2', 'age_e3',
+			'age_p1', 'age_p2', 'age_p3',
+			'has_image' ],
+		'recombinase_system_structure'),
+
 	]
 
 # global instance of a RecombinaseGatherer

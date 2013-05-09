@@ -84,7 +84,7 @@ export GENE_TREE_URL
 # Miscellaneous settings
 #
 CHUNK_SIZE=100000	# for large tables, how many rows to do at once
-BUILDS_IN_SYNC=0	# are dbSNP and MGI coords in sync?  (0/1)
+BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
 SOURCE_TYPE=postgres	# build from postgres, mysql, or sybase
 TARGET_TYPE=postgres	# build into postgres or mysql
 
@@ -94,5 +94,25 @@ export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
 FULL_TEXT_LINKS_PATH=${FEMOVER}/data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
-PYTHONPATH=${FEMOVER}/lib/python:.:${PYTHONPATH}
+PYTHONPATH=${FEMOVER}/lib/python:.:${FEMOVER}/testdata:${PYTHONPATH}
 export PYTHONPATH
+
+#
+# list of high priority gatherers, in order of precedence
+# (these will be moved up in the queue of to-do items, as they are the
+# critical path)
+#
+HIGH_PRIORITY_TABLES="accession sequence sequence_sequence_num sequence_id"
+export HIGH_PRIORITY_TABLES
+
+#
+# single-priority tables
+#
+# list of tables that require single-sequential processing
+# these tables will be skippped by the "shuffle" routine
+# the wrapper (buildDB.sh) will iterate thru each single-priority-table
+# and call "buildDB.sh -G" for each table in the list
+#
+SINGLE_PRIORITY_TABLES="batch_marker_snps"
+export SINGLE_PRIORITY_TABLES
+

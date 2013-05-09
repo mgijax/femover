@@ -17,6 +17,11 @@ createStatement = '''CREATE TABLE %s  (
 	imagepane_key	int		not null,
 	image_key	int		not null,
 	pane_label	varchar(255)	null,
+	x	int		not null,
+	y	int		not null,
+	width	int		not null,
+	height	int		not null,
+	by_default	int		not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(imagepane_key))''' % tableName
 
@@ -34,6 +39,7 @@ comments = { Table.TABLE : 'petal table for the image flower, defining image pan
 		'imagepane_key' : 'unique identifier for this image pane',
 		'image_key' : 'identifies the image containing this pane',
 		'pane_label' : 'label used in the publication to identify this pane',
+		'by_default' : 'default sort for image pane in summaries',
 		'sequence_num' : 'used to order panes for each image',
 		},
 	Table.INDEX : {

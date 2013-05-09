@@ -347,7 +347,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					'termID' : termID,
 					'hasFootnote' : hasAnyFootnote,
 					'referenceCount' : 1,
-					'sequenceNum' : len(gdData) + 1
+					'sequenceNum' : dSorts[term]
 					}
 				gdData[genotypeDisease] = row
 

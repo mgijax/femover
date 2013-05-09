@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	child_count		int	not null,
 	marker_count		int	not null,
 	expression_marker_count	int	not null,
+	cre_marker_count	int	not null,
 	gxdlit_marker_count	int	not null,
 	PRIMARY KEY(term_key))''' % tableName
 
@@ -43,6 +44,7 @@ comments = {
 		'child_count' : 'number of immediate children of this term',
 		'marker_count' : 'number of markers associated with this term',
 		'expression_marker_count' : 'number of markers associated with this term which also have fully-coded expression data',
+		'cre_marker_count' : 'number of markers associated with this term which also have fully-coded Cre expression data',
 		'gxdlit_marker_count' : 'number of markers associated with this term which are included in the GXD Literature Index',
 		},
 	}

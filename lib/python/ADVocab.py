@@ -15,6 +15,8 @@ import logger
 import types
 import symbolsort
 
+import TermCounts
+
 ###--- Globals ---###
 
 error = 'ADVocab.error'		# exception to be raised in this module
@@ -39,6 +41,8 @@ ROOTS = {}			# root structure key -> 1
 LEAVES = {}			# leaf structure key -> 1
 
 STRUCTURE_KEYS = []		# list of all structure keys
+
+TERM_MARKER_KEYS = {} 		# structure key -> [marker keys]
 
 PARENT = 'parentKey'		# constants for fields in TERM records
 STRUCTURE = 'term'
@@ -179,6 +183,33 @@ def _loadDescendentCounts():
 	logger.debug ('Got descendent counts for %d AD terms' % \
 		len(DESCENDENT_COUNT))
 	return DESCENDENT_COUNT
+
+def _loadTermMarkers():
+	global TERM_MARKER_KEYS
+
+	if TERM_MARKER_KEYS:
+		return TERM_MARKER_KEYS
+
+	children = _loadChildren()
+
+	# get the distinct marker keys for each structure key
+	query = '''select distinct _structure_key,_marker_key from gxd_Expression'''
+	(cols,rows) = dbAgnostic.execute(query)
+	
+	for row in rows:
+		TERM_MARKER_KEYS.setdefault(row[0],set([])).add(row[1])
+
+	# add in marker keys for children terms
+	for sKey in TERM_MARKER_KEYS:
+		if sKey in children:
+			for childKey in children[sKey]:
+				if childKey in TERM_MARKER_KEYS:
+					TERM_MARKER_KEYS[sKey].union(TERM_MARKER_KEYS[childKey])
+
+	logger.debug('Got term -> marker key associations for %s AD Terms'% \
+		len(TERM_MARKER_KEYS))
+	
+	return TERM_MARKER_KEYS
 
 def _loadTermData():
 	global TERM, MAX_DEPTH
@@ -786,18 +817,21 @@ def getTermAncestorRows(outputColumns):
 def getTermCountsRows(outputColumns):
 	# get rows for the term_counts table.
 	# columns:  term key, path count, descendent count, child count,
-	#	marker count, expression marker count, gxdlit marker count
+	#	marker count, expression marker count, cre marker count, gxdlit marker count
 
 	descendentCounts = _loadDescendentCounts()
 	children = _loadChildren()
 
+	termMarkers = _loadTermMarkers()
+
 	myCols = [ 'termKey', 'pathCount', 'descendentCount', 'childCount',
-		'markerCount', 'expressionMarkerCount', 'gxdLitMarkerCount' ]
+		'markerCount', 'expressionMarkerCount','creMarkerCount', 'gxdLitMarkerCount' ]
 	rows = []
 
 	for structureKey in _getStructureKeys():
 		descendentCount = 0
 		childrenCount = 0
+		creMarkerCount = 0
 
 		if descendentCounts.has_key(structureKey):
 			descendentCount = descendentCounts[structureKey]
@@ -805,8 +839,13 @@ def getTermCountsRows(outputColumns):
 		if children.has_key(structureKey):
 			childrenCount = len(children[structureKey])
 
+		if structureKey in termMarkers:
+			for markerKey in termMarkers[structureKey]:
+				creMarkerCount += TermCounts.markerHasCre(markerKey) and 1 or 0
+
+		# setting default values for the other term counts
 		rows.append ( [ getTermKey(structureKey), 1,
-			descendentCount, childrenCount, 0, 0, 0 ] )
+			descendentCount, childrenCount, 0, 0, creMarkerCount, 0 ] )
 
 	rows = _morph (myCols, rows, outputColumns)
 	logger.debug ('Returning %d term count rows for AD terms' % len(rows))

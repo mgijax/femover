@@ -110,11 +110,15 @@ class ImageGatherer (Gatherer.Gatherer):
 		for row in rows:
 			self.pixID[row[keyCol]] = row[idCol]
 
-		# cache the copyright statement (1023) and caption (1024)
+		# cache the 
+		# copyright statement (1023) 
+		# caption (1024)
+		# exteran_link (1039)
 		# for each image from query 2
 
 		self.copyright = {}	# copyright[image key] = statement
 		self.caption = {}	# caption[image key] = statement
+		self.external_link = {}	# external_link[image key] = statement
 
 		(columns, rows) = self.results[2]
 		keyCol = Gatherer.columnNumber (columns, '_Object_key')
@@ -124,8 +128,10 @@ class ImageGatherer (Gatherer.Gatherer):
 		for row in rows:
 			if row[typeCol] == 1023:
 				dict = self.copyright
-			else:
+			elif row[typeCol] == 1024:
 				dict = self.caption
+			elif row[typeCol] == 1039:
+				dict = self.external_link
 
 			key = row[keyCol]
 			if dict.has_key(key):
@@ -170,6 +176,7 @@ class ImageGatherer (Gatherer.Gatherer):
 			id = None
 			copyright = None
 			caption = None
+			external_link = None
 			mgiID = None
 
 			if self.myThumb.has_key(key):
@@ -197,6 +204,9 @@ class ImageGatherer (Gatherer.Gatherer):
 				caption = self.caption[key].rstrip()
 				caption = TagConverter.convert(caption)
 
+			if self.external_link.has_key(key):
+				external_link = self.external_link[key].rstrip()
+
 			self.addColumn ('thumbnailKey', thumb, row,
 				self.finalColumns)
 			self.addColumn ('fullsizeKey', full, row,
@@ -212,6 +222,8 @@ class ImageGatherer (Gatherer.Gatherer):
 			self.addColumn ('copyright', copyright, row,
 				self.finalColumns)
 			self.addColumn ('caption', caption, row,
+				self.finalColumns)
+			self.addColumn ('external_link', external_link, row,
 				self.finalColumns)
 			self.addColumn ('imageClass',
 				Gatherer.resolve (row[classCol]), row,
@@ -231,7 +243,7 @@ cmds = [
 
 	'''select n._Object_key, nc.note, n._NoteType_key, nc.sequenceNum
 		from mgi_note n, mgi_notechunk nc
-		where n._NoteType_key in (1023,1024)
+		where n._NoteType_key in (1023,1024,1039)
 			and n._Note_key = nc._Note_key
 		order by nc.sequenceNum''',
 
@@ -252,7 +264,7 @@ cmds = [
 fieldOrder = [ '_Image_key', '_Refs_key', 'thumbnailKey', 'fullsizeKey',
 		'isThumbnail', 'xDim', 'yDim', 'figureLabel', 'imageType',
 		'pixNumeric', 'mgiID', 'jnumID', 'copyright', 'caption',
-		'imageClass',
+		'external_link', 'imageClass',
 	]
 
 # prefix for the filename of the output file
