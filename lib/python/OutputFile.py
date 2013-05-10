@@ -76,9 +76,12 @@ class OutputFile:
 		# indices of the various fields from 'columns'
 
 		columnNumbers = []
+		# profiling found cycling through columns for rows with no AUTO keys to be a bottleneck -kstone
+		hasAuto=False
 		for col in fieldOrder:
 			if col == AUTO:
 				columnNumbers.append (AUTO)
+				hasAuto=True
 			else:
 				columnNumbers.append (
 					dbAgnostic.columnNumber (columns,
@@ -88,18 +91,21 @@ class OutputFile:
 		# the given field order
 
 		for row in rows:
-			out = []
+			if hasAuto:
+				out = []
 
-			for col in columnNumbers:
-				if col == AUTO:
-					out.append (str(self.autoKey))
-					self.autoKey = self.autoKey + 1
-				else:
-					value = row[col]
-					if value == None:
-						out.append ('')
+				for col in columnNumbers:
+					if col == AUTO:
+						out.append (str(self.autoKey))
+						self.autoKey = self.autoKey + 1
 					else:
-						out.append (str(value))
+						value = row[col]
+						if value == None:
+							out.append ('')
+						else:
+							out.append (str(value))
+			else:
+                                out = [str(x) for x in row]
 
 			os.write (self.fd, '&=&'.join(out) + '#=#\n')
 
