@@ -12,9 +12,8 @@
 #
 # History
 #
-# 03/07/2013	lec
-#	TR11248/commented out fillConsensusSnps, fillSubSnps (SNP accessions)
-#
+# 03/07/2013    lec
+#       TR11248/commented out fillConsensusSnps, fillSubSnps (SNP accessions)
 
 import Gatherer
 import logger
