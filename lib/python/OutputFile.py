@@ -84,19 +84,24 @@ class OutputFile:
 					dbAgnostic.columnNumber (columns,
 					col) )
 
+		# now go through 'rows' and write each out to the file, with
+		# the given field order
+
 		for row in rows:
-			out = ""
+			out = []
+
 			for col in columnNumbers:
 				if col == AUTO:
-					out += "&=&%s"%self.autoKey
+					out.append (str(self.autoKey))
 					self.autoKey = self.autoKey + 1
 				else:
 					value = row[col]
 					if value == None:
-						out += '&=&'
+						out.append ('')
 					else:
-						out += "&=&%s"%value
-			os.write (self.fd, out[3:] + '#=#\n')
+						out.append (str(value))
+
+			os.write (self.fd, '&=&'.join(out) + '#=#\n')
 
 		self.rowCount = self.rowCount + len(rows)
 		return
