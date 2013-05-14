@@ -51,7 +51,7 @@ def _superscript(s):
 		if (c == '<'):
 			if not inSuperScript:
 				inSuperScript = True
-				c = '<SUP>'
+				c = '<sup>'
 			else:
 				# escape a redundant open bracket
 				c = '&lt;'
@@ -59,7 +59,7 @@ def _superscript(s):
 		elif (c == '>'):
 			if inSuperScript:
 				inSuperScript = False
-				c = '</SUP>'
+				c = '</sup>'
 			else:
 				# escape a redundant close bracket
 				c = '&gt;'
@@ -69,7 +69,7 @@ def _superscript(s):
 	# add a close bracket so the rest of the page isn't superscripted
 
 	if inSuperScript:
-		t = t + '</SUP>'
+		t = t + '</sup>'
 	return t
 
 def _convertString (s):
