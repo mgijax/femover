@@ -164,7 +164,6 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
 		'expression_index_counts', 'expression_assay',
 		'marker_to_expression_assay', 'expression_assay_sequence_num',
-		'marker_tissue_expression_counts',
 		'expression_result_summary',
 		'expression_specimen','expression_gellane',
 	]
