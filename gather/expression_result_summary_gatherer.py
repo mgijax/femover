@@ -26,6 +26,8 @@ ORDERED_STRENGTHS = [ 'Not Applicable', 'Absent', 'Not Specified',
 	'Ambiguous', 'Trace', 'Weak', 'Present', 'Moderate', 'Strong',
 	'Very strong',
 	]
+POSITIVE_STRENGTHS = ['Trace','Weak','Present','Moderate','Strong','Very Strong']
+NEGATIVE_STRENGTHS = ['Absent']
 
 ###--- Functions ---###
 
@@ -117,6 +119,30 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	# Does: queries the source database for primary data for expression
 	#	results and imagepanes, collates data, writes tab-delimited
 	#	text files
+
+	# a lookup of the format {marker_key=>{structure_key => [allCount,detectedCount,notDetectedCount]}}
+	# for building the marker_tissue_expression_counts table
+	markerTissueCounts = {}
+
+	def addMarkerTissueCount(self,marker_key,structure_key,detectionLevel):
+		structures = self.markerTissueCounts.setdefault(marker_key,{})
+		# counts format is [allCount,detectedCount,notDetectedCount]
+		counts = structures.setdefault(structure_key,[0,0,0])
+		if detectionLevel in NEGATIVE_STRENGTHS:
+			# negative case
+			counts[0] += 1
+			counts[2] += 1
+		elif detectionLevel in POSITIVE_STRENGTHS:
+			# positive case
+			counts[0] += 1 
+			counts[1] += 1
+		else:
+			# ambiguous case
+			counts[0] += 1
+
+	# returns a dictionary like {structure_key=>[allCount,detectedCount,notDetectedCount]}
+	def getMarkerTissueCounts(self,marker_key):
+		return self.markerTissueCounts.setdefault(marker_key,{})
 
 	def getAssayIDs(self):
 		# handle query 0 : returns { assay key : MGI ID }
@@ -531,6 +557,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			else:
 		    		isWildType = 0
 
+			# while we are in here, add count statistics of tissues
+			self.addMarkerTissueCount(markerKey,structureKey,strength)
+
 			newKey = newKey + 1
 
 			outRow = [ newKey,
@@ -577,7 +606,27 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			ageMinMax)
 
 		self.output.append ( (cols, rows) )
+		
+		# process markerTissueCounts data
+		mtCols = [ '_Marker_key', '_Structure_key',
+                        'printName', 'allCount', 'detectedCount',
+                        'notDetectedCount', 'sequenceNum' ]
+		mtRows = self.processMarkerTissueCounts(self.markerTissueCounts)
+		
+		self.output.append( (mtCols,mtRows) )
+
 		return
+
+	def processMarkerTissueCounts(self,markerTissueCounts):
+		mtRows = []
+		for markerKey,structures in markerTissueCounts.items():
+			for structureKey,counts in structures.items():
+				seqNum = ADVocab.getSequenceNum(structureKey)
+				printname = ADVocab.getPrintname(structureKey)	
+				stage = ADVocab.getStage(structureKey)
+				mtRows.append([markerKey,structureKey,"TS%s:%s"%(stage,printname),
+					counts[0],counts[1],counts[2],seqNum])
+		return mtRows
 
 	def getSymbolSequenceNum (self, symbol):
 		if self.symbolSequenceNum.has_key(symbol):
@@ -966,6 +1015,12 @@ files = [
 		'by_anatomical_system', 'by_age', 'by_strucure',
 		'by_expressed', 'by_mutant_alleles', 'by_reference' ],
 		'expression_result_sequence_num'),
+
+		('marker_tissue_expression_counts',	
+	        	[Gatherer.AUTO, '_Marker_key', '_Structure_key', 'printName',
+			'allCount', 'detectedCount', 'notDetectedCount', 'sequenceNum'],
+			'marker_tissue_expression_counts'),
+
 	]
 
 # global instance of a ExpressionResultSummaryGatherer
