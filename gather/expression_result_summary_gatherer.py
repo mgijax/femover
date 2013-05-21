@@ -624,7 +624,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				seqNum = ADVocab.getSequenceNum(structureKey)
 				printname = ADVocab.getPrintname(structureKey)	
 				stage = ADVocab.getStage(structureKey)
-				mtRows.append([markerKey,structureKey,"TS%s:%s"%(stage,printname),
+				mtRows.append([markerKey,structureKey,"%s:%s"%(stage,printname),
 					counts[0],counts[1],counts[2],seqNum])
 		return mtRows
 
