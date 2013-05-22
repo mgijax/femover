@@ -160,3 +160,15 @@ J:169214 http://mousemutant.jax.org/articles/mmrmutantmyo5adl33J.html
 J:169827 http://mousemutant.jax.org/articles/mmrmutantgrhl1m1j.html
 J:170669 http://mousemutant.jax.org/articles/mmrmutantnpr2cn3j.html
 J:171039 http://mousemutant.jax.org/articles/mmrmutantdts.html
+J:181680 http://mousemutant.jax.org/articles/mmrremutationkitlsl24j.html
+J:181679 http://mousemutant.jax.org/articles/mmrremutationcntnap1shm5j.html
+J:181083 http://mousemutant.jax.org/articles/mmrmutantsox10m2j.html
+J:188477 http://mousemutant.jax.org/articles/mmrmutantwnt7apxj.html
+J:188478 http://mousemutant.jax.org/articles/mmrremutationwnt7apx2j.html
+J:183310 http://craniofacial.jax.org/publications/curtainetal-nm4086.html
+J:187215 http://mousemutant.jax.org/articles/mmrremutationt11j.html
+J:190968 http://mousemutant.jax.org/articles/mmrmutantclec16acurtupdate.html
+J:185265 http://mousemutant.jax.org/articles/mmrmutantfrem2neupdate.html
+J:179503 http://mousemutant.jax.org/articles/MMRMutantPld4thssupdate.html
+J:181237 http://mousemutant.jax.org/articles/mmrmutationchkytdocloning.html
+
