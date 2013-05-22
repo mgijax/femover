@@ -36,7 +36,7 @@ def getFullTextLinks():
 			line = line.strip()
 
 			# skip comments and blank lines
-			if (line[0] == '#') or (not line):
+			if (not line) or (line[0] == '#'):
 				continue
 
 			items = line.split(' ')
