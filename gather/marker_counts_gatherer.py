@@ -12,7 +12,7 @@
 import Gatherer
 import logger
 import config
-import MarkerSnpAssociations
+#import MarkerSnpAssociations
 import GOFilter
 import GenotypeClassifier
 
@@ -139,8 +139,10 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		counts.append (SnpCount)
 
 		for mrk in markerKeys:
-			d[mrk][SnpCount] = MarkerSnpAssociations.getSnpCount(
-				mrk)
+			d[mrk][SnpCount] = 0
+			#TODO: this column can be removed, since it is not used anywhere.
+			#d[mrk][SnpCount] = MarkerSnpAssociations.getSnpCount(
+			#	mrk)
 
 		# compile the count of human diseases associated with each
 		# mouse marker (taking care to skip any a via complex not
