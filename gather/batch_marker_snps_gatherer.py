@@ -14,7 +14,7 @@ BatchMarkerSnpsGatherer = Gatherer.Gatherer
 
 # note there should be no associated SNPs for QTL markers
 cmds = [ '''
-	select m._Marker_key, a.accID, row_number() over(order by a.accID) sequence_num
+	select distinct m._Marker_key, a.accID, row_number() over(order by a.accID) sequence_num
         from mrk_marker m, snp_consensussnp_marker s, snp_accession a
         where m._Organism_key = 1
                 and m._Marker_Type_key != 6
