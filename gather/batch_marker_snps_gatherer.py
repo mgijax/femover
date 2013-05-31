@@ -14,14 +14,22 @@ BatchMarkerSnpsGatherer = Gatherer.Gatherer
 
 # note there should be no associated SNPs for QTL markers
 cmds = [ '''
-	select distinct m._Marker_key, a.accID, row_number() over(order by a.accID) sequence_num
-        from mrk_marker m, snp_consensussnp_marker s, snp_accession a
+	select m._Marker_key, a.accID, row_number() over(order by a.accID) sequence_num
+        from mrk_marker m, snp_consensussnp_marker s, snp_accession a, snp_coord_cache scc,mrk_location_cache mlc
         where m._Organism_key = 1
                 and m._Marker_Type_key != 6
                 and m._Marker_Status_key in (1,3)
-                and m._Marker_key = s._Marker_key
                 and s._consensussnp_key = a._Object_key
                 and a._MGIType_key = 30
+	and scc._consensussnp_key=s._consensussnp_key
+	and mlc._marker_key=m._marker_key
+	and mlc.startCoordinate is not null
+	and mlc.endCoordinate is not null
+	and scc.isMultiCoord=0
+	and scc.startCoordinate <= (mlc.endCoordinate+2000)
+	and scc.startCoordinate >= (mlc.startCoordinate-2000)
+	and scc.chromosome=mlc.chromosome
+	group by m._marker_key,a.accID
 	'''
 	#and s._consensussnp_key >= %d and s._consensussnp_key < %d
 	]
