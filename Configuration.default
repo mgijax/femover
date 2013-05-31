@@ -113,6 +113,6 @@ export HIGH_PRIORITY_TABLES
 # the wrapper (buildDB.sh) will iterate thru each single-priority-table
 # and call "buildDB.sh -G" for each table in the list
 #
-SINGLE_PRIORITY_TABLES="batch_marker_snps"
+SINGLE_PRIORITY_TABLES="batch_marker_snps marker_count_sets marker_counts"
 export SINGLE_PRIORITY_TABLES
 
