@@ -1,9 +1,13 @@
+TAG: femover-5-1-4-4
 TAG: femover-5-1-4-3
+DATE: 2013/06/03
 DATE: 2013/05/31
-STAFF:  kstone
+STAFF:  kstone, lec
 CHANGES: 
 1) simplified batch_marker_snps gatherer to just do a simple query with no postprocessing
 2) disabled the snpCounts columns in marker_counts gatherer. It was not being used by anything
+3) batch_marker_snps : use original (remove kstone changes)
+4) uncomment os.remove() from control/buildDatabase.py
 
 TAG: femover-tr11353-BP
 DATE: 05/15/2013

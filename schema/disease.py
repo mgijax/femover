@@ -44,7 +44,6 @@ comments = {
 		'logical_db' : 'logical database assigning the ID',
 		},
 	Table.INDEX : {
-		'disease_key' : 'primary key',
 		'disease' : 'case-sensitive searching by disease term',
 		'primaryID' : 'lookup by disease ID',
 		},

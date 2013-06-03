@@ -43,7 +43,6 @@ comments = {
 		'sequence_num' : 'used to order synonyms for each disease',
 		},
 	Table.INDEX : {
-		'unique_key' : 'primary key',
 		'synonym' : 'case-sensitive searching by synonym',
 		'disease_key' : 'clustered index to keep synonyms for each disease together',
 		},
