@@ -78,13 +78,15 @@ def _loadDistanceAssociations():
 	global SNP_CACHE
 
 	# markers on a given chromosome, ordered by start coordinate
-	markerQuery = '''select distinct _Marker_key, startCoordinate,
-			endCoordinate
-		from mrk_location_cache
-		where chromosome = '%s'
-			and startCoordinate is not null
-			and endCoordinate is not null
-		order by startCoordinate, endCoordinate'''
+	markerQuery = '''select distinct l._Marker_key, l.startCoordinate,
+                        l.endCoordinate
+                from mrk_location_cache l,mrk_marker m
+                where l.chromosome = '%s'
+                        and l.startCoordinate is not null
+                        and l.endCoordinate is not null
+                        and m._marker_key=l._marker_key
+                        and m._Marker_Type_key!=6
+                order by l.startCoordinate, l.endCoordinate'''
 
 	# SNPs on a given chromosome, ordered by start coordinate.  exclude
 	# SNPs with multiple coordinates
