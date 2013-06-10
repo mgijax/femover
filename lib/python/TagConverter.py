@@ -72,7 +72,7 @@ def _superscript(s):
 		t = t + '</sup>'
 	return t
 
-def _convertString (s):
+def _convertString (s,superscript=True):
 	match = ALLELE_SYMBOL.search(s)
 	lastIndex = 0
 	t = ''
@@ -82,7 +82,10 @@ def _convertString (s):
 		alleleID = match.group(1)
 
 		if ALLELES.has_key(alleleID):
-			symbol = _superscript(ALLELES[alleleID])
+			if superscript:
+				symbol = _superscript(ALLELES[alleleID])
+			else:
+				symbol = ALLELES[alleleID]
 		else:
 			symbol = alleleID
 
@@ -96,7 +99,7 @@ def _convertString (s):
 
 ###--- Functions ---###
 
-def convert (s):
+def convert (s,superscript=True):
 	# convert any tags contained in 's'
 	global ALLELES
 
@@ -104,7 +107,7 @@ def convert (s):
 		_initialize()
 
 	if type(s) == types.StringType:
-		return _convertString(s)
+		return _convertString(s,superscript)
 
 	if type(s) == types.ListType:
 		t = []
