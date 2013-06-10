@@ -76,7 +76,7 @@ class GenotypeGatherer (Gatherer.Gatherer):
 				key = row[keyCol]
 				if dict.has_key(key):
 					combo = TagConverter.convert (
-						dict[key])
+						dict[key],superscript=False)
 				else:
 					combo = None
 
