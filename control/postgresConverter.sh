@@ -21,7 +21,7 @@
 #sed 's/#=#\\$//g' | \
 #sed 's/&=&/	/g' > $1.new
 
-cat $1 | postgresTextCleaner.py > $1.new
+cat $1 | $MGI_PYTHONLIB/postgresTextCleaner.py > $1.new
 
 # replace the original file
 rm $1
