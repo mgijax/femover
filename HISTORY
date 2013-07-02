@@ -1,3 +1,10 @@
+TAG: femover-5-1-4-7
+DATE: 2013/07/02
+STAFF: kstone
+CHANGES:
+1) forced all varchar fields into text fields
+2) refactorered postgresTextCleaner.py to lib_py_postgres
+
 TAG: femover-5-1-4-6
 TAG: femover-5-1-4-5
 TAG: femover-5-1-4-4
