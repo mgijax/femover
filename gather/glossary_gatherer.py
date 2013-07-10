@@ -31,7 +31,7 @@ class GlossaryGatherer (Gatherer.Gatherer):
 			count += 1
 			definition = rcd["definition"]
 			definition = definition.replace("definition=","")
-			dbrows.append((count,key,rcd["displayName"],rcd["definition"]))
+			dbrows.append((count,key,rcd["displayName"],definition))
 			
 		self.finalColumns = cols
 		self.finalResults = dbrows
