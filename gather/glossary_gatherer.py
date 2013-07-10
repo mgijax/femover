@@ -17,10 +17,7 @@ class GlossaryGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the glossary_term table
 	def readRcd(self):
 		filepath = config.GLOSSARY_FILE
-		try:
-                        rcdFile = rcdlib.RcdFile (filepath, rcdlib.Rcd, 'key')
-                except rcdlib.error, message:
-                        raise error, message
+		rcdFile = rcdlib.RcdFile (filepath, rcdlib.Rcd, 'key')
 		return rcdFile
 
 	def collateResults(self):
