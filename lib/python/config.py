@@ -53,6 +53,8 @@ else:
 
 FULL_TEXT_LINKS = os.environ['FULL_TEXT_LINKS_PATH']
 
+GLOSSARY_FILE = os.environ['GLOSSARY_PATH']
+
 ###--- general ---###
 
 CHUNK_SIZE = int(os.environ['CHUNK_SIZE'])
