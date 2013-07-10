@@ -32,6 +32,8 @@ class GlossaryGatherer (Gatherer.Gatherer):
 		count = 0
 		for key,rcd in rcdFile.items():
 			count += 1
+			definition = rcd["definition"]
+			definition = definition.replace("definition=","")
 			dbrows.append((count,key,rcd["displayName"],rcd["definition"]))
 			
 		self.finalColumns = cols
