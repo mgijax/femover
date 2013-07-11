@@ -46,6 +46,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer t
 	-c : Cre (Recombinases)
 	-d : Disease tables (disease detail page)
 	-g : Genotypes
+	-l : Glossary Index
 	-h : IMSR counts (via HTTP)
 	-i : Images
 	-m : Markers
@@ -171,6 +172,8 @@ IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
 		'expression_imagepane', 'allele_to_image', 'image_id',
 	]
+GLOSSARY = [ 'glossary',
+	]
 IMSR = [ 'imsr',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
@@ -215,7 +218,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
-	'-t' : TESTS
+	'-t' : TESTS, 		'-l' : GLOSSARY,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
