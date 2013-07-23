@@ -35,7 +35,7 @@ cmds = [
 	and a.preferred = 1
 	and t._Vocab_key = vv._Vocab_key
 	union
-	select distinct v._Object_key, v._Term_key, v._AnnotType_key, -1, t.term, a.accID, vv.name
+	select distinct v._Object_key, v._Term_key, v._AnnotType_key, null::integer, t.term, a.accID, vv.name
 	from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a
 	where v._AnnotType_key in (1006)
 	and v._Term_key = t._Term_key
