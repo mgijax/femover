@@ -33,8 +33,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				'_Object_key', 
 				'_Allele_key',
 				'isConditional',
-				'term',
 				'accID',
+				'term',
 				'name'
 			]
 
@@ -46,12 +46,12 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
 		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		isConditionalCol = Gatherer.columnNumber (cols, 'isConditional')
-		termCol = Gatherer.columnNumber (cols, 'term')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
+		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
 		#
-		# dictionary of distinct genotype/marker keys
+		# dictionary of distinct genotype/marker keys and their counts
 		#
 	
 		genomarkerDict = {}
@@ -71,32 +71,34 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				genomarkerDict[genotypeKey].append(markerKey)
 
 		#
-		# if simple genotype (at most one marker) and NOT GT_ROSE,
-		# then it is OK to load this row into the table
+		# when to set OK to true
 		#
-		# then it is OK to load this row into the table
-		# if no genotype (human/omim annotations)
+		# if genotype_key is null (human annotation)
+		# if genotype/marker count == 1 and marker is NOT Gt(ROSA)26Sor'
 		#
 
 		for row in rows:
 
-			ok = 1
+			ok = 0
+
+			if not genomarkerDict.has_key(row[genotypeKeyCol]):
+				ok = 1
 
 			if genomarkerDict.has_key(row[genotypeKeyCol]):
 				if len(genomarkerDict[row[genotypeKeyCol]]) == 1 and \
-			   		row[markerKeyCol] == GT_ROSA:
+			   		row[markerKeyCol] != GT_ROSA:
 
-					ok = 0
+					ok = 1
 
-			if ok:
+			if ok == 1:
 				self.finalResults.append ( [ row[markerKeyCol],
 					     row[termKeyCol],
 					     row[vocabKeyCol],
 					     row[genotypeKeyCol],
 					     row[alleleKeyCol],
 					     row[isConditionalCol],
-					     row[termCol],
 					     row[termIDCol],
+					     row[termCol],
 					     row[vocabNameCol]
 					])
 
@@ -119,8 +121,9 @@ cmds = [
 	# exclude: genotype conditional = yes and allele driver note exists
 	#
         '''
+	(
         select distinct gg._Marker_key, v._Term_key, v._AnnotType_key, 
-		v._Object_key, gg._Allele_key, g.isConditional, t.term, a.accID, vv.name
+		v._Object_key, gg._Allele_key, g.isConditional, a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
 		GXD_AlleleGenotype gg, GXD_Genotype g,
 		ALL_Allele ag, ACC_Accession a
@@ -152,6 +155,8 @@ cmds = [
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
+	)
+	order by _Object_key
         ''',
 
 	]
@@ -159,7 +164,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Term_key', '_AnnotType_key', 
-		'_Object_key', '_Allele_key', 'isConditional', 'term', 'accID', 'name' ]
+		'_Object_key', '_Allele_key', 'isConditional', 'accID', 'term', 'name' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'hdp_annotation'
