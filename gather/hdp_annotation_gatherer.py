@@ -146,7 +146,7 @@ cmds = [
 		and n._MGIType_key = 11 and n._NoteType_key = 1034)
         union
         select distinct v._Object_key, v._Term_key, v._AnnotType_key, 
-		null::integer, null::integer, null::integer, t.term, a.accID, vv.name
+		null::integer, null::integer, null::integer, a.accID, t.term, vv.name
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a
         where v._AnnotType_key in (1006)
         and v._Term_key = t._Term_key
