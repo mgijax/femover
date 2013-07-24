@@ -115,9 +115,10 @@ cmds = [
         # human/genes annotated to OMIM terms (1006)
         # make human/genotype key = null
 	#
-	# exclude: NOT annotations genotypes
-	# exclude: 'Transgenic (Reporter)' alleles (847129)
-	# exclude: wild type alleles
+	# mouse only:
+	# exclude: NOT mouse/genotype annotations
+	# exclude: allele type = 'Transgenic (Reporter)' (847129)
+	# exclude: allele = wild type
 	# exclude: genotype conditional = yes and allele driver note exists
 	#
         '''
