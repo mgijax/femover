@@ -45,16 +45,15 @@
 import Gatherer
 import logger
 
-###
+###--- Constents ---###
 GT_ROSA = 37270
 
 ###--- Classes ---###
 
-#HDPAnnotationGatherer = Gatherer.Gatherer
 class HDPAnnotationGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the actual_database table
+	# Is: a data gatherer for the hdp_annotation table
 	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for actual dbs,
+	# Does: queries the source database for annotation data,
 	#	collates results, writes tab-delimited text file
 
         def collateResults(self):
