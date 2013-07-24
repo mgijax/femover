@@ -44,7 +44,19 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+        'marker_key' : 'create index %s on %s (marker_key)',
+        'genotype_key' : 'create index %s on %s (genotype_key)',
+        'allele_key' : 'create index %s on %s (allele_key)',
+        'term_key' : 'create index %s on %s (term_key)',
+        }
+
+keys = {
+        'marker_key' : ('marker', 'marker_key'),
+        'genotype_key' : ('genotype', 'genotype_key'),
+        'allele_key' : ('allele', 'allele_key'),
+        'term_key' : ('term', 'term_key'),
+        }
 
 # index used to cluster data in the table
 clusteredIndex = None
@@ -67,7 +79,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, {}, comments,
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
 		clusteredIndex)
 
 ###--- Main program ---###
