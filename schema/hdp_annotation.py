@@ -36,8 +36,8 @@ createStatement = '''CREATE TABLE %s  (
 	genotype_key		int	null,
 	allele_key		int	null,
 	is_conditional		int	null,
-	term			text	not null,
 	term_id			text	not null,
+	term			text	not null,
 	vocab_name		text	not null,
 	PRIMARY KEY(hdp_annotation_key))''' % tableName
 
@@ -49,6 +49,7 @@ indexes = {
         'genotype_key' : 'create index %s on %s (genotype_key)',
         'allele_key' : 'create index %s on %s (allele_key)',
         'term_key' : 'create index %s on %s (term_key)',
+        'term_id' : 'create index %s on %s (term_id)',
         }
 
 keys = {
@@ -72,8 +73,8 @@ comments = {
 		'genotype_key' : 'genotype that is annotated to the marker (at most one genotype per marker)',
 		'allele_key' : 'allele that is annotated to the marker (at most one genotype per marker)',
 		'is_conditional' : 'genotype is a conditional genotype',
-		'term' : 'text of the term itself',
 		'term_id' : 'primary accession ID for the term',
+		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',
 		},
 	}
