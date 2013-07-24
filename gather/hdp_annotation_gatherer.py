@@ -2,6 +2,42 @@
 # 
 # gathers data for the 'hdp_annotation' table in the front-end database
 #
+# Purpose:
+#
+# To load all mouse/genotypes annotated to OMIM terms (_AnnotType_key = 1005)
+# and human/genes annotated to OMIM terms (_AnnotType_key = 1006)
+# into the HDP table.
+#
+# 1.  select from non-fewi database:
+#
+# 	mouse:
+#	select all mouse genotype/OMIM annotations
+# 	exclude: 'NOT' annotations
+# 	exclude: allele type = 'Transgenic (Reporter)'
+# 	exclude: allele = wild type
+# 	exclude: genotype conditional = yes and allele driver note exists
+#	selecting by genotype/marker/allele
+#
+#	these exclusions are used to filter/delete out as many complex genotypes
+#	as possible, and leave only the set of potential simple genotypes
+#	that we are interested in loaded into the HDP table.
+#
+#	human:
+# 	select all human/gene/OMIM annotations
+#
+# 2.  collation of results:
+#
+#	a) generate dictionary of distinct genotype/marker counts
+#
+#	b) add genotype/marker/allele to the HTDP table if:
+# 		. genotype_key is null (human annotation) 
+#		AND
+# 		. genotype/marker count == 1 (simple genotype)
+#		AND
+#		. and marker is NOT Gt(ROSA)26Sor'
+#	    else
+#		the genotype is complex and we don't want to load it
+#
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
 #
@@ -110,17 +146,6 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	#
-        # mouse/genotypes annotated to OMIM terms (1005)
-        # human/genes annotated to OMIM terms (1006)
-        # make human/genotype key = null
-	#
-	# mouse only:
-	# exclude: NOT mouse/genotype annotations
-	# exclude: allele type = 'Transgenic (Reporter)' (847129)
-	# exclude: allele = wild type
-	# exclude: genotype conditional = yes and allele driver note exists
-	#
         '''
 	(
         select distinct gg._Marker_key, v._Term_key, v._AnnotType_key, 
