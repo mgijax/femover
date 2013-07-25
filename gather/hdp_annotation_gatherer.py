@@ -10,6 +10,9 @@
 #
 # 1.  select from non-fewi database:
 #
+#	human:
+# 	select all human/gene/OMIM annotations
+#
 # 	mouse:
 #	select all mouse genotype/OMIM annotations
 # 	exclude: 'NOT' annotations
@@ -22,17 +25,15 @@
 #	as possible, and leave only the set of potential simple genotypes
 #	that we are interested in loaded into the HDP table.
 #
-#	human:
-# 	select all human/gene/OMIM annotations
-#
 # 2.  collation of results:
 #
+#	a) all human/gene/OMIM annotations are loaded
+#
+#	for mouse:
 #	a) generate dictionary of distinct genotype/marker counts
 #
 #	b) add genotype/marker/allele to the HTDP table if:
 # 		. genotype_key is null (human annotation) 
-#		AND
-# 		. genotype/marker count == 1 (simple genotype)
 #		AND
 #		. and marker is NOT Gt(ROSA)26Sor'
 #	    else
@@ -67,20 +68,40 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				'_AnnotType_key', 
 				'_Object_key', 
 				'_Allele_key',
-				'isConditional',
 				'accID',
 				'term',
 				'name'
 			]
 
+		# human gene/OMIM annotations
 		(cols, rows) = self.results[0]
+
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termIDCol = Gatherer.columnNumber (cols, 'accID')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+
+		for row in rows:
+			self.finalResults.append ( [ row[markerKeyCol],
+				     row[termKeyCol],
+				     row[vocabKeyCol],
+				     '',
+				     '',
+				     row[termIDCol],
+				     row[termCol],
+				     row[vocabNameCol]
+				])
+
+		# mouse genotype/OMIM annotations
+		(cols, rows) = self.results[1]
 
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
 		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
-		isConditionalCol = Gatherer.columnNumber (cols, 'isConditional')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
@@ -116,14 +137,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
 			ok = 0
 
-			if not genomarkerDict.has_key(row[genotypeKeyCol]):
+			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 and \
+		   		row[markerKeyCol] != GT_ROSA:
+
 				ok = 1
-
-			if genomarkerDict.has_key(row[genotypeKeyCol]):
-				if len(genomarkerDict[row[genotypeKeyCol]]) == 1 and \
-			   		row[markerKeyCol] != GT_ROSA:
-
-					ok = 1
 
 			if ok == 1:
 				self.finalResults.append ( [ row[markerKeyCol],
@@ -131,7 +148,6 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 					     row[vocabKeyCol],
 					     row[genotypeKeyCol],
 					     row[alleleKeyCol],
-					     row[isConditionalCol],
 					     row[termIDCol],
 					     row[termCol],
 					     row[vocabNameCol]
@@ -145,10 +161,24 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-        '''
-	(
+	# human gene/OMIM annotations
+	'''
+        select distinct v._Object_key as _Marker_key, v._Term_key, v._AnnotType_key, 
+		a.accID, t.term, vv.name
+        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a
+        where v._AnnotType_key in (1006)
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+        and t._Vocab_key = vv._Vocab_key
+        ''',
+
+	# mouse genotype/OMIM annotations
+	'''
         select distinct gg._Marker_key, v._Term_key, v._AnnotType_key, 
-		v._Object_key, gg._Allele_key, g.isConditional, a.accID, t.term, vv.name
+		v._Object_key, gg._Allele_key, a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
 		GXD_AlleleGenotype gg, GXD_Genotype g,
 		ALL_Allele ag, ACC_Accession a
@@ -169,19 +199,6 @@ cmds = [
 		where g.isConditional = 1
 		and gg._Allele_key = n._Object_key
 		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-        union
-        select distinct v._Object_key, v._Term_key, v._AnnotType_key, 
-		null::integer, null::integer, null::integer, a.accID, t.term, vv.name
-        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a
-        where v._AnnotType_key in (1006)
-        and v._Term_key = t._Term_key
-        and v._Term_key = a._Object_key
-        and a._MGIType_key = 13
-        and a.private = 0
-        and a.preferred = 1
-        and t._Vocab_key = vv._Vocab_key
-	)
-	order by _Object_key
         ''',
 
 	]
@@ -189,7 +206,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Term_key', '_AnnotType_key', 
-		'_Object_key', '_Allele_key', 'isConditional', 'accID', 'term', 'name' ]
+		'_Object_key', '_Allele_key', 'accID', 'term', 'name' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'hdp_annotation'
