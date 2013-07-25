@@ -33,11 +33,9 @@
 #	a) generate dictionary of distinct genotype/marker counts
 #
 #	b) add genotype/marker/allele to the HTDP table if:
-# 		. genotype_key is null (human annotation) 
+# 		. genotype contains at most one gene
 #		AND
-#		. and marker is NOT Gt(ROSA)26Sor'
-#	    else
-#		the genotype is complex and we don't want to load it
+#		. marker is NOT 'Gt(ROSA)26Sor'
 #
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
@@ -47,7 +45,6 @@ import Gatherer
 import logger
 
 ###--- Constents ---###
-# 'Gt(ROSA)26Sor'
 GT_ROSA = 37270
 
 ###--- Classes ---###
