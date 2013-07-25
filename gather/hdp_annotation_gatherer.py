@@ -160,8 +160,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# sql (1)
 		# mouse genotype/OMIM annotations
 		(cols, rows) = self.results[1]
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
@@ -186,8 +186,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# sql (2)
 		# mouse genotype/MP annotations
 		(cols, rows) = self.results[2]
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
