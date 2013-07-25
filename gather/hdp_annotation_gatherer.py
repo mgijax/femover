@@ -139,6 +139,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# human gene/OMIM annotations
 		(cols, rows) = self.results[0]
 
+		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
@@ -159,23 +160,12 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# sql (1)
 		# mouse genotype/OMIM annotations
 		(cols, rows) = self.results[1]
-
-		#markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		#termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		#vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
-		#termIDCol = Gatherer.columnNumber (cols, 'accID')
-		#termCol = Gatherer.columnNumber (cols, 'term')
-		#vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
-		#
 		# dictionary of distinct genotype/marker keys and their counts
-		#
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
-		#
 		# push to final results
-		#
 		pushToFinalResults (self, rows,
 			genomarkerDict, 
 			genotypeKeyCol,
@@ -191,14 +181,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# mouse genotype/MP annotations
 		(cols, rows) = self.results[2]
 
-		#
 		# dictionary of distinct genotype/marker keys and their counts
-		#
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
-		#
 		# push to final results
-		#
 		pushToFinalResults (self, rows,
 			genomarkerDict, 
 			genotypeKeyCol,
@@ -285,7 +271,6 @@ cmds = [
 		where g.isConditional = 1
 		and gg._Allele_key = n._Object_key
 		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-	and gg._Marker_key is not null
         ''',
 
 	]
