@@ -47,6 +47,7 @@ import Gatherer
 import logger
 
 ###--- Constents ---###
+# 'Gt(ROSA)26Sor'
 GT_ROSA = 37270
 
 ###--- Classes ---###
@@ -127,22 +128,14 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				genomarkerDict[genotypeKey].append(markerKey)
 
 		#
-		# when to set OK to true
+		# decide what genotypes results to append to the final set
+		# if the genotype is simple (at most one marker)
+		# and the marker is NOT ''Gt(ROSA)26Sor'
 		#
-		# if genotype_key is null (human annotation)
-		# if genotype/marker count == 1 and marker is NOT Gt(ROSA)26Sor'
-		#
-
 		for row in rows:
-
-			ok = 0
-
 			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 and \
 		   		row[markerKeyCol] != GT_ROSA:
 
-				ok = 1
-
-			if ok == 1:
 				self.finalResults.append ( [ row[markerKeyCol],
 					     row[termKeyCol],
 					     row[vocabKeyCol],
