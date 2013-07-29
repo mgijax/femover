@@ -241,7 +241,7 @@ cmds = [
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
-	and v._Object_key = m._Organism_key
+	and v._Object_key = m._Marker_key
         ''',
 
 	# sql (1)
