@@ -31,6 +31,7 @@ tableName = 'hdp_annotation'
 createStatement = '''CREATE TABLE %s  ( 
 	hdp_annotation_key	int	not null,
 	marker_key		int	not null,
+	organism_key		int	not null,
 	term_key		int	not null,
 	vocab_key		int	not null,
 	genotype_key		int	null,
@@ -44,6 +45,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
         'marker_key' : 'create index %s on %s (marker_key)',
+        'organism_key' : 'create index %s on %s (organism_key)',
         'genotype_key' : 'create index %s on %s (genotype_key)',
         'term_key' : 'create index %s on %s (term_key)',
         'term_id' : 'create index %s on %s (term_id)',
@@ -51,6 +53,7 @@ indexes = {
 
 keys = {
         'marker_key' : ('marker', 'marker_key'),
+        'organism_key' : ('organism', 'organism_key'),
         'genotype_key' : ('genotype', 'genotype_key'),
         'term_key' : ('term', 'term_key'),
         }
@@ -64,6 +67,7 @@ comments = {
 	Table.COLUMN : {
 		'hdp_annotation_key' : 'unique key identifying this human disease portal annotation',
 		'marker_key' : 'marker that is annotated to the term',
+		'organism_key' : 'organism of marker',
 		'term_key' : 'term that is annotated to the marker',
 		'vocab_key' : 'key of the vocabulary containing the annotated term',
 		'genotype_key' : 'genotype that is annotated to the marker (at most one genotype per marker)',
