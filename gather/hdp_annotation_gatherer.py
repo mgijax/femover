@@ -236,7 +236,7 @@ cmds = [
 		v._Term_key, v._AnnotType_key, 
 		a.accID, t.term, vv.name
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
-        where v._AnnotType_key in (1006)
+        where v._AnnotType_key = 1006
         and v._Term_key = t._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
