@@ -273,7 +273,7 @@ cmds = [
 		where g.isConditional = 1
 		and gg._Allele_key = n._Object_key
 		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-	and ag._Marker_key = m._Marker_key
+	and gg._Marker_key = m._Marker_key
         ''',
 
 	# sql (2)
@@ -302,7 +302,7 @@ cmds = [
 		where g.isConditional = 1
 		and gg._Allele_key = n._Object_key
 		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-	and ag._Marker_key = m._Marker_key
+	and gg._Marker_key = m._Marker_key
         ''',
 
 	]
