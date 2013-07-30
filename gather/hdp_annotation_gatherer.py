@@ -4,17 +4,19 @@
 #
 # Purpose:
 #
-# To load all mouse/genotypes annotated to OMIM terms (_AnnotType_key = 1005)
-# and human/genes annotated to OMIM terms (_AnnotType_key = 1006)
+# To load all:
+#	mouse/genotypes annotated to OMIM terms (_AnnotType_key = 1005)
+# 	mouse/genotypes annotationed to MP Phenotype terms (_AnnotType_key = 1002)
+# 	human/genes annotated to OMIM terms (_AnnotType_key = 1006)
 # into the HDP table.
 #
 # 1.  select from non-fewi database:
 #
 #	human:
-# 	select all human/gene/OMIM annotations
+# 	select all human/gene/OMIM annotations (_AnnotType_key = 1006)
 #
 # 	mouse:
-#	select all mouse genotype/OMIM annotations
+#	select all mouse genotype/OMIM annotations (_AnnotType_key = 1005)
 # 	exclude: 'NOT' annotations
 # 	exclude: allele type = 'Transgenic (Reporter)'
 # 	exclude: allele = wild type
@@ -22,7 +24,7 @@
 #	selecting by genotype/marker/allele
 #
 # 	mouse:
-#	select all mouse genotype/MP annotations
+#	select all mouse genotype/MP annotations (_AnnotType_key = 1002)
 # 	exclude: 'norm' annotations (normal)
 # 	exclude: allele type = 'Transgenic (Reporter)'
 # 	exclude: allele = wild type
@@ -32,7 +34,7 @@
 #	selecting by genotype/marker/allele
 #	these exclusions are used to filter/delete out as many complex genotypes
 #	as possible, and leave only the set of potential simple genotypes
-#	that we are interested in loaded into the HDP table.
+#	that we are interested in loading into the HDP table.
 #
 # 2.  collation of results:
 #
