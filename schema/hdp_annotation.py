@@ -35,6 +35,7 @@ createStatement = '''CREATE TABLE %s  (
 	term_key		int	not null,
 	vocab_key		int	not null,
 	genotype_key		int	null,
+	allele_key		int 	null,
 	term_id			text	not null,
 	term			text	not null,
 	vocab_name		text	not null,
@@ -47,6 +48,7 @@ indexes = {
         'marker_key' : 'create index %s on %s (marker_key)',
         'organism_key' : 'create index %s on %s (organism_key)',
         'genotype_key' : 'create index %s on %s (genotype_key)',
+        'allele_key' : 'create index %s on %s (allele_key)',
         'term_key' : 'create index %s on %s (term_key)',
         'term_id' : 'create index %s on %s (term_id)',
         }
@@ -55,6 +57,7 @@ keys = {
         'marker_key' : ('marker', 'marker_key'),
         'organism_key' : ('organism', 'organism_key'),
         'genotype_key' : ('genotype', 'genotype_key'),
+        'allele_key' : ('allele', 'allele_key'),
         'term_key' : ('term', 'term_key'),
         }
 
@@ -71,6 +74,7 @@ comments = {
 		'term_key' : 'term that is annotated to the marker',
 		'vocab_key' : 'key of the vocabulary containing the annotated term',
 		'genotype_key' : 'genotype that is annotated to the marker (at most one genotype per marker)',
+		'allele_key' : 'allele that is associated with this genotype',
 		'term_id' : 'primary accession ID for the term',
 		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',

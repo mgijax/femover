@@ -36,6 +36,9 @@
 #	as possible, and leave only the set of potential simple genotypes
 #	that we are interested in loading into the HDP table.
 #
+#	mouse:
+#	select all allele/OMIM annotations (_AnnotType_key = 1012)
+#
 # 2.  collation of results:
 #
 #	a) all human/gene/OMIM annotations are loaded
@@ -48,6 +51,8 @@
 #		AND
 #		. marker is NOT 'Gt(ROSA)26Sor'
 #
+#	c) all allele/OMIM annotations are loaded
+#	
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
 #
