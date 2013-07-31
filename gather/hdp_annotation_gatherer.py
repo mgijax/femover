@@ -86,8 +86,9 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 def pushToFinalResults (self, 
 		rows,
 		genomarkerDict, 
-		genotypeKeyCol,
 		markerKeyCol,
+		genotypeKeyCol,
+		alleleKeyCol,
 		organismKeyCol,
 		termKeyCol,
 		vocabKeyCol,
@@ -111,6 +112,7 @@ def pushToFinalResults (self,
 				row[termKeyCol],
 				row[vocabKeyCol],
 				row[genotypeKeyCol],
+				row[alleleKeyCol],
 				row[termIDCol],
 				row[termCol],
 				row[vocabNameCol]
@@ -135,6 +137,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				'_Term_key', 
 				'_AnnotType_key', 
 				'_Object_key', 
+				'_Allele_key', 
 				'accID',
 				'term',
 				'name'
@@ -154,10 +157,12 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
 		for row in rows:
-			self.finalResults.append ( [ row[markerKeyCol],
+			self.finalResults.append ( [ 
+                                     row[markerKeyCol],
 				     row[organismKeyCol],
 				     row[termKeyCol],
 				     row[vocabKeyCol],
+				     '',
 				     '',
 				     row[termIDCol],
 				     row[termCol],
@@ -166,8 +171,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
 		# sql (1)
 		# mouse genotype/OMIM annotations
+		# mouse genotype/MP annotations
 		(cols, rows) = self.results[1]
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
@@ -180,10 +187,12 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
 		# push to final results
-		pushToFinalResults (self, rows,
+		pushToFinalResults (self, 
+			rows,
 			genomarkerDict, 
-			genotypeKeyCol,
 			markerKeyCol,
+			genotypeKeyCol,
+			alleleKeyCol,
 			organismKeyCol,
 			termKeyCol,
 			vocabKeyCol,
@@ -193,32 +202,31 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 			)
 
 		# sql (2)
-		# mouse genotype/MP annotations
 		(cols, rows) = self.results[2]
+
+                # set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		termIDCol = Gatherer.columnNumber (cols, 'accID')
-		termCol = Gatherer.columnNumber (cols, 'term')
-		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
+                markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+                organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+                vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+                termIDCol = Gatherer.columnNumber (cols, 'accID')
+                termCol = Gatherer.columnNumber (cols, 'term')
+                vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
-		# dictionary of distinct genotype/marker keys and their counts
-		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
-
-		# push to final results
-		pushToFinalResults (self, rows,
-			genomarkerDict, 
-			genotypeKeyCol,
-			markerKeyCol,
-			organismKeyCol,
-			termKeyCol,
-			vocabKeyCol,
-			termIDCol,
-			termCol,
-			vocabNameCol
-			)
+                for row in rows:
+                        self.finalResults.append ( [
+                                     row[markerKeyCol],
+                                     row[organismKeyCol],
+                                     row[termKeyCol],
+                                     row[vocabKeyCol],
+                                     row[genotypeKeyCol],
+                                     row[alleleKeyCol],
+                                     row[termIDCol],
+                                     row[termCol],
+                                     row[vocabNameCol]
+                                ])
 
 		return
 
@@ -248,16 +256,21 @@ cmds = [
 
 	# sql (1)
 	# mouse genotype/OMIM annotations
+	# mouse genotype/MP annotations
 	'''
 	select distinct gg._Marker_key, 
 		m._Organism_key,
 		v._Term_key, v._AnnotType_key, 
-		v._Object_key, a.accID, t.term, vv.name
+		v._Object_key, gg._Allele_key,
+		a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
 		GXD_AlleleGenotype gg, GXD_Genotype g,
 		ALL_Allele ag, ACC_Accession a, MRK_Marker m
-        where v._AnnotType_key = 1005
-        and v._Qualifier_key != 1614157
+        where (
+	       (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+		or
+               (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
+	       )
         and v._Term_key = t._Term_key
         and v._Object_key = gg._Genotype_key
         and gg._Allele_key = ag._Allele_key
@@ -276,33 +289,26 @@ cmds = [
 	and gg._Marker_key = m._Marker_key
         ''',
 
-	# sql (2)
-	# mouse genotype/MP annotations
-	'''
-	select distinct gg._Marker_key, 
-		m._Organism_key, v._Term_key, v._AnnotType_key, 
-		v._Object_key, a.accID, t.term, vv.name
+        # sql (2)
+	# allele/OMIM annotations
+        '''
+        select distinct gg._Marker_key, 
+                m._Organism_key,
+                v._Term_key, v._AnnotType_key, 
+                v._Object_key, gg._Allele_key,
+                a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
-		GXD_AlleleGenotype gg, GXD_Genotype g,
-		ALL_Allele ag, ACC_Accession a, MRK_Marker m
-        where v._AnnotType_key = 1002
-        and v._Qualifier_key != 2181424
+                GXD_AlleleGenotype gg,
+                ACC_Accession a, MRK_Marker m
+        where v._AnnotType_key = 1012
         and v._Term_key = t._Term_key
         and v._Object_key = gg._Genotype_key
-        and gg._Allele_key = ag._Allele_key
-	and ag._Allele_Type_key != 847129
-	and ag.isWildType = 0
-	and gg._Genotype_key = g._Genotype_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
-	and not exists (select 1 from MGI_Note n
-		where g.isConditional = 1
-		and gg._Allele_key = n._Object_key
-		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-	and gg._Marker_key = m._Marker_key
+        and gg._Marker_key = m._Marker_key
         ''',
 
 	]
@@ -311,7 +317,7 @@ cmds = [
 # output file
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
 		'_Term_key', '_AnnotType_key', 
-		'_Object_key', 'accID', 'term', 'name' ]
+		'_Object_key', '_Allele_key', 'accID', 'term', 'name' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'hdp_annotation'
