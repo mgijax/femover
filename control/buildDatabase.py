@@ -51,6 +51,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer t
 	-i : Images
 	-m : Markers
 	-n : Annotations
+	-o : Human Disease Portal
 	-p : Probes
 	-s : Sequences
 	-r : References
@@ -161,6 +162,7 @@ DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
 	'disease', 'marker_to_genotype',
 	]
+HDPORTAL = [ 'hdp_annotation' ]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
 		'expression_index_counts', 'expression_assay',
@@ -218,7 +220,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
-	'-t' : TESTS, 		'-l' : GLOSSARY,
+	'-t' : TESTS, 		'-l' : GLOSSARY,	'-o' : HDPORTAL,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
