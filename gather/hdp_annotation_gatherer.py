@@ -100,6 +100,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
         def collateResults(self):
 
+		global simpleGenotype
+
 		#
 		# process final SQL (0)
 		#
@@ -196,19 +198,19 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
-                #for row in rows:
-                #        if row[genotypeKeyCol] not in simpleGenotype:
-                #        	self.finalResults.append ( [
-                #                     	row[markerKeyCol],
-                #                     	row[organismKeyCol],
-                #                     	row[termKeyCol],
-                #                     	row[vocabKeyCol],
-                #                     	row[genotypeKeyCol],
-                #                     	'complex',
-                #                     	row[termIDCol],
-                #                     	row[termCol],
-                #                     	row[vocabNameCol]
-                #                	])
+                for row in rows:
+                        if row[genotypeKeyCol] not in simpleGenotype:
+                        	self.finalResults.append ( [
+                                     	row[markerKeyCol],
+                                     	row[organismKeyCol],
+                                     	row[termKeyCol],
+                                     	row[vocabKeyCol],
+                                     	row[genotypeKeyCol],
+                                     	'complex',
+                                     	row[termIDCol],
+                                     	row[termCol],
+                                     	row[vocabNameCol]
+                                	])
 
 		# sql (3)
 		# allele/OMIM annotations
