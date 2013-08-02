@@ -17,27 +17,21 @@
 #
 # 	mouse:
 #	select all mouse genotype/OMIM annotations (_AnnotType_key = 1005)
-# 	exclude: 'NOT' annotations
-# 	exclude: allele type = 'Transgenic (Reporter)'
-# 	exclude: allele = wild type
-# 	exclude: genotype conditional = yes and allele driver note exists
-#	selecting by genotype/marker/allele
-#
-# 	mouse:
 #	select all mouse genotype/MP annotations (_AnnotType_key = 1002)
-# 	exclude: 'norm' annotations (normal)
+# 	exclude: 'NOT' annotations (OMIM)
+# 	exclude: 'normal' annotations (MP)
 # 	exclude: allele type = 'Transgenic (Reporter)'
 # 	exclude: allele = wild type
 # 	exclude: genotype conditional = yes and allele driver note exists
-#	exclude: genotypes that contain allele pairs with no markers
+#	selecting by genotype/marker
 #
-#	selecting by genotype/marker/allele
+#	selecting by genotype/marker
 #	these exclusions are used to filter/delete out as many complex genotypes
 #	as possible, and leave only the set of potential simple genotypes
 #	that we are interested in loading into the HDP table.
 #
 #	mouse:
-#	select all allele/OMIM annotations (_AnnotType_key = 1012)
+#	select all genotype (via allele) genotype/OMIM annotations (_AnnotType_key = 1012)
 #
 # 2.  collation of results:
 #
@@ -51,7 +45,7 @@
 #		AND
 #		. marker is NOT 'Gt(ROSA)26Sor'
 #
-#	c) all allele/OMIM annotations are loaded
+#	c) all gene (via allele)/OMIM annotations are loaded
 #	
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
@@ -147,6 +141,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		# mouse genotype/OMIM annotations
 		# mouse genotype/MP annotations
 		(cols, rows) = self.results[1]
+
+		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
@@ -199,6 +195,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
                 for row in rows:
+			# skip those listed as 'simple'
                         if row[genotypeKeyCol] not in simpleGenotype:
                         	self.finalResults.append ( [
                                      	row[markerKeyCol],
@@ -213,7 +210,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                                 	])
 
 		# sql (3)
-		# allele/OMIM annotations
+		# allele/genotype/OMIM annotations : simple
 		(cols, rows) = self.results[3]
 
                 # set of columns for common sql fields
@@ -327,7 +324,7 @@ cmds = [
         ''',
 
         # sql (3)
-	# allele/OMIM annotations
+	# allele/genotype/OMIM annotations : simple
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
