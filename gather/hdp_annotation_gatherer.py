@@ -57,7 +57,12 @@ import logger
 ###--- Constents ---###
 GT_ROSA = 37270
 
+mouseLocation = {}
 simpleGenotype = []
+
+coordinateDisplay = 'Chr%s:%s-%s (%s) %s' 
+locationDisplay1 = 'Chr%s %s cM'
+locationDisplay2 = 'Chr%s %s'
 
 ###--- Functions ---###
 
@@ -84,6 +89,37 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 
 	return genomarkerDict
 
+def getLocationDisplay (marker, organism):
+	#
+	# returns location display
+	# returns coordinate display
+	#
+
+	gchromosome = mouseLocation[marker][1]
+	chromosome = mouseLocation[marker][2]
+	startCoordinate = mouseLocation[marker][3]
+	endCoordinate = mouseLocation[marker][4]
+	strand = mouseLocation[marker][5]
+	cmoffset = mouseLocation[marker][6]
+	cytooffset = mouseLocation[marker][7]
+	version = mouseLocation[marker][8]
+
+	if startCoordinate:
+		coordinate = coordinateDisplay \
+			% (gchromosome, startCoordinate, endCoordinate,
+		   	   strand, version)
+	else:
+		coordinate = ''
+
+	if organism == 1:
+		location = locationDisplay1 \
+			% (chromosome, cmoffset)
+	else:
+		location = locationDisplay2 \
+			% (chromosome, cytooffset)
+
+	return location, coordinate
+
 ###--- Classes ---###
 
 class HDPAnnotationGatherer (Gatherer.Gatherer):
@@ -94,10 +130,11 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
         def collateResults(self):
 
+		global mouseLocation
 		global simpleGenotype
 
 		#
-		# process final SQL (0)
+		# process final SQL
 		#
 		self.finalResults = []
 		self.finalColumns = ['_Marker_key', 
@@ -108,39 +145,25 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				'genotype_type',
 				'accID',
 				'term',
-				'name'
+				'name',
+				'location_display',
+				'coordinate_display'
 			]
 
-		# sql (0)
-		# human gene/OMIM annotations
-		(cols, rows) = self.results[0]
+		# sql (11)
+		# mouse coordinates
+		(cols, rows) = self.results[11]
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		termIDCol = Gatherer.columnNumber (cols, 'accID')
-		termCol = Gatherer.columnNumber (cols, 'term')
-		vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
 		for row in rows:
-			self.finalResults.append ( [ 
-                                     row[markerKeyCol],
-				     row[organismKeyCol],
-				     row[termKeyCol],
-				     row[vocabKeyCol],
-				     '',
-				     '',
-				     row[termIDCol],
-				     row[termCol],
-				     row[vocabNameCol]
-				])
+			mouseLocation[row[markerKeyCol]] = row
 
-		# sql (1)
+		# sql (12)
 		# mouse genotype/OMIM annotations
 		# mouse genotype/MP annotations
-		(cols, rows) = self.results[1]
+		(cols, rows) = self.results[12]
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -167,6 +190,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				# save simple genotype list
 				simpleGenotype.append(row[genotypeKeyCol])
 
+				location, coordinate = getLocationDisplay(\
+					row[markerKeyCol],
+					row[organismKeyCol])
+
 				self.finalResults.append ( [ 
 					row[markerKeyCol],
 					row[organismKeyCol],
@@ -176,13 +203,15 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 					'simple',
 					row[termIDCol],
 					row[termCol],
-					row[vocabNameCol]
+					row[vocabNameCol],
+					location,
+					coordinate
 					])
 
-                # sql (2)
+                # sql (13)
 		# mouse genotype/OMIM annotations : complex
 		# mouse genotype/MP annotations : complex
-                (cols, rows) = self.results[2]
+                (cols, rows) = self.results[13]
 
                 # set of columns for common sql fields
                 genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -194,24 +223,24 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
-                for row in rows:
+                #for row in rows:
 			# skip those listed as 'simple'
-                        if row[genotypeKeyCol] not in simpleGenotype:
-                        	self.finalResults.append ( [
-                                     	row[markerKeyCol],
-                                     	row[organismKeyCol],
-                                     	row[termKeyCol],
-                                     	row[vocabKeyCol],
-                                     	row[genotypeKeyCol],
-                                     	'complex',
-                                     	row[termIDCol],
-                                     	row[termCol],
-                                     	row[vocabNameCol]
-                                	])
+                       # if row[genotypeKeyCol] not in simpleGenotype:
+                       # 	self.finalResults.append ( [
+                       #              	row[markerKeyCol],
+                       #              	row[organismKeyCol],
+                       #              	row[termKeyCol],
+                       #              	row[vocabKeyCol],
+                       #              	row[genotypeKeyCol],
+                       #              	'complex',
+                       #              	row[termIDCol],
+                       #              	row[termCol],
+                       #              	row[vocabNameCol]
+                       #         	])
 
-		# sql (3)
+		# sql (14)
 		# allele/genotype/OMIM annotations : simple
-		(cols, rows) = self.results[3]
+		(cols, rows) = self.results[14]
 
                 # set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -224,6 +253,11 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
                 for row in rows:
+
+			location, coordinate = getLocationDisplay(\
+				row[markerKeyCol],
+				row[organismKeyCol])
+
                         self.finalResults.append ( [
                                      row[markerKeyCol],
                                      row[organismKeyCol],
@@ -233,8 +267,43 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				     'simple',
                                      row[termIDCol],
                                      row[termCol],
-                                     row[vocabNameCol]
+                                     row[vocabNameCol],
+				     location,
+				     coordinate
                                 ])
+
+		# sql (15)
+		# human gene/OMIM annotations
+		(cols, rows) = self.results[15]
+
+		# set of columns for common sql fields
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termIDCol = Gatherer.columnNumber (cols, 'accID')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+
+		for row in rows:
+
+			location, coordinate = getLocationDisplay(\
+				row[markerKeyCol],
+				row[organismKeyCol])
+
+			self.finalResults.append ( [ 
+                                     row[markerKeyCol],
+				     row[organismKeyCol],
+				     row[termKeyCol],
+				     row[vocabKeyCol],
+				     None,
+				     None,
+				     row[termIDCol],
+				     row[termCol],
+				     row[vocabNameCol],
+				     location,
+				     coordinate
+				])
 
 		return
 
@@ -244,60 +313,43 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	# sql (0)
-	# human gene/OMIM annotations
-	'''
-        select distinct v._Object_key as _Marker_key, 
-		m._Organism_key,
-		v._Term_key, v._AnnotType_key, 
-		a.accID, t.term, vv.name
-        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
-        where v._AnnotType_key = 1006
-        and v._Term_key = t._Term_key
-        and v._Term_key = a._Object_key
-        and a._MGIType_key = 13
-        and a.private = 0
-        and a.preferred = 1
-        and t._Vocab_key = vv._Vocab_key
-	and v._Object_key = m._Marker_key
-        ''',
-
-	# sql (1)
-	# mouse genotype/OMIM annotations : simple
-	# mouse genotype/MP annotations : simple
-	'''
-	select distinct gg._Marker_key, 
-		m._Organism_key,
-		v._Term_key, v._AnnotType_key, 
-		v._Object_key, 
-		a.accID, t.term, vv.name
+        # sql (0)
+        # mouse genotype/OMIM annotations : simple
+        # mouse genotype/MP annotations : simple
+        '''
+        select distinct gg._Marker_key, 
+                m._Organism_key,
+                v._Term_key, v._AnnotType_key, 
+                v._Object_key, 
+                a.accID, t.term, vv.name
+	into temporary table simpleGenotype
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
-		GXD_AlleleGenotype gg, GXD_Genotype g,
-		ALL_Allele ag, ACC_Accession a, MRK_Marker m
+                GXD_AlleleGenotype gg, GXD_Genotype g,
+                ALL_Allele ag, ACC_Accession a, MRK_Marker m
         where (
-	       (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
-		or
+               (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+                or
                (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-	       )
+               )
         and v._Term_key = t._Term_key
         and v._Object_key = gg._Genotype_key
         and gg._Allele_key = ag._Allele_key
-	and gg._Genotype_key = g._Genotype_key
-	and ag._Allele_Type_key != 847129
-	and ag.isWildType = 0
+        and gg._Genotype_key = g._Genotype_key
+        and ag._Allele_Type_key != 847129
+        and ag.isWildType = 0
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
-	and not exists (select 1 from MGI_Note n
-		where g.isConditional = 1
-		and gg._Allele_key = n._Object_key
-		and n._MGIType_key = 11 and n._NoteType_key = 1034)
-	and gg._Marker_key = m._Marker_key
+        and not exists (select 1 from MGI_Note n
+                where g.isConditional = 1
+                and gg._Allele_key = n._Object_key
+                and n._MGIType_key = 11 and n._NoteType_key = 1034)
+        and gg._Marker_key = m._Marker_key
         ''',
 
-        # sql (2)
+        # sql (1)
 	# mouse genotype/OMIM annotations : complex
 	# mouse genotype/MP annotations : complex
         '''
@@ -306,6 +358,7 @@ cmds = [
                 v._Term_key, v._AnnotType_key,
                 v._Object_key,
                 a.accID, t.term, vv.name
+	into temporary table allGenotype
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv,
                 GXD_AlleleGenotype gg,
                 ACC_Accession a, MRK_Marker m
@@ -323,14 +376,15 @@ cmds = [
         and gg._Marker_key = m._Marker_key
         ''',
 
-        # sql (3)
-	# allele/genotype/OMIM annotations : simple
+        # sql (2)
+        # allele/genotype/OMIM annotations : simple
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
                 v._Term_key, v._AnnotType_key, 
                 v._Object_key,
                 a.accID, t.term, vv.name
+	into temporary table alleleGenotype
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
                 GXD_AlleleGenotype gg,
                 ACC_Accession a, MRK_Marker m
@@ -345,13 +399,97 @@ cmds = [
         and gg._Marker_key = m._Marker_key
         ''',
 
+	# sql (3)
+	# human gene/OMIM annotations
+	'''
+        select distinct v._Object_key as _Marker_key, 
+		m._Organism_key,
+		v._Term_key, v._AnnotType_key, 
+		a.accID, t.term, vv.name
+	into temporary table humanGene
+        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
+        where v._AnnotType_key = 1006
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+        and t._Vocab_key = vv._Vocab_key
+	and v._Object_key = m._Marker_key
+        ''',
+
+	#
+	# indexes (4-10)
+	#
+	'''
+	create index idx_marker_simple on simpleGenotype (_Marker_key)
+	''',
+	'''
+	create index idx_genotype_simple on simpleGenotype (_Object_key)
+	''',
+	'''
+	create index idx_marker_all on allGenotype (_Marker_key)
+	''',
+	'''
+	create index idx_genotype_all on allGenotype (_Object_key)
+	''',
+	'''
+	create index idx_marker_allele on alleleGenotype (_Marker_key)
+	''',
+	'''
+	create index idx_genotype_allele on alleleGenotype (_Object_key)
+	''',
+	'''
+	create index idx_marker_human on humanGene (_Marker_key)
+	''',
+
+	#
+	# sql (11)
+	# mouse coordinates
+	'''
+	select distinct l._Marker_key, l.genomicchromosome, l.chromosome,
+		l.startcoordinate, l.endcoordinate,
+		l.strand, l.cmoffset, l.cytogeneticoffset, l.version
+	from MRK_Location_Cache l
+	where exists (select 1 from simpleGenotype g where l._Marker_key = g._Marker_key)
+	or exists (select 1 from alleleGenotype g where l._Marker_key = g._Marker_key)
+	or exists (select 1 from humanGene g where l._Marker_key = g._Marker_key)
+	''',
+	
+	# sql (12)
+	# mouse genotype/OMIM annotations : simple
+	# mouse genotype/MP annotations : simple
+	'''
+	select * from simpleGenotype
+        ''',
+
+        # sql (13)
+	# mouse genotype/OMIM annotations : complex
+	# mouse genotype/MP annotations : complex
+        '''
+	select * from allGenotype
+        ''',
+
+        # sql (14)
+	# allele/genotype/OMIM annotations : simple
+        '''
+	select * from alleleGenotype
+        ''',
+
+	# sql (15)
+	# human gene/OMIM annotations
+	'''
+	select * from humanGene
+        ''',
+
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
 		'_Term_key', '_AnnotType_key', 
-		'_Object_key', 'genotype_type', 'accID', 'term', 'name' ]
+		'_Object_key', 'genotype_type', 'accID', 'term', 'name',
+		'location_display', 'coordinate_display' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'hdp_annotation'
