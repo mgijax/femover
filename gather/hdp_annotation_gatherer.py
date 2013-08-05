@@ -118,7 +118,7 @@ def getLocationDisplay (marker, organism):
 		location = locationDisplay2 \
 			% (chromosome, cytooffset)
 
-	return location, coordinate
+	return coordinate, location
 
 ###--- Classes ---###
 
@@ -190,7 +190,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				# save simple genotype list
 				simpleGenotype.append(row[genotypeKeyCol])
 
-				location, coordinate = getLocationDisplay(\
+				coordinate, location = getLocationDisplay(\
 					row[markerKeyCol],
 					row[organismKeyCol])
 
@@ -223,20 +223,28 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
-                #for row in rows:
+                for row in rows:
+
 			# skip those listed as 'simple'
-                       # if row[genotypeKeyCol] not in simpleGenotype:
-                       # 	self.finalResults.append ( [
-                       #              	row[markerKeyCol],
-                       #              	row[organismKeyCol],
-                       #              	row[termKeyCol],
-                       #              	row[vocabKeyCol],
-                       #              	row[genotypeKeyCol],
-                       #              	'complex',
-                       #              	row[termIDCol],
-                       #              	row[termCol],
-                       #              	row[vocabNameCol]
-                       #         	])
+                        if row[genotypeKeyCol] not in simpleGenotype:
+
+				coordinate, location = getLocationDisplay(\
+					row[markerKeyCol],
+					row[organismKeyCol])
+
+                        	self.finalResults.append ( [
+                                     	row[markerKeyCol],
+                                     	row[organismKeyCol],
+                                     	row[termKeyCol],
+                                     	row[vocabKeyCol],
+                                     	row[genotypeKeyCol],
+                                     	'complex',
+                                     	row[termIDCol],
+                                     	row[termCol],
+                                     	row[vocabNameCol],
+				     	location,
+				     	coordinate
+                                	])
 
 		# sql (14)
 		# allele/genotype/OMIM annotations : simple
@@ -254,7 +262,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
                 for row in rows:
 
-			location, coordinate = getLocationDisplay(\
+			coordinate, location = getLocationDisplay(\
 				row[markerKeyCol],
 				row[organismKeyCol])
 
@@ -287,7 +295,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 
 		for row in rows:
 
-			location, coordinate = getLocationDisplay(\
+			coordinate, location = getLocationDisplay(\
 				row[markerKeyCol],
 				row[organismKeyCol])
 
@@ -452,6 +460,7 @@ cmds = [
 		l.strand, l.cmoffset, l.cytogeneticoffset, l.version
 	from MRK_Location_Cache l
 	where exists (select 1 from simpleGenotype g where l._Marker_key = g._Marker_key)
+	or exists (select 1 from allGenotype g where l._Marker_key = g._Marker_key)
 	or exists (select 1 from alleleGenotype g where l._Marker_key = g._Marker_key)
 	or exists (select 1 from humanGene g where l._Marker_key = g._Marker_key)
 	''',
