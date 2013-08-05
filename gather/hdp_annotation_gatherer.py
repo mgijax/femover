@@ -56,10 +56,13 @@ import logger
 
 ###--- Constents ---###
 GT_ROSA = 37270
+SIMPLE_TYPE = 'simple'
+COMPLEX_TYPE = 'complex'
 
 mouseLocation = {}
 simpleGenotype = []
 
+#coordinateDisplay = 'Chr%s:%0.2f-%0.2f (%s) %s' 
 coordinateDisplay = 'Chr%s:%s-%s (%s) %s' 
 locationDisplay1 = 'Chr%s %s cM'
 locationDisplay2 = 'Chr%s %s'
@@ -91,8 +94,8 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 
 def getLocationDisplay (marker, organism):
 	#
-	# returns location display
 	# returns coordinate display
+	# returns location display
 	#
 
 	gchromosome = mouseLocation[marker][1]
@@ -200,7 +203,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 					row[termKeyCol],
 					row[vocabKeyCol],
 					row[genotypeKeyCol],
-					'simple',
+					SIMPLE_TYPE,
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
@@ -238,7 +241,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                                      	row[termKeyCol],
                                      	row[vocabKeyCol],
                                      	row[genotypeKeyCol],
-                                     	'complex',
+                                     	COMPLEX_TYPE,
                                      	row[termIDCol],
                                      	row[termCol],
                                      	row[vocabNameCol],
@@ -272,7 +275,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                                      row[termKeyCol],
                                      row[vocabKeyCol],
                                      row[genotypeKeyCol],
-				     'simple',
+				     SIMPLE_TYPE,
                                      row[termIDCol],
                                      row[termCol],
                                      row[vocabNameCol],
@@ -428,6 +431,7 @@ cmds = [
 
 	#
 	# indexes (4-10)
+	# remove genotype keys if they are not to be used
 	#
 	'''
 	create index idx_marker_simple on simpleGenotype (_Marker_key)
@@ -453,7 +457,7 @@ cmds = [
 
 	#
 	# sql (11)
-	# mouse coordinates
+	# all coordinates
 	'''
 	select distinct l._Marker_key, l.genomicchromosome, l.chromosome,
 		l.startcoordinate, l.endcoordinate,
