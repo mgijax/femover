@@ -33,14 +33,12 @@ createStatement = '''CREATE TABLE %s  (
 	marker_key		int	not null,
 	organism_key		int	not null,
 	term_key		int	not null,
-	vocab_key		int	not null,
+	annotation_type		int	not null,
 	genotype_key		int	null,
 	genotype_type		text	null,
 	term_id			text	not null,
 	term			text	not null,
 	vocab_name		text	not null,
-	location_display	text	null,
-	coordinate_display	text	null,
 	PRIMARY KEY(hdp_annotation_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -73,14 +71,12 @@ comments = {
 		'marker_key' : 'marker that is annotated to the term',
 		'organism_key' : 'organism of marker',
 		'term_key' : 'term that is annotated to the marker',
-		'vocab_key' : 'key of the vocabulary containing the annotated term',
+                'annotation_type' : 'type of annotation',
 		'genotype_key' : 'genotype that is annotated to the marker (at most one genotype per marker)',
 		'genotype_type' : 'type of genotype (simple, complex)',
 		'term_id' : 'primary accession ID for the term',
 		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',
-		'location_display' : 'genetic location',
-		'coordinate_display' : ' genome coordinates',
 		},
 	}
 
