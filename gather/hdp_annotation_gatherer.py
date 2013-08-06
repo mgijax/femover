@@ -113,10 +113,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				'name',
 			]
 
-		# sql (11)
+		# sql (8)
 		# mouse genotype/OMIM annotations
 		# mouse genotype/MP annotations
-		(cols, rows) = self.results[11]
+		(cols, rows) = self.results[8]
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -155,10 +155,10 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 					row[vocabNameCol],
 					])
 
-                # sql (12)
+                # sql (9)
 		# mouse genotype/OMIM annotations : complex
 		# mouse genotype/MP annotations : complex
-                (cols, rows) = self.results[12]
+                (cols, rows) = self.results[9]
 
                 # set of columns for common sql fields
                 genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -187,12 +187,11 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                                      	row[vocabNameCol],
                                 	])
 
-		# sql (13)
+		# sql (10)
 		# allele/genotype/OMIM annotations : simple
-		(cols, rows) = self.results[13]
+		(cols, rows) = self.results[10]
 
                 # set of columns for common sql fields
-		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
                 markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
                 organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
                 termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
@@ -208,16 +207,16 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                                      row[organismKeyCol],
                                      row[termKeyCol],
                                      row[annotTypeKeyCol],
-                                     row[genotypeKeyCol],
-				     SIMPLE_TYPE,
+                                     None,
+				     None,
                                      row[termIDCol],
                                      row[termCol],
                                      row[vocabNameCol],
                                 ])
 
-		# sql (14)
+		# sql (11)
 		# human gene/OMIM annotations
-		(cols, rows) = self.results[14]
+		(cols, rows) = self.results[11]
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -314,26 +313,22 @@ cmds = [
         ''',
 
         # sql (2)
-        # allele/genotype/OMIM annotations : simple
+        # allele/OMIM annotations : simple
         '''
-        select distinct gg._Marker_key, 
+        select distinct v._Object_key as _Marker_key, 
                 m._Organism_key,
                 v._Term_key, v._AnnotType_key, 
-                v._Object_key,
                 a.accID, t.term, vv.name
-	into temporary table alleleGenotype
-        from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
-                GXD_AlleleGenotype gg,
-                ACC_Accession a, MRK_Marker m
+        into temporary table alleleOnly
+        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
         where v._AnnotType_key = 1012
         and v._Term_key = t._Term_key
-        and v._Object_key = gg._Genotype_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
-        and gg._Marker_key = m._Marker_key
+        and v._Object_key = m._Marker_key
         ''',
 
 	# sql (3)
@@ -343,7 +338,7 @@ cmds = [
 		m._Organism_key,
 		v._Term_key, v._AnnotType_key, 
 		a.accID, t.term, vv.name
-	into temporary table humanGene
+	into temporary table humanOnly
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
         where v._AnnotType_key = 1006
         and v._Term_key = t._Term_key
@@ -356,55 +351,46 @@ cmds = [
         ''',
 
 	#
-	# indexes (4-10)
+	# indexes (4-7)
 	# remove genotype keys if they are not to be used
 	#
 	'''
 	create index idx_marker_simple on simpleGenotype (_Marker_key)
 	''',
 	'''
-	create index idx_genotype_simple on simpleGenotype (_Object_key)
-	''',
-	'''
 	create index idx_marker_all on allGenotype (_Marker_key)
 	''',
 	'''
-	create index idx_genotype_all on allGenotype (_Object_key)
+	create index idx_marker_allele on alleleOnly (_Marker_key)
 	''',
 	'''
-	create index idx_marker_allele on alleleGenotype (_Marker_key)
-	''',
-	'''
-	create index idx_genotype_allele on alleleGenotype (_Object_key)
-	''',
-	'''
-	create index idx_marker_human on humanGene (_Marker_key)
+	create index idx_marker_human on humanOnly (_Marker_key)
 	''',
 
-	# sql (11)
+	# sql (8)
 	# mouse genotype/OMIM annotations : simple
 	# mouse genotype/MP annotations : simple
 	'''
 	select * from simpleGenotype
         ''',
 
-        # sql (12)
+        # sql (9)
 	# mouse genotype/OMIM annotations : complex
 	# mouse genotype/MP annotations : complex
         '''
 	select * from allGenotype
         ''',
 
-        # sql (13)
+        # sql (10)
 	# allele/genotype/OMIM annotations : simple
         '''
-	select * from alleleGenotype
+	select * from alleleOnly
         ''',
 
-	# sql (14)
+	# sql (11)
 	# human gene/OMIM annotations
 	'''
-	select * from humanGene
+	select * from humanOnly
         ''',
 
 	]
