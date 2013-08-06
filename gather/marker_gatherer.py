@@ -48,8 +48,12 @@ def getLocationDisplay (marker, organism):
 			location = locationDisplay3 % (chromosome)
 		else:
 			location = locationDisplay1 % (chromosome, cmoffset)
-	else:
+
+	elif cytooffset:
 		location = locationDisplay2 % (chromosome, cytooffset)
+
+	else:
+		location = ''
 
 	if startCoordinate:
 		coordinate = coordinateDisplay \
@@ -241,12 +245,24 @@ cmds = [
 	# 2. markers in the reference genome project
 	'select _Marker_key, isReferenceGene from GO_Tracking',
 
-	# 3. all markers with mrk_location_cache
+	# 3. all markers with mrk_location_cache (mouse/human only)
+        #    + pick up the non-mouse, non-human organisms 
+        #    that are not included in MRK_Location_Cache
 	'''select distinct _Marker_key, genomicchromosome, chromosome,
                 startcoordinate::varchar, endcoordinate::varchar,
                 strand, cmoffset, cytogeneticoffset, version,
                 _marker_type_key
-            from mrk_location_cache''',
+            from mrk_location_cache
+	    union
+            select m. _Marker_key, m.chromosome, m.chromosome, 
+		null as startcoordinate, null as endcoordinate, null as strand,
+		null as cmoffset, m.cytogeneticOffset, null as version, m._marker_type_key
+            from mrk_marker m
+            where m._Marker_Status_key in (1,3)
+		  and m._Organism_key not in (1,2)
+		  and m.cytogeneticOffset is not null
+                  and not exists (select 1 from mrk_location_cache c
+                            where m._Marker_key = c._Marker_key)''',
 
 	# 4. all markers
 	'''select _Marker_key, symbol, name, _Marker_Type_key, _Organism_key,
