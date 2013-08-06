@@ -17,6 +17,8 @@ locationDisplay3 = 'Chr%s syntenic'
 locationDisplay4 = 'Chr%s QTL'
 locationDisplay5 = 'Chr Unknown'
 
+###--- Functions ---###
+
 def getLocationDisplay (marker, organism):
 	#
 	# returns location display
@@ -38,7 +40,9 @@ def getLocationDisplay (marker, organism):
 	markerType = locationLookup[marker][9]
 
 	if organism == 1:
-		if markerType == 6:
+		if chromosome == 'UN' or cmoffset == -999:
+			location = locationDisplay5
+		elif markerType == 6:
 			location = locationDisplay4 % (chromosome)
 		elif cmoffset == -1:
 			location = locationDisplay3 % (chromosome)
