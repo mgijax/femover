@@ -1,3 +1,11 @@
+TAG: femover-5-1-?-?
+DATE: 08/01/2013
+STAFF: lec
+CHANGES: 
+TR11423/human disease portal
+1) gather/hdp_annotation_gatherer.py: new
+2) gather/marker_gatherer.py: added location, coordinate displays
+
 TAG: femover-tr11423-BP
 DATE: 07/18/2013
 STAFF: lec
