@@ -315,12 +315,13 @@ cmds = [
         # sql (2)
         # allele/OMIM annotations : simple
         '''
-        select distinct v._Object_key as _Marker_key, 
+        select distinct m._Marker_key,
                 m._Organism_key,
                 v._Term_key, v._AnnotType_key, 
                 a.accID, t.term, vv.name
         into temporary table alleleOnly
-        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
+        from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, 
+	     ALL_Allele al, MRK_Marker m
         where v._AnnotType_key = 1012
         and v._Term_key = t._Term_key
         and v._Term_key = a._Object_key
@@ -328,7 +329,8 @@ cmds = [
         and a.private = 0
         and a.preferred = 1
         and t._Vocab_key = vv._Vocab_key
-        and v._Object_key = m._Marker_key
+        and v._Object_key = al._Allele_key
+	and al._Marker_key = m._Marker_key
         ''',
 
 	# sql (3)
