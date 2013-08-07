@@ -1,5 +1,11 @@
 #!/usr/local/bin/python
 
+#
+# lec   08/06/2013
+#       - TR11423/human disease portal/scrum-dog
+#               added location/coordinate display
+#
+
 import Table
 
 ###--- Globals ---###
