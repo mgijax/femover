@@ -186,7 +186,7 @@ def primaryID (termKey):
 		return TERM_CACHE[termKey][1]
 	return None
 
-def markerKeys (classKey):
+def markerKeys (desiredClassKey):
 	global CLASS_KEY_TO_MARKERS
 
 	# if we've not yet built the cache, then build it using data from the
@@ -194,7 +194,11 @@ def markerKeys (classKey):
 
 	if not CLASS_KEY_TO_MARKERS:
 		for markerKey in MARKER_DATA_CACHE.keys():
+
 			classKey = MARKER_DATA_CACHE[markerKey][3]
+
+			if classKey == None:
+				continue
 
 			if CLASS_KEY_TO_MARKERS.has_key(classKey):
 				CLASS_KEY_TO_MARKERS[classKey].append (
@@ -206,8 +210,8 @@ def markerKeys (classKey):
 
 	# return the markers, if this is a valid class key
 
-	if CLASS_KEY_TO_MARKERS.has_key(classKey):
-		return CLASS_KEY_TO_MARKERS[classKey]
+	if CLASS_KEY_TO_MARKERS.has_key(desiredClassKey):
+		return CLASS_KEY_TO_MARKERS[desiredClassKey]
 	return [] 
 
 def nextDiseaseGroupKey():
