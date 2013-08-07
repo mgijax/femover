@@ -15,7 +15,8 @@ import utils
 # list of markers in mrk_location_cache
 locationLookup = {}
 
-coordinateDisplay = 'Chr%s:%s-%s (%s)'
+coordinateDisplay1 = 'Chr%s:%s-%s (%s)'
+coordinateDisplay2 = 'Chr%s:%s-%s'
 locationDisplay1 = 'Chr%s %s cM'
 locationDisplay2 = 'Chr%s %s'
 locationDisplay3 = 'Chr%s syntenic'
@@ -61,8 +62,12 @@ def getLocationDisplay (marker, organism):
 		location = ''
 
 	if startCoordinate:
-		coordinate = coordinateDisplay \
-			% (gchromosome, startCoordinate, endCoordinate, strand)
+		if strand:
+			coordinate = coordinateDisplay1 \
+				% (gchromosome, startCoordinate, endCoordinate, strand)
+		else:
+			coordinate = coordinateDisplay2 \
+				% (gchromosome, startCoordinate, endCoordinate)
 	else:
 		coordinate = ''
 
