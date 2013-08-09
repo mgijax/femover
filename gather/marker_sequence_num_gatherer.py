@@ -25,6 +25,7 @@ else:
 SYMBOL = 'bySymbol'
 NAME = 'byName'
 TYPE = 'byMarkerType'
+SUBTYPE = 'byMarkerSubType'
 ORGANISM = 'byOrganism'
 ID = 'byPrimaryID'
 LOCATION = 'byLocation'
@@ -34,6 +35,29 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for ordering data for markers,
 	#	collates results, writes tab-delimited text file
+
+	def initSubTypeOrders (self):
+		self.subTypeOrder = {}		# subTypeOrder[marker key] = seq num
+		i = 0
+		prevType=''
+		keyCol = Gatherer.columnNumber (self.results[6][0],
+			'_Marker_key')
+		typeCol = Gatherer.columnNumber (self.results[6][0],
+			'directTerms')
+		for row in self.results[6][1]:
+			subtype = row[typeCol]
+			if prevType != subtype:
+				prevType = subtype
+				i += 1
+			self.subTypeOrder[row[keyCol]] = i
+		self.maxSubTypeOrder = i+1
+
+		logger.debug ('Ordered the %d marker sub types' % self.maxSubTypeOrder)
+
+	def getSubTypeOrder (self,markerKey):
+		if markerKey in self.subTypeOrder:
+			return self.subTypeOrder[markerKey]
+		return self.maxSubTypeOrder	
 
 	def collateResults (self):
 
@@ -48,6 +72,8 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 			typeOrder[row[keyCol]] = i
 
 		logger.debug ('Ordered the %d marker types' % len(typeOrder))
+
+		self.initSubTypeOrders()
 
 		# compute and cache the ordering for organisms
 
@@ -112,10 +138,10 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		i = 1
 		for (symbol, n, markerKey, t, o) in symbols:
 			dict[markerKey] = [ markerKey, i, nameOrder[n], typeOrder[t],
-				organismOrder[o] ]
+				self.getSubTypeOrder(markerKey), organismOrder[o] ]
 			i = i + 1
 
-		self.finalColumns = [ '_Marker_key', SYMBOL, NAME, TYPE, ORGANISM ]
+		self.finalColumns = [ '_Marker_key', SYMBOL, NAME, TYPE, SUBTYPE, ORGANISM ]
 
 		logger.debug ('Sorted %d by symbol' % len(dict))
 
@@ -261,12 +287,16 @@ cmds = [
 		from mrk_location_cache c, mrk_marker m
 		where c._Marker_key = m._Marker_key
 		''' % offset,
+	'''
+	select distinct _marker_key, directTerms 
+		from MRK_MCV_Cache order by directTerms
+	''',
 	]
 
 # order of fields (from the Sybase query results) to be written to the
 # output file
 fieldOrder = [
-	'_Marker_key', SYMBOL, NAME, TYPE, ORGANISM, ID, LOCATION,
+	'_Marker_key', SYMBOL, NAME, TYPE, SUBTYPE, ORGANISM, ID, LOCATION,
 	]
 
 # prefix for the filename of the output file
