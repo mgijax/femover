@@ -40,16 +40,12 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		self.subTypeOrder = {}		# subTypeOrder[marker key] = seq num
 		i = 0
 		prevType=''
-		keyCol = Gatherer.columnNumber (self.results[6][0],
-			'_Marker_key')
-		typeCol = Gatherer.columnNumber (self.results[6][0],
-			'directTerms')
 		for row in self.results[6][1]:
-			subtype = row[typeCol]
+			subtype = row[1]
 			if prevType != subtype:
 				prevType = subtype
 				i += 1
-			self.subTypeOrder[row[keyCol]] = i
+			self.subTypeOrder[row[0]] = i
 		self.maxSubTypeOrder = i+1
 
 		logger.debug ('Ordered the %d marker sub types' % self.maxSubTypeOrder)
@@ -288,8 +284,14 @@ cmds = [
 		where c._Marker_key = m._Marker_key
 		''' % offset,
 	'''
-	select distinct _marker_key, directTerms 
-		from MRK_MCV_Cache order by directTerms
+	select distinct mcc._marker_key,ct.term,d._Parent_key,d.sequencenum
+        from mrk_mcv_cache mcc, DAG_Edge d, DAG_Node p, DAG_Node c, VOC_Term ct
+        where d._DAG_key = 9 
+                and d._Parent_key = p._Node_key 
+                and d._Child_key = c._Node_key 
+        	and c._Object_key = ct._Term_key 
+		and ct.term=mcc.directterms
+        order by d._Parent_key, d.sequenceNum
 	''',
 	]
 
