@@ -269,7 +269,6 @@ cmds = [
                (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
                )
         and v._Term_key = t._Term_key
-	and t.isObsolete = 0
         and v._Object_key = gg._Genotype_key
         and gg._Allele_key = ag._Allele_key
         and gg._Genotype_key = g._Genotype_key
@@ -304,7 +303,6 @@ cmds = [
                (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
                )
         and v._Term_key = t._Term_key
-	and t.isObsolete = 0
         and v._Object_key = gg._Genotype_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
@@ -325,7 +323,6 @@ cmds = [
 	     ALL_Allele al, MRK_Marker m
         where v._AnnotType_key = 1012
         and v._Term_key = t._Term_key
-	and t.isObsolete = 0
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -345,7 +342,6 @@ cmds = [
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
         where v._AnnotType_key = 1006
         and v._Term_key = t._Term_key
-	and t.isObsolete = 0
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
