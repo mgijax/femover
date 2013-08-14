@@ -314,6 +314,7 @@ cmds = [
 
         # sql (2)
         # allele/OMIM annotations
+	# exclude Gt(ROSA)
         '''
         select distinct m._Marker_key,
                 m._Organism_key,
@@ -330,7 +331,8 @@ cmds = [
         and t._Vocab_key = vv._Vocab_key
         and v._Object_key = al._Allele_key
 	and al._Marker_key = m._Marker_key
-        ''',
+	and m._Marker_key != %s
+        ''' % (GT_ROSA),
 
 	# sql (3)
 	# human gene/OMIM annotations
