@@ -322,6 +322,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 ###--- globals ---###
 
 cmds = [
+	#
+	# hdp_annotation table
+	#
+
         # sql (0)
         # mouse genotype/OMIM annotations : simple
         # mouse genotype/MP annotations : simple
@@ -423,11 +427,24 @@ cmds = [
 	and v._Object_key = m._Marker_key
         ''',
 
-	# sql (4) : annotations that contain homologene clusters
-	#	by mouse (1005) for super-simple genotypes
-	#	by mouse (1002) for super-simple genotypes
-	#	by mouse (1012)
-	#	by human (1006)
+	#
+	# hdp_gridcluster/hdp_gridcluster_marker tables
+	#
+
+	# sql (4) : markers that contain homologene clusters
+	#	by mouse marker/OMIM (1005) for super-simple genotypes
+	#	by mouse marker/MP (1002) for super-simple genotypes
+	#	by mouse marker (via allele)/OMIM (1012)
+	#	by human marker/OMIM (1006)
+	#
+	# only include if the genotype is a super-simple genotype
+	# that is, the genotype has only one marker
+	# and merker is NOT Gt(ROSA)
+	#
+	# select all *distinct* homologene clusters that contain a mouse/human HPD 
+	# annotation.  then select all of the mouse/human markers that are contained
+	# within each of those clusters
+	#
         '''
 	WITH
 	temp_homologene AS
@@ -447,6 +464,7 @@ cmds = [
                 	group by _Genotype_key having count(*) = 1)
         	or exists (select 1 from VOC_Annot v, ALL_Allele a
                 	where c._Marker_key = a._Marker_key
+                	and a._Marker_key != 37270
                 	and a._Allele_key = v._Object_key
                 	and v._AnnotType_key = 1012)
         	or exists (select 1 from VOC_Annot v
@@ -461,10 +479,9 @@ cmds = [
 	order by c._Cluster_key
 	''',
 
-	#
-	# only include if the genotype is a super-simple genotype; that is, it has only one marker
-	#
-	# sql (5) : mouse/OMIM annotations that do NOT contain homologene clusters
+	# sql (5) : mouse with OMIM annotations where mouse does NOT contain homologene clusters
+	# include only super-simple genotypes
+	# exclude Gt(ROSA)
 	'''
 	WITH
 	temp_genotype AS
@@ -479,7 +496,9 @@ cmds = [
                		and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
 	''',
 
-	# sql (6) : mouse/MP annotations that do NOT contain homologene clusters
+	# sql (6) : mouse with MP annotations where mouse does NOT contain homologene clusters
+	# include only super-simple genotypes
+	# exclude Gt(ROSA)
 	'''
 	WITH
 	temp_genotype AS
@@ -494,7 +513,9 @@ cmds = [
                         and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
 	''',
 
-	# sql (7) : allele/OMIM annotations that do NOT contain homologene clusters
+	# sql (7) : marker (via allele) with OMIM annotations where does mouse NOT contain homologene clusters
+	# include only super-simple genotypes
+	# exclude Gt(ROSA)
 	'''
         select m._Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, ALL_Allele a, MRK_Marker m
@@ -505,7 +526,9 @@ cmds = [
 	and not exists (select 1 from MRK_ClusterMember c where m._Marker_key = c._Marker_key)
 	''',
 
-	# sql (8) : human annotations that do NOT contain homologene clusters
+	# sql (8) : human with OMIM annotations where human does NOT contain homologene clusters
+	# include only super-simple genotypes
+	# exclude Gt(ROSA)
 	'''
 	select v._Object_key as _Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, MRK_Marker m
