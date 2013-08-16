@@ -286,28 +286,27 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				     row[symbolCol],
 				])
 
-		# sql (7-11) : annotations that do NOT contain homologene clusters
-		for (cols, rows) in self.results[7:11]:
+		# sql (7) : mouse/human markers with annotations that do NOT contain homologene clusters
+		(cols, rows) = self.results[7]
 
-			# set of columns for common sql fields
-			markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-			organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-			symbolCol = Gatherer.columnNumber (cols, 'symbol')
+		# set of columns for common sql fields
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
-			for row in rows:
+		for row in rows:
 
-				clusterKey = clusterKey + 1
-				clusterResults.append ( [ 
-                                    		clusterKey,
-					])
+			clusterKey = clusterKey + 1
+			clusterResults.append ( [ 
+                                clusterKey,
+				])
 
-				markerResults.append ( [ 
-                                     	clusterKey,
-                                     	row[markerKeyCol],
-				     	row[organismKeyCol],
-				     	row[symbolCol],
-					])
-
+			markerResults.append ( [ 
+                                    	clusterKey,
+                                    	row[markerKeyCol],
+			     		row[organismKeyCol],
+			     		row[symbolCol],
+				])
 
 		# push data to output files
 		self.output.append((annotCols, annotResults))
@@ -491,6 +490,9 @@ cmds = [
 	''',
 
         # sql (7) : mouse with OMIM annotations where mouse does NOT contain homologene clusters
+        #           mouse with MP annotations where mouse does NOT contain homologene clusters
+        #           mouse (by allele) with MP annotations where mouse does NOT contain homologene clusters
+        #           human with OMIM annotations where mouse does NOT contain homologene clusters
         # include only super-simple genotypes
         # exclude Gt(ROSA)
 	'''
@@ -502,12 +504,9 @@ cmds = [
                         and g._Genotype_key = v._Object_key
                         and g._Marker_key != 37270
                		and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
-	''',
 
-	# sql (8) : mouse with MP annotations where mouse does NOT contain homologene clusters
-	# include only super-simple genotypes
-	# exclude Gt(ROSA)
-	'''
+	union
+
 	select m._Marker_key, m._Organism_key, m.symbol
 	from MRK_Marker m
 	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g, temp_genotype t
@@ -516,12 +515,9 @@ cmds = [
                         and g._Genotype_key = v._Object_key
                         and g._Marker_key != 37270
                         and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-	''',
 
-	# sql (9) : marker (via allele) with OMIM annotations where does mouse NOT contain homologene clusters
-	# include only super-simple genotypes
-	# exclude Gt(ROSA)
-	'''
+	union
+
         select m._Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, ALL_Allele a, MRK_Marker m
         where v._AnnotType_key = 1012
@@ -529,12 +525,9 @@ cmds = [
 	and a._Marker_key = m._Marker_key
         and m._Marker_key != 37270
 	and not exists (select 1 from MRK_ClusterMember c where m._Marker_key = c._Marker_key)
-	''',
 
-	# sql (10) : human with OMIM annotations where human does NOT contain homologene clusters
-	# include only super-simple genotypes
-	# exclude Gt(ROSA)
-	'''
+	union
+
 	select v._Object_key as _Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, MRK_Marker m
         where v._AnnotType_key = 1006
