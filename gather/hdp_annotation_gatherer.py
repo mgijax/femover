@@ -59,8 +59,6 @@ GT_ROSA = 37270
 SIMPLE_TYPE = 'simple'
 COMPLEX_TYPE = 'complex'
 
-simpleGenotype = []
-
 ###--- Functions ---###
 
 def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
@@ -69,6 +67,7 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 	#
 	
 	genomarkerDict = {}
+	logger.debug("creating map of genotype and count of marker keys")
 	for row in rows:
 		genotypeKey = row[genotypeKeyCol]
 		markerKey = row[markerKeyCol]
@@ -84,6 +83,7 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 			genomarkerDict[genotypeKey] = []
 			genomarkerDict[genotypeKey].append(markerKey)
 
+	logger.debug("done creating map of genotype and count of marker keys")
 	return genomarkerDict
 
 ###--- Classes ---###
@@ -96,7 +96,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
         def collateResults(self):
 
-		global simpleGenotype
+		simpleGenotype = set([])
 
 		#
 		# hdp_annotation
@@ -117,6 +117,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# mouse genotype/OMIM annotations
 		# mouse genotype/MP annotations
 		(cols, rows) = self.results[0]
+		logger.debug("iterating query 0 results")
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -141,7 +142,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	   			row[markerKeyCol] != GT_ROSA:
 
 				# save simple genotype list
-				simpleGenotype.append(row[genotypeKeyCol])
+				simpleGenotype.add(row[genotypeKeyCol])
 
 				annotResults.append ( [ 
 					row[markerKeyCol],
@@ -155,10 +156,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[vocabNameCol],
 					])
 
+		logger.debug("done iterating query 0 results")
                 # sql (1)
 		# mouse genotype/OMIM annotations : complex
 		# mouse genotype/MP annotations : complex
                 (cols, rows) = self.results[1]
+		logger.debug("iterating query 1 results")
 
                 # set of columns for common sql fields
                 genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
@@ -187,9 +190,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      	row[vocabNameCol],
                                 	])
 
+		logger.debug("done iterating query 1 results")
 		# sql (2)
 		# allele/OMIM annotations
 		(cols, rows) = self.results[2]
+		logger.debug("iterating query 2 results")
 
                 # set of columns for common sql fields
                 markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -215,9 +220,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      row[vocabNameCol],
                                 ])
 
+		logger.debug("done iterating query 2 results")
 		# sql (3)
 		# human gene/OMIM annotations
 		(cols, rows) = self.results[3]
+		logger.debug("iterating query 3 results")
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -242,6 +249,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				     row[termCol],
 				     row[vocabNameCol],
 				])
+		logger.debug("done iterating query 3 results")
 
 		#
 		# hdp_gridcluster/hdp_gridcluster_marker
@@ -260,6 +268,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# sql (6) : annotations that contain homologene clusters
 		(cols, rows) = self.results[6]
+		logger.debug("iterating query 6 results")
 
 		# set of columns for common sql fields
 		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
@@ -269,6 +278,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 		clusterLookup = []
+		markersWithHomology = set([])
 
 		for row in rows:
 
@@ -279,15 +289,25 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					])
 				clusterLookup.append(clusterKey)
 
+			markerKey = row[markerKeyCol]
+			# filter out any extra markerKeys. There should only be one cluster for each marker
+			# TODO: If possible, clean up query to not include an extra row for markers that already have a cluster
+			#  	I am not sure which query has the problem -kstone
+			if markerKey in markersWithHomology:
+				continue
+			markersWithHomology.add(markerKey)
+
 			markerResults.append ( [ 
-                                     row[clusterKeyCol],
-                                     row[markerKeyCol],
-				     row[organismKeyCol],
-				     row[symbolCol],
+				    row[clusterKeyCol],
+				    markerKey,
+				    row[organismKeyCol],
+				    row[symbolCol],
 				])
+		logger.debug("done iterating query 6 results")
 
 		# sql (7) : mouse/human markers with annotations that do NOT contain homologene clusters
 		(cols, rows) = self.results[7]
+		logger.debug("iterating query 7 results")
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -301,17 +321,27 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 clusterKey,
 				])
 
+			# filter out any extra markerKeys. There should only be one cluster for each marker
+			# TODO: If possible, clean up query to not include an extra row for markers that already have a cluster
+			#  	I am not sure which query has the problem -kstone
+			markerKey = row[markerKeyCol]
+			if markerKey in markersWithHomology:
+				continue
+	
 			markerResults.append ( [ 
                                     	clusterKey,
-                                    	row[markerKeyCol],
+					markerKey,
 			     		row[organismKeyCol],
 			     		row[symbolCol],
 				])
+		logger.debug("done iterating query 7 results")
 
+		logger.debug("adding data to output files")
 		# push data to output files
 		self.output.append((annotCols, annotResults))
 		self.output.append((clusterCols, clusterResults))
 		self.output.append((markerCols, markerResults))
+		logger.debug("done adding data to output files")
 
 		return
 
