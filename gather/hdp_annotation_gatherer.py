@@ -99,7 +99,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		global simpleGenotype
 
 		#
-		# process final SQL
+		# hdp_annotation
 		#
 		annotResults = []
 		annotCols = ['_Marker_key', 
@@ -243,8 +243,76 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				     row[vocabNameCol],
 				])
 
+		#
+		# hdp_gridcluster/hdp_gridcluster_marker
+		#
+		clusterResults = []
+		clusterCols = ['_Cluster_key',
+			]
 
+		markerResults = []
+		markerCols = ['_Cluster_key',
+				'_Marker_key', 
+				'_Organism_key', 
+				'symbol',
+			]
+
+
+		# sql (4) : annotations that contain homologene clusters
+		(cols, rows) = self.results[4]
+
+		# set of columns for common sql fields
+		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+		clusterKey = 1
+		clusterLookup = []
+
+		for row in rows:
+
+			clusterKey = row[clusterKeyCol]
+			if clusterKey not in clusterLookup:
+				clusterResults.append ( [ 
+                                     	clusterKey,
+					])
+				clusterLookup.append(clusterKey)
+
+			markerResults.append ( [ 
+                                     row[clusterKeyCol],
+                                     row[markerKeyCol],
+				     row[organismKeyCol],
+				     row[symbolCol],
+				])
+
+		# sql (5) : annotations that do NOT contain homologene clusters
+		for (cols, rows) in self.results[5:9]:
+
+			# set of columns for common sql fields
+			markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+			organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+			symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+			for row in rows:
+
+				clusterKey = clusterKey + 1
+				clusterResults.append ( [ 
+                                    		clusterKey,
+					])
+
+				markerResults.append ( [ 
+                                     	clusterKey,
+                                     	row[markerKeyCol],
+				     	row[organismKeyCol],
+				     	row[symbolCol],
+					])
+
+
+		# push data to output files
 		self.output.append((annotCols, annotResults))
+		self.output.append((clusterCols, clusterResults))
+		self.output.append((markerCols, markerResults))
 
 		return
 
@@ -355,6 +423,96 @@ cmds = [
 	and v._Object_key = m._Marker_key
         ''',
 
+	# sql (4) : annotations that contain homologene clusters
+	#	by mouse (1005) for super-simple genotypes
+	#	by mouse (1002) for super-simple genotypes
+	#	by mouse (1012)
+	#	by human (1006)
+        '''
+	WITH
+	temp_homologene AS
+	(select distinct c._Cluster_key
+        	from MRK_ClusterMember c
+        	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g
+                	where c._Marker_key = g._Marker_key
+                	and g._Marker_key != 37270
+                	and g._Genotype_key = v._Object_key
+                	and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
+                	group by _Genotype_key having count(*) = 1)
+        	or exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g
+                	where c._Marker_key = g._Marker_key
+                	and g._Marker_key != 37270
+                	and g._Genotype_key = v._Object_key
+                	and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424
+                	group by _Genotype_key having count(*) = 1)
+        	or exists (select 1 from VOC_Annot v, ALL_Allele a
+                	where c._Marker_key = a._Marker_key
+                	and a._Allele_key = v._Object_key
+                	and v._AnnotType_key = 1012)
+        	or exists (select 1 from VOC_Annot v
+                	where c._Marker_key = v._Object_key
+                	and v._AnnotType_key = 1006)
+	)
+	select c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol
+	from temp_homologene h, MRK_ClusterMember c, MRK_Marker m
+	where h._Cluster_key = c._Cluster_key
+	and c._Marker_key = m._Marker_key
+	and m._Organism_key in (1,2)
+	order by c._Cluster_key
+	''',
+
+	#
+	# only include if the genotype is a super-simple genotype; that is, it has only one marker
+	#
+	# sql (5) : mouse/OMIM annotations that do NOT contain homologene clusters
+	'''
+	WITH
+	temp_genotype AS
+	(select _Genotype_key, _Marker_key from GXD_AlleleGenotype group by _Genotype_key, _Marker_key having count(*) = 1)
+
+	select m._Marker_key, m._Organism_key, m.symbol
+	from MRK_Marker m
+	where exists (select 1 from VOC_Annot v, temp_genotype g
+                        where m._Marker_key = g._Marker_key
+                        and g._Genotype_key = v._Object_key
+                        and g._Marker_key != 37270
+               		and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+	''',
+
+	# sql (6) : mouse/MP annotations that do NOT contain homologene clusters
+	'''
+	WITH
+	temp_genotype AS
+	(select _Genotype_key, _Marker_key from GXD_AlleleGenotype group by _Genotype_key, _Marker_key having count(*) = 1)
+
+	select m._Marker_key, m._Organism_key, m.symbol
+	from MRK_Marker m
+	where exists (select 1 from VOC_Annot v, temp_genotype g
+                        where m._Marker_key = g._Marker_key
+                        and g._Genotype_key = v._Object_key
+                        and g._Marker_key != 37270
+                        and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
+	''',
+
+	# sql (7) : allele/OMIM annotations that do NOT contain homologene clusters
+	'''
+        select m._Marker_key, m._Organism_key, m.symbol
+	from VOC_Annot v, ALL_Allele a, MRK_Marker m
+        where v._AnnotType_key = 1012
+        and v._Object_key = a._Allele_key 
+	and a._Marker_key = m._Marker_key
+        and m._Marker_key != 37270
+	and not exists (select 1 from MRK_ClusterMember c where m._Marker_key = c._Marker_key)
+	''',
+
+	# sql (8) : human annotations that do NOT contain homologene clusters
+	'''
+	select v._Object_key as _Marker_key, m._Organism_key, m.symbol
+	from VOC_Annot v, MRK_Marker m
+        where v._AnnotType_key = 1006
+        and v._Object_key = m._Marker_key
+	and not exists (select 1 from MRK_ClusterMember c where m._Marker_key = c._Marker_key)
+	''',
 	]
 
 # prefix for the filename of the output file
@@ -365,6 +523,14 @@ files = [
 			'_Object_key', 'genotype_type', 'accID', 'term', 'name', ],
           'hdp_annotation'),
 
+	('hdp_gridcluster',
+		[ '_Cluster_key' ],
+          'hdp_gridcluster'),
+
+	('hdp_gridcluster_marker',
+		[ Gatherer.AUTO, '_Cluster_key', '_Marker_key',
+		  '_Organism_key', 'symbol' ],
+          'hdp_gridcluster_marker'),
 	]
 
 # global instance of a HDPAnnotationGatherer
