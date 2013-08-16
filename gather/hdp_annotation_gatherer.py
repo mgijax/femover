@@ -88,7 +88,7 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 
 ###--- Classes ---###
 
-class HDPAnnotationGatherer (Gatherer.Gatherer):
+class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the hdp_annotation table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for annotation data,
@@ -101,8 +101,8 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		#
 		# process final SQL
 		#
-		self.finalResults = []
-		self.finalColumns = ['_Marker_key', 
+		annotResults = []
+		annotCols = ['_Marker_key', 
 				'_Organism_key', 
 				'_Term_key', 
 				'_AnnotType_key', 
@@ -143,7 +143,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				# save simple genotype list
 				simpleGenotype.append(row[genotypeKeyCol])
 
-				self.finalResults.append ( [ 
+				annotResults.append ( [ 
 					row[markerKeyCol],
 					row[organismKeyCol],
 					row[termKeyCol],
@@ -175,7 +175,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 			# skip those listed as 'simple'
                         if row[genotypeKeyCol] not in simpleGenotype:
 
-                        	self.finalResults.append ( [
+                        	annotResults.append ( [
                                      	row[markerKeyCol],
                                      	row[organismKeyCol],
                                      	row[termKeyCol],
@@ -203,7 +203,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                 for row in rows:
 
 			# no genotypes
-                        self.finalResults.append ( [
+                        annotResults.append ( [
                                      row[markerKeyCol],
                                      row[organismKeyCol],
                                      row[termKeyCol],
@@ -231,7 +231,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 		for row in rows:
 
 			# no genotypes
-			self.finalResults.append ( [ 
+			annotResults.append ( [ 
                                      row[markerKeyCol],
 				     row[organismKeyCol],
 				     row[termKeyCol],
@@ -242,6 +242,9 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
 				     row[termCol],
 				     row[vocabNameCol],
 				])
+
+
+		self.output.append((annotCols, annotResults))
 
 		return
 
@@ -354,17 +357,18 @@ cmds = [
 
 	]
 
-# order of fields (from the query results) to be written to the
-# output file
-fieldOrder = [ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
-		'_Term_key', '_AnnotType_key', 
-		'_Object_key', 'genotype_type', 'accID', 'term', 'name', ]
-
 # prefix for the filename of the output file
-filenamePrefix = 'hdp_annotation'
+files = [
+	('hdp_annotation',
+		[ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
+			'_Term_key', '_AnnotType_key', 
+			'_Object_key', 'genotype_type', 'accID', 'term', 'name', ],
+          'hdp_annotation'),
+
+	]
 
 # global instance of a HDPAnnotationGatherer
-gatherer = HDPAnnotationGatherer (filenamePrefix, fieldOrder, cmds)
+gatherer = HDPAnnotationGatherer (files, cmds)
 
 ###--- main program ---###
 
