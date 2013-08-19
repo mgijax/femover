@@ -35,6 +35,8 @@
 #
 # 2.  collation of results:
 #
+#	hdp_annotation:
+#
 #	a) all human/gene/OMIM annotations are loaded
 #
 #	for mouse:
@@ -46,12 +48,21 @@
 #		. marker is NOT 'Gt(ROSA)26Sor'
 #
 #	c) all gene (via allele)/OMIM annotations are loaded
+#
+#	hdp_gridcluster/hdp_gridcluster_marker
+#
+#	a) markers that contain/don't contain homologene clusters
+#       	by mouse marker/OMIM (1005) for super-simple genotypes
+#       	by mouse marker/MP (1002) for super-simple genotypes
+#       	by mouse marker (via allele)/OMIM (1012)
+#       	by human marker/OMIM (1006)
 #	
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
 #
 
 import Gatherer
+import logger
 
 ###--- Constents ---###
 GT_ROSA = 37270
@@ -94,9 +105,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
         def collateResults(self):
 
-		simpleGenotype = set([])
-
-		#
 		# hdp_annotation
 		#
 		annotResults = []
@@ -129,17 +137,20 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# dictionary of distinct genotype/marker keys and their counts
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
+		# list of simple genotypes
+		simpleGenotypeList = set([])
+
 		#
 		# if the genotype is simple (at most one marker)
-		# and the marker is NOT ''Gt(ROSA)26Sor'
+		# and the marker is NOT 'Gt(ROSA)26Sor'
 		#
 
 		for row in rows:
-			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 and \
-	   			row[markerKeyCol] != GT_ROSA:
+			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 \
+				and row[markerKeyCol] != GT_ROSA:
 
 				# save simple genotype list
-				simpleGenotype.add(row[genotypeKeyCol])
+				simpleGenotypeList.add(row[genotypeKeyCol])
 
 				annotResults.append ( [ 
 					row[markerKeyCol],
@@ -171,7 +182,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 for row in rows:
 
 			# skip those listed as 'simple'
-                        if row[genotypeKeyCol] not in simpleGenotype:
+                        if row[genotypeKeyCol] not in simpleGenotypeList:
 
                         	annotResults.append ( [
                                      	row[markerKeyCol],
@@ -265,29 +276,29 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
 		clusterKey = 1
-		clusterLookup = set([])
+		clusterList = set([])
 
                 # at most one marker should exist in a gridCluster
-                markerLookup = set([])
+                markerList = set([])
 
 		for row in rows:
 
 			clusterKey = row[clusterKeyCol]
-			if clusterKey not in clusterLookup:
-				clusterResults.append ( [ 
+			if clusterKey not in clusterList:
+				clusterResults.append( [ 
                                      	clusterKey,
 					])
-				clusterLookup.add(clusterKey)
+				clusterList.add(clusterKey)
 
 			markerKey = row[markerKeyCol]
-			if markerKey not in markerLookup:
+			if markerKey not in markerList:
 				markerResults.append ( [ 
 				    	row[clusterKeyCol],
 				    	markerKey,
 				    	row[organismKeyCol],
 				    	row[symbolCol],
 					])
-				markerLookup.add(markerKey)
+				markerList.add(markerKey)
 
 		# sql (7) : mouse/human markers with annotations that do NOT contain homologene clusters
 		(cols, rows) = self.results[7]
@@ -305,14 +316,14 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				])
 
 			markerKey = row[markerKeyCol]
-			if markerKey not in markerLookup:
+			if markerKey not in markerList:
 				markerResults.append ( [ 
                                     		clusterKey,
 						markerKey,
 			     			row[organismKeyCol],
 			     			row[symbolCol],
 					])
-				markerLookup.add(markerKey)
+				markerList.add(markerKey)
 
 		# push data to output files
 		self.output.append((annotCols, annotResults))
