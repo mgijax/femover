@@ -293,10 +293,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			markerKey = row[markerKeyCol]
 			if markerKey not in markerList:
 				markerResults.append ( [ 
-				    	row[clusterKeyCol],
-				    	markerKey,
-				    	row[organismKeyCol],
-				    	row[symbolCol],
+			    		row[clusterKeyCol],
+			    		markerKey,
+			    		row[organismKeyCol],
+			    		row[symbolCol],
 					])
 				markerList.add(markerKey)
 
@@ -318,12 +318,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			markerKey = row[markerKeyCol]
 			if markerKey not in markerList:
 				markerResults.append ( [ 
-                                    		clusterKey,
-						markerKey,
-			     			row[organismKeyCol],
-			     			row[symbolCol],
-					])
-				markerList.add(markerKey)
+                               		clusterKey,
+					markerKey,
+			     		row[organismKeyCol],
+			     		row[symbolCol],
+				])
+			markerList.add(markerKey)
 
 		# push data to output files
 		self.output.append((annotCols, annotResults))
@@ -498,7 +498,7 @@ cmds = [
                 	where c._Marker_key = v._Object_key
                 	and v._AnnotType_key = 1006)
 	)
-	select c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol
+	select distinct c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol
 	from temp_homologene h, MRK_ClusterMember c, MRK_Marker m
 	where h._Cluster_key = c._Cluster_key
 	and c._Marker_key = m._Marker_key
@@ -513,7 +513,7 @@ cmds = [
         # include only super-simple genotypes
         # exclude Gt(ROSA)
 	'''
-	select m._Marker_key, m._Organism_key, m.symbol
+	select distinct m._Marker_key, m._Organism_key, m.symbol
 	from MRK_Marker m
 	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g, temp_genotype t
 			where t._Genotype_key = g._Genotype_key
@@ -524,7 +524,7 @@ cmds = [
 
 	union
 
-	select m._Marker_key, m._Organism_key, m.symbol
+	select distinct m._Marker_key, m._Organism_key, m.symbol
 	from MRK_Marker m
 	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g, temp_genotype t
 			where t._Genotype_key = g._Genotype_key
@@ -535,7 +535,7 @@ cmds = [
 
 	union
 
-        select m._Marker_key, m._Organism_key, m.symbol
+        select distinct m._Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, ALL_Allele a, MRK_Marker m
         where v._AnnotType_key = 1012
         and v._Object_key = a._Allele_key 
@@ -545,7 +545,7 @@ cmds = [
 
 	union
 
-	select v._Object_key as _Marker_key, m._Organism_key, m.symbol
+	select distinct v._Object_key as _Marker_key, m._Organism_key, m.symbol
 	from VOC_Annot v, MRK_Marker m
         where v._AnnotType_key = 1006
         and v._Object_key = m._Marker_key
