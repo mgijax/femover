@@ -35,17 +35,6 @@ class MarkerNomenGatherer (Gatherer.Gatherer):
 			seqNum = seqNum + 1
 			self.finalResults.append ( [ row[keyCol],
 				row[termCol], row[typeCol], seqNum ] )
-
-			# if we have an allele symbol, add another record for
-			# that symbol without the angle brackets
-
-			if row[typeCol] == 'allele symbol':
-				seqNum = seqNum + 1
-				self.finalResults.append ( [
-					row[keyCol],
-					stripBrackets(row[termCol]),
-					'allele symbol (condensed)',
-					seqNum ] )
 		return
 
 ###--- globals ---###
@@ -75,6 +64,7 @@ cmds = [
 		where mm._Organism_key = 1
 			and mm._Marker_Status_key in (1,3)
 			and mm._Marker_key = ml._Marker_key
+			and ml.labeltypename not in ('allele symbol','allele name')
 		order by mm._Marker_key, ml.priority, ml.labelTypeName''',
 	]
 
