@@ -93,6 +93,8 @@ def getGeneCount (rows, genotypeKeyCol, markerKeyCol):
 			genomarkerDict[genotypeKey] = []
 			genomarkerDict[genotypeKey].append(markerKey)
 
+	logger.debug ('processed mouse gene counts')
+
 	return genomarkerDict
 
 ###--- Classes ---###
@@ -163,6 +165,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[termCol],
 					row[vocabNameCol],
 					])
+		logger.debug ('processed simple mouse annotations')
 
                 # sql (1)
 		# mouse genotype/OMIM annotations : complex
@@ -180,10 +183,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
                 for row in rows:
-
 			# skip those listed as 'simple'
                         if row[genotypeKeyCol] not in simpleGenotypeList:
-
                         	annotResults.append ( [
                                      	row[markerKeyCol],
                                      	row[organismKeyCol],
@@ -195,6 +196,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      	row[termCol],
                                      	row[vocabNameCol],
                                 	])
+		logger.debug ('processed complex mouse annotations')
 
 		# sql (2)
 		# allele/OMIM annotations
@@ -210,7 +212,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
                 for row in rows:
-
 			# no genotypes
                         annotResults.append ( [
                                      row[markerKeyCol],
@@ -223,6 +224,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      row[termCol],
                                      row[vocabNameCol],
                                 ])
+		logger.debug ('processed allele/OMIM annotatins')
 
 		# sql (3)
 		# human gene/OMIM annotations
@@ -238,7 +240,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
 		for row in rows:
-
 			# no genotypes
 			annotResults.append ( [ 
                                      row[markerKeyCol],
@@ -251,12 +252,14 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				     row[termCol],
 				     row[vocabNameCol],
 				])
+		logger.debug ('processed human OMIM annotations')
 
 		#
 		# hdp_gridcluster/hdp_gridcluster_marker
 		#
 		clusterResults = []
 		clusterCols = ['_Cluster_key',
+				'homologene_id',
 			]
 
 		markerResults = []
@@ -271,10 +274,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# set of columns for common sql fields
 		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
+		homologeneIDCol = Gatherer.columnNumber (cols, 'homologene_id')
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
+		# set of distinct clusters
 		clusterKey = 1
 		clusterList = set([])
 
@@ -284,9 +289,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 
 			clusterKey = row[clusterKeyCol]
+			homologeneID = row[homologeneIDCol]
 			if clusterKey not in clusterList:
 				clusterResults.append( [ 
                                      	clusterKey,
+					homologeneID,
 					])
 				clusterList.add(clusterKey)
 
@@ -299,6 +306,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			    		row[symbolCol],
 					])
 				markerList.add(markerKey)
+		logger.debug ('processed mouse/human genes with homolgene clusters')
 
 		# sql (7) : mouse/human markers with annotations that do NOT contain homologene clusters
 		(cols, rows) = self.results[7]
@@ -313,6 +321,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			clusterKey = clusterKey + 1
 			clusterResults.append ( [ 
                                 clusterKey,
+				None,
 				])
 
 			markerKey = row[markerKeyCol]
@@ -324,6 +333,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			     		row[symbolCol],
 				])
 			markerList.add(markerKey)
+		logger.debug ('processed mouse/human genes without homolgene clusters')
 
 		# push data to output files
 		self.output.append((annotCols, annotResults))
@@ -498,11 +508,13 @@ cmds = [
                 	where c._Marker_key = v._Object_key
                 	and v._AnnotType_key = 1006)
 	)
-	select distinct c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol
-	from temp_homologene h, MRK_ClusterMember c, MRK_Marker m
+	select distinct c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol, a.accID as homologene_id
+	from temp_homologene h, MRK_ClusterMember c, MRK_Marker m, ACC_Accession a
 	where h._Cluster_key = c._Cluster_key
 	and c._Marker_key = m._Marker_key
 	and m._Organism_key in (1,2)
+	and c._Cluster_key = a._Object_key
+        and a._LogicalDB_key = 81
 	order by c._Cluster_key
 	''',
 
@@ -562,7 +574,7 @@ files = [
           'hdp_annotation'),
 
 	('hdp_gridcluster',
-		[ '_Cluster_key' ],
+		[ '_Cluster_key', 'homologene_id' ],
           'hdp_gridcluster'),
 
 	('hdp_gridcluster_marker',

@@ -29,6 +29,7 @@ tableName = 'hdp_gridcluster'
 #
 createStatement = '''CREATE TABLE %s  ( 
 	hdp_gridcluster_key	int	not null,
+	homologene_id		text	null,
 	PRIMARY KEY(hdp_gridcluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -46,6 +47,7 @@ comments = {
 	Table.TABLE : 'central table for the grid cluster petal, containing one row for each human disease portal grid cluster',
 	Table.COLUMN : {
 		'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
+		'homologene_id' : 'homologene accession id',
 		},
 	}
 
