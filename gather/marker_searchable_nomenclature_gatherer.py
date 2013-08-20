@@ -47,8 +47,8 @@ cmds = [
 	#	d. old names
 	#	e. synonyms
 	#	f. related synonyms
-	#	g. allele symbols
-	#	h. allele names
+	#	g. allele symbols // excluded
+	#	h. allele names // excluded
 	#	i. human ortholog symbol
 	#	j. rat ortholog symbol
 	#	k. all other ortholog symbols
@@ -61,8 +61,8 @@ cmds = [
 			ml.priority
 		from mrk_marker mm,
 			mrk_label ml
-		where mm._Organism_key = 1
-			and mm._Marker_Status_key in (1,3)
+		where 
+			mm._Marker_Status_key in (1,3)
 			and mm._Marker_key = ml._Marker_key
 			and ml.labeltypename not in ('allele symbol','allele name')
 		order by mm._Marker_key, ml.priority, ml.labelTypeName''',
