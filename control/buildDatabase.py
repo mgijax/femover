@@ -147,7 +147,7 @@ ACCESSION = [ 'accession', 'actual_database',
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
-		'mp_annotation',
+		'mp_annotation', 'allele_cell_line',
 	]
 ANNOTATIONS = [ 'annotation'
 	]
@@ -168,6 +168,8 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_result_summary',
 		'expression_specimen','expression_gellane',
 	]
+GLOSSARY = [ 'glossary',
+	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
 		'expression_imagepane', 'allele_to_image', 'image_id',
@@ -182,7 +184,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_note', 'marker_sequence_num', 'marker_disease',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
-		'homology_cluster',
+		'homology_cluster', 'marker_qtl_experiments',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]

@@ -4,6 +4,11 @@
 
 import Gatherer
 
+###--- Constants ---###
+
+DERIVATION_NOTE_TYPE = 1033
+DERIVATION_NOTES = 'Derivation'
+
 ###--- Classes ---###
 
 class AlleleNoteGatherer (Gatherer.Gatherer):
@@ -15,6 +20,8 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 	def collateResults (self):
 		# m[alleleKey] = { noteType : note }
 		m = {}
+
+		# process query 0 (including most note types)
 
 		keyCol = Gatherer.columnNumber (self.results[0][0],
 			'_Object_key')
@@ -35,6 +42,40 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 			else:
 				m[alleleKey][noteType] = \
 					m[alleleKey][noteType] + note 
+
+		# add in derivation notes from query 1
+
+		cols, rows = self.results[1]
+
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		noteKeyCol = Gatherer.columnNumber (cols, '_Note_key')
+		noteCol = Gatherer.columnNumber (cols, 'note')
+		noteType = DERIVATION_NOTES
+
+		lastNoteKey = None
+
+		for row in rows:
+			alleleKey = row[alleleKeyCol]
+			note = row[noteCol]
+			noteKey = row[noteKeyCol]
+
+			if not m.has_key(alleleKey):
+				m[alleleKey] = { noteType : note }
+			elif not m[alleleKey].has_key(noteType):
+				m[alleleKey][noteType] = note
+			elif lastNoteKey == noteKey:
+				# continuing same note
+				m[alleleKey][noteType] = \
+					m[alleleKey][noteType] + note
+			else:
+				# starting new note; separate with <P>
+				m[alleleKey][noteType] = \
+					m[alleleKey][noteType] + '<p>' + note
+
+			# remember this is the last note we worked on
+			lastNoteKey = noteKey
+
+		# boil it down to the final set of results
 
 		self.finalColumns = [ 'alleleKey', 'noteType', 'note' ]
 		self.finalResults = []
@@ -57,6 +98,7 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
+	# 0. main query to get traditionally-stored allele notes
 	'''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
 	from mgi_note mn, mgi_notechunk mnc
 	where mn._MGIType_key = 11
@@ -64,6 +106,17 @@ cmds = [
 		and exists (select 1 from all_allele a
 			where a._Allele_key = mn._Object_key)
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+
+	# 1. add in derivation notes
+	'''select a._Allele_key, n._Note_key, nc.sequenceNum, nc.note 
+    	from all_allele_cellLine a, all_cellline mc, 
+		mgi_note n, mgi_notechunk nc 
+    	where a._MutantCellLine_key = mc._CellLine_key 
+		and mc._Derivation_key = n._Object_key 
+		and n._NoteType_key = %d
+		and n._Note_key = nc._Note_key 
+    	order by a._Allele_key, n._Note_key, nc.sequenceNum''' % \
+		DERIVATION_NOTE_TYPE,
 	]
 
 # order of fields (from the query results) to be written to the

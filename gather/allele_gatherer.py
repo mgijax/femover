@@ -290,7 +290,7 @@ cmds = [
 	# 7. assume all alleles have an MGI ID
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
-		a._Transmission_key, a.isWildType
+		a._Transmission_key, a.isWildType, a.isMixed
 	from all_allele a, acc_accession ac, prb_strain s
 	where a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
@@ -305,7 +305,7 @@ cmds = [
 fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
-	'isRecombinase', 'isWildType', 'driver', 'inducibleNote',
+	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'inducibleNote',
 	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',
 	'imageKey', 'hasDiseaseModel',

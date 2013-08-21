@@ -15,7 +15,7 @@ AlleleSynonymGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-	'''select s._Object_key as _Allele_key, s.synonym, t.synonymType
+	'''select distinct s._Object_key as _Allele_key, s.synonym, t.synonymType
 		from mgi_synonym s, mgi_synonymtype t
 		where s._SynonymType_key = t._SynonymType_key
 			and t._MGIType_key = 11

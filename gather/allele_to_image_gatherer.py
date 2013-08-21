@@ -12,23 +12,41 @@ class AlleleToImageGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for alleles associated with
 	#	images,	collates results, writes tab-delimited text file
 
-	def postprocessResults (self):
-		self.convertFinalResultsToList()
+	def collateResults (self):
+		cols, rows = self.results[0]
 
-		primaryCol = Gatherer.columnNumber (self.finalColumns,
-			'isPrimary')
+		imageCol = Gatherer.columnNumber (cols, '_Image_key')
+		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
+		isPrimaryCol = Gatherer.columnNumber (cols, 'isPrimary')
 
-		for row in self.finalResults:
-			isPrimary = row[primaryCol]
+		self.finalResults = []
+		self.finalColumns = [ '_Image_key', '_Allele_key',
+			'qualifier' ]
 
-			if isPrimary:
+		# (image key, allele key) = 1
+		seen = {}
+
+		# assumes ordering by allele key, then by isPrimary in
+		# descending order
+
+		for row in rows:
+			imageKey = row[imageCol]
+			alleleKey = row[alleleCol]
+
+			t = (imageKey, alleleKey)
+
+			if seen.has_key(t):
+				continue
+			seen[t] = 1
+
+			if row[isPrimaryCol] == 1:
 				qualifier = 'primary'
 			else:
 				qualifier = None
 
-			self.addColumn ('qualifier', qualifier, row,
-				self.finalColumns)
-		return 
+			self.finalResults.append ( [ imageKey, alleleKey,
+				qualifier ] )
+		return
 
 ###--- globals ---###
 
@@ -58,7 +76,7 @@ cmds = [
 		and a._Object_key = gag._Genotype_key
 		and exists (select 1 from all_allele aa
 			where aa._Allele_key = gag._Allele_key)
-	order by _Allele_key'''
+	order by _Allele_key, isPrimary desc'''
 	]
 
 # order of fields (from the query results) to be written to the
