@@ -324,21 +324,36 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term',
 			]
 
-		# sql (10)
+		# sql (12)
 		# homologene clusters
-		diseaseDict = {}
-		(cols, rows) = self.results[10]
+		diseaseDict1 = {}
+		(cols, rows) = self.results[12]
 		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
 		for row in rows:
 			key = row[clusterKey]
 			value = row
-			if not diseaseDict.has_key(key):
-				diseaseDict[key] = []
-			diseaseDict[key].append(row)
-		#logger.debug (diseaseDict)
+			if not diseaseDict1.has_key(key):
+				diseaseDict1[key] = []
+			diseaseDict1[key].append(row)
+		#logger.debug (diseaseDict1)
 
-		# sql (11) : annotations that contain homologene clusters
-		(cols, rows) = self.results[11]
+		# sql (13)
+		# non-homologene clusters
+		# use the marker key as the "cluster" key
+		diseaseDict2 = {}
+		(cols, rows) = self.results[13]
+		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
+		for row in rows:
+			key = row[markerKey]
+			value = row
+			if not diseaseDict2.has_key(key):
+				diseaseDict2[key] = []
+			diseaseDict2[key].append(row)
+			key = key + 1
+		logger.debug (diseaseDict2)
+
+		# sql (14) : annotations that contain homologene clusters
+		(cols, rows) = self.results[14]
 
 		# set of columns for common sql fields
 		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
@@ -386,10 +401,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				markerList.add(markerKey)
 
 			#
-			# diseaseResults
+			# diseaseResults : include unique instances only
 			#
-			if diseaseDict.has_key(clusterKey):
-				for d in diseaseDict[clusterKey]:
+			if diseaseDict1.has_key(clusterKey):
+				for d in diseaseDict1[clusterKey]:
 					termKey = d[2]
 					annotationKey = d[3]
 					termName = d[4]
@@ -406,23 +421,34 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('processed mouse/human genes with homolgene clusters')
 
-		# sql (12) : mouse/human markers with annotations that do NOT contain homologene clusters
-		(cols, rows) = self.results[12]
+		# sql (15) : mouse/human markers with annotations that do NOT contain homologene clusters
+		(cols, rows) = self.results[15]
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
+                # at most one marker/term in a gridCluster_disease
+                diseaseList = set([])
+
 		for row in rows:
 
+			# fake cluster key
 			clusterKey = clusterKey + 1
+			markerKey = row[markerKeyCol]
+
+			#
+			# clusterResults
+			#
 			clusterResults.append ( [ 
-                                clusterKey,
+                               	clusterKey,
 				None,
 				])
 
-			markerKey = row[markerKeyCol]
+			#
+			# markerResults
+			#
 			if markerKey not in markerList:
 				markerResults.append ( [ 
                                		clusterKey,
@@ -430,7 +456,26 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			     		row[organismKeyCol],
 			     		row[symbolCol],
 				])
-			markerList.add(markerKey)
+				markerList.add(markerKey)
+
+			#
+			# diseaseResults : include unique instances only
+			#
+			if diseaseDict2.has_key(markerKey):
+				for d in diseaseDict2[markerKey]:
+					termKey = d[1]
+					annotationKey = d[2]
+					termName = d[3]
+					termId = d[4]
+					if (markerKey, termKey) not in diseaseList:
+						diseaseResults.append( [ 
+			    				clusterKey,
+							termKey,
+							annotationKey,
+							termId,
+							termName
+							])
+						diseaseList.add((markerKey, termKey))
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
 		# push data to output files
@@ -588,7 +633,7 @@ cmds = [
 	# sql (5-6) : super-simple genotypes
 	'''
 	select g._Genotype_key 
-	into temporary table temp_genotype
+	into temporary table tmp_genotype
 	from GXD_AlleleGenotype g
 	where exists (select 1 from ALL_Allele a
 		 where g._Allele_key = a._Allele_key
@@ -597,10 +642,10 @@ cmds = [
 	''',
 
 	'''
-	create index idx_genotype on temp_genotype (_Genotype_key)
+	create index idx_genotype on tmp_genotype (_Genotype_key)
 	''',
 
-        # sql (7-10) : markers that contain homologene clusters
+        # sql (7)
         #       by mouse marker/MP (1002) for super-simple genotypes
         #       by mouse marker/OMIM (1005) for super-simple genotypes
         #       by mouse marker (via allele)/OMIM (1012)
@@ -615,10 +660,11 @@ cmds = [
         # within each of those clusters
         #
 	'''
-	select distinct c._Cluster_key, c._Marker_key, v._Term_key, v._AnnotType_key, 
+	select distinct c._Cluster_key, c._Marker_key, 
+		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
-	into temporary table temp_cluster
-        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, temp_genotype tg,
+	into temporary table tmp_cluster
+        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, tmp_genotype tg,
 			VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
         and g._Marker_key = c._Marker_key
@@ -633,9 +679,10 @@ cmds = [
 
 	union
 
-	select distinct c._Cluster_key, c._Marker_key, v._Term_key, v._AnnotType_key, 
+	select distinct c._Cluster_key, c._Marker_key, 
+		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
-        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, temp_genotype tg,
+        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, tmp_genotype tg,
 			VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
         and g._Marker_key = c._Marker_key
@@ -650,7 +697,8 @@ cmds = [
 
 	union
 
-	select distinct c._Cluster_key, c._Marker_key, v._Term_key, v._AnnotType_key, 
+	select distinct c._Cluster_key, c._Marker_key, 
+		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
         from MRK_ClusterMember c, VOC_Annot v, ALL_Allele al, VOC_Term t, ACC_Accession a
 	where c._Marker_key = al._Marker_key
@@ -664,33 +712,124 @@ cmds = [
 
 	union
 
-	select distinct c._Cluster_key, c._Marker_key, v._Term_key, v._AnnotType_key, 
+	select distinct c._Cluster_key, c._Marker_key, 
+		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
         from MRK_ClusterMember c, VOC_Annot v, VOC_Term t, ACC_Accession a
         where c._Marker_key = v._Object_key
-                and v._AnnotType_key = 1006
-        	and v._Term_key = t._Term_key
-        	and v._Term_key = a._Object_key
-        	and a._MGIType_key = 13
-        	and a.private = 0
-        	and a.preferred = 1
+        and v._AnnotType_key = 1006
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
 	''',
 
-	# sql (8)
+        # sql (8) : 
+        #   mouse with MP annotations where mouse does NOT contain homologene clusters
+	#   mouse with OMIM annotations where mouse does NOT contain homologene clusters
+        #   mouse (by allele) with MP annotations where mouse does NOT contain homologene clusters
+        #   human with OMIM annotations where mouse does NOT contain homologene clusters
+        # include only super-simple genotypes
+        # exclude Gt(ROSA)
+	#
+	# exclude the tmp_cluster-ed data
 	'''
-	create index idx_cluster on temp_cluster (_Cluster_key)
+	select distinct c._Marker_key,
+		v._Term_key, v._AnnotType_key, 
+		t.term, a.accID
+	into temporary table tmp_nocluster
+        from MRK_Marker  c, VOC_Annot v, GXD_AlleleGenotype g, tmp_genotype tg,
+			VOC_Term t, ACC_Accession a
+	where tg._Genotype_key = g._Genotype_key
+        and g._Marker_key = c._Marker_key
+        and g._Marker_key != 37270
+        and g._Genotype_key = v._Object_key
+        and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+	and not exists (select 1 from tmp_cluster tc where c._Marker_key = tc._Marker_key)
+
+	union
+
+	select distinct c._Marker_key,
+		v._Term_key, v._AnnotType_key, 
+		t.term, a.accID
+        from MRK_Marker  c, VOC_Annot v, GXD_AlleleGenotype g, tmp_genotype tg,
+			VOC_Term t, ACC_Accession a
+	where tg._Genotype_key = g._Genotype_key
+        and g._Marker_key = c._Marker_key
+        and g._Marker_key != 37270
+        and g._Genotype_key = v._Object_key
+        and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+	and not exists (select 1 from tmp_cluster tc where c._Marker_key = tc._Marker_key)
+
+	union
+
+        select distinct c._Marker_key,
+		v._Term_key, v._AnnotType_key, 
+		t.term, a.accID
+        from MRK_Marker c, VOC_Annot v, ALL_Allele al, VOC_Term t, ACC_Accession a
+	where c._Marker_key = al._Marker_key
+	and al._Allele_key = v._Object_key
+	and v._AnnotType_key = 1012
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+	and not exists (select 1 from tmp_cluster tc where c._Marker_key = tc._Marker_key)
+
+	union
+
+	select distinct c._Marker_key,
+		v._Term_key, v._AnnotType_key, 
+		t.term, a.accID
+        from MRK_Marker c, VOC_Annot v, VOC_Term t, ACC_Accession a
+        where c._Marker_key = v._Object_key
+        and v._AnnotType_key = 1006
+        and v._Term_key = t._Term_key
+        and v._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.private = 0
+        and a.preferred = 1
+	and not exists (select 1 from tmp_cluster tc where c._Marker_key = tc._Marker_key)
 	''',
+
 	# sql (9)
 	'''
-	create index idx_marker on temp_cluster (_Marker_key)
+	create index idx_cluster on tmp_cluster (_Cluster_key)
 	''',
-
 	# sql (10)
 	'''
-	select * from temp_cluster
+	create index idx_cluster_marker on tmp_cluster (_Marker_key)
 	''',
 
 	# sql (11)
+	'''
+	create index idx_nocluster_marker on tmp_nocluster (_Marker_key)
+	''',
+
+	# sql (12)
+	'''
+	select * from tmp_cluster
+	''',
+
+	# sql (13)
+	'''
+	select * from tmp_nocluster
+	''',
+
+	# sql (14)
+	# additional info for tmp_cluster-ed data
         '''
 	select distinct c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol, a.accID as homologene_id
 	from MRK_ClusterMember c, MRK_Marker m, ACC_Accession a
@@ -698,58 +837,20 @@ cmds = [
 	and m._Organism_key in (1,2)
 	and c._Cluster_key = a._Object_key
         and a._LogicalDB_key = 81
-	and exists (select 1 from temp_cluster tc where tc._Cluster_key = c._Cluster_key)
+	and exists (select 1 from tmp_cluster tc where tc._Cluster_key = c._Cluster_key)
 	order by c._Cluster_key
 	''',
 
-        # sql (12) : 
-        #   mouse with MP annotations where mouse does NOT contain homologene clusters
-	#   mouse with OMIM annotations where mouse does NOT contain homologene clusters
-        #   mouse (by allele) with MP annotations where mouse does NOT contain homologene clusters
-        #   human with OMIM annotations where mouse does NOT contain homologene clusters
-        # include only super-simple genotypes
-        # exclude Gt(ROSA)
-	'''
-	select distinct m._Marker_key, m._Organism_key, m.symbol
-	from MRK_Marker m
-	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g, temp_genotype t
-			where t._Genotype_key = g._Genotype_key
-                        and g._Marker_key = m._Marker_key
-                        and g._Genotype_key = v._Object_key
-                        and g._Marker_key != 37270
-                        and v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-	and not exists (select 1 from temp_cluster tc where m._Marker_key = tc._Marker_key)
-
-	union
-
-	select distinct m._Marker_key, m._Organism_key, m.symbol
-	from MRK_Marker m
-	where exists (select 1 from VOC_Annot v, GXD_AlleleGenotype g, temp_genotype t
-			where t._Genotype_key = g._Genotype_key
-                        and g._Marker_key = m._Marker_key
-                        and g._Genotype_key = v._Object_key
-                        and g._Marker_key != 37270
-               		and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
-	and not exists (select 1 from temp_cluster tc where m._Marker_key = tc._Marker_key)
-
-	union
-
-        select distinct m._Marker_key, m._Organism_key, m.symbol
-	from VOC_Annot v, ALL_Allele a, MRK_Marker m
-        where v._AnnotType_key = 1012
-        and v._Object_key = a._Allele_key 
-	and a._Marker_key = m._Marker_key
-        and m._Marker_key != 37270
-	and not exists (select 1 from temp_cluster tc where m._Marker_key = tc._Marker_key)
-
-	union
-
-	select distinct v._Object_key as _Marker_key, m._Organism_key, m.symbol
-	from VOC_Annot v, MRK_Marker m
-        where v._AnnotType_key = 1006
-        and v._Object_key = m._Marker_key
-	and not exists (select 1 from temp_cluster tc where m._Marker_key = tc._Marker_key)
+	# sql (15)
+	# additional info for tmp_nocluster-ed data
+        '''
+	select distinct c._Marker_key, c._Organism_key, c.symbol
+	from MRK_Marker c
+	where c._Organism_key in (1,2)
+	and exists (select 1 from tmp_nocluster tc where tc._Marker_key = c._Marker_key)
+	order by c._Marker_key
 	''',
+
 	]
 
 # prefix for the filename of the output file
