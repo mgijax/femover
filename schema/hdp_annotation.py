@@ -39,6 +39,7 @@ createStatement = '''CREATE TABLE %s  (
 	term_id			text	not null,
 	term			text	not null,
 	vocab_name		text	not null,
+	mp_header		text	null,
 	PRIMARY KEY(hdp_annotation_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -77,6 +78,7 @@ comments = {
 		'term_id' : 'primary accession ID for the term',
 		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',
+		'mp_header' : 'Mammalian Phenotype header that belongs to the given term'
 		},
 	}
 
