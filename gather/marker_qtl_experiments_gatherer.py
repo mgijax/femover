@@ -63,7 +63,7 @@ cmds = [
 		ACC_Accession ac
 	where mem._Expt_key = me._Expt_key 
 		and me._Expt_key = men._Expt_key
-		and me.exptType = 'TEXT-QTL'
+		and me.exptType in ('TEXT-QTL', 'TEXT-QTL-Candidate Genes')
 		and me._Refs_key = ac._Object_key
 		and ac._MGIType_key = 1
 		and ac.prefixPart = 'J:'
