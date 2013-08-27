@@ -665,40 +665,23 @@ cmds = [
         # sql (7)
         #       by mouse marker/MP (1002) for super-simple genotypes
         #       by mouse marker/OMIM (1005) for super-simple genotypes
-        #       by mouse marker (via allele)/OMIM (1012)
         #       by human marker/OMIM (1006)
+	# note that the allele/omim annotations (1012) are not included
         #
         # only include if the genotype is a super-simple genotype
         # that is, the genotype has only one marker
-        # and merker is NOT Gt(ROSA)
+        # and marker is NOT Gt(ROSA)
         #
         # select all *distinct* homologene clusters that contain a mouse/human HPD
         # annotation.  then select all of the mouse/human markers that are contained
         # within each of those clusters
         #
+	#
 	'''
 	select distinct c._Cluster_key, c._Marker_key, 
 		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
 	into temporary table tmp_cluster
-        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
-			VOC_Term t, ACC_Accession a
-	where tg._Genotype_key = g._Genotype_key
-        and g._Marker_key = c._Marker_key
-        and g._Marker_key != 37270
-        and g._Genotype_key = v._Object_key
-        and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
-        and v._Term_key = t._Term_key
-        and v._Term_key = a._Object_key
-        and a._MGIType_key = 13
-        and a.private = 0
-        and a.preferred = 1
-
-	union
-
-	select distinct c._Cluster_key, c._Marker_key, 
-		v._Term_key, v._AnnotType_key, 
-		t.term, a.accID
         from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
 			VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
@@ -717,10 +700,13 @@ cmds = [
 	select distinct c._Cluster_key, c._Marker_key, 
 		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
-        from MRK_ClusterMember c, VOC_Annot v, ALL_Allele al, VOC_Term t, ACC_Accession a
-	where c._Marker_key = al._Marker_key
-	and al._Allele_key = v._Object_key
-	and v._AnnotType_key = 1012
+        from MRK_ClusterMember c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
+			VOC_Term t, ACC_Accession a
+	where tg._Genotype_key = g._Genotype_key
+        and g._Marker_key = c._Marker_key
+        and g._Marker_key != 37270
+        and g._Genotype_key = v._Object_key
+        and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
         and v._Term_key = t._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
@@ -752,38 +738,22 @@ cmds = [
 	''',
 
         # sql (10) : 
+	#
         #   mouse with MP annotations where mouse does NOT contain homologene clusters
 	#   mouse with OMIM annotations where mouse does NOT contain homologene clusters
-        #   mouse (by allele) with MP annotations where mouse does NOT contain homologene clusters
         #   human with OMIM annotations where mouse does NOT contain homologene clusters
+	#
         # include only super-simple genotypes
         # exclude Gt(ROSA)
-	#
 	# exclude the tmp_cluster-ed data
+	#
+	# note that the allele/omim annotations (1012) are not included
+	#
 	'''
 	select distinct c._Marker_key,
 		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
 	into temporary table tmp_nocluster
-        from MRK_Marker  c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
-			VOC_Term t, ACC_Accession a
-	where tg._Genotype_key = g._Genotype_key
-        and g._Marker_key = c._Marker_key
-        and g._Marker_key != 37270
-        and g._Genotype_key = v._Object_key
-        and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
-        and v._Term_key = t._Term_key
-        and v._Term_key = a._Object_key
-        and a._MGIType_key = 13
-        and a.private = 0
-        and a.preferred = 1
-	and not exists (select 1 from tmp_cluster tc where c._Marker_key = tc._Marker_key)
-
-	union
-
-	select distinct c._Marker_key,
-		v._Term_key, v._AnnotType_key, 
-		t.term, a.accID
         from MRK_Marker  c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
 			VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
@@ -800,13 +770,16 @@ cmds = [
 
 	union
 
-        select distinct c._Marker_key,
+	select distinct c._Marker_key,
 		v._Term_key, v._AnnotType_key, 
 		t.term, a.accID
-        from MRK_Marker c, VOC_Annot v, ALL_Allele al, VOC_Term t, ACC_Accession a
-	where c._Marker_key = al._Marker_key
-	and al._Allele_key = v._Object_key
-	and v._AnnotType_key = 1012
+        from MRK_Marker  c, VOC_Annot v, GXD_AlleleGenotype g, tmp_supersimple tg,
+			VOC_Term t, ACC_Accession a
+	where tg._Genotype_key = g._Genotype_key
+        and g._Marker_key = c._Marker_key
+        and g._Marker_key != 37270
+        and g._Genotype_key = v._Object_key
+        and v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
         and v._Term_key = t._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
