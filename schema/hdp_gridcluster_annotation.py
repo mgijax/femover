@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the grid-cluster-disease table
+# contains data definition information for the grid-cluster-annotations table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -11,18 +11,18 @@ import Table
 
 # name of this database table
 # human disease portal
-tableName = 'hdp_gridcluster_disease'
+tableName = 'hdp_gridcluster_annotation'
 
 #
 # statement to create this table
 #
 # hdp (human disease portal)
 #
-# This table represents the "grid cluster" -> disease (OMIM) relationships
+# This table represents the "grid cluster" -> annotations (OMIM/MP) relationships
 # of the homologene clusters for hdp-specific
 # super-simple genotypes (or null genotypes).
 #
-# plus it adds the mouse/human diseases that do NOT exist in the homologene cluster
+# plus it adds the mouse/human annotations that do NOT exist in the homologene cluster
 #
 # see the gatherer for more information
 #
@@ -54,7 +54,7 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the grid cluster flower containing data about diseases that belong to a given grid cluster',
+	Table.TABLE : 'petal table for the grid cluster flower containing data about annotations that belong to a given grid cluster',
 	Table.COLUMN : {
 		'unique_key' : 'unique identifier for this record, no other purpose',
 		'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
