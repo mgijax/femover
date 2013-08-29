@@ -31,7 +31,7 @@ createStatement = '''CREATE TABLE %s  (
 	hdp_gridcluster_key	int	not null,
 	term_key		int 	not null,
         annotation_type         int     not null,
-        term_type         	int     not null,
+        term_type         	text    not null,
 	term_id			text	not null,
 	term			text	not null,
 	PRIMARY KEY(unique_key))''' % tableName

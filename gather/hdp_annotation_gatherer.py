@@ -69,6 +69,8 @@ GT_ROSA = 37270
 SUPER_TYPE = 'super-simple'
 SIMPLE_TYPE = 'simple'
 COMPLEX_TYPE = 'complex'
+TERM_TYPE = 'term'
+HEADER_TYPE = 'header'
 
 ###--- Functions ---###
 
@@ -377,37 +379,38 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		cannotCols = ['_Cluster_key',
 				'_Term_key', 
 				'_AnnotType_key',
+				'term_type',
 				'accID', 
 				'term',
 			]
 
 		# sql (15)
 		# homologene clusters
-		diseaseDict1 = {}
+		clusterDict1 = {}
 		(cols, rows) = self.results[15]
 		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
 		for row in rows:
 			key = row[clusterKey]
 			value = row
-			if not diseaseDict1.has_key(key):
-				diseaseDict1[key] = []
-			diseaseDict1[key].append(row)
-		#logger.debug (diseaseDict1)
+			if not clusterDict1.has_key(key):
+				clusterDict1[key] = []
+			clusterDict1[key].append(row)
+		#logger.debug (clusterDict1)
 
 		# sql (16)
 		# non-homologene clusters
 		# use the marker key as the "cluster" key
-		diseaseDict2 = {}
+		clusterDict2 = {}
 		(cols, rows) = self.results[16]
 		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
 		for row in rows:
 			key = row[markerKey]
 			value = row
-			if not diseaseDict2.has_key(key):
-				diseaseDict2[key] = []
-			diseaseDict2[key].append(row)
+			if not clusterDict2.has_key(key):
+				clusterDict2[key] = []
+			clusterDict2[key].append(row)
 			key = key + 1
-		#logger.debug (diseaseDict2)
+		#logger.debug (clusterDict2)
 
 		# sql (17) : annotations that contain homologene clusters
 		(cols, rows) = self.results[17]
@@ -427,7 +430,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 markerList = set([])
 
                 # at most one cluster/term in a gridCluster_annotation
-                diseaseList = set([])
+                cannotList = set([])
 
 		for row in rows:
 
@@ -460,21 +463,35 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			#
 			# cannotResults : include unique instances only
 			#
-			if diseaseDict1.has_key(clusterKey):
-				for d in diseaseDict1[clusterKey]:
-					termKey = d[2]
-					annotationKey = d[3]
-					termName = d[4]
-					termId = d[5]
-					if (clusterKey, termKey) not in diseaseList:
+			if clusterDict1.has_key(clusterKey):
+				for c in clusterDict1[clusterKey]:
+					termKey = c[2]
+					annotationKey = c[3]
+					termName = c[4]
+					termId = c[5]
+					if (clusterKey, termKey) not in cannotList:
 						cannotResults.append( [ 
 			    				row[clusterKeyCol],
 							termKey,
 							annotationKey,
+							TERM_TYPE,
 							termId,
 							termName
 							])
-						diseaseList.add((clusterKey, termKey))
+
+						# find each mpheader for the term
+						if mpHeaderDict.has_key(termKey):
+							for mpHeader in mpHeaderDict[termKey]:
+								cannotResults.append( [ 
+			    						clusterKey,
+									termKey,
+									annotationKey,
+									HEADER_TYPE,
+									termId,
+									mpHeader
+									])
+
+						cannotList.add((clusterKey, termKey))
 
 		logger.debug ('processed mouse/human genes with homolgene clusters')
 
@@ -487,7 +504,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
                 # at most one marker/term in a gridCluster_annotation
-                diseaseList = set([])
+                cannotList = set([])
 
 		for row in rows:
 
@@ -516,23 +533,39 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				markerList.add(markerKey)
 
 			#
-			# cannotResults : include unique instances only
+			# cannotResults
 			#
-			if diseaseDict2.has_key(markerKey):
-				for d in diseaseDict2[markerKey]:
-					termKey = d[1]
-					annotationKey = d[2]
-					termName = d[3]
-					termId = d[4]
-					if (markerKey, termKey) not in diseaseList:
+			if clusterDict2.has_key(markerKey):
+				for c in clusterDict2[markerKey]:
+					termKey = c[1]
+					annotationKey = c[2]
+					termName = c[3]
+					termId = c[4]
+
+					if (markerKey, termKey) not in cannotList:
+
 						cannotResults.append( [ 
 			    				clusterKey,
 							termKey,
 							annotationKey,
+							TERM_TYPE,
 							termId,
 							termName
 							])
-						diseaseList.add((markerKey, termKey))
+
+						# find each mpheader for the term
+						if mpHeaderDict.has_key(termKey):
+							for mpHeader in mpHeaderDict[termKey]:
+								cannotResults.append( [ 
+			    						clusterKey,
+									termKey,
+									annotationKey,
+									HEADER_TYPE,
+									termId,
+									mpHeader
+									])
+
+						cannotList.add((markerKey, termKey))
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
 		# sql (19) : genotype-cluster
@@ -958,7 +991,7 @@ files = [
 
 	('hdp_gridcluster_annotation',
 		[ Gatherer.AUTO, '_Cluster_key', '_Term_key',
-		  '_AnnotType_key', 'accID', 'term' ],
+		  '_AnnotType_key', 'term_type', 'accID', 'term' ],
           'hdp_gridcluster_annotation'),
 
 	('hdp_genocluster',
