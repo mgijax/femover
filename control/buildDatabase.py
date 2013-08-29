@@ -185,6 +185,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
+		'marker_microarray'
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
@@ -200,7 +201,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 	]
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
-	'term_sequence_num', 'term_ancestor_simple',
+	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
 	]
 TESTS = ['test_stats']
 
