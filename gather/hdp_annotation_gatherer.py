@@ -495,11 +495,73 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						diseaseList.add((markerKey, termKey))
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
+		# sql (17) : genotype-cluster
+		(cols, rows) = self.results[17]
+
+		# set of columns for common sql fields
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		allele1KeyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
+		allele2KeyCol = Gatherer.columnNumber (cols, '_Allele_key_2')
+		pairStateKeyCol = Gatherer.columnNumber (cols, '_PairState_key')
+		isConditionalKeyCol = Gatherer.columnNumber (cols, 'isConditional')
+		existsAsKeyCol = Gatherer.columnNumber (cols, '_ExistsAs_key')
+
+		genoClusterResults = []
+		genoClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
+				'_Allele_key_1', '_Allele_key_2',
+		  		'_PairState_key', 'isConditional', '_ExistsAs_key' 
+			]
+
+		genoResults = []
+		genoCols = ['hdp_genocluster_key', 
+				'_Genotype_key',
+			]
+
+		compressSet = {}
+
+        	for row in rows:
+
+                	gSet = row[genotypeKeyCol]
+                	cSet = (row[markerKeyCol], \
+                        	row[allele1KeyCol], \
+                        	row[allele2KeyCol], \
+                        	row[pairStateKeyCol], \
+                        	row[isConditionalKeyCol],
+                        	row[existsAsKeyCol])
+
+                	if not compressSet.has_key(cSet):
+                        	compressSet[cSet] = []
+                	compressSet[cSet].append(gSet)
+		#logger.debug (compressSet)
+
+		clusterKey = 1
+		for r in compressSet:
+			genoClusterResults.append( [
+				clusterKey,
+				r[0],
+				r[1],
+				r[2],
+				r[3],
+				r[4],
+				r[5],
+				])
+
+			for gKey in compressSet[r]:
+				genoResults.append( [
+					clusterKey,
+					gKey,
+					])
+				
+			clusterKey = clusterKey + 1
+
 		# push data to output files
 		self.output.append((annotCols, annotResults))
 		self.output.append((clusterCols, clusterResults))
 		self.output.append((markerCols, markerResults))
 		self.output.append((diseaseCols, diseaseResults))
+		self.output.append((genoClusterCols, genoClusterResults))
+		self.output.append((genoCols, genoResults))
 
 		return
 
@@ -846,6 +908,17 @@ cmds = [
 	order by c._Marker_key
 	''',
 
+	# sql (17)
+	# allele pair information in order to generate the genotype-cluster
+	'''
+ 	select p._Genotype_key, p._Marker_key,
+               p._Allele_key_1, p._Allele_key_2, p._PairState_key,
+               g.isConditional, g._ExistsAs_key
+        from GXD_Genotype g, GXD_AllelePair p
+        where g._Genotype_key = p._Genotype_key
+        and exists (select 1 from tmp_supersimple c where c._Genotype_key = p._Genotype_key)
+	''',
+
 	]
 
 # prefix for the filename of the output file
@@ -870,6 +943,16 @@ files = [
 		[ Gatherer.AUTO, '_Cluster_key', '_Term_key',
 		  '_AnnotType_key', 'accID', 'term' ],
           'hdp_gridcluster_disease'),
+
+	('hdp_genocluster',
+		[ 'hdp_genocluster_key', '_Marker_key',
+		  '_Allele_key_1', '_Allele_key_2',
+		  '_PairState_key', 'isConditional', '_ExistsAs_key' ],
+          'hdp_genocluster'),
+
+	('hdp_genocluster_genotype',
+		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Genotype_key' ],
+          'hdp_genocluster_genotype'),
 	]
 
 # global instance of a HDPAnnotationGatherer
