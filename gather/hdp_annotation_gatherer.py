@@ -319,22 +319,22 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		#
 		# hdp_gridcluster
 		# hdp_gridcluster_marker
-		# hdp_gridcluster_disease
+		# hdp_gridcluster_annotation
 		#
 		clusterResults = []
 		clusterCols = ['_Cluster_key',
 				'homologene_id',
 			]
 
-		markerResults = []
-		markerCols = ['_Cluster_key',
+		cmarkerResults = []
+		cmarkerCols = ['_Cluster_key',
 				'_Marker_key', 
 				'_Organism_key', 
 				'symbol',
 			]
 
-		diseaseResults = []
-		diseaseCols = ['_Cluster_key',
+		cannotResults = []
+		cannotCols = ['_Cluster_key',
 				'_Term_key', 
 				'_AnnotType_key',
 				'accID', 
@@ -386,7 +386,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 # at most one marker in a gridCluster_marker
                 markerList = set([])
 
-                # at most one cluster/term in a gridCluster_disease
+                # at most one cluster/term in a gridCluster_annotation
                 diseaseList = set([])
 
 		for row in rows:
@@ -406,10 +406,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				clusterList.add(clusterKey)
 
 			#
-			# markerResults
+			# cmarkerResults
 			#
 			if markerKey not in markerList:
-				markerResults.append ( [ 
+				cmarkerResults.append ( [ 
 			    		row[clusterKeyCol],
 			    		markerKey,
 			    		row[organismKeyCol],
@@ -418,7 +418,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				markerList.add(markerKey)
 
 			#
-			# diseaseResults : include unique instances only
+			# cannotResults : include unique instances only
 			#
 			if diseaseDict1.has_key(clusterKey):
 				for d in diseaseDict1[clusterKey]:
@@ -427,7 +427,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					termName = d[4]
 					termId = d[5]
 					if (clusterKey, termKey) not in diseaseList:
-						diseaseResults.append( [ 
+						cannotResults.append( [ 
 			    				row[clusterKeyCol],
 							termKey,
 							annotationKey,
@@ -446,7 +446,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
-                # at most one marker/term in a gridCluster_disease
+                # at most one marker/term in a gridCluster_annotation
                 diseaseList = set([])
 
 		for row in rows:
@@ -464,10 +464,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				])
 
 			#
-			# markerResults
+			# cmarkerResults
 			#
 			if markerKey not in markerList:
-				markerResults.append ( [ 
+				cmarkerResults.append ( [ 
                                		clusterKey,
 					markerKey,
 			     		row[organismKeyCol],
@@ -476,7 +476,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				markerList.add(markerKey)
 
 			#
-			# diseaseResults : include unique instances only
+			# cannotResults : include unique instances only
 			#
 			if diseaseDict2.has_key(markerKey):
 				for d in diseaseDict2[markerKey]:
@@ -485,7 +485,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					termName = d[3]
 					termId = d[4]
 					if (markerKey, termKey) not in diseaseList:
-						diseaseResults.append( [ 
+						cannotResults.append( [ 
 			    				clusterKey,
 							termKey,
 							annotationKey,
@@ -558,8 +558,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# push data to output files
 		self.output.append((annotCols, annotResults))
 		self.output.append((clusterCols, clusterResults))
-		self.output.append((markerCols, markerResults))
-		self.output.append((diseaseCols, diseaseResults))
+		self.output.append((cmarkerCols, cmarkerResults))
+		self.output.append((cannotCols, cannotResults))
 		self.output.append((genoClusterCols, genoClusterResults))
 		self.output.append((genoCols, genoResults))
 
@@ -751,7 +751,7 @@ cmds = [
         #
         # hdp_gridcluster
 	# hdp_gridcluster_marker
-	# hdp_gridcluster_disease (includes OMIM, MP)
+	# hdp_gridcluster_annotation (includes OMIM, MP)
         #
 
         # sql (9)
@@ -906,10 +906,10 @@ files = [
 		  '_Organism_key', 'symbol' ],
           'hdp_gridcluster_marker'),
 
-	('hdp_gridcluster_disease',
+	('hdp_gridcluster_annotation',
 		[ Gatherer.AUTO, '_Cluster_key', '_Term_key',
 		  '_AnnotType_key', 'accID', 'term' ],
-          'hdp_gridcluster_disease'),
+          'hdp_gridcluster_annotation'),
 
 	('hdp_genocluster',
 		[ 'hdp_genocluster_key', '_Marker_key',
