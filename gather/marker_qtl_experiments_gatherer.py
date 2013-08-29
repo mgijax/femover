@@ -20,8 +20,9 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
 		exptCol = Gatherer.columnNumber (cols, '_Expt_key')
 		jnumCol = Gatherer.columnNumber (cols, 'accID')
 		noteCol = Gatherer.columnNumber (cols, 'note')
+		noteTypeCol = Gatherer.columnNumber (cols, 'exptType')
 
-		# (marker key, expt key, jnumID) = note
+		# (marker key, expt key, jnumID, note type) = note
 		notes = {}
 
 		for row in rows:
@@ -29,8 +30,9 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
 			exptKey = row[exptCol]
 			jnumID = row[jnumCol]
 			noteChunk = row[noteCol]
+			noteType = row[noteTypeCol]
 
-			key = (markerKey, exptKey, jnumID)
+			key = (markerKey, exptKey, jnumID, noteType)
 
 			if notes.has_key(key):
 				notes[key] = notes[key] + noteChunk
@@ -43,22 +45,23 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
 		seqNum = 0
 
 		self.finalColumns = [ '_Marker_key', '_Expt_key', 'accID',
-			'note', 'sequenceNum' ]
+			'note', 'noteType', 'sequenceNum' ]
 		self.finalResults = []
 
-		for (markerKey, exptKey, jnumID) in keys:
+		for (markerKey, exptKey, jnumID, noteType) in keys:
 			seqNum = seqNum + 1
 
 			self.finalResults.append ( [ markerKey, exptKey,
-				jnumID, notes[(markerKey, exptKey, jnumID)],
-				seqNum] )
+				jnumID,
+				notes[(markerKey, exptKey, jnumID, noteType)],
+				noteType, seqNum] )
 		return
 
 ###--- globals ---###
 
 cmds = [
 	'''select mem._Marker_key, me._Expt_key, me._Refs_key, ac.accID,
-		men.note
+		men.note, me.exptType
 	from MLD_Expt_Marker mem, MLD_Expts me, MLD_Expt_Notes men,
 		ACC_Accession ac
 	where mem._Expt_key = me._Expt_key 
@@ -76,7 +79,7 @@ cmds = [
 # output file
 fieldOrder = [
 	Gatherer.AUTO, '_Marker_key', '_Expt_key', 'accID', 'note',
-	'sequenceNum',
+	'noteType', 'sequenceNum',
 	]
 
 # prefix for the filename of the output file
