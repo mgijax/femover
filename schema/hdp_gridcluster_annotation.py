@@ -31,6 +31,7 @@ createStatement = '''CREATE TABLE %s  (
 	hdp_gridcluster_key	int	not null,
 	term_key		int 	not null,
         annotation_type         int     not null,
+        term_type         	int     not null,
 	term_id			text	not null,
 	term			text	not null,
 	PRIMARY KEY(unique_key))''' % tableName
@@ -41,6 +42,8 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
         'hdp_gridcluster_key' : 'create index %s on %s (hdp_gridcluster_key)',
         'term_key' : 'create index %s on %s (term_key)',
+        'annotation_type' : 'create index %s on %s (annotation_type)',
+        'term_type' : 'create index %s on %s (term_type)',
         'term_id' : 'create index %s on %s (term_id)',
         }
 
@@ -60,6 +63,7 @@ comments = {
 		'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
                 'term_key' : 'term that is annotated to the marker',
                 'annotation_type' : 'type of annotation',
+                'term_type' : 'type of term (term, header)',
                 'term_id' : 'primary accession ID for the term',
                 'term' : 'text of the term itself',
 		},

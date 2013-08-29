@@ -186,22 +186,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 				termKey = row[termKeyCol]
 				if mpHeaderDict.has_key(termKey):
-					mpHeader = mpHeaderDict[termKey][0]
+					for mpHeader in mpHeaderDict[termKey]:
+						annotResults.append ( [ 
+							row[markerKeyCol],
+							row[organismKeyCol],
+							row[termKeyCol],
+							row[annotTypeKeyCol],
+							row[genotypeKeyCol],
+							genotype_type,
+							row[termIDCol],
+							row[termCol],
+							row[vocabNameCol],
+							mpHeader,
+							])
 				else:
-					mpHeader = None
-
-				annotResults.append ( [ 
-					row[markerKeyCol],
-					row[organismKeyCol],
-					row[termKeyCol],
-					row[annotTypeKeyCol],
-					row[genotypeKeyCol],
-					genotype_type,
-					row[termIDCol],
-					row[termCol],
-					row[vocabNameCol],
-					mpHeader,
-					])
+					annotResults.append ( [ 
+						row[markerKeyCol],
+						row[organismKeyCol],
+						row[termKeyCol],
+						row[annotTypeKeyCol],
+						row[genotypeKeyCol],
+						genotype_type,
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						None,
+						])
 
 		logger.debug ('processed simple mouse annotations')
 
@@ -226,22 +236,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 				termKey = row[termKeyCol]
 				if mpHeaderDict.has_key(termKey):
-					mpHeader = mpHeaderDict[termKey][0]
+					for mpHeader in mpHeaderDict[termKey]:
+                        			annotResults.append ( [
+                                     			row[markerKeyCol],
+                                     			row[organismKeyCol],
+                                     			row[termKeyCol],
+                                     			row[annotTypeKeyCol],
+                                     			row[genotypeKeyCol],
+                                     			COMPLEX_TYPE,
+                                     			row[termIDCol],
+                                     			row[termCol],
+                                     			row[vocabNameCol],
+							mpHeader,
+                                			])
 				else:
-					mpHeader = None
-
-                        	annotResults.append ( [
-                                     	row[markerKeyCol],
-                                     	row[organismKeyCol],
-                                     	row[termKeyCol],
-                                     	row[annotTypeKeyCol],
-                                     	row[genotypeKeyCol],
-                                     	COMPLEX_TYPE,
-                                     	row[termIDCol],
-                                     	row[termCol],
-                                     	row[vocabNameCol],
-					mpHeader,
-                                	])
+                        		annotResults.append ( [
+                                     		row[markerKeyCol],
+                                     		row[organismKeyCol],
+                                     		row[termKeyCol],
+                                     		row[annotTypeKeyCol],
+                                     		row[genotypeKeyCol],
+                                     		COMPLEX_TYPE,
+                                     		row[termIDCol],
+                                     		row[termCol],
+                                     		row[vocabNameCol],
+						None,
+                                		])
 		logger.debug ('processed complex mouse annotations')
 
 		# sql (7)
@@ -262,22 +282,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			termKey = row[termKeyCol]
 			if mpHeaderDict.has_key(termKey):
-				mpHeader = mpHeaderDict[termKey][0]
+				for mpHeader in mpHeaderDict[termKey]:
+                        		annotResults.append ( [
+                                     		row[markerKeyCol],
+                                     		row[organismKeyCol],
+                                     		row[termKeyCol],
+                                     		row[annotTypeKeyCol],
+                                     		None,
+				     		None,
+                                     		row[termIDCol],
+                                     		row[termCol],
+                                     		row[vocabNameCol],
+				     		mpHeader,
+                                		])
 			else:
-				mpHeader = None
-
-                        annotResults.append ( [
-                                     row[markerKeyCol],
-                                     row[organismKeyCol],
-                                     row[termKeyCol],
-                                     row[annotTypeKeyCol],
-                                     None,
-				     None,
-                                     row[termIDCol],
-                                     row[termCol],
-                                     row[vocabNameCol],
-				     mpHeader,
-                                ])
+                        	annotResults.append ( [
+                                     	row[markerKeyCol],
+                                     	row[organismKeyCol],
+                                     	row[termKeyCol],
+                                     	row[annotTypeKeyCol],
+                                     	None,
+				     	None,
+                                     	row[termIDCol],
+                                     	row[termCol],
+                                     	row[vocabNameCol],
+				     	None,
+                                	])
 		logger.debug ('processed allele/OMIM annotatins')
 
 		# sql (8)
@@ -298,22 +328,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			termKey = row[termKeyCol]
 			if mpHeaderDict.has_key(termKey):
-				mpHeader = mpHeaderDict[termKey][0]
+				for mpHeader in mpHeaderDict[termKey]:
+					annotResults.append ( [ 
+                                     		row[markerKeyCol],
+				     		row[organismKeyCol],
+				     		row[termKeyCol],
+				     		row[annotTypeKeyCol],
+				     		None,
+				     		None,
+				     		row[termIDCol],
+				     		row[termCol],
+				     		row[vocabNameCol],
+				     		mpHeader,
+						])
 			else:
-				mpHeader = None
-
-			annotResults.append ( [ 
-                                     row[markerKeyCol],
-				     row[organismKeyCol],
-				     row[termKeyCol],
-				     row[annotTypeKeyCol],
-				     None,
-				     None,
-				     row[termIDCol],
-				     row[termCol],
-				     row[vocabNameCol],
-				     mpHeader,
-				])
+				annotResults.append ( [ 
+                                     	row[markerKeyCol],
+				     	row[organismKeyCol],
+				     	row[termKeyCol],
+				     	row[annotTypeKeyCol],
+				     	None,
+				     	None,
+				     	row[termIDCol],
+				     	row[termCol],
+				     	row[vocabNameCol],
+				     	None,
+					])
 		logger.debug ('processed human OMIM annotations')
 
 		#
@@ -577,25 +617,35 @@ cmds = [
 	# mp term -> mp header term
 	#
 	'''
-	select distinct d._Object_key, h.synonym
-        from DAG_Node d, DAG_Closure dc, DAG_Node dh, MGI_Synonym h
-        where d._DAG_key = 4
-        and d._Node_key = dc._Descendent_key
-        and dc._Ancestor_key = dh._Node_key
-        and dh._Label_key = 3
-        and dh._Object_key = h._Object_key
-        and h._SynonymType_key = 1021
+        select distinct d._Object_key, h.synonym
+        from
+                DAG_Node d, 
+                DAG_Closure dc, 
+                DAG_Node dh, 
+                MGI_Synonym h
+        where
+                d._DAG_key = 4
+                and d._Node_key = dc._Descendent_key
+                and dc._Ancestor_key = dh._Node_key
+                and dh._Label_key = 3
+                and dh._Object_key = h._object_key
+                and h._synonymtype_key = 1021
 
-        union 
+        union
 
         select distinct d._Object_key, h.synonym
-        from DAG_Node d, DAG_Closure dc, DAG_Node dh, MGI_Synonym h
-        where d._DAG_key = 4
-        and d._Node_key = dc._Descendent_key
-        and dc._Descendent_key = dh._Node_key
-        and dh._Label_key = 3
-        and dh._Object_key = h._Object_key
-        and h._SynonymType_key = 1021
+        from 
+                DAG_Node d, 
+                DAG_Closure dc, 
+                DAG_Node dh, 
+                MGI_Synonym h
+        where 
+                d._DAG_key = 4
+                and d._Node_key = dc._Descendent_key
+                and dc._Descendent_key = dh._Node_key
+                and dh._Label_key = 3
+                and dh._Object_key = h._object_key
+                and h._synonymtype_key = 1021
 	''',
 
 	# sql (1-2) : super-simple genotypes
