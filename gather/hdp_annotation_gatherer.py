@@ -708,8 +708,6 @@ cmds = [
         from tmp_supersimple tg, GXD_AlleleGenotype g, MRK_Marker m, 
 		VOC_Annot v, VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
-        and g._Marker_key = m._Marker_key
-        and g._Marker_key != 37270
         and g._Genotype_key = v._Object_key
         and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
 		or
@@ -720,7 +718,9 @@ cmds = [
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
-	''',
+        and g._Marker_key = m._Marker_key
+        and g._Marker_key != %s
+	''' % (GT_ROSA),
 
 	'''
 	create index idx1_genotype on tmp_genotype (_Genotype_key)
