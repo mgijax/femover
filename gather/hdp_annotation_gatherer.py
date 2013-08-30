@@ -128,7 +128,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		markerHeaderDict = {}
 		(cols, rows) = self.results[3]
 		key = Gatherer.columnNumber (cols, '_Marker_key')
-		value = Gatherer.columnNumber (cols, 'term')
+		value = Gatherer.columnNumber (cols, 'synonym')
 		for row in rows:
 			if not markerHeaderDict.has_key(row[key]):
 				markerHeaderDict[row[key]] = []
@@ -670,11 +670,13 @@ cmds = [
 	# sql (3)
 	# marker -> mp header term
 	'''
-	select distinct gg._Marker_key, t.term
-	from tmp_supersimple g, VOC_AnnotHeader v, VOC_Term t, GXD_AllelePair gg
+	select distinct gg._Marker_key, s.synonym
+	from tmp_supersimple g, VOC_AnnotHeader v, MGI_Synonym s, GXD_AllelePair gg
 	where g._Genotype_key = v._Object_key
 	and v._AnnotType_key = 1002
-	and v._Term_key = t._Term_key
+	and v._Term_key = s._Object_key
+	and s._MGIType_key = 13
+        and s._synonymtype_key = 1021
 	and g._Genotype_key = gg._Genotype_key
 	''',
 
