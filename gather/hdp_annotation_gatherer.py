@@ -118,7 +118,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		key = Gatherer.columnNumber (cols, '_Object_key')
 		value = Gatherer.columnNumber (cols, 'synonym')
 		for row in rows:
-			mpHeaderDict[row[key]] = []
+			if not mpHeaderDict.has_key(row[key]):
+				mpHeaderDict[row[key]] = []
 			mpHeaderDict[row[key]].append(row[value])
 		#logger.debug (mpHeaderDict)
 
@@ -200,22 +201,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 				termKey = row[termKeyCol]
 				if mpHeaderDict.has_key(termKey):
-					mpHeader = mpHeaderDict[termKey][0]
+					for mpHeader in mpHeaderDict[termKey]:
+						annotResults.append ( [ 
+							row[markerKeyCol],
+							row[organismKeyCol],
+							row[termKeyCol],
+							row[annotTypeKeyCol],
+							row[genotypeKeyCol],
+							genotype_type,
+							row[termIDCol],
+							row[termCol],
+							row[vocabNameCol],
+							mpHeader,
+							])
 				else:
-					mpHeader = None
-
-				annotResults.append ( [ 
-					row[markerKeyCol],
-					row[organismKeyCol],
-					row[termKeyCol],
-					row[annotTypeKeyCol],
-					row[genotypeKeyCol],
-					genotype_type,
-					row[termIDCol],
-					row[termCol],
-					row[vocabNameCol],
-					mpHeader,
-					])
+					annotResults.append ( [ 
+						row[markerKeyCol],
+						row[organismKeyCol],
+						row[termKeyCol],
+						row[annotTypeKeyCol],
+						row[genotypeKeyCol],
+						genotype_type,
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						None,
+						])
 
 		logger.debug ('processed simple mouse annotations')
 
@@ -240,22 +251,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 				termKey = row[termKeyCol]
 				if mpHeaderDict.has_key(termKey):
-					mpHeader = mpHeaderDict[termKey][0]
+					for mpHeader in mpHeaderDict[termKey]:
+						annotResults.append ( [ 
+							row[markerKeyCol],
+							row[organismKeyCol],
+							row[termKeyCol],
+							row[annotTypeKeyCol],
+							row[genotypeKeyCol],
+                                     			COMPLEX_TYPE,
+							row[termIDCol],
+							row[termCol],
+							row[vocabNameCol],
+							mpHeader,
+							])
 				else:
-					mpHeader = None
-
-                        	annotResults.append ( [
-                                    	row[markerKeyCol],
-                                     	row[organismKeyCol],
-                                     	row[termKeyCol],
-                                     	row[annotTypeKeyCol],
-                                     	row[genotypeKeyCol],
-                                     	COMPLEX_TYPE,
-                                     	row[termIDCol],
-                                     	row[termCol],
-                                     	row[vocabNameCol],
-					mpHeader,
-                                	])
+                        		annotResults.append ( [
+                                    		row[markerKeyCol],
+                                     		row[organismKeyCol],
+                                     		row[termKeyCol],
+                                     		row[annotTypeKeyCol],
+                                     		row[genotypeKeyCol],
+                                     		COMPLEX_TYPE,
+                                     		row[termIDCol],
+                                     		row[termCol],
+                                     		row[vocabNameCol],
+						None,
+                                		])
 		logger.debug ('processed complex mouse annotations')
 
 		# sql (8)
@@ -276,22 +297,32 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			termKey = row[termKeyCol]
 			if mpHeaderDict.has_key(termKey):
-				mpHeader = mpHeaderDict[termKey][0]
+				for mpHeader in mpHeaderDict[termKey]:
+                        		annotResults.append ( [
+                                		row[markerKeyCol],
+                                		row[organismKeyCol],
+                                		row[termKeyCol],
+                                		row[annotTypeKeyCol],
+                                		None,
+						None,
+                        			row[termIDCol],
+                        			row[termCol],
+                        			row[vocabNameCol],
+						mpHeader,
+                        			])
 			else:
-				mpHeader = None
-
-                        annotResults.append ( [
-                                row[markerKeyCol],
-                                row[organismKeyCol],
-                                row[termKeyCol],
-                                row[annotTypeKeyCol],
-                                None,
-				None,
-                        	row[termIDCol],
-                        	row[termCol],
-                        	row[vocabNameCol],
-				mpHeader,
-                        	])
+                        		annotResults.append ( [
+                                		row[markerKeyCol],
+                                		row[organismKeyCol],
+                                		row[termKeyCol],
+                                		row[annotTypeKeyCol],
+                                		None,
+						None,
+                        			row[termIDCol],
+                        			row[termCol],
+                        			row[vocabNameCol],
+						None,
+                        			])
 		logger.debug ('processed allele/OMIM annotatins')
 
 		# sql (9)
@@ -312,22 +343,33 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			termKey = row[termKeyCol]
 			if mpHeaderDict.has_key(termKey):
-				mpHeader = mpHeaderDict[termKey][0]
+				for mpHeader in mpHeaderDict[termKey]:
+					annotResults.append ( [ 
+                                		row[markerKeyCol],
+						row[organismKeyCol],
+						row[termKeyCol],
+						row[annotTypeKeyCol],
+						None,
+						None,
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						mpHeader,
+						])
 			else:
-				mpHeader = None
+				annotResults.append ( [ 
+                                	row[markerKeyCol],
+					row[organismKeyCol],
+					row[termKeyCol],
+					row[annotTypeKeyCol],
+					None,
+					None,
+					row[termIDCol],
+					row[termCol],
+					row[vocabNameCol],
+					None,
+					])
 
-			annotResults.append ( [ 
-                                row[markerKeyCol],
-				row[organismKeyCol],
-				row[termKeyCol],
-				row[annotTypeKeyCol],
-				None,
-				None,
-				row[termIDCol],
-				row[termCol],
-				row[vocabNameCol],
-				mpHeader,
-				])
 		logger.debug ('processed human OMIM annotations')
 
 		#
