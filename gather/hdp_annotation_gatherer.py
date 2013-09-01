@@ -500,7 +500,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					cannotResults.append( [ 
 		  				clusterKey,
 						None,
-						annotationKey,
+						1002,
 						HEADER_TYPE,
 						None,
 						markerHeader
@@ -573,7 +573,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					cannotResults.append( [ 
 		  				clusterKey,
 						None,
-						annotationKey,
+						1002,
 						HEADER_TYPE,
 						None,
 						markerHeader
