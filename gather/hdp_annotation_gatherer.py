@@ -130,7 +130,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# dictionary of distinct genotype/marker keys and their counts
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
-		# list of simple genotypes
+		# list of super-simple + simple genotypes
 		simpleList = set([])
 
 		#
@@ -147,8 +147,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				else:
 					genotype_type = SIMPLE_TYPE
 
-				# save simple genotype list for complex checks
-				# this list should include both super-simple + simple
+				# save super-simple + simple genotype list for complex checks
 				simpleList.add(row[genotypeKeyCol])
 
 				termKey = row[termKeyCol]
@@ -740,8 +739,7 @@ cmds = [
         ''',
 
         # sql (7)
-	# mouse genotype/OMIM annotations : complex
-	# mouse genotype/MP annotations : complex
+	# oomplex genotype
         '''
         select distinct gg._Marker_key,
                 m._Organism_key,
@@ -862,7 +860,8 @@ cmds = [
 	#
 	# super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
 	# that do NOT contain homolgene clusters
-        #   human with OMIM annotations where mouse does NOT contain homologene clusters
+	# plus
+        # human with OMIM annotations where mouse does NOT contain homologene clusters
 	#
 	# note that the allele/omim annotations (1012) are not included
 	#
