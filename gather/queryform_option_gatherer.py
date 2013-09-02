@@ -185,6 +185,20 @@ class QFOptionGatherer (Gatherer.Gatherer):
 		soFar = len(self.finalResults)
 		logger.debug ('Added %s MP header rows' % increment) 
 
+		# 4. genome build number for mouse markers
+
+		cols, rows = self.results[4]
+
+		versionCol = Gatherer.columnNumber (cols, 'version')
+
+		version = 'unknown build'
+
+		if len(rows) > 0:
+			version = rows[0][versionCol]
+
+		self.finalResults.append ( [ 'marker', 'build_number',
+			version, version, None, 1, None, None, None, 0 ] )
+
 		return
 
 ###--- globals ---###
@@ -285,6 +299,13 @@ cmds = [
 		and v.name = 'Marker Category'
 		and t._Term_key = x._Term_key
 	order by t._Term_key, x.sequenceNum, x.note''',
+
+	# 4. genome build number for mouse markers
+	'''select distinct version
+	from MRK_Location_Cache
+	where _Organism_key = 1
+		and version is not null
+	order by version desc''', 
 	]
 
 # order of fields (from the query results) to be written to the
