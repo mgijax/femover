@@ -188,7 +188,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 \
-				and row[markerKeyCol] != GT_ROSA:
+				and row[markerKeyCol] != 37270:
 
 				if row[genotypeKeyCol] in superSimpleList:
 					genotype_type = SUPER_TYPE
@@ -694,7 +694,8 @@ cmds = [
                 and h._synonymtype_key = 1021
 	''',
 
-	# sql (1-2) : super-simple genotypes
+	# sql (1-2) 
+	# super-simple genotypes
 	'''
 	select g._Genotype_key 
 	into temporary table tmp_supersimple
@@ -702,6 +703,9 @@ cmds = [
 	where exists (select 1 from ALL_Allele a
 		 where g._Allele_key = a._Allele_key
 			and a.isWildType = 0)
+	and not exists (select 1 from ALL_Allele a
+		 where g._Allele_key = a._Allele_key
+		 and a.symbol like '%/%<%>%')
 	group by g._Genotype_key having count(*) = 1
 	''',
 
@@ -710,7 +714,7 @@ cmds = [
 	''',
 
 	# sql (3)
-	# marker -> mp header term
+	# super-simple genotypes and their marker -> mp header term
 	'''
 	select distinct gg._Marker_key, s.synonym
 	from tmp_supersimple g, VOC_AnnotHeader v, MGI_Synonym s, GXD_AllelePair gg
@@ -726,11 +730,12 @@ cmds = [
 	# sql (4-5)
 	# super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
 	# does NOT contain allele/OMIM annotations (1012)
+	# excludes Gt(ROSA)
 	#
 	'''
 	select distinct tg._Genotype_key, m._Marker_key, 
 		v._AnnotType_key, v._Term_key, t.term, a.accID
-	into temporary table tmp_genotype
+	into temporary table tmp_mouse
         from tmp_supersimple tg, GXD_AlleleGenotype g, MRK_Marker m, 
 		VOC_Annot v, VOC_Term t, ACC_Accession a
 	where tg._Genotype_key = g._Genotype_key
@@ -745,11 +750,11 @@ cmds = [
         and a.private = 0
         and a.preferred = 1
         and g._Marker_key = m._Marker_key
-        and g._Marker_key != %s
-	''' % (GT_ROSA),
+        and g._Marker_key != 37270
+	''',
 
 	'''
-	create index idx1_genotype on tmp_genotype (_Genotype_key)
+	create index idx_mouse on tmp_mouse (_Genotype_key)
 	''',
 
 	#
@@ -757,8 +762,7 @@ cmds = [
 	#
 
         # sql (6)
-        # mouse genotype/OMIM annotations : simple
-        # mouse genotype/MP annotations : simple
+	# simple genotypes that contain mouse/MP or mouse/OMIM annotations
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
@@ -779,6 +783,7 @@ cmds = [
         and gg._Genotype_key = g._Genotype_key
         and ag._Allele_Type_key != 847129
         and ag.isWildType = 0
+	and ag.symbol not like '%/%<%>%'
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -792,8 +797,7 @@ cmds = [
         ''',
 
         # sql (7)
-	# mouse genotype/OMIM annotations : complex
-	# mouse genotype/MP annotations : complex
+	# complex genotypes that contain mouse/MP or mouse/OMIM annotations
         '''
         select distinct gg._Marker_key,
                 m._Organism_key,
@@ -801,7 +805,7 @@ cmds = [
                 v._Object_key,
                 a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv,
-                GXD_AlleleGenotype gg,
+                GXD_AlleleGenotype gg, ALL_Allele ag,
                 ACC_Accession a, MRK_Marker m
         where ((v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
                 or
@@ -809,6 +813,8 @@ cmds = [
                )
         and v._Term_key = t._Term_key
         and v._Object_key = gg._Genotype_key
+        and gg._Allele_key = ag._Allele_key
+	and ag.symbol not like '%/%<%>%'
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -836,8 +842,8 @@ cmds = [
         and t._Vocab_key = vv._Vocab_key
         and v._Object_key = al._Allele_key
 	and al._Marker_key = m._Marker_key
-	and m._Marker_key != %s
-        ''' % (GT_ROSA),
+	and m._Marker_key != 37270
+        ''',
 
 	# sql (9)
 	# human gene/OMIM annotations
@@ -882,7 +888,7 @@ cmds = [
 	select distinct c._Cluster_key, gg._Marker_key, 
 		gg._Term_key, gg._AnnotType_key, gg.term, gg.accID
 	into temporary table tmp_cluster
-	from tmp_supersimple tg, tmp_genotype gg, MRK_ClusterMember c
+	from tmp_supersimple tg, tmp_mouse gg, MRK_ClusterMember c
 	where tg._Genotype_key = gg._Genotype_key
 	and gg._Marker_key = c._Marker_key
 
@@ -921,7 +927,7 @@ cmds = [
 	'''
 	select distinct gg._Marker_key, gg._Term_key, gg._AnnotType_key, gg.term, gg.accID
 	into temporary table tmp_nocluster
-	from tmp_supersimple tg, tmp_genotype gg
+	from tmp_supersimple tg, tmp_mouse gg
 	where tg._Genotype_key = gg._Genotype_key
 	and not exists (select 1 from tmp_cluster tc where gg._Marker_key = tc._Marker_key)
 
@@ -992,7 +998,7 @@ cmds = [
         from GXD_Genotype g, GXD_AllelePair p
         where g._Genotype_key = p._Genotype_key
         and exists (select 1 from tmp_supersimple c where c._Genotype_key = p._Genotype_key)
-        and exists (select 1 from tmp_genotype c where c._Genotype_key = p._Genotype_key)
+        and exists (select 1 from tmp_mouse c where c._Genotype_key = p._Genotype_key)
 	''',
 
 	]
