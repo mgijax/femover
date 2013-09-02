@@ -637,6 +637,8 @@ cmds = [
 	''',
 
 	# sql (1-2) : super-simple genotypes
+	# include: non-wild type alleles
+	# exclude: 'slash' alleles
 	'''
 	select g._Genotype_key 
 	into temporary table tmp_supersimple
@@ -703,6 +705,8 @@ cmds = [
 
         # sql (6)
         # simple genotypes
+	# include: non-wild type alleles
+	# exclude: 'slash' alleles
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
