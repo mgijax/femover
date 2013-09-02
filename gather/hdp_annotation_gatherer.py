@@ -65,6 +65,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		#
 		# sql (0)
 		# mp term -> mp header term
+		# includes parent + children
 		mpHeaderDict = {}
 		(cols, rows) = self.results[0]
 		key = Gatherer.columnNumber (cols, '_Object_key')
@@ -112,9 +113,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'mp_header'
 			]
 
-		# sql (6)
-		# mouse genotype/OMIM annotations
-		# mouse genotype/MP annotations
+        	# sql (6)
+		# super-simple or simple genotypes that contain mouse/MP or mouse/OMIM annotations
 		(cols, rows) = self.results[6]
 
 		# set of columns for common sql fields
@@ -130,7 +130,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# dictionary of distinct genotype/marker keys and their counts
 		genomarkerDict = getGeneCount(rows, genotypeKeyCol, markerKeyCol)
 
-		# list of simple genotypes
+		# list of super-simple + simple genotypes
 		simpleList = set([])
 
 		#
@@ -142,13 +142,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			if len(genomarkerDict[row[genotypeKeyCol]]) == 1 \
 				and row[markerKeyCol] != 37270:
 
+				# check if genotype is a super-simple
 				if row[genotypeKeyCol] in superSimpleList:
 					genotype_type = SUPER_TYPE
 				else:
 					genotype_type = SIMPLE_TYPE
 
-				# save simple genotype list for complex checks
-				# this list should include both super-simple + simple
+				# save super-simple + simple genotype list for complex checks
 				simpleList.add(row[genotypeKeyCol])
 
 				termKey = row[termKeyCol]
@@ -179,12 +179,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						row[vocabNameCol],
 						None,
 						])
-
 		logger.debug ('processed simple mouse annotations')
 
-                # sql (7)
-		# mouse genotype/OMIM annotations : complex
-		# mouse genotype/MP annotations : complex
+        	# sql (7)
+		# complex genotypes that contain mouse/MP or mouse/OMIM annotations
                 (cols, rows) = self.results[7]
 
                 # set of columns for common sql fields
@@ -198,7 +196,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
 
                 for row in rows:
-			# skip those listed as 'simple'
+			# skip those listed as 'super-simple + simple'
                         if row[genotypeKeyCol] not in simpleList:
 
 				termKey = row[termKeyCol]
@@ -231,8 +229,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 		])
 		logger.debug ('processed complex mouse annotations')
 
-		# sql (8)
-		# allele/OMIM annotations
+        	# sql (8)
+        	# allele/OMIM annotations
+		# exclude Gt(ROSA)
 		(cols, rows) = self.results[8]
 
                 # set of columns for common sql fields
@@ -321,7 +320,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[vocabNameCol],
 					None,
 					])
-
 		logger.debug ('processed human OMIM annotations')
 
 		#
@@ -350,10 +348,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term',
 			]
 
-		# sql (18)
+		# sql (17)
 		# homologene clusters
 		clusterDict1 = {}
-		(cols, rows) = self.results[18]
+		(cols, rows) = self.results[17]
 		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
 		for row in rows:
 			key = row[clusterKey]
@@ -363,11 +361,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			clusterDict1[key].append(row)
 		#logger.debug (clusterDict1)
 
-		# sql (19)
+		# sql (18)
 		# non-homologene clusters
 		# use the marker key as the "cluster" key
 		clusterDict2 = {}
-		(cols, rows) = self.results[19]
+		(cols, rows) = self.results[18]
 		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
 		for row in rows:
 			key = row[markerKey]
@@ -378,8 +376,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			key = key + 1
 		#logger.debug (clusterDict2)
 
-		# sql (20) : annotations that contain homologene clusters
-		(cols, rows) = self.results[20]
+		# sql (19)
+		# additional info for tmp_cluster-ed data
+		(cols, rows) = self.results[19]
 
 		# set of columns for common sql fields
 		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
@@ -460,8 +459,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('processed mouse/human genes with homolgene clusters')
 
-		# sql (21) : mouse/human markers with annotations that do NOT contain homologene clusters
-		(cols, rows) = self.results[21]
+		# sql (20)
+		# additional info for tmp_nocluster-ed data
+		(cols, rows) = self.results[20]
 
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -533,8 +533,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
-		# sql (22) : genotype-cluster
-		(cols, rows) = self.results[22]
+		# sql (21)
+		# allele pair information in order to generate the genotype-cluster
+		# only includes super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
+		(cols, rows) = self.results[21]
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -576,13 +578,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		clusterKey = 1
 		for r in compressSet:
 			genoClusterResults.append( [
-				clusterKey,
-				r[0],
-				r[1],
-				r[2],
-				r[3],
-				r[4],
-				r[5],
+				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
 				])
 
 			for gKey in compressSet[r]:
@@ -593,11 +589,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				
 			clusterKey = clusterKey + 1
 
+		logger.debug ('processed genotype clusters')
+
 		# push data to output files
+
 		self.output.append((annotCols, annotResults))
+
 		self.output.append((clusterCols, clusterResults))
 		self.output.append((cmarkerCols, cmarkerResults))
 		self.output.append((cannotCols, cannotResults))
+
 		self.output.append((genoClusterCols, genoClusterResults))
 		self.output.append((genoCols, genoResults))
 
@@ -903,21 +904,19 @@ cmds = [
 	''',
 
 	# sql (17)
-	'''
-	select * from tmp_supersimple
-	''',
-
-	# sql (18)
+	# homologene clusters
 	'''
 	select * from tmp_cluster
 	''',
 
-	# sql (19)
+	# sql (18)
+	# non-homologene clusters
+	# use the marker key as the "cluster" key
 	'''
 	select * from tmp_nocluster
 	''',
 
-	# sql (20)
+	# sql (19)
 	# additional info for tmp_cluster-ed data
         '''
 	select distinct c._Cluster_key, c._Marker_key, m._Organism_key, m.symbol, a.accID as homologene_id
@@ -930,7 +929,7 @@ cmds = [
 	order by c._Cluster_key
 	''',
 
-	# sql (21)
+	# sql (20)
 	# additional info for tmp_nocluster-ed data
         '''
 	select distinct c._Marker_key, c._Organism_key, c.symbol
@@ -940,7 +939,7 @@ cmds = [
 	order by c._Marker_key
 	''',
 
-	# sql (22)
+	# sql (21)
 	# allele pair information in order to generate the genotype-cluster
 	# only includes super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
 	'''
