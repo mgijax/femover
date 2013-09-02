@@ -178,7 +178,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						row[vocabNameCol],
 						None,
 						])
-
 		logger.debug ('processed simple mouse annotations')
 
                 # sql (7)
@@ -320,7 +319,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[vocabNameCol],
 					None,
 					])
-
 		logger.debug ('processed human OMIM annotations')
 
 		#
