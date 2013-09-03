@@ -638,7 +638,6 @@ cmds = [
 
 	# sql (1-3) : super-simple genotypes
 	# include: non-wild type alleles
-	# exclude: 'slash' alleles
 	'''
 	select g._Genotype_key 
 	into temporary table tmp_supersimple
@@ -646,9 +645,6 @@ cmds = [
 	where exists (select 1 from ALL_Allele a
 		 where g._Allele_key = a._Allele_key
 			and a.isWildType = 0)
-        and not exists (select 1 from ALL_Allele a
-                 where g._Allele_key = a._Allele_key
-                 and a.symbol like '%/%<%>%')
 	group by g._Genotype_key having count(*) = 1
 	''',
 
