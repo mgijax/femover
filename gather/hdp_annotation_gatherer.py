@@ -713,7 +713,6 @@ cmds = [
         # sql (7)
         # simple genotypes
 	# include: non-wild type alleles
-	# exclude: 'slash' alleles
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
@@ -734,7 +733,6 @@ cmds = [
         and gg._Genotype_key = g._Genotype_key
         and ag._Allele_Type_key != 847129
         and ag.isWildType = 0
-        and ag.symbol not like '%/%<%>%'
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
