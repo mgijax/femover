@@ -659,11 +659,12 @@ cmds = [
 	# delete genotypes that contain 'slash' alleles and are *not* transgenes
 	'''
 	delete from tmp_supersimple s
-        where exists (select 1 from GXD_AlleleGenotype g, ALL_Allele a
+        where exists (select 1 from GXD_AlleleGenotype g, ALL_Allele a, MRK_Marker m
         	where s._Genotype_key = g._Genotype_key
         	and g._Allele_key = a._Allele_key
         	and a.symbol like '%/%<%>%'
-        	and a._Allele_Type_key not in (847127))
+		and g._Marker_key = m._Marker_key
+        	and m._Marker_Type_key not in (12))
 	''',
 
 	# sql (4)
