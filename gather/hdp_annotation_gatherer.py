@@ -121,8 +121,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
@@ -189,8 +189,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
                 markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
                 organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
                 annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
                 termIDCol = Gatherer.columnNumber (cols, 'accID')
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
@@ -236,8 +236,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 # set of columns for common sql fields
                 markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
                 organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
                 annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
                 termIDCol = Gatherer.columnNumber (cols, 'accID')
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
@@ -282,8 +282,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# set of columns for common sql fields
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
@@ -372,7 +372,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			if not clusterDict2.has_key(key):
 				clusterDict2[key] = []
 			clusterDict2[key].append(row)
-			key = key + 1
 		#logger.debug (clusterDict2)
 
 		# sql (19) : annotations that contain homologene clusters
@@ -428,8 +427,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			#
 			if clusterDict1.has_key(clusterKey):
 				for c in clusterDict1[clusterKey]:
-					termKey = c[2]
-					annotationKey = c[3]
+					annotationKey = c[2]
+					termKey = c[3]
 					termName = c[4]
 					termId = c[5]
 					if (clusterKey, termKey) not in cannotList:
@@ -498,8 +497,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			#
 			if clusterDict2.has_key(markerKey):
 				for c in clusterDict2[markerKey]:
-					termKey = c[1]
-					annotationKey = c[2]
+					annotationKey = c[1]
+					termKey = c[2]
 					termName = c[3]
 					termId = c[4]
 
@@ -528,8 +527,46 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						])
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
-		# sql (21) : genotype-cluster
+		#
+		# hdp_genocluster
+		# hpd_genocluster_genotype
+		# hpd_genocluster_annotation
+		#
+
+		gClusterResults = []
+		gClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
+				'_Allele_key_1', '_Allele_key_2',
+		  		'_PairState_key', 'isConditional', '_ExistsAs_key' 
+			]
+
+		gResults = []
+		gCols = ['hdp_genocluster_key', 
+				'_Genotype_key',
+			]
+
+		gannotResults = []
+		gannotCols = ['hdp_genocluster_key',
+				'_Term_key', 
+				'_AnnotType_key',
+				'term_type',
+				'accID', 
+				'term',
+			]
+
+		# sql (21) : genotype-cluster by annotation
+		clusterDict3 = {}
 		(cols, rows) = self.results[21]
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		for row in rows:
+			key = row[genotypeKeyCol]
+			value = row
+			if not clusterDict3.has_key(key):
+				clusterDict3[key] = []
+			clusterDict3[key].append(row)
+		#logger.debug (clusterDict3)
+
+		# sql (22) : genotype-cluster
+		(cols, rows) = self.results[22]
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -539,17 +576,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		pairStateKeyCol = Gatherer.columnNumber (cols, '_PairState_key')
 		isConditionalKeyCol = Gatherer.columnNumber (cols, 'isConditional')
 		existsAsKeyCol = Gatherer.columnNumber (cols, '_ExistsAs_key')
-
-		genoClusterResults = []
-		genoClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
-				'_Allele_key_1', '_Allele_key_2',
-		  		'_PairState_key', 'isConditional', '_ExistsAs_key' 
-			]
-
-		genoResults = []
-		genoCols = ['hdp_genocluster_key', 
-				'_Genotype_key',
-			]
 
 		compressSet = {}
 
@@ -570,26 +596,45 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 		for r in compressSet:
-			genoClusterResults.append( [
+			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
 				])
 
 			for gKey in compressSet[r]:
-				genoResults.append( [
+				gResults.append( [
 					clusterKey,
 					gKey,
 					])
 				
+				#if clusterDict3.has_key(gKey):
+				#	for c in clusterDict3[gKey]:
+				#		annotationKey = c[1]
+				#		termKey = c[2]
+				#		termName = c[3]
+				#		termId = c[4]
+						#gannotResults.append( [ 
+			    			#	clusterKey,
+						#	termKey,
+						#	annotationKey,
+						#	TERM_TYPE,
+						#	termId,
+						#	termName
+						#	])
+
 			clusterKey = clusterKey + 1
 		logger.debug ('processed genotype cluster')
 
 		# push data to output files
+
 		self.output.append((annotCols, annotResults))
+
 		self.output.append((clusterCols, clusterResults))
 		self.output.append((cmarkerCols, cmarkerResults))
 		self.output.append((cannotCols, cannotResults))
-		self.output.append((genoClusterCols, genoClusterResults))
-		self.output.append((genoCols, genoResults))
+
+		self.output.append((gClusterCols, gClusterResults))
+		self.output.append((gCols, gResults))
+		self.output.append((gannotCols, gannotResults))
 
 		return
 
@@ -716,7 +761,8 @@ cmds = [
         '''
         select distinct gg._Marker_key, 
                 m._Organism_key,
-                v._Term_key, v._AnnotType_key, 
+                v._AnnotType_key, 
+                v._Term_key,
                 v._Object_key, 
                 a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
@@ -750,7 +796,8 @@ cmds = [
         '''
         select distinct gg._Marker_key,
                 m._Organism_key,
-                v._Term_key, v._AnnotType_key,
+		v._AnnotType_key,
+                v._Term_key, 
                 v._Object_key,
                 a.accID, t.term, vv.name
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv,
@@ -776,7 +823,8 @@ cmds = [
         '''
         select distinct m._Marker_key,
                 m._Organism_key,
-                v._Term_key, v._AnnotType_key, 
+		v._AnnotType_key, 
+                v._Term_key, 
                 a.accID, t.term, vv.name
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, 
 	     ALL_Allele al, MRK_Marker m
@@ -797,7 +845,8 @@ cmds = [
 	'''
         select distinct v._Object_key as _Marker_key, 
 		m._Organism_key,
-		v._Term_key, v._AnnotType_key, 
+		v._AnnotType_key, 
+		v._Term_key, 
 		a.accID, t.term, vv.name
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
         where v._AnnotType_key = 1006
@@ -833,7 +882,7 @@ cmds = [
 	#
 	'''
 	select distinct c._Cluster_key, gg._Marker_key, 
-		gg._Term_key, gg._AnnotType_key, gg.term, gg.accID
+		gg._AnnotType_key, gg._Term_key, gg.term, gg.accID
 	into temporary table tmp_cluster
 	from tmp_supersimple tg, tmp_mouse gg, MRK_ClusterMember c
 	where tg._Genotype_key = gg._Genotype_key
@@ -842,8 +891,7 @@ cmds = [
 	union
 
 	select distinct c._Cluster_key, c._Marker_key, 
-		v._Term_key, v._AnnotType_key, 
-		t.term, a.accID
+		v._AnnotType_key, v._Term_key, t.term, a.accID
         from MRK_ClusterMember c, VOC_Annot v, VOC_Term t, ACC_Accession a
         where c._Marker_key = v._Object_key
         and v._AnnotType_key = 1006
@@ -873,7 +921,7 @@ cmds = [
 	# note that the allele/omim annotations (1012) are not included
 	#
 	'''
-	select distinct gg._Marker_key, gg._Term_key, gg._AnnotType_key, gg.term, gg.accID
+	select distinct gg._Marker_key, gg._AnnotType_key, gg._Term_key, gg.term, gg.accID
 	into temporary table tmp_nocluster
 	from tmp_supersimple tg, tmp_mouse gg
 	where tg._Genotype_key = gg._Genotype_key
@@ -881,7 +929,7 @@ cmds = [
 
 	union
 
-	select distinct c._Marker_key, v._Term_key, v._AnnotType_key, t.term, a.accID
+	select distinct c._Marker_key, v._AnnotType_key, v._Term_key, t.term, a.accID
         from MRK_Marker c, VOC_Annot v, VOC_Term t, ACC_Accession a
         where c._Marker_key = v._Object_key
         and v._AnnotType_key = 1006
@@ -937,6 +985,12 @@ cmds = [
 	''',
 
 	# sql (21)
+	# mouse annotations by genotype
+	'''
+	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID from tmp_mouse
+	''',
+
+	# sql (22)
 	# allele pair information in order to generate the genotype-cluster
 	# only includes super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
 	'''
@@ -983,6 +1037,12 @@ files = [
 	('hdp_genocluster_genotype',
 		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Genotype_key' ],
           'hdp_genocluster_genotype'),
+
+	('hdp_genocluster_annotation',
+		[ 'hdp_genocluster_key', '_Term_key',
+		  '_AnnotType_key', 'term_type', 'accID', 'term' ],
+          'hdp_genocluster_annotation'),
+
 	]
 
 # global instance of a HDPAnnotationGatherer
