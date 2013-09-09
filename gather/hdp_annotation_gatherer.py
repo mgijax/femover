@@ -444,11 +444,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			if markerHeaderDict.has_key(markerKey):
 				for markerHeader in markerHeaderDict[markerKey]:
-					termName = markerHeader[1]
-					termId = markerHeader[2]
+					termKey = markerHeader[1]
+					termName = markerHeader[2]
+					termId = markerHeader[3]
 					cannotResults.append( [ 
 		  				clusterKey,
-						None,
+						termKey,
 						1002,
 						HEADER_TYPE,
 						termId,
@@ -518,11 +519,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			if markerHeaderDict.has_key(markerKey):
 				for markerHeader in markerHeaderDict[markerKey]:
-					termName = markerHeader[1]
-					termId = markerHeader[2]
+					termKey = markerHeader[1]
+					termName = markerHeader[2]
+					termId = markerHeader[3]
 					cannotResults.append( [ 
 		  				clusterKey,
-						None,
+						termKey,
 						1002,
 						HEADER_TYPE,
 						termId,
@@ -733,7 +735,7 @@ cmds = [
 	# sql (6)
 	# marker -> mp header term
 	'''
-	select distinct gg._Marker_key, s.synonym, a.accID
+	select distinct gg._Marker_key, v._Term_key, s.synonym, a.accID
 	from tmp_supersimple g, VOC_AnnotHeader v, MGI_Synonym s, 
 		GXD_AllelePair gg, ACC_Accession a
 	where g._Genotype_key = v._Object_key
