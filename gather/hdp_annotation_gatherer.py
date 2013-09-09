@@ -79,6 +79,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		#
 		# sql (6)
 		# marker -> mp header term
+		# this dictionary is *not* being used right now
 		markerHeaderDict = {}
 		(cols, rows) = self.results[6]
 		key = Gatherer.columnNumber (cols, '_Marker_key')
@@ -443,16 +444,17 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 						cannotList.add((clusterKey, termKey))
 
-			if markerHeaderDict.has_key(markerKey):
-				for markerHeader in markerHeaderDict[markerKey]:
-					cannotResults.append( [ 
-		  				clusterKey,
-						None,
-						1002,
-						HEADER_TYPE,
-						None,
-						markerHeader
-						])
+					if mpHeaderDict.has_key(termKey):
+						for mpHeader in mpHeaderDict[termKey]:
+							cannotResults.append( [ 
+		  						clusterKey,
+								termKey,
+								annotationKey,
+								HEADER_TYPE,
+								termId,
+								mpHeader
+								])
+
 		logger.debug ('processed mouse/human genes with homolgene clusters')
 
 		# sql (22) : mouse/human markers with annotations that do NOT contain homologene clusters
@@ -515,16 +517,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 						cannotList.add((markerKey, termKey))
 
-			if markerHeaderDict.has_key(markerKey):
-				for markerHeader in markerHeaderDict[markerKey]:
-					cannotResults.append( [ 
-		  				clusterKey,
-						None,
-						1002,
-						HEADER_TYPE,
-						None,
-						markerHeader
-						])
+					if mpHeaderDict.has_key(termKey):
+						for mpHeader in mpHeaderDict[termKey]:
+							cannotResults.append( [ 
+		  						clusterKey,
+								termKey,
+								annotationKey,
+								HEADER_TYPE,
+								termId,
+								mpHeader
+								])
 		logger.debug ('processed mouse/human genes without homolgene clusters')
 
 		#
@@ -682,15 +684,13 @@ cmds = [
 	''',
 
 	# sql (1-2) 
-	# exclude: markers with double-wild type allele pairs
+	# exclude: markers where the first allele is wild-type
 	'''
         select distinct ap._Genotype_key, ap._Marker_key
 	into temporary table tmp_exclude
-	from GXD_AllelePair ap, ALL_Allele a1, ALL_Allele a2
+	from GXD_AllelePair ap, ALL_Allele a1
         where ap._Allele_key_1 = a1._Allele_key
-        and ap._Allele_key_2 = a2._Allele_key
         and a1.isWildType = 1
-        and a2.isWildType = 1
 	''',
 
 	'''
@@ -700,7 +700,7 @@ cmds = [
 	# sql (3-5) : super-simple genotypes
 	# include: non-wild type alleles
 	# note that by excluding wild-type alleles, we automatically exclude
-	# all allele-pairs that contain a double-wild-type
+	# all allele-pairs where the first allele is wild-type
 	# this is ok, as we still want this genotype considered as a possible super-simple 
 	'''
 	select g._Genotype_key 
@@ -729,6 +729,7 @@ cmds = [
 
 	# sql (6)
 	# marker -> mp header term
+	# this dictionary is *not* being used right now
 	'''
 	select distinct gg._Marker_key, s.synonym
 	from tmp_supersimple g, VOC_AnnotHeader v, MGI_Synonym s, GXD_AllelePair gg
@@ -812,7 +813,7 @@ cmds = [
 
         # sql (10)
 	# complex genotype
-	# exclude: marker where allele pair contains a double-wild-types
+	# exclude: markers where the first allele is wild-type
         '''
         select distinct g._Marker_key,
                 m._Organism_key,
@@ -899,7 +900,7 @@ cmds = [
         # that is, the genotype has only one marker
         # and marker is NOT Gt(ROSA)
         #
-	# exclude: marker where allele pair contains a double-wild-types
+	# exclude: markers where the first allele is wild-type
 	#
         # select all *distinct* homologene clusters that contain a mouse/human HPD
         # annotation.  then select all of the mouse/human markers that are contained
@@ -947,7 +948,7 @@ cmds = [
 	# plus
         # human with OMIM annotations where mouse does NOT contain homologene clusters
 	#
-	# exclude: marker where allele pair contains a double-wild-types
+	# exclude: markers where the first allele is wild-type
 	#
 	# note that the allele/omim annotations (1012) are not included
 	#
@@ -1033,7 +1034,7 @@ cmds = [
 	# sql (24)
 	# allele pair information in order to generate the genotype-cluster
 	# only includes super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
-	# exclude: marker where allele pair contains a double-wild-types
+	# exclude: markers where the first allele is wild-type
 	'''
  	select p._Genotype_key, p._Marker_key,
                p._Allele_key_1, p._Allele_key_2, p._PairState_key,
