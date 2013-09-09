@@ -1006,10 +1006,13 @@ cmds = [
 	and c._Cluster_key = a._Object_key
         and a._LogicalDB_key = 81
 	and exists (select 1 from tmp_cluster tc 
-		where tc._Cluster_key = c._Cluster_key
-		and tc._Marker_key = c._Marker_key)
+		where tc._Cluster_key = c._Cluster_key)
 	order by c._Cluster_key
 	''',
+
+	#and exists (select 1 from tmp_cluster tc 
+	#	where tc._Cluster_key = c._Cluster_key
+	#	and tc._Marker_key = c._Marker_key)
 
 	# sql (22)
 	# additional info for tmp_nocluster-ed data
