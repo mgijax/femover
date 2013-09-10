@@ -611,20 +611,20 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					gKey,
 					])
 				
-				#if clusterDict3.has_key(gKey):
-				#	for c in clusterDict3[gKey]:
-				#		annotationKey = c[1]
-				#		termKey = c[2]
-				#		termName = c[3]
-				#		termId = c[4]
-						#gannotResults.append( [ 
-			    			#	clusterKey,
-						#	termKey,
-						#	annotationKey,
-						#	TERM_TYPE,
-						#	termId,
-						#	termName
-						#	])
+				if clusterDict3.has_key(gKey):
+					for c in clusterDict3[gKey]:
+						annotationKey = c[1]
+						termKey = c[2]
+						termName = c[3]
+						termId = c[4]
+						gannotResults.append( [ 
+			    				clusterKey,
+							termKey,
+							annotationKey,
+							TERM_TYPE,
+							termId,
+							termName
+							])
 
 			clusterKey = clusterKey + 1
 		logger.debug ('processed genotype cluster')
@@ -1093,7 +1093,7 @@ files = [
           'hdp_genocluster_genotype'),
 
 	('hdp_genocluster_annotation',
-		[ 'hdp_genocluster_key', '_Term_key',
+		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Term_key',
 		  '_AnnotType_key', 'term_type', 'accID', 'term' ],
           'hdp_genocluster_annotation'),
 
