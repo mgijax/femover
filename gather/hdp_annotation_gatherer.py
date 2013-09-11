@@ -708,13 +708,17 @@ cmds = [
 	# all allele-pairs where there exists a double-wild-type allele pair
 	# this is ok, as we still want this genotype considered as a possible super-simple 
 	'''
-	select g._Genotype_key 
-	into temporary table tmp_supersimple
-	from GXD_AlleleGenotype g
-	where exists (select 1 from ALL_Allele a
-		 where g._Allele_key = a._Allele_key
-			and a.isWildType = 0)
-	group by g._Genotype_key having count(*) = 1
+        WITH byGenotype AS (
+        select distinct g._Genotype_key, g._Marker_key
+        from GXD_AlleleGenotype g
+        where exists (select 1 from ALL_Allele a
+                 where g._Allele_key = a._Allele_key
+                        and a.isWildType = 0)
+        )
+        select g._Genotype_key
+        into temporary table tmp_supersimple
+        from byGenotype g
+        group by g._Genotype_key having count(*) = 1
 	''',
 
 	'''
