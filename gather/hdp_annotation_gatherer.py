@@ -768,8 +768,7 @@ cmds = [
         and g._Genotype_key = v._Object_key
         and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
 		or
-             (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
-	     )
+             (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Term_key = t._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
@@ -800,11 +799,9 @@ cmds = [
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
                 GXD_AlleleGenotype gg, GXD_Genotype g,
                 ALL_Allele ag, ACC_Accession a, MRK_Marker m
-        where (
-               (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+        where ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
                 or
-               (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-               )
+               (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Term_key = t._Term_key
         and v._Object_key = gg._Genotype_key
         and gg._Allele_key = ag._Allele_key
@@ -836,10 +833,9 @@ cmds = [
         from VOC_Annot v, VOC_Term t, VOC_Vocab vv,
                 GXD_AlleleGenotype g,
                 ACC_Accession a, MRK_Marker m
-        where ((v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+        where ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
                 or
-               (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-               )
+        	(v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Term_key = t._Term_key
         and v._Object_key = g._Genotype_key
         and v._Term_key = a._Object_key
