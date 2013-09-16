@@ -444,13 +444,14 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			if markerHeaderDict.has_key(markerKey):
 				for markerHeader in markerHeaderDict[markerKey]:
-					termKey = markerHeader[1]
-					termName = markerHeader[2]
-					termId = markerHeader[3]
+					annotationKey = markerHeader[1]
+					termKey = markerHeader[2]
+					termName = markerHeader[3]
+					termId = markerHeader[4]
 					cannotResults.append( [ 
 		  				clusterKey,
 						termKey,
-						1002,
+						annotationKey,
 						HEADER_TYPE,
 						termId,
 						termName
@@ -519,13 +520,14 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			if markerHeaderDict.has_key(markerKey):
 				for markerHeader in markerHeaderDict[markerKey]:
-					termKey = markerHeader[1]
-					termName = markerHeader[2]
-					termId = markerHeader[3]
+					annotationKey = markerHeader[1]
+					termKey = markerHeader[2]
+					termName = markerHeader[3]
+					termId = markerHeader[4]
 					cannotResults.append( [ 
 		  				clusterKey,
 						termKey,
-						1002,
+						annotationKey,
 						HEADER_TYPE,
 						termId,
 						termName
@@ -601,6 +603,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 		for r in compressSet:
+			markerKey = r[0]
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
 				])
@@ -625,6 +628,21 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							termId,
 							termName
 							])
+
+			if markerHeaderDict.has_key(markerKey):
+				for markerHeader in markerHeaderDict[markerKey]:
+					annotationKey = markerHeader[1]
+					termKey = markerHeader[2]
+					termName = markerHeader[3]
+					termId = markerHeader[4]
+					gannotResults.append( [ 
+		  				clusterKey,
+						termKey,
+						annotationKey,
+						HEADER_TYPE,
+						termId,
+						termName
+						])
 
 			clusterKey = clusterKey + 1
 		logger.debug ('processed genotype cluster')
@@ -739,7 +757,7 @@ cmds = [
 	# sql (6)
 	# marker -> mp header term
 	'''
-	select distinct gg._Marker_key, v._Term_key, s.synonym, a.accID
+	select distinct gg._Marker_key, v._AnnotType_key, v._Term_key, s.synonym, a.accID
 	from tmp_supersimple g, VOC_AnnotHeader v, MGI_Synonym s, 
 		GXD_AllelePair gg, ACC_Accession a
 	where g._Genotype_key = v._Object_key
@@ -907,17 +925,12 @@ cmds = [
         #
 
         # sql (15)
-        #       by mouse marker/MP (1002) for super-simple genotypes
-        #       by mouse marker/OMIM (1005) for super-simple genotypes
-        #       by human marker/OMIM (1006, 1013)
+	#
+	# grid clusters
+	#	super-simple/mouse
+        #       human
 	# note that the allele/omim annotations (1012) are not included
         #
-        # only include if the genotype is a super-simple genotype
-        # that is, the genotype has only one marker
-        # and marker is NOT Gt(ROSA)
-        #
-	# exclude: markers where there exists a double-wild-type allele pair
-	#
         # select all *distinct* homologene clusters that contain a mouse/human HPD
         # annotation.  then select all of the mouse/human markers that are contained
         # within each of those clusters
