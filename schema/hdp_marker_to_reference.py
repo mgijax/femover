@@ -19,9 +19,9 @@ tableName = 'hdp_marker_to_reference'
 # hdp (human disease portal)
 #
 # A row in this table represents:
-#	a marker -> reference association 
-#		with a mouse/OMIM (1005) or allele/OMIM (1012) annotation
-#	via a super-simple or simple genotype
+#	a marker -> reference association between:
+#		a) mouse/OMIM (1005) via a super-simple or simple genotype
+#		b) mouse marker/allele/OMIM (1012) (no genotypes)
 #
 # See gather for more information
 #
@@ -52,8 +52,8 @@ comments = {
 	Table.TABLE : 'central table for the marker/reference petal, containing one row for each marker/reference',
 	Table.COLUMN : {
 		'unique_key' : 'unique key for this record',
-		'marker_key' : 'marker that is annotated to super-simple or simple genotype and contains an annotation to mouse/OMIM or allele/OMIM',
-		'reference_key' : 'reference of annotation via the marker',
+		'marker_key' : 'mouse marker that is annotated to OMIM/disease term',
+		'reference_key' : 'reference of the annotation via the mouse marker',
 		},
 	}
 
