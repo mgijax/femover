@@ -119,7 +119,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                         ]
 
 		# sql (11)
-		# disease-marker-references
+		# disease-references by marker
 		# to store distinct marker/reference used for mouse/OMIM
                 diseaseMarkerRef1Dict = {}
 		(cols, rows) = self.results[11]
@@ -883,7 +883,7 @@ cmds = [
 
 	#
 	# sql (11)
-	# disease-references
+	# disease-references by marker
 	# to store distinct marker/reference used for mouse/OMIM
 	#
 	'''
