@@ -185,7 +185,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
-		'marker_microarray'
+		'marker_microarray', 'marker_to_term',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
