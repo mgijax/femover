@@ -1,3 +1,8 @@
+TAG: femover-5-1-5-4
+DATE: 09/17/2013
+STAFF: jsb
+CHANGES: added marker_to_term table to MARKER section of buildDatabase.py
+
 TAG: femover-5-1-5-3
 DATE: 09/06/2013
 STAFF: dbm
