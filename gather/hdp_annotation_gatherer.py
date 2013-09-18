@@ -68,12 +68,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# includes parent + children
 		mpHeaderDict = {}
 		(cols, rows) = self.results[0]
-		key = Gatherer.columnNumber (cols, '_Object_key')
+		termKey = Gatherer.columnNumber (cols, '_Object_key')
 		value = Gatherer.columnNumber (cols, 'synonym')
 		for row in rows:
-			if not mpHeaderDict.has_key(row[key]):
-				mpHeaderDict[row[key]] = []
-			mpHeaderDict[row[key]].append(row[value])
+			if not mpHeaderDict.has_key(row[termKey]):
+				mpHeaderDict[row[termKey]] = []
+			mpHeaderDict[row[termKey]].append(row[value])
 		#logger.debug (mpHeaderDict)
 
 		#
@@ -480,38 +480,39 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			#
 			# cannotResults : include unique instances only
 			#
-			if clusterDict1.has_key(clusterKey):
-				for c in clusterDict1[clusterKey]:
-					annotationKey = c[2]
-					termKey = c[3]
-					termName = c[4]
-					termId = c[5]
-					if (clusterKey, termKey) not in cannotList:
-						cannotResults.append( [ 
-			    				row[clusterKeyCol],
-							termKey,
-							annotationKey,
-							TERM_TYPE,
-							termId,
-							termName
-							])
+                        if clusterDict1.has_key(clusterKey):
+                                for c in clusterDict1[clusterKey]:
+                                        annotationKey = c[2]
+                                        termKey = c[3]
+                                        termName = c[4]
+                                        termId = c[5]
+                                        if (clusterKey, termKey) not in cannotList:
+                                                cannotResults.append( [
+                                                        row[clusterKeyCol],
+                                                        termKey,
+                                                        annotationKey,
+                                                        TERM_TYPE,
+                                                        termId,
+                                                        termName
+                                                        ])
 
-						cannotList.add((clusterKey, termKey))
+                                                cannotList.add((clusterKey, termKey))
 
-			if markerHeaderDict.has_key(markerKey):
-				for markerHeader in markerHeaderDict[markerKey]:
-					annotationKey = markerHeader[1]
-					termKey = markerHeader[2]
-					termName = markerHeader[3]
-					termId = markerHeader[4]
-					cannotResults.append( [ 
-		  				clusterKey,
-						termKey,
-						annotationKey,
-						HEADER_TYPE,
-						termId,
-						termName
-						])
+                        if markerHeaderDict.has_key(markerKey):
+                                for markerHeader in markerHeaderDict[markerKey]:
+                                        annotationKey = markerHeader[1]
+                                        termKey = markerHeader[2]
+                                        termName = markerHeader[3]
+                                        termId = markerHeader[4]
+                                        cannotResults.append( [
+                                                clusterKey,
+                                                termKey,
+                                                annotationKey,
+                                                HEADER_TYPE,
+                                                termId,
+                                                termName
+                                                ])
+
 
 		logger.debug ('processed mouse/human genes with homolgene clusters')
 
@@ -661,6 +662,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 		for r in compressSet:
+			clusterHeaders = set()
+			annotTypeKey = 1002
 			markerKey = r[0]
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
@@ -674,33 +677,35 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				
 				if clusterDict3.has_key(gKey):
 					for c in clusterDict3[gKey]:
-						annotationKey = c[1]
+						annotTypeKey = c[1]
 						termKey = c[2]
 						termName = c[3]
 						termId = c[4]
+						if mpHeaderDict.has_key(termKey):
+							# for each term, keep track of the set of headers for this cluster
+							clusterHeaders.update(mpHeaderDict[termKey])
 						gannotResults.append( [ 
 			    				clusterKey,
 							termKey,
-							annotationKey,
+							annotTypeKey,
 							TERM_TYPE,
 							termId,
 							termName
 							])
 
-			if markerHeaderDict.has_key(markerKey):
-				for markerHeader in markerHeaderDict[markerKey]:
-					annotationKey = markerHeader[1]
-					termKey = markerHeader[2]
-					termName = markerHeader[3]
-					termId = markerHeader[4]
-					gannotResults.append( [ 
-		  				clusterKey,
-						termKey,
-						annotationKey,
-						HEADER_TYPE,
-						termId,
-						termName
-						])
+			# add all the unique set of header rows for this cluster
+			for mpHeader in clusterHeaders:
+				termKey = 0
+				termName = mpHeader
+				termId = mpHeader
+				gannotResults.append( [ 
+					clusterKey,
+					termKey,
+					annotTypeKey,
+					HEADER_TYPE,
+					termId,
+					termName
+					])
 
 			clusterKey = clusterKey + 1
 
