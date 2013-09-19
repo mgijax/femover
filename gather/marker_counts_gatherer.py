@@ -281,12 +281,29 @@ cmds = [
 		group by _Marker_key''',
 
 	# 11. count of expression image panes associated with each marker
-	'''select _Object_key as _Marker_key,
-			count(distinct _ImagePane_key) as paneCount
-		from img_cache
-		where _ImageMGIType_key = 8
-			and _MGIType_key = 2
-		group by _Marker_key''',
+	'''with imagePanes as (select a._Marker_key, a._ImagePane_key
+	from img_imagepane p, img_image i, voc_term t, gxd_assay a
+	where t.term = 'Expression'
+		and t._Term_key = i._ImageClass_key
+		and i._Image_key = p._Image_key
+		and i.xDim is not null
+		and p._ImagePane_key = a._ImagePane_key
+	union
+	select ga._Marker_key, gi._ImagePane_key
+	from img_imagepane p, img_image i, voc_term t, 
+		gxd_insituresultimage gi, gxd_insituresult gr, gxd_specimen s,
+		gxd_assay ga
+	where t.term = 'Expression'
+		and t._Term_key = i._ImageClass_key
+		and i.xDim is not null
+		and i._Image_key = p._Image_key
+		and p._ImagePane_key = gi._ImagePane_key
+		and gi._Result_key = gr._Result_key
+		and gr._Specimen_key = s._Specimen_key
+		and s._Assay_key = ga._Assay_key)
+	select _Marker_key, count(distinct _ImagePane_key) as paneCount
+	from imagePanes
+	group by _Marker_key''',
 
 	# 12. count of mapping experiments associated with each marker
 	'''select _Marker_key, count(distinct _Expt_key) as mappingCount
