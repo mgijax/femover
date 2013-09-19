@@ -661,9 +661,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		#logger.debug (compressSet)
 
 		clusterKey = 1
+
 		for r in compressSet:
 
-			clusterHeaders = set()
 			markerKey = r[0]
 
 			gClusterResults.append( [
@@ -671,6 +671,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				])
 
 			for gKey in compressSet[r]:
+
 				gResults.append( [
 					clusterKey,
 					gKey,
@@ -692,23 +693,17 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							termName
 							])
 
-						# for each term, keep track of the set of headers for this cluster
+						# header for each term in this cluster
 						if mpHeaderDict.has_key(termKey):
-							clusterHeaders.update(mpHeaderDict[termKey])
-
-			# add all the unique set of header rows for this cluster
-			for mpHeader in clusterHeaders:
-				termKey = 0
-				termName = mpHeader
-				termId = mpHeader
-				gannotResults.append( [ 
-					clusterKey,
-					termKey,
-					annotationKey,
-					HEADER_TYPE,
-					termId,
-					termName
-					])
+							for mpHeader in mpHeaderDict[termKey]:
+								gannotResults.append( [ 
+									clusterKey,
+									termKey,
+									annotationKey,
+									HEADER_TYPE,
+									termId,
+									mpHeader,
+									])
 
 			clusterKey = clusterKey + 1
 
