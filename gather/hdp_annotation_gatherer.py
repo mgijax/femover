@@ -664,6 +664,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		for r in compressSet:
 
+                	# at most one cluster/header-term in a genoCluster_annotation
+                	gannotList = set([])
+
 			markerKey = r[0]
 
 			gClusterResults.append( [
@@ -693,17 +696,19 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							termName
 							])
 
-						# header for each term in this cluster
+						# one header per cluster
 						if mpHeaderDict.has_key(termKey):
-							for mpHeader in mpHeaderDict[termKey]:
-								gannotResults.append( [ 
-									clusterKey,
-									termKey,
-									annotationKey,
-									HEADER_TYPE,
-									termId,
-									mpHeader,
-									])
+                                                        for mpHeader in mpHeaderDict[termKey]:
+                                        			if (clusterKey, mpHeader) not in gannotList:
+                                                                	gannotResults.append( [
+                                                                        	clusterKey,
+                                                                        	None,
+                                                                        	annotationKey,
+                                                                        	HEADER_TYPE,
+                                                                        	None,
+                                                                        	mpHeader,
+                                                                        	])
+                                                			gannotList.add((clusterKey, mpHeader))
 
 			clusterKey = clusterKey + 1
 
