@@ -662,9 +662,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 		for r in compressSet:
+
 			clusterHeaders = set()
-			annotTypeKey = 1002
 			markerKey = r[0]
+
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
 				])
@@ -677,21 +678,23 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				
 				if clusterDict3.has_key(gKey):
 					for c in clusterDict3[gKey]:
-						annotTypeKey = c[1]
+						annotationKey = c[1]
 						termKey = c[2]
 						termName = c[3]
 						termId = c[4]
-						if mpHeaderDict.has_key(termKey):
-							# for each term, keep track of the set of headers for this cluster
-							clusterHeaders.update(mpHeaderDict[termKey])
+
 						gannotResults.append( [ 
 			    				clusterKey,
 							termKey,
-							annotTypeKey,
+							annotationKey,
 							TERM_TYPE,
 							termId,
 							termName
 							])
+
+						# for each term, keep track of the set of headers for this cluster
+						if mpHeaderDict.has_key(termKey):
+							clusterHeaders.update(mpHeaderDict[termKey])
 
 			# add all the unique set of header rows for this cluster
 			for mpHeader in clusterHeaders:
@@ -701,7 +704,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				gannotResults.append( [ 
 					clusterKey,
 					termKey,
-					annotTypeKey,
+					annotationKey,
 					HEADER_TYPE,
 					termId,
 					termName
