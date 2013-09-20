@@ -5,24 +5,73 @@
 # Purpose:
 #
 # To load all:
-#	mouse/genotypes annotated to OMIM terms (_AnnotType_key = 1005)
 # 	mouse/genotypes annotationed to MP Phenotype terms (_AnnotType_key = 1002)
+#	mouse/genotypes annotated to OMIM terms (_AnnotType_key = 1005)
+#	mouse/alleles annotatied to OMIM terms (_AnnotType_key = 1012)
 # 	human/genes annotated to OMIM terms (_AnnotType_key = 1006, 1013)
 # into the HDP table.
 #
+# IMPORTANT:
+#	genotype data only exists for mouse/MP (1002) and mouse/OMIM (1005)
+#	mouse/allele
+#
+# some exclusion rules:
+# 	exclude: genotypes that contain 'slash' alleles and are *not* transgenes
+#		(super-simple only)
+# 	exclude: markers where there exists a double-wild-type allele pair
+#		(complex, gridcluster, genocluster)
+#
 # hdp_annotation
+#	genotypes: super-simple, simple, complex
+#	includes annotationed terms
+#	includes the header terms for each annotation MP-term
+#	super-simple (OMG):
+#	simple :
 #
 # hdp_marker_to_reference
+#	markers annotated to OMIM disease and their references
+#	includes only super-simple, simple genotypes (_AnnotType_key = 1005)
+#	includes all allele/OMIM (_AnnotType_key = 1012)
 #
 # hdp_term_to_reference
+#	disease terms annotated to mouse 
+#	includes all genotypes (_AnnotType_key = 1005)
+#	includes all allele/OMIM (_AnnotType_key = 1012)
 #
 # hdp_gridcluster
 # hdp_gridcluster_marker
 # hdp_gridcluster_annotation
 #
+# 	super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
+# 	that contain homolgene clusters
+# 	plus
+# 	human with OMIM annotations where mouse contain homologene clusters
+#	+++++
+# 	super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
+# 	that do *not* contain homolgene clusters
+# 	plus
+# 	human with OMIM annotations where mouse does *not* contain homologene clusters
+#
+#	'marker': markers associated with a grid-cluster (both homologene + non-homolgene clusters)
+#
+#	'annotaton' : annotations associated with a grid-cluster (both homologene + non-homolgene clusters)
+#		includes annotation type, term info
+#		include header terms
+#
 # hdp_genocluster
 # hdp_genocluster_genotype
 # hdp_genocluster_annotation
+#
+# 	super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
+#
+#	create a genotype-cluster by aggregating:
+#		marker, allele1, allele2, pair state, is-conditional, genotype-exists
+#
+#	'genotype' : genotypes that belong to a specific geno-cluster
+#
+#	'annotation' : annotations associated with a geno-cluster
+#		includes annotation type, term info
+#		include header terms
 #
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
@@ -950,7 +999,7 @@ cmds = [
 	#
 	# sql (11)
 	# disease-references by marker
-	# to store distinct marker/reference used for mouse/OMIM
+	# to store distinct marker/reference used for mouse/OMIM (1005 only)
 	#
 	'''
         select distinct gg._Genotype_key, gg._Marker_key, e._Refs_key
@@ -963,7 +1012,7 @@ cmds = [
         #
         # sql (12)
         # disease-references by term
-        # to store distinct term/reference used for mouse/OMIM
+        # to store distinct term/reference used for mouse/OMIM (1005, 1012)
         #
         '''
         select distinct v._Term_key, e._Refs_key
@@ -1092,15 +1141,10 @@ cmds = [
         #
 
         # sql (18)
-	#
-	# grid clusters
-	#	super-simple/mouse
-        #       human
-	# note that the allele/omim annotations (1012) are not included
-        #
-        # select all *distinct* homologene clusters that contain a mouse/human HPD
-        # annotation.  then select all of the mouse/human markers that are contained
-        # within each of those clusters
+	# super-simple genotypes that contain mouse/MP or mouse/OMIM annotations
+	# that contain homolgene clusters
+	# plus
+        # human with OMIM annotations where mouse contain homologene clusters
 	#
 	'''
 	select distinct c._Cluster_key, gg._Marker_key, 
