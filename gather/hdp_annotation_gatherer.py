@@ -10,6 +10,20 @@
 # 	human/genes annotated to OMIM terms (_AnnotType_key = 1006, 1013)
 # into the HDP table.
 #
+# hdp_annotation
+#
+# hdp_marker_to_reference
+#
+# hdp_term_to_reference
+#
+# hdp_gridcluster
+# hdp_gridcluster_marker
+# hdp_gridcluster_annotation
+#
+# hdp_genocluster
+# hdp_genocluster_genotype
+# hdp_genocluster_annotation
+#
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
 #
@@ -128,16 +142,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# sql (11)
 		# disease-references by marker
 		# to store distinct marker/reference used for mouse/OMIM
-                diseaseMarkerRefDict = {}
+                diseaseMarkerRef1Dict = {}
 		(cols, rows) = self.results[11]
                 key1 = Gatherer.columnNumber (cols, '_Genotype_key')
                 key2 = Gatherer.columnNumber (cols, '_Marker_key')
                 for row in rows:
 			key = (row[key1], row[key2])
-                        if not diseaseMarkerRefDict.has_key(key):
-                                diseaseMarkerRefDict[key] = []
-                        diseaseMarkerRefDict[key].append(row)
-		#logger.debug (diseaseMarkerRefDict)
+                        if not diseaseMarkerRef1Dict.has_key(key):
+                                diseaseMarkerRef1Dict[key] = []
+                        diseaseMarkerRef1Dict[key].append(row)
+		#logger.debug (diseaseMarkerRef1Dict)
 
                 # sql (12)
                 # disease-term-referencees
@@ -225,8 +239,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				# 	annotation type mouse marker/omim (1005)
 				# then store the *unique* marker/reference association
 				key = (genotypeKey, markerKey)
-                		if annotType in [1005] and diseaseMarkerRefDict.has_key(key):
-                        		for m in diseaseMarkerRefDict[key]:
+                		if annotType in [1005] and diseaseMarkerRef1Dict.has_key(key):
+                        		for m in diseaseMarkerRef1Dict[key]:
 							if [markerKey, m[2]] not in diseaseMarkerRefResults:
                                         			diseaseMarkerRefResults.append ( [ markerKey, m[2], ])
 
@@ -239,8 +253,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('end : processed super-simple/simple mouse annotations')
 
                 # sql (14)
-		# mouse genotype/OMIM annotations : complex
-		# mouse genotype/MP annotations : complex
+		# complex genotypes
 		logger.debug ('start : processed complex mouse annotations')
                 (cols, rows) = self.results[14]
 
@@ -286,6 +299,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      		row[vocabNameCol],
 						None,
                                 		])
+
+                                # then store the *unique* term/reference association
+                                if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
+                                        for m in diseaseTermRefDict[termKey]:
+                                                        if [termKey, m[1]] not in diseaseTermRefResults:
+                                                                diseaseTermRefResults.append ( [ termKey, m[1], ])
+
 		logger.debug ('end : processed complex mouse annotations')
 
 		# sql (15)
@@ -350,9 +370,15 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			# store the *unique* marker/reference association
                 	if diseaseMarkerRef2Dict.has_key(markerKey):
-                        	for m in diseaseMarkerRef2Dict[markerKey]:
-						if [markerKey, m[1]] not in diseaseMarkerRefResults:
+				for m in diseaseMarkerRef2Dict[markerKey]:
+					if [markerKey, m[1]] not in diseaseMarkerRefResults:
                                        			diseaseMarkerRefResults.append ( [ markerKey, m[1], ])
+
+                        # then store the *unique* term/reference association
+                        if diseaseTermRefDict.has_key(termKey):
+                                 for m in diseaseTermRefDict[termKey]:
+                                                if [termKey, m[1]] not in diseaseTermRefResults:
+                                                        diseaseTermRefResults.append ( [ termKey, m[1], ])
 
 		logger.debug ('end : processed allele/OMIM annotatins')
 
