@@ -968,7 +968,10 @@ cmds = [
         '''
         select distinct v._Term_key, e._Refs_key
         from VOC_Annot v, VOC_Evidence e
-        where v._AnnotType_key = 1005 and v._Qualifier_key != 1614157
+        where ((v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)
+		or
+		v._AnnotType_key = 1012
+		)
         and v._Annot_key = e._Annot_key
         ''',
 
