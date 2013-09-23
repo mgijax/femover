@@ -1,3 +1,8 @@
+TAG: femover-5-1-5-6
+DATE: 09/23/2013
+STAFF: jsb
+CHANGES: fixed count of expression images in marker_counts_gatherer.py
+
 TAG: femover-5-1-5-5
 DATE: 09/17/2013
 STAFF: jsb
