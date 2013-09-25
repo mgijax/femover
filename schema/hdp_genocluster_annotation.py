@@ -29,6 +29,7 @@ createStatement = '''CREATE TABLE %s  (
 	hdp_genocluster_key	int	not null,
 	term_key		int 	null,
         annotation_type         int     not null,
+	qualifier_type          text    null,
         term_type         	text    not null,
 	term_id			text	null,
 	term			text	not null,
@@ -41,6 +42,7 @@ indexes = {
         'hdp_genocluster_key' : 'create index %s on %s (hdp_genocluster_key)',
         'term_key' : 'create index %s on %s (term_key)',
         'annotation_type' : 'create index %s on %s (annotation_type)',
+        'qualifier_type' : 'create index %s on %s (qualifier_type)',
         'term_type' : 'create index %s on %s (term_type)',
         'term_id' : 'create index %s on %s (term_id)',
         }
@@ -61,6 +63,7 @@ comments = {
 		'hdp_genocluster_key' : 'unique key identifying this human disease portal geno cluster',
                 'term_key' : 'term that is annotated to the marker',
                 'annotation_type' : 'type of annotation',
+                'qualifier_type' : 'type of qualifier ("normal", null)',
                 'term_type' : 'type of term (term, header)',
                 'term_id' : 'primary accession ID for the term',
                 'term' : 'text of the term itself',

@@ -134,6 +134,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'_AnnotType_key', 
 				'_Object_key', 
 				'genotype_type',
+				'qualifier_type',
 				'accID',
 				'term',
 				'name',
@@ -173,7 +174,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                         if not diseaseTermRefDict.has_key(row[key]):
                                 diseaseTermRefDict[row[key]] = []
                         diseaseTermRefDict[row[key]].append(row)
-		#logger.debug (diseaseTermRefDict)
+		#logger.debug (diseaseTermRefDict[847181])
 
 		# sql (24)
 		# super-simple genotypes
@@ -189,6 +190,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
 
 		genotype_type = SUPER_TYPE
 		for row in rows:
@@ -206,6 +208,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						annotType,
 						genotypeKey,
 						genotype_type,
+						row[qualifierCol],
 						row[termIDCol],
 						row[termCol],
 						row[vocabNameCol],
@@ -219,6 +222,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					annotType,
 					genotypeKey,
 					genotype_type,
+					row[qualifierCol],
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
@@ -239,6 +243,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 for m in diseaseTermRefDict[termKey]:
                                 	if [termKey, m[1]] not in diseaseTermRefResults:
                                         	diseaseTermRefResults.append ( [ termKey, m[1], ])
+						if termKey == 847181:
+							logger.debug (m[1])
 
 		logger.debug ('end : processed super-simple mouse annotations')
 
@@ -256,6 +262,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		termIDCol = Gatherer.columnNumber (cols, 'accID')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
 
 		genotype_type = SIMPLE_TYPE
 		for row in rows:
@@ -273,6 +280,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						annotType,
 						genotypeKey,
 						genotype_type,
+						row[qualifierCol],
 						row[termIDCol],
 						row[termCol],
 						row[vocabNameCol],
@@ -286,6 +294,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					annotType,
 					genotypeKey,
 					genotype_type,
+					row[qualifierCol],
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
@@ -306,6 +315,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 for m in diseaseTermRefDict[termKey]:
                                 	if [termKey, m[1]] not in diseaseTermRefResults:
                                         	diseaseTermRefResults.append ( [ termKey, m[1], ])
+						if termKey == 847181:
+							logger.debug (m[1])
 
 		logger.debug ('end : processed super-simple/simple mouse annotations')
 
@@ -323,6 +334,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 termIDCol = Gatherer.columnNumber (cols, 'accID')
                 termCol = Gatherer.columnNumber (cols, 'term')
                 vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
 
 		genotype_type = COMPLEX_TYPE
                 for row in rows:
@@ -336,6 +348,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						row[annotTypeKeyCol],
 						row[genotypeKeyCol],
                                     		genotype_type,
+						row[qualifierCol],
 						row[termIDCol],
 						row[termCol],
 						row[vocabNameCol],
@@ -349,6 +362,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                      	row[annotTypeKeyCol],
                                      	row[genotypeKeyCol],
                                     	genotype_type,
+					row[qualifierCol],
                                      	row[termIDCol],
                                      	row[termCol],
                                      	row[vocabNameCol],
@@ -357,9 +371,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                         # then store the *unique* term/reference association
                         if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
-                        	for m in diseaseTermRefDict[termKey]:
+                                for m in diseaseTermRefDict[termKey]:
                                 	if [termKey, m[1]] not in diseaseTermRefResults:
                                         	diseaseTermRefResults.append ( [ termKey, m[1], ])
+						if termKey == 847181:
+							logger.debug (m[1])
 
 		logger.debug ('end : processed complex mouse annotations')
 
@@ -404,6 +420,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 		row[annotTypeKeyCol],
                                 		None,
 						None,
+						None,
                         			row[termIDCol],
                         			row[termCol],
                         			row[vocabNameCol],
@@ -416,6 +433,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 		termKey,
                                 		row[annotTypeKeyCol],
                                 		None,
+						None,
 						None,
                         			row[termIDCol],
                         			row[termCol],
@@ -431,9 +449,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                         # then store the *unique* term/reference association
                         if diseaseTermRefDict.has_key(termKey):
-                                 for m in diseaseTermRefDict[termKey]:
-                                                if [termKey, m[1]] not in diseaseTermRefResults:
-                                                        diseaseTermRefResults.append ( [ termKey, m[1], ])
+                                for m in diseaseTermRefDict[termKey]:
+                                	if [termKey, m[1]] not in diseaseTermRefResults:
+                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
+						if termKey == 847181:
+							logger.debug (m[1])
 
 		logger.debug ('end : processed allele/OMIM annotatins')
 
@@ -464,6 +484,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						row[annotTypeKeyCol],
 						None,
 						None,
+						None,
 						row[termIDCol],
 						row[termCol],
 						row[vocabNameCol],
@@ -475,6 +496,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[organismKeyCol],
 					termKey,
 					row[annotTypeKeyCol],
+					None,
 					None,
 					None,
 					row[termIDCol],
@@ -724,6 +746,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		gannotCols = ['hdp_genocluster_key',
 				'_Term_key', 
 				'_AnnotType_key',
+				'qualifier_type',
 				'term_type',
 				'accID', 
 				'term',
@@ -797,11 +820,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						termKey = c[2]
 						termName = c[3]
 						termId = c[4]
+						qualifier = c[5]
 
 						gannotResults.append( [ 
 			    				clusterKey,
 							termKey,
 							annotationKey,
+							qualifier,
 							TERM_TYPE,
 							termId,
 							termName
@@ -815,6 +840,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                                         	clusterKey,
                                                                         	None,
                                                                         	annotationKey,
+										qualifier,
                                                                         	HEADER_TYPE,
                                                                         	None,
                                                                         	mpHeader,
@@ -915,9 +941,9 @@ cmds = [
                         and a.isWildType = 0)
         and exists (select 1 from VOC_Annot v
                 where g._Genotype_key = v._Object_key
-                and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-                        or
-                     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)))
+                and (v._AnnotType_key in (1002)
+			or
+		    (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)))
         ''',
 
         '''
@@ -970,9 +996,9 @@ cmds = [
                 and a._Allele_Type_key != 847129)
         and exists (select 1 from VOC_Annot v
                 where g._Genotype_key = v._Object_key
-                and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-                        or
-                     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)))
+                and (v._AnnotType_key in (1002)
+			or
+		    (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157)))
         and not exists (select 1 from GXD_Genotype gg, MGI_Note n
                 where g._Genotype_key = gg._Genotype_key
                 and gg.isConditional = 1
@@ -1051,17 +1077,21 @@ cmds = [
                 v._AnnotType_key, 
                 v._Term_key,
                 v._Object_key as _Genotype_key, 
-                a.accID, t.term, vv.name
+                a.accID, 
+		t.term, 
+		vv.name,
+		t2.term as qualifier_type
 	into temporary table tmp_mouse
         from tmp_supersimple s, MRK_Marker m,
-                VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
+                VOC_Annot v, VOC_Term t, VOC_Term t2, VOC_Vocab vv, 
                 ACC_Accession a
         where s._Genotype_key = v._Object_key
         and s._Marker_key = m._Marker_key
-        and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-             or
-             (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
+        and (v._AnnotType_key in (1002)
+		or
+	     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Term_key = t._Term_key
+	and v._Qualifier_key = t2._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -1077,8 +1107,13 @@ cmds = [
 	# build a temporary table of human annotation data
 	#
 	'''
-        select distinct v._Object_key as _Marker_key, m._Organism_key,
-		v._AnnotType_key, v._Term_key, a.accID, t.term, vv.name
+        select distinct v._Object_key as _Marker_key, 
+		m._Organism_key,
+		v._AnnotType_key, 
+		v._Term_key, 
+		a.accID, 
+		t.term, 
+		vv.name
 	into temporary table tmp_human
         from VOC_Annot v , VOC_Term t, VOC_Vocab vv, ACC_Accession a, MRK_Marker m
         where v._AnnotType_key in (1006, 1013)
@@ -1141,16 +1176,20 @@ cmds = [
                 v._AnnotType_key, 
                 v._Term_key,
                 v._Object_key, 
-                a.accID, t.term, vv.name
+                a.accID, 
+		t.term, 
+		vv.name,
+		t2.term as qualifier_type
         from tmp_simple s, MRK_Marker m,
-                VOC_Annot v, VOC_Term t, VOC_Vocab vv, 
+                VOC_Annot v, VOC_Term t, VOC_Term t2, VOC_Vocab vv, 
                 ACC_Accession a
         where s._Genotype_key = v._Object_key
         and s._Marker_key = m._Marker_key
-        and ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-             or
-             (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
+        and (v._AnnotType_key in (1002)
+		or
+	     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Term_key = t._Term_key
+	and v._Qualifier_key = t2._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -1169,16 +1208,20 @@ cmds = [
 		v._AnnotType_key,
                 v._Term_key, 
                 v._Object_key,
-                a.accID, t.term, vv.name
-        from VOC_Annot v, VOC_Term t, VOC_Vocab vv,
+                a.accID, 
+		t.term, 
+		vv.name,
+		t2.term as qualifier_type
+        from VOC_Annot v, VOC_Term t, VOC_Term t2, VOC_Vocab vv,
                 GXD_AlleleGenotype g,
                 ACC_Accession a, MRK_Marker m
-        where ((v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-                or
-        	(v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
+        where (v._AnnotType_key in (1002)
+		or
+	     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         and v._Object_key = g._Genotype_key
         and g._Marker_key = m._Marker_key
         and v._Term_key = t._Term_key
+	and v._Qualifier_key = t2._Term_key
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.private = 0
@@ -1345,7 +1388,7 @@ cmds = [
 	# sql (39)
 	# mouse annotations by genotype
 	'''
-	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID from tmp_mouse
+	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type from tmp_mouse
 	''',
 
 	# sql (40)
@@ -1373,8 +1416,8 @@ files = [
 	('hdp_annotation',
 		[ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
 			'_Term_key', '_AnnotType_key', 
-			'_Object_key', 'genotype_type', 'accID', 'term', 
-			'name', 'mp_header' ],
+			'_Object_key', 'genotype_type', 'qualifier_type',
+			'accID', 'term', 'name', 'mp_header' ],
           'hdp_annotation'),
 
         ('hdp_marker_to_reference',
@@ -1411,7 +1454,7 @@ files = [
 
 	('hdp_genocluster_annotation',
 		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Term_key',
-		  '_AnnotType_key', 'term_type', 'accID', 'term' ],
+		  '_AnnotType_key', 'qualifier_type', 'term_type', 'accID', 'term' ],
           'hdp_genocluster_annotation'),
 
 	]

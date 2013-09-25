@@ -36,6 +36,7 @@ createStatement = '''CREATE TABLE %s  (
 	annotation_type		int	not null,
 	genotype_key		int	null,
 	genotype_type		text	null,
+	qualifier_type		text	null,
 	term_id			text	not null,
 	term			text	not null,
 	vocab_name		text	not null,
@@ -48,8 +49,10 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
         'marker_key' : 'create index %s on %s (marker_key)',
         'organism_key' : 'create index %s on %s (organism_key)',
+        'annotation_type' : 'create index %s on %s (annotation_type)',
         'genotype_key' : 'create index %s on %s (genotype_key)',
         'genotype_type' : 'create index %s on %s (genotype_type)',
+        'qualifier_type' : 'create index %s on %s (qualifier_type)',
         'term_key' : 'create index %s on %s (term_key)',
         'term_id' : 'create index %s on %s (term_id)',
         }
@@ -75,6 +78,7 @@ comments = {
                 'annotation_type' : 'type of annotation',
 		'genotype_key' : 'genotype that is annotated to the marker (at most one genotype per marker)',
 		'genotype_type' : 'type of genotype (simple, complex)',
+                'qualifier_type' : 'type of qualifier ("normal", null)',
 		'term_id' : 'primary accession ID for the term',
 		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',
