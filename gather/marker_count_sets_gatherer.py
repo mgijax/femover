@@ -100,7 +100,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		# 2) polymorphisms
 
-		markersWithSNPs = MarkerSnpAssociations.getMarkerKeys()
+		markersWithSNPs = MarkerSnpAssociations.getAllMarkerCounts()
 		logger.debug ('Found %d markers with SNPs' % \
 			len(markersWithSNPs))
 
@@ -124,15 +124,14 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		# first populate SNP counts for markers with SNPs
 
-		for key in markersWithSNPs:
-			snpCount = MarkerSnpAssociations.getSnpCount (key) 
+		for key in markersWithSNPs.keys():
+			snpCount, multiSnpCount = markersWithSNPs[key]
+
 			byMarker[key] = { snp : snpCount }
 
-			multiSnpCount = snpCount + \
-			    MarkerSnpAssociations.getMultiCoordSnpCount (key)
-
-			if multiSnpCount > snpCount:
-				byMarker[key][multiSnp] = multiSnpCount
+			if multiSnpCount > 0:
+				byMarker[key][multiSnp] = multiSnpCount + \
+					snpCount
 
 		# collate counts per marker
 
