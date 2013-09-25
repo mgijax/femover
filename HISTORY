@@ -1,3 +1,13 @@
+TAG: femover-5-1-5-7
+DATE: 09/25/2013
+STAFF: jsb
+CHANGES: 
+1) updates to MarkerSnpAssociations.py library to deal with one chromsome at
+   a time, to keep memory minimal
+2) updates to marker_count_sets_gatherer.py and batch_marker_snps_gatherer.py
+   to be in sync with new API for MarkerSnpAssociations.py
+3) revisions to buildDB.sh script to give error code at first femover failure
+
 TAG: femover-5-1-5-6
 DATE: 09/23/2013
 STAFF: jsb
