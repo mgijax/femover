@@ -4,10 +4,20 @@
 # Purpose: to provide an easy means to determine which SNPs are associated
 #	with which markers, to hide the complexity of in-sync versus
 #	out-of-sync modes, to provide access to SNP counts per marker, etc.
+# Notes: Historically this module cached data for all markers and SNPs, but
+#	as of September 2013, this began blowing out the 4Gb memory limit.
+#	Having tried several ways of optimizing memory usage with no success,
+#	I opted to significantly revise this module to deal with only one
+#	chromosome at a time. - jsb
+# Important: As a result of the above Note, effective use of this module will
+#	now require that we process markers for each chromosome together,
+#	rather than just iterating over marker keys without considering the
+#	markers' chromosomes.
 
 import dbAgnostic
 import logger
 import config
+import gc
 
 ###--- Globals ---###
 
@@ -21,20 +31,104 @@ try:
 except:
 	pass
 
+# which chromosome's data are currently loaded?
+CURRENT_CHROMOSOME = None
+
+# maps from marker key to its chromosome (for CURRENT_CHROMOSOME)
+MARKER_CHROMOSOME = {}
+
 # maps from marker key to a dictionary keyed by its associated SNP keys
 #	SNP_CACHE[markerKey] = { snpKey : 1 }
+# now only contains markers for the CURRENT_CHROMOSOME
 SNP_CACHE = {}
 
 # maps from marker key to a dictionary keyed by its associated SNP keys where
 # those SNPs map to multiple locations in the genome
 #	MULTI_SNP_CACHE[markerKey] = { snpKey : 1 }
+# now only contains markers for the CURRENT_CHROMOSOME
 MULTI_SNP_CACHE = {}
 
-# maps from SNP key to its accession ID
+# maps from SNP key to the ID for that SNP.
+# now only contains markers for the CURRENT_CHROMOSOME
 SNP_IDS = {}
+
+# flag indicating whether accession IDs have been loaded or not
 LOADED_IDS = False
 
 ###--- Private Functions ---###
+
+def _setChromosome (chromosome):
+	global CURRENT_CHROMOSOME, SNP_CACHE, MULTI_SNP_CACHE
+	global LOADED_IDS, SNP_IDS
+
+	# remember this chromosome and forget all the other data currently
+	# loaded
+
+	CURRENT_CHROMOSOME = chromosome
+
+	# explicitly delete the caches and their contents to allow more
+	# effective garbage collection
+
+	for cache in [ SNP_CACHE, MULTI_SNP_CACHE, SNP_IDS ]:
+		for key in cache.keys():
+			del cache[key]
+
+	del SNP_CACHE
+	del MULTI_SNP_CACHE
+	del SNP_IDS
+
+	# reset the caches
+
+	SNP_CACHE = {}
+	MULTI_SNP_CACHE = {}
+	SNP_IDS = {}
+	LOADED_IDS = False
+
+	if chromosome:
+		logger.debug ("Switching to chromosome %s" % chromosome)
+
+	gc.collect()
+	logger.debug ("Ran garbage collector")
+	return
+
+def _getChromosome (markerKey):
+	global MARKER_CHROMOSOME
+
+	if MARKER_CHROMOSOME.has_key(markerKey):
+		return CURRENT_CHROMOSOME
+
+	# get all the markers that happen to be on the same chromosome with
+	# the given markerKey
+
+	cmd = '''select mlc1._Marker_key, mlc1.chromosome
+		from mrk_location_cache mlc1, mrk_location_cache mlc2,
+			mrk_marker mm
+		where mlc2._Marker_key = %d
+			and mlc1._Marker_key = mm._Marker_key
+                        and mm._Marker_Type_key != 6
+			and mm._Organism_key = 1
+			and mm._Marker_Status_key in (1,3)
+			and mlc1.startCoordinate is not null
+			and mlc1.endCoordinate is not null
+			and mlc2.chromosome = mlc1.chromosome''' % markerKey
+
+	(cols, rows) = dbAgnostic.execute (cmd)
+
+	if len(rows) == 0:
+		return None
+
+	mrkCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+	chrCol = dbAgnostic.columnNumber (cols, 'chromosome')
+
+	MARKER_CHROMOSOME = {}		# reset the cache of markers
+
+	for row in rows:
+		MARKER_CHROMOSOME[row[mrkCol]] = 1
+
+#	logger.debug('Found %d markers on chr %s' % (len(MARKER_CHROMOSOME),
+#		row[chrCol]) )
+
+	return row[chrCol]
 
 def _addAssoc (snpCache, markerKey, snpKey, coord = None):
 	global SNP_IDS
@@ -57,8 +151,10 @@ def _loadDbSnpAssociations():
 
 	global SNP_CACHE
 
-	dbSnpQuery = '''select _Marker_key, _ConsensusSnp_key
-		from snp_consensussnp_marker'''
+	dbSnpQuery = '''select csm._Marker_key, csm._ConsensusSnp_key
+		from snp_consensussnp_marker csm, mrk_location_cache mlc
+		where csm._Marker_key = mlc._Marker_key
+			and mlc.chromosome = '%s' ''' % CURRENT_CHROMOSOME
 
 	(cols, rows) = dbAgnostic.execute (dbSnpQuery)
 
@@ -68,7 +164,8 @@ def _loadDbSnpAssociations():
 	for row in rows:
 		_addAssoc (SNP_CACHE, row[mrkCol], row[snpCol])
 
-	logger.debug ('Cached %d dbSNP associations' % len(rows))
+	logger.debug ('Cached %d dbSNP associations for chr %s' % (len(rows),
+		CURRENT_CHROMOSOME) )
 	return
 
 def _loadDistanceAssociations():
@@ -86,6 +183,7 @@ def _loadDistanceAssociations():
                         and l.endCoordinate is not null
                         and m._marker_key=l._marker_key
                         and m._Marker_Type_key!=6
+			and m._Marker_Status_key in (1,3)
                 order by l.startCoordinate, l.endCoordinate'''
 
 	# SNPs on a given chromosome, ordered by start coordinate.  exclude
@@ -97,23 +195,9 @@ def _loadDistanceAssociations():
 			and startCoordinate is not null
 		order by startCoordinate'''
 
-	# ordered list of mouse chromosomes
-	chromosomeQuery = '''select distinct chromosome
-		from mrk_chromosome
-		where _Organism_key = 1'''
+	# just do one chromosome now...
 
-	# we process this chromosome by chromosome in code because the SQL for
-	# the computation was too slow
-
-	# get the ordered list of chromosomes
-
-	(cols, rows) = dbAgnostic.execute (chromosomeQuery)
-
-	chromosomes = []
-	for row in rows:
-		chromosomes.append (row[0])
-
-	chromosomes.sort()
+	chromosomes = [ CURRENT_CHROMOSOME ]
 
 	# walk through chromosomes
 
@@ -157,8 +241,8 @@ def _loadDistanceAssociations():
 
 		markerCount = len(markers) 
 
-		logger.debug ('Found %d markers on chr %s' % (markerCount,
-			chromosome))
+#		logger.debug ('Found %d markers on chr %s' % (markerCount,
+#			chromosome))
 
 		# walk the SNPs from the same chromosome, finding which
 		# markers they overlap
@@ -252,31 +336,36 @@ def _loadDistanceAssociations():
 
 		logger.debug ('Found %d distance assoc for chr %s' % (added,
 			chromosome))
-
-	logger.debug ('Cached distance-based associations')
 	return
 
 def _loadSnpIDs():
 	global SNP_IDS
 
-	idQuery = '''select _Object_key, accID
-		from snp_accession
-		where _MGIType_key = 30'''
+	idQuery = '''select a._Object_key, a.accID
+		from snp_accession a, snp_coord_cache c
+		where a._MGIType_key = 30
+			and a._Object_key = c._ConsensusSnp_key
+			and c.chromosome = '%s' ''' % CURRENT_CHROMOSOME
 
 	(cols, rows) = dbAgnostic.execute (idQuery)
 
 	keyCol = dbAgnostic.columnNumber (cols, '_Object_key')
 	idCol = dbAgnostic.columnNumber (cols, 'accID')
 
-	logger.debug ('Found %d SNP IDs' % len(rows))
+	logger.debug ('Found %d SNP IDs for chr %s' % (len(rows),
+		CURRENT_CHROMOSOME) )
 
 	for row in rows:
 		snpKey = row[keyCol]
 
+		# We only keep SNP IDs when they are associated with markers,
+		# so first check to see if snpKey is in SNP_IDS.
+
 		if SNP_IDS.has_key(snpKey):
 			SNP_IDS[snpKey] = row[idCol]
 
-	logger.debug ('Kept IDs for %d SNPs' % len(SNP_IDS))
+	logger.debug ('Kept IDs for %d chr %s SNPs' % (len(SNP_IDS),
+		CURRENT_CHROMOSOME) )
 	return
 
 def _initialize():
@@ -287,6 +376,9 @@ def _initialize():
 	_loadDbSnpAssociations()
 	if IN_SYNC:
 		_loadDistanceAssociations()
+
+	logger.debug ("Finished init for MarkerSnpAssociations for chr %s" \
+		% CURRENT_CHROMOSOME)
 	return
 
 ###--- Functions ---###
@@ -295,7 +387,13 @@ def getSnps (markerKey):
 	# For the given marker key, return the keys for all the
 	# single-coordinate SNPs that are associated with it
 
-	if not SNP_CACHE:
+	global CURRENT_CHROMOSOME
+
+	chrom = _getChromosome(markerKey)
+
+	if chrom != CURRENT_CHROMOSOME:
+		CURRENT_CHROMOSOME = chrom
+		_setChromosome(chrom)
 		_initialize()
 
 	if SNP_CACHE.has_key(markerKey):
@@ -313,7 +411,13 @@ def getMultiCoordSnps (markerKey):
 	# single or multi-coordinate) that are associated with it.  Multi-
 	# coordinate SNPs will appear multiple times in the list.
 
-	if not SNP_CACHE:
+	global CURRENT_CHROMOSOME
+
+	chrom = _getChromosome(markerKey)
+
+	if chrom != CURRENT_CHROMOSOME:
+		CURRENT_CHROMOSOME = chrom
+		_setChromosome(chrom)
 		_initialize()
 
 	if MULTI_SNP_CACHE.has_key(markerKey):
@@ -333,6 +437,7 @@ def getSnpIDs (markerKey):
 	if not LOADED_IDS:
 		_loadSnpIDs()
 		LOADED_IDS = True
+		logger.debug ("Loaded SNP IDs for chr %s" % CURRENT_CHROMOSOME)
 
 	snpIds = []
 	for key in snpKeys:
@@ -346,18 +451,39 @@ def getSnpIDs (markerKey):
 def isInSync():
 	return IN_SYNC
 
-def getMarkerKeys():
-	# get all marker keys which have SNPs
-	if not SNP_CACHE:
-		_initialize()
+def getAllMarkerCounts():
+	# get SNP counts for all markers which have SNP associations.
+	# Returns: dictionary mapping from each marker key to a 2-item tuple
+	#	with (SNP count, multi-location SNP count)
 
-	markerKeys = {}
+	markers = {}
 
-	for cache in [ SNP_CACHE, MULTI_SNP_CACHE ]:
-		for key in cache.keys():
-			markerKeys[key] = 1
+	cmd = '''select distinct _Marker_key, chromosome
+		from mrk_marker
+		where _Organism_key = 1
+			and _Marker_Type_key != 6
+			and _Marker_Status_key in (1,3)
+			and _Organism_key = 1
+		order by chromosome'''
 
-	keys = markerKeys.keys()
-	keys.sort()
+	(cols, rows) = dbAgnostic.execute (cmd)
 
-	return keys
+	mrkCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+
+	for row in rows:
+		markerKey = row[mrkCol]
+
+		snpCount = getSnpCount(markerKey)
+		multiCount = getMultiCoordSnpCount(markerKey)
+
+		if (snpCount > 0) or (multiCount > 0):
+			markers[markerKey] = (snpCount, multiCount)
+
+	return markers
+
+def unload():
+	# unload all the caches from memory
+
+	_setChromosome(None)
+	return
+
