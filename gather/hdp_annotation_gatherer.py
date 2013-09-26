@@ -13,7 +13,6 @@
 #
 # IMPORTANT:
 #	genotype data only exists for mouse/MP (1002) and mouse/OMIM (1005)
-#	mouse/allele
 #
 # some exclusion rules:
 # 	exclude: genotypes that contain 'slash' alleles and are *not* transgenes
@@ -725,7 +724,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		gClusterResults = []
 		gClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
 				'_Allele_key_1', '_Allele_key_2',
-		  		'_PairState_key', 'isConditional', '_ExistsAs_key' 
+		  		'_PairState_key', 'isConditional', '_ExistsAs_key',
+				'annotation_count'
 			]
 
 		gResults = []
@@ -794,9 +794,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			markerKey = r[0]
 
-			gClusterResults.append( [
-				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5],
-				])
+			# track number of annotations per geno-cluster
+			annotation_count = 0
 
 			for gKey in compressSet[r]:
 
@@ -806,12 +805,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					])
 				
 				if clusterDict3.has_key(gKey):
+
 					for c in clusterDict3[gKey]:
+
 						annotationKey = c[1]
 						termKey = c[2]
 						termName = c[3]
 						termId = c[4]
 						qualifier = c[5]
+
+						annotation_count += 1;
 
 						gannotResults.append( [ 
 			    				clusterKey,
@@ -837,6 +840,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                                         	mpHeader,
                                                                         	])
                                                 			gannotList.add((clusterKey, mpHeader))
+
+			gClusterResults.append( [
+				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], annotation_count,
+				])
 
 			clusterKey = clusterKey + 1
 
@@ -1435,7 +1442,7 @@ files = [
 	('hdp_genocluster',
 		[ 'hdp_genocluster_key', '_Marker_key',
 		  '_Allele_key_1', '_Allele_key_2',
-		  '_PairState_key', 'isConditional', '_ExistsAs_key' ],
+		  '_PairState_key', 'isConditional', '_ExistsAs_key', 'annotation_count' ],
           'hdp_genocluster'),
 
 	('hdp_genocluster_genotype',

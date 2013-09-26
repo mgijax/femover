@@ -30,6 +30,7 @@ createStatement = '''CREATE TABLE %s  (
 	pairstate_key		int	not null,
 	is_conditional		int	not null,
 	exists_as_key		int	not null,
+	annotation_count	int	not null,
 	PRIMARY KEY(hdp_genocluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -38,10 +39,6 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
         'hdp_genocluster_key' : 'create index %s on %s (hdp_genocluster_key)',
         'marker_key' : 'create index %s on %s (marker_key)',
-        'allele_key_1' : 'create index %s on %s (allele_key_1)',
-        'allele_key_2' : 'create index %s on %s (allele_key_2)',
-        'pairstate_key' : 'create index %s on %s (pairstate_key)',
-        'exists_as_key' : 'create index %s on %s (exists_as_key)',
 	}
 
 keys = {}
@@ -54,6 +51,12 @@ comments = {
 	Table.TABLE : 'central table for the grid cluster petal, containing one row for each human disease portal grid cluster',
 	Table.COLUMN : {
 		'hdp_genocluster_key' : 'unique key identifying this human disease portal genotype cluster',
+		'marker_key' : 'mouse marker',
+		'allele_key_1' : 'allele key 1',
+		'allele_key_2' : 'allele key 2',
+		'pairstate_key' : 'pair state',
+		'exists_as_key' : 'does genotype exists as (Mouse Line, Cell Line, etc.)',
+		'annotation_count' : 'number of annotations within this geno-cluster',
 		},
 	}
 
