@@ -1068,6 +1068,8 @@ cmds = [
 	#
 	# includes:
 	#	tmp_supersimple
+	# exclude:
+	#	MP:0003012/phenotype not analyzed
 	#
 	# add a 'union' clause to add tmp_simple (next sprint)
 	#
@@ -1100,6 +1102,7 @@ cmds = [
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
+	and a.accID not in ('MP:0003012')
         and t._Vocab_key = vv._Vocab_key
 	''',
 
@@ -1215,6 +1218,7 @@ cmds = [
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
+	and a.accID not in ('MP:0003012')
         and t._Vocab_key = vv._Vocab_key
         ''',
 
@@ -1247,6 +1251,7 @@ cmds = [
         and a._MGIType_key = 13
         and a.private = 0
         and a.preferred = 1
+	and a.accID not in ('MP:0003012')
         and t._Vocab_key = vv._Vocab_key
 	and not exists (select 1 from tmp_supersimple s where s._Genotype_key = v._Object_key)
 	and not exists (select 1 from tmp_simple s where s._Genotype_key = v._Object_key)
