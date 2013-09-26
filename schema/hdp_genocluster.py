@@ -30,7 +30,7 @@ createStatement = '''CREATE TABLE %s  (
 	pairstate_key		int	not null,
 	is_conditional		int	not null,
 	exists_as_key		int	not null,
-	annotation_count	int	not null,
+	header_count	int	not null,
 	PRIMARY KEY(hdp_genocluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -56,7 +56,7 @@ comments = {
 		'allele_key_2' : 'allele key 2',
 		'pairstate_key' : 'pair state',
 		'exists_as_key' : 'does genotype exists as (Mouse Line, Cell Line, etc.)',
-		'annotation_count' : 'number of annotations within this geno-cluster',
+		'header_count' : 'number of annotations by header within this geno-cluster',
 		},
 	}
 

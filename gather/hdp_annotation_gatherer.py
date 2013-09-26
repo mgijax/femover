@@ -740,7 +740,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		gClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
 				'_Allele_key_1', '_Allele_key_2',
 		  		'_PairState_key', 'isConditional', '_ExistsAs_key',
-				'annotation_count'
+				'header_count'
 			]
 
 		gResults = []
@@ -810,7 +810,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			markerKey = r[0]
 
 			# track distinct number of header-annotations per geno-cluster
-			annotation_count = 0
+			header_count = 0
 
 			for gKey in compressSet[r]:
 
@@ -853,10 +853,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                                         	mpHeader,
                                                                         	])
                                                 			gannotList.add((clusterKey, mpHeader))
-									annotation_count += 1;
+									header_count += 1;
 
 			gClusterResults.append( [
-				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], annotation_count,
+				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], header_count,
 				])
 
 			clusterKey = clusterKey + 1
@@ -1459,7 +1459,7 @@ files = [
 	('hdp_genocluster',
 		[ 'hdp_genocluster_key', '_Marker_key',
 		  '_Allele_key_1', '_Allele_key_2',
-		  '_PairState_key', 'isConditional', '_ExistsAs_key', 'annotation_count' ],
+		  '_PairState_key', 'isConditional', '_ExistsAs_key', 'header_count' ],
           'hdp_genocluster'),
 
 	('hdp_genocluster_genotype',
