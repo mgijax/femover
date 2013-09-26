@@ -24,9 +24,24 @@
 #	genotypes: super-simple, simple, complex
 #	includes annotationed terms
 #	includes the header terms for each annotation MP-term
-#	super-simple (OMG):
-#	simple : not super-simple
+#
+#	super-simple (OMG): genotypes that contain only one marker
+# 		include : non-wild type alleles
+# 		include : genotypes that contains mouse/MP or mouse/OMIM annotations
+# 		exclude : genotypes that contain 'slash' alleles and are not transgenes
+#
+#	simple : genotypes that have been "made" super-simple by excluding certain things
+# 		include : wild type alleles where allele type is *not* 'Trangenic (Reporter)'
+# 		include : genotypes that contains mouse/MP or mouse/OMIM annotations
+# 		exclude : genotypes that contain driver notes (cre)
+# 		exclude : genotypes that contain 'slash' alleles and are not transgenes
+# 		exclude : genotypes that contain 'Gt(ROSA)' marker
+# 		exclude : genotypes already designated as super-simple
+#
 #	complex : neither super-simple nor simple
+# 		exclude: super-simple genotypes
+# 		exclude: simple genotypes
+# 		exclude: markers where there exists a double-wild-type allele pair
 #
 # hdp_marker_to_reference
 #	markers annotated to OMIM disease and their references
@@ -926,7 +941,6 @@ cmds = [
 
         # sql (3-8)
 	# super-simple genotypes
-	#
 	# include : non-wild type alleles
 	# include : genotypes that contains mouse/MP or mouse/OMIM annotations
 	# exclude : genotypes that contain 'slash' alleles and are not transgenes
@@ -977,7 +991,6 @@ cmds = [
 
         # sql (9-16)
 	# simple genotypes
-	#
 	# include : wild type alleles where allele type is *not* 'Trangenic (Reporter)'
 	# include : genotypes that contains mouse/MP or mouse/OMIM annotations
 	# exclude : genotypes that contain driver notes (cre)
