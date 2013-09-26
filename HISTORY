@@ -1,3 +1,10 @@
+TAG: femover-5-1-5-8
+DATE: 09/26/2013
+STAFF: jsb
+CHANGES: 
+1) removed DOS-style line breaks from batch_marker_snps_gatherer.py that were
+   introduced in the prior tag and were causing it to fail
+
 TAG: femover-5-1-5-7
 DATE: 09/25/2013
 STAFF: jsb
