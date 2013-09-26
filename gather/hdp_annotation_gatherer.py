@@ -809,7 +809,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			markerKey = r[0]
 
-			# track number of annotations per geno-cluster
+			# track distinct number of header-annotations per geno-cluster
 			annotation_count = 0
 
 			for gKey in compressSet[r]:
@@ -828,8 +828,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						termName = c[3]
 						termId = c[4]
 						qualifier = c[5]
-
-						annotation_count += 1;
 
 						gannotResults.append( [ 
 			    				clusterKey,
@@ -855,6 +853,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                                         	mpHeader,
                                                                         	])
                                                 			gannotList.add((clusterKey, mpHeader))
+									annotation_count += 1;
 
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], annotation_count,
