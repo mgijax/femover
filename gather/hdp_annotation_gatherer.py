@@ -1402,8 +1402,12 @@ cmds = [
 
 	# sql (39)
 	# mouse annotations by genotype
+	# *make sure the qualifier is order in descending order*
+	# as this affects the setting of the mp-header
 	'''
-	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type from tmp_annot_mouse
+	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type 
+	from tmp_annot_mouse
+	order by _Genotype_key, qualifier_type desc
 	''',
 
 	# sql (40)
