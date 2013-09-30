@@ -18,6 +18,7 @@ import VocabSorter
 import logger
 import GOFilter
 import GenotypeClassifier
+import MPSorter
 import copy
 
 ###--- Constants ---###
@@ -49,27 +50,6 @@ SEX_SORT_ORDER=[NA,F,M]
 # Diseases
 DISEASE_MODELS="Disease Models"
 
-###--- Maps ---###
-headerTermMap = {}
-headerKeys = []
-headerKeyMap = {}
-noteMap = {}
-dagMap = {}
-alleleMap = {}
-systemSeqMap = {}
-# sequence map keys by (allele_key,genotype_Key)
-genotypeSeqMap = {}
-genotypeIDMap = {}
-genotypeRowMap = {}
-genotypeSexMap = {}
-diseaseGenotypeMap = {}
-# special map that calculates information about the genotype headers for the phenotable
-genotypeStatisticsMap = {}
-genotypeDiseaseOnly = {}
-# special map to hold all the phenocell "calls" before aggregating them
-phenoCallMap = {}
-providerRowsDict = {}
-diseaseSeqMap = {}
 
 ###--- Functions ---###
 # resolve a jnumber into the source display value
@@ -102,6 +82,28 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for mp_annotation table 
 	# Has: queries to execute against the source database
 
+	mpSorter = MPSorter.MPSorter()
+
+	###--- Maps ---###
+	headerTermMap = {}
+	headerKeys = []
+	headerKeyMap = {}
+	noteMap = {}
+	alleleMap = {}
+	systemSeqMap = {}
+	# sequence map keys by (allele_key,genotype_Key)
+	genotypeSeqMap = {}
+	genotypeIDMap = {}
+	genotypeRowMap = {}
+	genotypeSexMap = {}
+	diseaseGenotypeMap = {}
+	# special map that calculates information about the genotype headers for the phenotable
+	genotypeStatisticsMap = {}
+	genotypeDiseaseOnly = {}
+	# special map to hold all the phenocell "calls" before aggregating them
+	phenoCallMap = {}
+	providerRowsDict = {}
+	diseaseSeqMap = {}
 
 	###--- Genotype centric functions ---###
 	# iterates through all genotypes in MGI that have pheno data or disease
@@ -120,77 +122,75 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			disease_only = 0
 			# add the list of genotypes with disease models
 			if annot_type=='omim':
-				diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
+				self.diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
 				#disease_only = 1
 			#disease_only = self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
 			# NOTE: The disease_only method does not work very well in all cases, commenting it out for now
 			# add a default phenotable_to_genotype row, to be modified later by registering sex annotations later on
 			# set the default sex value to ""
-			genotypeRowMap[(allele_key,genotype_key)] = [count,allele_key,genotype_key,seq,0,"",disease_only]
-			genotypeSeqMap[(allele_key,genotype_key)] = seq	
-			genotypeSeqMap.setdefault(allele_key,{})[genotype_key] = seq
-			genotypeIDMap[genotype_key] = genotype_id
+			self.genotypeRowMap[(allele_key,genotype_key)] = [count,allele_key,genotype_key,seq,0,"",disease_only]
+			self.genotypeSeqMap[(allele_key,genotype_key)] = seq	
+			self.genotypeSeqMap.setdefault(allele_key,{})[genotype_key] = seq
+			self.genotypeIDMap[genotype_key] = genotype_id
 	def buildDiseaseGenotypes(self):
 		dGenotypeCols = ['diseasetable_genotype_key','allele_key','genotype_key','genotype_seq']
 		dGenotypeRows = []
 		count = 0
-		for allele_key,genotype_keys in diseaseGenotypeMap.items():
+		for allele_key,genotype_keys in self.diseaseGenotypeMap.items():
 			for genotype_key in genotype_keys:
 				count+=1
-				genotype_seq = genotypeSeqMap[(allele_key,genotype_key)]	
+				genotype_seq = self.genotypeSeqMap[(allele_key,genotype_key)]	
 				dGenotypeRows.append([count,allele_key,genotype_key,genotype_seq])
 		return dGenotypeRows
 
 	# keeps track of genotypes that have omim annotations but no mp annotations
 	# will return true until a 0 is passed in
 	def registerGenotypeDiseaseOnly(self,genotype_key,has_disease):
-		if genotype_key not in genotypeDiseaseOnly:
-			genotypeDiseaseOnly[genotype_key] = has_disease
+		if genotype_key not in self.genotypeDiseaseOnly:
+			self.genotypeDiseaseOnly[genotype_key] = has_disease
 			return has_disease
 		if not has_disease:
 			return has_disease
-		genotypeDiseaseOnly[genotype_key] = genotypeDiseaseOnly[genotype_key] and has_disease
-		return genotypeDiseaseOnly[genotype_key]
+		self.genotypeDiseaseOnly[genotype_key] = self.genotypeDiseaseOnly[genotype_key] and has_disease
+		return self.genotypeDiseaseOnly[genotype_key]
 
 	# update genotype values when sex information has been encountered
 	def registerGenotypeSex(self,allele_key,genotype_key,sex):
 		map_key = (allele_key,genotype_key)
-		genotypeSexMap.setdefault(map_key,set([])).add(sex)
-		if len(genotypeSexMap[map_key]) > 1:
+		self.genotypeSexMap.setdefault(map_key,set([])).add(sex)
+		if len(self.genotypeSexMap[map_key]) > 1:
 			# display Both
 			self.setGenotypeRowSplitSex(allele_key,genotype_key)
 			sex = "Both"
 		if sex in [M,F,"Both"]:
-		    genotypeRowMap[map_key][5] = sex
+		    self.genotypeRowMap[map_key][5] = sex
 	# used by above function to set the split_sex bit to true when necessary
 	def setGenotypeRowSplitSex(self,allele_key,genotype_key):
 		map_key = (allele_key,genotype_key)
-		if map_key in genotypeRowMap:
+		if map_key in self.genotypeRowMap:
 			# set that piece of data to true
-			genotypeRowMap[map_key][4]=1
+			self.genotypeRowMap[map_key][4]=1
 		#else wtf are we doing here
 	# useful to lookup the phenotable_to_genotype row keys
 	def getGenotypeRowKey(self,allele_key,genotype_key):
-		return genotypeRowMap[(allele_key,genotype_key)][0]
+		return self.genotypeRowMap[(allele_key,genotype_key)][0]
 	# return all the phenotable_to_genotype rows when we are finally ready to save them
 	def getGenotypeRows(self):
 		# need to clone the list because the values might be updated later
-		return copy.deepcopy(genotypeRowMap.values())
+		return copy.deepcopy(self.genotypeRowMap.values())
 	
 	###--- Phenotable Cell calculation functions---###
 	def resetPhenoGridMaps(self):
-		global genotypeStatisticsMap
-		global phenoCallMap
-		genotypeStatisticsMap = {}
-		phenoCallMap = {}
+		self.genotypeStatisticsMap = {}
+		self.phenoCallMap = {}
 	# when we encounter annotations we need to register the cell data to calculate the header statistics
 	# we also store all of the registered "calls" that we find in a map, to be replayed later once all the header stats are generated
 	def registerCellCall(self,allele_key,genotype_key,provider,sex,call,termID):
-		statsMap = genotypeStatisticsMap.setdefault(allele_key,{}).setdefault(genotype_key,{"providers":set([]),"sexes":set([])})
+		statsMap = self.genotypeStatisticsMap.setdefault(allele_key,{}).setdefault(genotype_key,{"providers":set([]),"sexes":set([])})
 		statsMap["providers"].add(provider)
 		statsMap["sexes"].add(sex)
 		call_map_key = (allele_key,termID)
-		phenoCallMap.setdefault(call_map_key,[]).append([genotype_key,provider,sex,call])
+		self.phenoCallMap.setdefault(call_map_key,[]).append([genotype_key,provider,sex,call])
 	# this can be called after all annotations have been registerd above. 
 	# It will return a map of the necessary information to create all the cell rows
 	# used for both phenotable_term_cell and phenotable_system_cell by setting termID to either the system or a (system,termID) tuple
@@ -198,8 +198,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# init the pheno cells grid map
 		pheno_genos = {}
 		cell_seqs = []
-		for gkey,statsMap in genotypeStatisticsMap[allele_key].items():
-			g_seq = genotypeSeqMap[(allele_key,gkey)]
+		for gkey,statsMap in self.genotypeStatisticsMap[allele_key].items():
+			g_seq = self.genotypeSeqMap[(allele_key,gkey)]
 			if len(statsMap["sexes"])>1:
 				statsMap["sexes"] = [M,F]	
 			sexes = statsMap["sexes"]
@@ -216,7 +216,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					cell_seqs.append(cell_seq)
 
 		# get the previously saved "calls"
-		cellCalls = phenoCallMap[(allele_key,termID)]
+		cellCalls = self.phenoCallMap[(allele_key,termID)]
 		splitCellCalls = []
 		# split any calls that we need to
 		for row in cellCalls:
@@ -224,7 +224,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			sex = row[2]
 			# do we split this into M and F?
 			if sex==NA:
-				statsMap = genotypeStatisticsMap[allele_key][gkey]
+				statsMap = self.genotypeStatisticsMap[allele_key][gkey]
 				if len(statsMap["sexes"])>1:
 					#time to split sexes
 					row1 = [row[0],row[1],M,row[3]]
@@ -263,49 +263,49 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# iterate the query for MP systems
 	# create a lookup for term_key to system name
 	def buildHeaderMap(self):
-                if headerTermMap:
-                        return headerTermMap
+                if self.headerTermMap:
+                        return self.headerTermMap
                 cols, rows = self.results[0]
                 for row in rows:
                         # add header term to map, keyed by child term key
                         term_key = row[0]
                         header_term = row[2]
-                        headerTermMap.setdefault(term_key,[]).append(header_term)
+                        self.headerTermMap.setdefault(term_key,[]).append(header_term)
 
                         # add header term keys to a list
                         header_key = row[1]
-                        headerKeys.append(header_key)
+                        self.headerKeys.append(header_key)
 
                         # add header term key for lookup
-                        headerKeyMap[header_term] = header_key
-                return headerTermMap
+                        self.headerKeyMap[header_term] = header_key
+                return self.headerTermMap
 	# is this term_key a header term_key
         def isHeaderTerm(self, termKey):
-                return termKey in headerKeys
+                return termKey in self.headerKeys
 	# get the term_key for the system name passed in	
         def getHeaderKey(self,headerTerm):
-                if headerTerm in headerKeyMap:
-                        return headerKeyMap[headerTerm]
+                if headerTerm in self.headerKeyMap:
+                        return self.headerKeyMap[headerTerm]
                 return -1
 	# Build the special ordering of systems that is pre-defined for each genotype
 	# key each individual sequence map by term_key, grouped by genotype_key
 	def buildSystemSeqMap(self):
-		if systemSeqMap:
-			return systemSeqMap
+		if self.systemSeqMap:
+			return self.systemSeqMap
 		cols, rows = self.results[3]
 		for row in rows:
 			gkey = row[0]
 			term_key = row[1]
 			seq = row[2]
 			# add map for each genotype, then add term_key=>sequencenum
-			systemSeqMap.setdefault(gkey,{})[term_key] = seq
-		return systemSeqMap
+			self.systemSeqMap.setdefault(gkey,{})[term_key] = seq
+		return self.systemSeqMap
 	# get a system sequence ordering by genotype/system combo	
 	def getSystemSeq(self,genotype_key,header_term_key):
-		if not systemSeqMap:
+		if not self.systemSeqMap:
 			self.buildSystemSeqMap()
-		if genotype_key in systemSeqMap:
-			headerSeqMap = systemSeqMap[genotype_key]
+		if genotype_key in self.systemSeqMap:
+			headerSeqMap = self.systemSeqMap[genotype_key]
 			if header_term_key in headerSeqMap:
 				return headerSeqMap[header_term_key]
 		return -1
@@ -318,8 +318,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	#  we then go through and concatenate each note chunk if the sequence is larger than the previous.
 	#  if the sequence is <= the previous row, then we assume it's a new note, and save the last note that we had been de-chunking.
 	def buildNotes(self):
-		if noteMap:
-			return noteMap
+		if self.noteMap:
+			return self.noteMap
 		cols, rows = self.results[2]	
 		cur_note_chunk = ''
 		last_seq = 1
@@ -333,7 +333,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				# we have a new note, we can stop adding chunks, save the previously built note, and start a new one.
 				full_note = cur_note_chunk.strip()
 				if full_note:
-				    noteMap.setdefault(last_evidence_key,[]).append(full_note)
+				    self.noteMap.setdefault(last_evidence_key,[]).append(full_note)
 				cur_note_chunk = ''
 				if notetype_key==BS_NOTETYPE:
 					# append special label for background sensitivity notes
@@ -345,101 +345,41 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# end of rows, save the last note
 		full_note = cur_note_chunk.strip()
 		if full_note:
-		    noteMap.setdefault(last_evidence_key,[]).append(full_note)
+		    self.noteMap.setdefault(last_evidence_key,[]).append(full_note)
 		cur_note_chunk = ''
 				
-		return noteMap
+		return self.noteMap
 	# returns a list of notes for the given evidence key
 	def getNotes(self,evidenceKey):
-		if not noteMap:
+		if not self.noteMap:
 			self.buildNotes()
-		if evidenceKey in noteMap:
-			return noteMap[evidenceKey]
+		if evidenceKey in self.noteMap:
+			return self.noteMap[evidenceKey]
 		return []
 
 	###--- "DAG"gy functions ---###
-	# iterates the DAG query and puts the hierarchy into a giant lookup
-	def buildMPDAG(self):
-                global dagMap
-                if dagMap:
-                        return dagMap
-                cols, rows = self.results[4]
-                count = 0
-                # init the dag tree
-                dagMap = {}
-                for row in rows:
-                        count += 1
-                        parentKey = row[0]
-                        childKey = row[2]
-                        dagMap.setdefault(parentKey,[]).append(childKey)
 
-                return dagMap
 	# recurse through the MP dag to figure out how to sort (and indent) a subset of terms for a given system (header)
         # returns a map of termKey : {"seq": seq, "depth": depth}
         def calculateSortAndDepths(self,terms,rootKey):
-                # sort term keys by term_seq
-                sortMap = {}
-                for termKey,termSeq in terms:
-                        # define a default depth and "new_seq"
-                        # new_seq is a tuple that will be sorted
-                        sortMap[termKey] = {"termKey":termKey,"seq":termSeq,"depth":1,"new_seq":(1,),"set":False}
-                # set defaults for the root header term key
-                if rootKey not in sortMap:
-                        sortMap[rootKey] = {"termKey":rootKey,"new_seq":(1,),"depth":1}
-                # recurse through the dag to calculate the sorts (and depths)
-                sortMap = self.recurseSorts(sortMap,[x[0] for x in terms],rootKey)
-
-                # now sort by parent_seq(s), then term_seq (is a tuple like (parent1_seq,parent2_seq, etc, term_seq)
-                sortedTerms = sorted(sortMap.values(), key=lambda x: x["new_seq"])
-                # normalise the sorts relative to this system
-                count=0
-                for value in sortedTerms:
-                        count += 1
-                        sortMap[value["termKey"]] = {"seq":count,"depth":value["depth"]}
-                return sortMap
-        # recursive function to traverse dag and calculate sorts and depths for the given term keys
-        # expects a sortMap as defined above, list of termKeys, system term key 
-        # returns the original sortMap with modified values for "new_seq" and "depth"
-        def recurseSorts(self,sortMap,termKeys,rootKey,parentSeq=(1,),depth=1):
-                global dagMap
-                if not dagMap:
-                        dagMap = self.buildMPDAG()
-                if rootKey in dagMap:
-                        for childKey in dagMap[rootKey]:
-                                # check if this key is one in our list, then check if it has been set before, if it has,
-                                # also check if the depth is less than what we want to set it to (we pick the longest annotated path)
-                                if (childKey in termKeys) and \
-                                        ((not sortMap[childKey]["set"]) or (sortMap[childKey]["depth"] < depth)):
-                                        sortMap[childKey]["set"] = True
-                                        # perform tuple concatenation on parent seq
-                                        # we build a sortable tuple like (parent1_seq,parent2_seq,etc,term_seq)
-                                        childSeq = parentSeq + (sortMap[childKey]["seq"],)
-                                        sortMap[childKey]["new_seq"] = childSeq
-                                        # set the depth for this term
-                                        sortMap[childKey]["depth"] = depth
-                                        # recurse with new depth and term_seq info
-                                        self.recurseSorts(sortMap,termKeys,childKey,childSeq,depth+1)
-                                else:
-                                        # recurse further into dag with current depth and parent_seq info
-                                        self.recurseSorts(sortMap,termKeys,childKey,parentSeq,depth)
-                return sortMap
+		return self.mpSorter.calculateSortAndDepths(terms,rootKey)
 
 	###--- Allele centric functions---###
 	# builds a map of genotype key to n allele keys
         def buildAlleleMap(self):
-                if alleleMap:
-                        return alleleMap
+                if self.alleleMap:
+                        return self.alleleMap
                 cols, rows = self.results[5]
                 for row in rows:
                         genotypeKey = row[0]
                         alleleKey = row[1]      
-                        alleleMap.setdefault(genotypeKey,[]).append(alleleKey)
-                return alleleMap
+                        self.alleleMap.setdefault(genotypeKey,[]).append(alleleKey)
+                return self.alleleMap
         def getAlleleKeys(self,genotypeKey):
-                if not alleleMap:
+                if not self.alleleMap:
                         self.buildAlleleMap()
-                if genotypeKey in alleleMap:
-                        return alleleMap[genotypeKey]
+                if genotypeKey in self.alleleMap:
+                        return self.alleleMap[genotypeKey]
                 return [] 
 
 	###--- MP table function---###
@@ -447,7 +387,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	def buildMPRows (self ):
 		# get mappings for header terms
 		logger.debug("gathering map of header terms")
-		headerTermMap = self.buildHeaderMap()
+		self.headerTermMap = self.buildHeaderMap()
 
 		systemRows = []
 		termRows = []
@@ -486,7 +426,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         genotypeID = row[gidCol]
                         term = row[termCol]
                         termKey = row[termKeyCol]
-                        if termKey not in headerTermMap:
+                        if termKey not in self.headerTermMap:
                                 logger.info("cannot find header term for %s "%term)
                                 continue
                         qualifier = row[qualifierCol]
@@ -504,7 +444,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				continue
                         termID = row[termIDCol]
                         termSeq = row[seqCol]
-                        systems = headerTermMap[termKey]
+                        systems = self.headerTermMap[termKey]
                         for system in systems:
                                 # duplicate each annotation for every system the term maps to (could be more than one)
                                 systemSet.add(system)
@@ -528,6 +468,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		ref_count = 0
 		note_count = 0
 		# use a map to keep track of jnum/term combos
+                logger.debug("looping through %s mp/allele system groups to create all mp_* tables"%len(systemDict)) 
                 for sr_key,systemObj in systemDict.items():
 			gkey = systemObj["gkey"]
                         system = systemObj["system"]
@@ -574,6 +515,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                                 pass
                                 #logger.info("processed %s systems"%system_count);
 
+                logger.debug("done creating mp_* tables") 
 		return systemRows,termRows,annotRows,refRows,noteRows
 	
 	###--- Phenotable functions ---###
@@ -582,7 +524,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# Build all the tables needed for the phenotype summary table
 		# get mappings for header terms
                 logger.debug("gathering map of header terms")
-                headerTermMap = self.buildHeaderMap()
+                self.headerTermMap = self.buildHeaderMap()
                 
                 systemRows = []
                 termRows = []
@@ -609,7 +551,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                 # new annot key -> 1 (once done)
                 done = {}
 
-                logger.debug("looping through mp annotation rows")
+                logger.debug("looping through pheno_* annotation rows")
                 systemDict = {}
                 systemSet = set([])
                 for row in rows:
@@ -619,7 +561,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         genotypeID = row[gidCol]
                         term = row[termCol]
                         termKey = row[termKeyCol]
-                        if termKey not in headerTermMap:
+                        if termKey not in self.headerTermMap:
                                 logger.info("cannot find header term for %s for genotype %s"%(term,gkey))
                                 continue
                         qualifier = row[qualifierCol]
@@ -636,7 +578,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				continue
                         termID = row[termIDCol]
                         termSeq = row[seqCol]
-                        systems = headerTermMap[termKey]
+                        systems = self.headerTermMap[termKey]
                         for system in systems:
                                 # duplicate each annotation for every system the term maps to (could be more than one)
                                 systemSet.add(system)
@@ -657,8 +599,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					self.registerGenotypeSex(allele_key,gkey,sex)
 					# add provider row
 					#providerRows.add((self.getGenotypeRowKey(allele_key,gkey),sourceDisplay,getProviderSeq(sourceDisplay)))
-					providerRowsDict.setdefault(allele_key,{}).setdefault("providers",set([])).add(sourceDisplay)
-					providerRowsDict[allele_key].setdefault("provider_rows",set([])).add((gkey,sourceDisplay))
+					self.providerRowsDict.setdefault(allele_key,{}).setdefault("providers",set([])).add(sourceDisplay)
+					self.providerRowsDict[allele_key].setdefault("provider_rows",set([])).add((gkey,sourceDisplay))
 					#providerRowsDict.setdefault(self.getGenotypeRowKey(allele_key,gkey),set([])).add(sourceDisplay)
 					# Done with cells / headers nonsense
 
@@ -691,6 +633,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                 term_count = 0
 		term_cell_count = 0
 		system_cell_count = 0
+		logger.debug("looping through pheno/allele system groups")
                 for sr_key,systemObj in systemDict.items():
                         system = systemObj["system"]
                         system_count += 1
@@ -716,8 +659,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					call = item["call"]
 					cell_seq = item["seq"]
 					genotype_key = item["genotype_key"]
-					genotypeID = genotypeIDMap[genotype_key]
-					genotype_seq = genotypeSeqMap[(allele_key,genotype_key)]
+					genotypeID = self.genotypeIDMap[genotype_key]
+					genotype_seq = self.genotypeSeqMap[(allele_key,genotype_key)]
 					termCellRows.append([term_cell_count,term_count,call,item['sex'],genotypeID,cell_seq,genotype_seq])
 			# get the system grid cells
 			pheno_genos = self.getRegisteredCellCalls(allele_key,system)
@@ -726,8 +669,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				call = item["call"]
 				cell_seq = item["seq"]
 				genotype_key= item["genotype_key"]
-				genotypeID = genotypeIDMap[genotype_key]
-				genotype_seq = genotypeSeqMap[(allele_key,genotype_key)]
+				genotypeID = self.genotypeIDMap[genotype_key]
+				genotype_seq = self.genotypeSeqMap[(allele_key,genotype_key)]
 				systemCellRows.append([system_cell_count,system_count,call,item['sex'],genotypeID,cell_seq,genotype_seq])
 					
                         if system_count % 1000 == 0:
@@ -738,7 +681,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# give keys to provider rows
 		provider_count = 0
 		pRows = []
-		for allele_key,item in providerRowsDict.items():
+		for allele_key,item in self.providerRowsDict.items():
 			providers = item["providers"]
 			# suppress case where only row would be 'MGI'
 			suppress_providers = len(providers)==1 and list(providers)[0]==MGI
@@ -749,6 +692,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				#if suppress_providers:
 				#	provider=""
 				pRows.append((provider_count,self.getGenotypeRowKey(allele_key,genotype_key),provider,getProviderSeq(provider)))
+		logger.debug("done creating pheno_* tables")
                 return systemRows, termRows, termCellRows,systemCellRows,pRows
 
 	# inits the disease information into the phenogrid for calculating headers
@@ -814,9 +758,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		count = 0
 		for disease in disease_set:
 			count += 1
-			diseaseSeqMap[disease] = count
+			self.diseaseSeqMap[disease] = count
 		# "disease models" should be the first term
-		diseaseSeqMap[DISEASE_MODELS] = 0
+		self.diseaseSeqMap[DISEASE_MODELS] = 0
 
 	# actually build the rows for disease cells
 	def buildDiseaseRows(self):
@@ -863,7 +807,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					disease_count += 1	
 					disease_row_map[disease_row_key] = disease_count
 					# add disease row
-					diseaseRows.append([disease_count,allele_key,term,diseaseSeqMap[term],termID,0])	
+					diseaseRows.append([disease_count,allele_key,term,self.diseaseSeqMap[term],termID,0])	
 					# add all the cells
 					pheno_genos = self.getRegisteredCellCalls(allele_key,termID)
 					for item in pheno_genos.values():
@@ -871,8 +815,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 						call = item["call"]
 						cell_seq = item["seq"]
 						genotype_key = item["genotype_key"]
-						genotypeID = genotypeIDMap[genotype_key]
-						genotype_seq = genotypeSeqMap[(allele_key,genotype_key)]
+						genotypeID = self.genotypeIDMap[genotype_key]
+						genotype_seq = self.genotypeSeqMap[(allele_key,genotype_key)]
 						dCellRows.append([disease_cell_count,disease_count,call,genotypeID,cell_seq,genotype_seq])
 				# add the "disease models" header term (if it does not exist)
 				"""
