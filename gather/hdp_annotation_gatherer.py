@@ -93,6 +93,7 @@
 #
 
 import Gatherer
+import MPSorter
 import logger
 
 ###--- Constents ---###
@@ -110,20 +111,97 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Does: queries the source database for annotation data,
 	#	collates results, writes tab-delimited text file
 
-        def collateResults(self):
+	# post-process all the hdp_annotation results and add the term_seq and term_depth columns
+	def calculateTermSeqs(self,annotResults):
+		logger.info("preparing to calculate term sequences for hdp_annotation results")
+		# colums of an annotResult
+		#		0'_Marker_key', 
+		#		1'_Organism_key', 
+		#		2'_Term_key', 
+		#		3'_AnnotType_key', 
+		#		4'_Object_key', 
+		#		5'genotype_type',
+		#		6'qualifier_type',
+		#		7'accID',
+		#		8'term',
+		#		9'name',
+		#		10'mp_header',
+		#		11'term_seq',
+		#		12'term_depth'
+		# loop through once in order to get the terms for each gridcluster/header group
+		clusterHeaderTermDict = {}
+		logger.debug("looping annotResults 1st time to group the terms")
+		for annotResult in annotResults:
+			markerKey = annotResult[0]
+			termKey = annotResult[2]
+			vocab = annotResult[9]
+			if markerKey \
+				and markerKey in self.markerClusterKeyDict \
+				and vocab == 'Mammalian Phenotype':
+				header = annotResult[10]
+				if header in self.mpHeaderKeyDict:
+					headerKey = self.mpHeaderKeyDict[header]
+					gridClusterKey = self.markerClusterKeyDict[markerKey] 
+					mapKey = (gridClusterKey,headerKey)
+					clusterHeaderTermDict.setdefault(mapKey,set([])).add((termKey,1))
 
+		logger.debug("calculating sequences for the term groups")
+		# now go through the groups to calculate sorts
+		mpSorter = MPSorter.MPSorter()
+		clusterHeaderTermSeqDict = {}
+		for mapKey,terms in clusterHeaderTermDict.items():
+			gridClusterKey,headerKey = mapKey
+			termSeqMap = mpSorter.calculateSortAndDepths(terms,headerKey)
+			clusterHeaderTermSeqDict[mapKey] = termSeqMap	
+
+		# this can be cleared
+		clusterHeaderTermDict = {}
+
+		# loop through a second time to append the calculated sequence values
+		logger.debug("looping through a second time to append the relative term sequences to the annotResults")
+		for annotResult in annotResults:
+			markerKey = annotResult[0]
+			termKey = annotResult[2]
+			vocab = annotResult[9]
+			if markerKey \
+				and markerKey in self.markerClusterKeyDict \
+				and vocab == 'Mammalian Phenotype':
+				header = annotResult[10]
+				if header in self.mpHeaderKeyDict:
+					headerKey = self.mpHeaderKeyDict[header]
+					logger.debug("mapped header %s to key %s"%(header,headerKey))
+					gridClusterKey = self.markerClusterKeyDict[markerKey] 
+					mapKey = (gridClusterKey,headerKey)
+					if mapKey in clusterHeaderTermSeqDict \
+						and termKey in clusterHeaderTermSeqDict[mapKey]:
+						termSeqMap = clusterHeaderTermSeqDict[mapKey][termKey]
+						termSeq = termSeqMap["seq"]
+						termDepth = termSeqMap["depth"]
+			# add term_seq
+			annotResult.append(termSeq)
+			# add term_depth
+			annotResult.append(termDepth)
+
+		logger.info("done calculating term sequences for hdp_annotation results")
+		return annotResults
+
+        def collateResults(self):
 		#
 		# sql (0)
 		# mp term -> mp header term
 		# includes parent + children
 		mpHeaderDict = {}
+		self.mpHeaderKeyDict = {}
 		(cols, rows) = self.results[0]
 		termKey = Gatherer.columnNumber (cols, '_Object_key')
-		value = Gatherer.columnNumber (cols, 'synonym')
+		headerKey = Gatherer.columnNumber (cols, 'header_key')
+		header = Gatherer.columnNumber (cols, 'synonym')
+	
 		for row in rows:
-			if not mpHeaderDict.has_key(row[termKey]):
-				mpHeaderDict[row[termKey]] = []
-			mpHeaderDict[row[termKey]].append(row[value])
+			# map term_keys to their header display
+			mpHeaderDict.setdefault(row[termKey],[]).append(row[header])
+			# also map the header display string to its actual header term_key (for convenience)
+			self.mpHeaderKeyDict[row[header]] = row[headerKey]
 		#logger.debug (mpHeaderDict)
 
 		#
@@ -152,7 +230,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'accID',
 				'term',
 				'name',
-				'mp_header'
+				'mp_header',
+				'term_seq',
+				'term_depth'
 			]
 
                 diseaseMarkerRefResults = []
@@ -594,6 +674,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 # at most one cluster/term in a gridCluster_annotation
                 cannotList = set([])
 
+		self.markerClusterKeyDict = {}
 		for row in rows:
 
 			clusterKey = row[clusterKeyCol]
@@ -614,6 +695,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# cmarkerResults
 			#
 			if markerKey not in markerList:
+				self.markerClusterKeyDict[markerKey] = clusterKey
 				cmarkerResults.append ( [ 
 			    		row[clusterKeyCol],
 			    		markerKey,
@@ -863,6 +945,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('end : processed genotype cluster')
 
+		logger.debug("start : calculate termSeqs")	
+		annotResults = self.calculateTermSeqs(annotResults)
+		logger.debug("end : calculate termSeqs")	
+
 		# push data to output files
 
 		self.output.append((annotCols, annotResults))
@@ -891,7 +977,7 @@ cmds = [
 	# mp term -> mp header term
 	#
 	'''
-        select distinct d._Object_key, h.synonym
+        select distinct d._Object_key, h.synonym, h._object_key header_key
         from
                 DAG_Node d, 
                 DAG_Closure dc, 
@@ -907,7 +993,7 @@ cmds = [
 
         union
 
-        select distinct d._Object_key, h.synonym
+        select distinct d._Object_key, h.synonym, h._object_key header_key
         from 
                 DAG_Node d, 
                 DAG_Closure dc, 
@@ -1435,7 +1521,7 @@ files = [
 		[ Gatherer.AUTO, '_Marker_key', '_Organism_key', 
 			'_Term_key', '_AnnotType_key', 
 			'_Object_key', 'genotype_type', 'qualifier_type',
-			'accID', 'term', 'name', 'mp_header' ],
+			'accID', 'term', 'name', 'mp_header','term_seq','term_depth' ],
           'hdp_annotation'),
 
         ('hdp_marker_to_reference',
