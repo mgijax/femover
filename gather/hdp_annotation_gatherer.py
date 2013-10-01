@@ -114,6 +114,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	# post-process all the hdp_annotation results and add the term_seq and term_depth columns
 	def calculateTermSeqs(self,annotResults):
 		logger.info("preparing to calculate term sequences for hdp_annotation results")
+		# get term sequencenum from voc_term
+		origTermSeqDict = {}
+		(cols, rows) = self.results[41]
+		for row in rows:
+			origTermSeqDict[row[0]] = row[1]
+		
 		# colums of an annotResult
 		#		0'_Marker_key', 
 		#		1'_Organism_key', 
@@ -143,7 +149,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					headerKey = self.mpHeaderKeyDict[header]
 					gridClusterKey = self.markerClusterKeyDict[markerKey] 
 					mapKey = (gridClusterKey,headerKey)
-					clusterHeaderTermDict.setdefault(mapKey,set([])).add((termKey,1))
+					origTermSeq = origTermSeqDict[termKey]
+					clusterHeaderTermDict.setdefault(mapKey,set([])).add((termKey,origTermSeq))
 
 		logger.debug("calculating sequences for the term groups")
 		# now go through the groups to calculate sorts
@@ -1510,6 +1517,11 @@ cmds = [
                 where p._Genotype_key = tx._Genotype_key
                 and p._Marker_key = tx._Marker_key
                 )
+	''',
+	# sql (41)
+	# term sequencenum values for MP
+	'''
+	select _term_key,sequencenum from voc_term where _vocab_key=5
 	''',
 
 	]
