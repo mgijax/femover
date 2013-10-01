@@ -140,8 +140,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for annotResult in annotResults:
 			markerKey = annotResult[0]
 			termKey = annotResult[2]
+			genotypeType = annotResult[5]
 			vocab = annotResult[9]
 			if markerKey \
+				and genotypeType == 'super-simple' \
 				and markerKey in self.markerClusterKeyDict \
 				and vocab == 'Mammalian Phenotype':
 				header = annotResult[10]
@@ -169,8 +171,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for annotResult in annotResults:
 			markerKey = annotResult[0]
 			termKey = annotResult[2]
+			genotypeType = annotResult[5]
 			vocab = annotResult[9]
+			termSeq = None
+			termDepth = None
 			if markerKey \
+				and genotypeType == 'super-simple' \
 				and markerKey in self.markerClusterKeyDict \
 				and vocab == 'Mammalian Phenotype':
 				header = annotResult[10]
