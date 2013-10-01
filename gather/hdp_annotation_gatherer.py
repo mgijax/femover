@@ -169,7 +169,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				header = annotResult[10]
 				if header in self.mpHeaderKeyDict:
 					headerKey = self.mpHeaderKeyDict[header]
-					logger.debug("mapped header %s to key %s"%(header,headerKey))
 					gridClusterKey = self.markerClusterKeyDict[markerKey] 
 					mapKey = (gridClusterKey,headerKey)
 					if mapKey in clusterHeaderTermSeqDict \
