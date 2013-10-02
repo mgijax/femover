@@ -113,10 +113,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	# post-process all the hdp_annotation results and add the term_seq and term_depth columns
 	def calculateTermSeqs(self,annotResults):
+		# sql (42) : genotype-cluster
+		# term sequencenum values for MP
 		logger.info("preparing to calculate term sequences for hdp_annotation results")
 		# get term sequencenum from voc_term
 		origTermSeqDict = {}
-		(cols, rows) = self.results[41]
+		(cols, rows) = self.results[42]
 		for row in rows:
 			origTermSeqDict[row[0]] = row[1]
 		
@@ -198,6 +200,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		return annotResults
 
         def collateResults(self):
+
 		#
 		# sql (0)
 		# mp term -> mp header term
@@ -850,6 +853,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term_type',
 				'accID', 
 				'term',
+				'genotermref_count'
 			]
 
 		# sql (39) : genotype-cluster by annotation
@@ -864,9 +868,23 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			clusterDict3[key].append(row)
 		#logger.debug (clusterDict3)
 
-		# sql (40) : genotype-cluster
+                # sql (40) : genotype-cluster
+                logger.debug ('start : processed genotype cluster counts')
+                genoTermRefDict = {}
+                (cols, rows) = self.results[40]
+                key1 = Gatherer.columnNumber (cols, '_Genotype_key')
+                key2 = Gatherer.columnNumber (cols, '_Term_key')
+                key3 =  Gatherer.columnNumber (cols, 'refCount')
+                for row in rows:
+                        key = (row[key1], row[key2])
+                        if not genoTermRefDict.has_key(key):
+                                genoTermRefDict[key] = []
+                        genoTermRefDict[key].append(row[key3])
+                logger.debug ('end: processed genotype cluster counts')
+
+		# sql (41) : genotype-cluster
 		logger.debug ('start : processed genotype cluster')
-		(cols, rows) = self.results[40]
+		(cols, rows) = self.results[41]
 
 		# set of columns for common sql fields
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -896,6 +914,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		clusterKey = 1
 
+	        # at most one cluster/term/qualifier per geno-cluster
+		gannotTermList = set([])
+
 		for r in compressSet:
 
                 	# at most one cluster/header-term in a genoCluster_annotation
@@ -906,6 +927,24 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# track distinct number of header-annotations per geno-cluster
 			header_count = 0
 
+                        # for each genotype in the cluster
+                        # track the genotype-term-reference-count for this cluster
+                        clusterAnnotCount = {}
+                        for gKey in compressSet[r]:
+                                if clusterDict3.has_key(gKey):
+                                        for c in clusterDict3[gKey]:
+                                                termKey = c[2]
+                                                key = (gKey, termKey)
+                                                if genoTermRefDict.has_key(key):
+                                                        newCount = genoTermRefDict[key][0]
+                                                        if not clusterAnnotCount.has_key(termKey):
+                                                                clusterAnnotCount[termKey] = newCount
+                                                        else:
+                                                                clusterAnnotCount[termKey] += newCount
+
+                        # for each genotype in the cluster
+                        # add the cluster-genotypes
+                        # add the cluster-annotations
 			for gKey in compressSet[r]:
 
 				gResults.append( [
@@ -923,6 +962,15 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						termId = c[4]
 						qualifier = c[5]
 
+                                                # at most one cluster/term/qualifier per geno-cluster
+                                                if (clusterKey, termKey, qualifier) in gannotTermList:
+                                                        continue
+
+                                                # get the cluster-annotation-count
+                                                genotermref_count = 0
+                                                if clusterAnnotCount.has_key(termKey):
+                                                        genotermref_count = clusterAnnotCount[termKey]
+
 						gannotResults.append( [ 
 			    				clusterKey,
 							termKey,
@@ -930,8 +978,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							qualifier,
 							TERM_TYPE,
 							termId,
-							termName
+							termName,
+							genotermref_count
 							])
+
+						gannotTermList.add((clusterKey, termKey, qualifier))
 
 						# one header per cluster
 						if mpHeaderDict.has_key(termKey):
@@ -945,6 +996,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                                         	HEADER_TYPE,
                                                                         	None,
                                                                         	mpHeader,
+										0
                                                                         	])
                                                 			gannotList.add((clusterKey, mpHeader))
 									header_count += 1;
@@ -1508,7 +1560,19 @@ cmds = [
 	order by _Genotype_key, qualifier_type desc
 	''',
 
-	# sql (40)
+        # sql (40)
+        # counts by geno-cluster/term/reference
+        # exclude: normal annotations
+        '''
+        select distinct v._Object_key as _Genotype_key, v._Term_key, count(_Refs_key) as refCount
+        from VOC_Annot v, VOC_Evidence e
+        where (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
+        and v._Term_key not in (293594)
+        and v._Annot_key = e._Annot_key
+        group by v._Object_key, v._term_key
+        ''',
+
+	# sql (41)
 	# allele pair information in order to generate the genotype-cluster
 	# include: super-simple (tmp_annot_mouse)
 	# exclude: markers where there exists a double-wild-type allele pair
@@ -1524,7 +1588,8 @@ cmds = [
                 and p._Marker_key = tx._Marker_key
                 )
 	''',
-	# sql (41)
+
+	# sql (42)
 	# term sequencenum values for MP
 	'''
 	select _term_key,sequencenum from voc_term where _vocab_key=5
@@ -1575,7 +1640,8 @@ files = [
 
 	('hdp_genocluster_annotation',
 		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Term_key',
-		  '_AnnotType_key', 'qualifier_type', 'term_type', 'accID', 'term' ],
+		  '_AnnotType_key', 'qualifier_type', 'term_type', 'accID', 'term',
+		  'genotermref_count' ],
           'hdp_genocluster_annotation'),
 
 	]

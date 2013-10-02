@@ -33,6 +33,7 @@ createStatement = '''CREATE TABLE %s  (
         term_type         	text    not null,
 	term_id			text	null,
 	term			text	not null,
+	genotermref_count       int     not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -67,6 +68,7 @@ comments = {
                 'term_type' : 'type of term (term, header)',
                 'term_id' : 'primary accession ID for the term',
                 'term' : 'text of the term itself',
+                'genotermref_count' : 'number of annotations by geno/term/refererence',
 		},
 	}
 
