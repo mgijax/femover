@@ -53,7 +53,7 @@ comments = {
 	Table.COLUMN : {
 		'unique_key' : 'unique key for this record',
 		'marker_key' : 'mouse marker that is annotated to OMIM/disease term',
-		'reference_key' : 'reference of the annotation via the mouse marker',
+		'reference_key' : 'reference annotated to the mouse marker',
 		},
 	}
 
