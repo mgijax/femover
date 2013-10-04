@@ -227,7 +227,8 @@ cmds = [
 	'select distinct _Marker_key, directTerms from MRK_MCV_Cache',
 
 	# 1. Gather the set of primary marker IDs
-	# (mouse markers on the top of the union, non-mouse markers below)
+	# (mouse markers on the top of the union , non-mouse markers below)
+	# human below mouse, use Entrez Gene IDs
 	'''select m._Marker_key,
 		a.accID, 
 		a._LogicalDB_key
@@ -247,7 +248,20 @@ cmds = [
 		acc_logicaldb ldb
 	where m._Marker_key = a._Object_key
 		and a._MGIType_key = 2
-		and m._Organism_key != 1
+		and m._Organism_key = 2
+		and a.preferred = 1
+		and a._logicalDB_key = 55
+		and a._LogicalDB_key = ldb._LogicalDB_key
+	union
+	select m._Marker_key,
+		a.accID, 
+		a._LogicalDB_key
+	from mrk_marker m,
+		acc_accession a,
+		acc_logicaldb ldb
+	where m._Marker_key = a._Object_key
+		and a._MGIType_key = 2
+		and m._Organism_key not in (1,2)
 		and a.preferred = 1
 		and a._LogicalDB_key = ldb._LogicalDB_key
 		and ldb._Organism_key = m._Organism_key''',
