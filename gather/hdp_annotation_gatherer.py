@@ -918,6 +918,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			#
 			# write the headers
+			# fix this up tomorrow...but it seems to work for now
 			#
 			#logger.debug (gannotHeaderList)
 			for gheader in gannotHeaderList:
