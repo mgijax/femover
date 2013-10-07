@@ -790,7 +790,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			if not clusterDict3.has_key(key):
 				clusterDict3[key] = []
 			clusterDict3[key].append(row)
-		#logger.debug (clusterDict3)
+		#logger.debug (clusterDict3[14750])
 
                 # sql (39) : genotype-cluster
                 logger.debug ('start : processed genotype cluster counts')
@@ -844,7 +844,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for r in compressSet:
 
                 	# at most one cluster/header-term in a genoCluster_annotation
-                	gannotList = set([])
+                	gannotHeaderList = set([])
 
 			markerKey = r[0]
 
@@ -911,19 +911,35 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						# one header per cluster
 						if mpHeaderDict.has_key(termKey):
                                                         for mpHeader in mpHeaderDict[termKey]:
-                                        			if (clusterKey, mpHeader) not in gannotList:
-                                                                	gannotResults.append( [
-                                                                        	clusterKey,
-                                                                        	None,
-                                                                        	annotationKey,
+                                        			if (annotationKey, qualifier, mpHeader) not in gannotHeaderList:
+                                                			gannotHeaderList.add((annotationKey,\
 										qualifier,
-                                                                        	'header',
-                                                                        	None,
-                                                                        	mpHeader,
-										0
-                                                                        	])
-                                                			gannotList.add((clusterKey, mpHeader))
-									header_count += 1;
+										mpHeader))
+
+			#
+			# write the headers
+			#
+			#logger.debug (gannotHeaderList)
+			for gheader in gannotHeaderList:
+				qualifier = gheader[1]
+
+				# if both normal and non-normal exist, use non-normal
+				# or
+				# if only non-normal exists, use non-normal
+				if ((qualifier == 'normal' and (gheader[0], None, gheader[2]) in gannotHeaderList) \
+					or \
+				   (qualifier == None and (gheader[0], 'normal', gheader[2]) not in gannotHeaderList)):
+					gannotResults.append([clusterKey, None, gheader[0],
+						None, 'header', None, gheader[2], 0])
+					header_count += 1;
+
+				# else if only normal exists, then use normal
+				elif (qualifier == 'normal' and (gheader[0], None, gheader[2]) not in gannotHeaderList):
+					gannotResults.append([clusterKey, None, gheader[0],
+						gheader[1], 'header', None, gheader[2], 0])
+					header_count += 1;
+
+				#elif do nothing because we've already included it
 
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], header_count,
