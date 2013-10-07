@@ -1173,6 +1173,7 @@ cmds = [
         and a.preferred = 1
 	and a.accID not in ('MP:0003012')
         and t._Vocab_key = vv._Vocab_key
+	and m._Marker_key != 37270
 
 	union
 
@@ -1202,6 +1203,7 @@ cmds = [
         and a.preferred = 1
 	and a.accID not in ('MP:0003012')
         and t._Vocab_key = vv._Vocab_key
+	and m._Marker_key != 37270
 	''',
 
 	'''
@@ -1328,6 +1330,7 @@ cmds = [
                 where g._Genotype_key = tx._Genotype_key
                 and g._Marker_key = tx._Marker_key
                 )
+	and m._Marker_key != 37270
         ''',
 
 	#
