@@ -922,25 +922,33 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			#
 			#logger.debug (gannotHeaderList)
 			for gheader in gannotHeaderList:
+
+				annotationKey = gheader[0]
 				qualifier = gheader[1]
+				mpHeader = gheader[2]
 
-				# if both normal and non-normal exist, use non-normal
+				# for the given annotation-key and mpheader-term
+
+				# if both normal-qualifier and null-qualifier exist, use null-qualifier
 				# or
-				# if only non-normal exists, use non-normal
-				if ((qualifier == 'normal' and (gheader[0], None, gheader[2]) in gannotHeaderList) \
+				# if only null-qualifier exists, use it
+
+				if ((qualifier == 'normal' and (annotationKey, None, mpHeader) in gannotHeaderList) \
 					or \
-				   (qualifier == None and (gheader[0], 'normal', gheader[2]) not in gannotHeaderList)):
-					gannotResults.append([clusterKey, None, gheader[0],
-						None, 'header', None, gheader[2], 0])
+				   (qualifier == None and (annotationKey, 'normal', mpHeader) not in gannotHeaderList)):
+					gannotResults.append([clusterKey, None, annotationKey,
+						None, 'header', None, mpHeader, 0])
 					header_count += 1;
 
-				# else if only normal exists, then use normal
-				elif (qualifier == 'normal' and (gheader[0], None, gheader[2]) not in gannotHeaderList):
-					gannotResults.append([clusterKey, None, gheader[0],
-						gheader[1], 'header', None, gheader[2], 0])
+				# else if only normal-qualifier exists, then use it
+
+				elif (qualifier == 'normal' and (annotationKey, None, mpHeader) not in gannotHeaderList):
+					gannotResults.append([clusterKey, None, annotationKey,
+						qualifier, 'header', None, mpHeader, 0])
 					header_count += 1;
 
-				#elif do nothing because we've already included it
+				# do nothing...as this would create a duplicate row in gannotResults
+				#elif (qualifier == None and (annotationKey, 'normal', mpHeader) in gannotHeaderList)
 
 			gClusterResults.append( [
 				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], header_count,
