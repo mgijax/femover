@@ -1183,6 +1183,7 @@ cmds = [
 		t.term, 
 		vv.name,
 		t2.term as qualifier_type,
+		v._Qualifier_key,
 		'super-simple' as genotype_type
 	into temporary table tmp_annot_mouse
         from tmp_supersimple s, MRK_Marker m,
@@ -1214,6 +1215,7 @@ cmds = [
 		t.term, 
 		vv.name,
 		t2.term as qualifier_type,
+		v._Qualifier_key,
 		'simple' as genotype_type
         from tmp_simple s, MRK_Marker m,
                 VOC_Annot v, VOC_Term t, VOC_Term t2, VOC_Vocab vv, 
@@ -1335,6 +1337,7 @@ cmds = [
 		t.term, 
 		vv.name,
 		t2.term as qualifier_type,
+		v._Qualifier_key,
 		'complex' as genotype_type
         from VOC_Annot v, VOC_Term t, VOC_Term t2, VOC_Vocab vv,
                 GXD_AlleleGenotype g,
@@ -1515,6 +1518,7 @@ cmds = [
 		where t._AnnotType_key = a._AnnotType_key
                 and t._Term_key = a._Term_key
                 and t._Genotype_key = a._Object_key
+		and t._Qualifier_key = a._Qualifier_key
 		and a._Annot_key = e._Annot_key
 		and e._AnnotEvidence_key = n._Object_key
 		and n._MGIType_key = 25
@@ -1527,6 +1531,7 @@ cmds = [
 		where t._AnnotType_key = a._AnnotType_key
                 and t._Term_key = a._Term_key
                 and t._Genotype_key = a._Object_key
+		and t._Qualifier_key = a._Qualifier_key
 		and a._Annot_key = e._Annot_key
 		and e._AnnotEvidence_key = n._Object_key
 		and n._MGIType_key = 25
