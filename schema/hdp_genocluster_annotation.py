@@ -33,6 +33,7 @@ createStatement = '''CREATE TABLE %s  (
         term_type         	text    not null,
 	term_id			text	null,
 	term			text	not null,
+	has_backgroundnote	int	not null,
 	genotermref_count       int     not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
@@ -68,6 +69,7 @@ comments = {
                 'term_type' : 'type of term (term, header)',
                 'term_id' : 'primary accession ID for the term',
                 'term' : 'text of the term itself',
+                'has_backgroundnote' : '1 if the annotation contains a background note',
                 'genotermref_count' : 'number of annotations by geno/term/refererence',
 		},
 	}

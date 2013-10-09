@@ -777,6 +777,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term_type',
 				'accID', 
 				'term',
+				'has_backgroundnote',
 				'genotermref_count'
 			]
 
@@ -885,6 +886,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						termName = c[3]
 						termId = c[4]
 						qualifier = c[5]
+						hasBackgroundNote = c[6]
 
                                                 # at most one cluster/term/qualifier per geno-cluster
                                                 if (clusterKey, termKey, qualifier) in gannotTermList:
@@ -903,7 +905,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							'term',
 							termId,
 							termName,
-							genotermref_count
+							hasBackgroundNote,
+							genotermref_count,
 							])
 
 						gannotTermList.add((clusterKey, termKey, qualifier))
@@ -937,14 +940,14 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					or \
 				   (qualifier == None and (annotationKey, 'normal', mpHeader) not in gannotHeaderList)):
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, mpHeader, 0])
+						None, 'header', None, mpHeader, 0, 0])
 					header_count += 1;
 
 				# else if only normal-qualifier exists, then use it
 
 				elif (qualifier == 'normal' and (annotationKey, None, mpHeader) not in gannotHeaderList):
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, mpHeader, 0])
+						qualifier, 'header', None, mpHeader, 0, 0])
 					header_count += 1;
 
 				# do nothing...as this would create a duplicate row in gannotResults
@@ -1504,8 +1507,31 @@ cmds = [
 	# *make sure the qualifier is order in descending order*
 	# as this affects the setting of the mp-header
 	'''
-	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type 
-	from tmp_annot_mouse
+	(
+	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
+		1 as has_backgroundnote
+	from tmp_annot_mouse t
+	where exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
+		where t._AnnotType_key = a._AnnotType_key
+                and t._Term_key = a._Term_key
+                and t._Genotype_key = a._Object_key
+		and a._Annot_key = e._Annot_key
+		and e._AnnotEvidence_key = n._Object_key
+		and n._MGIType_key = 25
+		and n._NoteType_key = 1015)
+	union
+	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
+		0 as has_backgroundnote
+	from tmp_annot_mouse t
+	where not exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
+		where t._AnnotType_key = a._AnnotType_key
+                and t._Term_key = a._Term_key
+                and t._Genotype_key = a._Object_key
+		and a._Annot_key = e._Annot_key
+		and e._AnnotEvidence_key = n._Object_key
+		and n._MGIType_key = 25
+		and n._NoteType_key = 1015)
+	)
 	order by _Genotype_key, qualifier_type desc
 	''',
 
@@ -1591,7 +1617,7 @@ files = [
 	('hdp_genocluster_annotation',
 		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Term_key',
 		  '_AnnotType_key', 'qualifier_type', 'term_type', 'accID', 'term',
-		  'genotermref_count' ],
+		  'has_backgroundnote', 'genotermref_count' ],
           'hdp_genocluster_annotation'),
 
 	]
