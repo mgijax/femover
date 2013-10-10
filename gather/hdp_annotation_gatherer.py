@@ -106,12 +106,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	# post-process all the hdp_annotation results and add the term_seq and term_depth columns
 	def calculateTermSeqs(self,annotResults):
-		# sql (41) : genotype-cluster
+		# sql (42) : genotype-cluster
 		# term sequencenum values for MP
 		logger.info("preparing to calculate term sequences for hdp_annotation results")
 		# get term sequencenum from voc_term
 		origTermSeqDict = {}
-		(cols, rows) = self.results[41]
+		(cols, rows) = self.results[42]
 		for row in rows:
 			origTermSeqDict[row[0]] = row[1]
 		
@@ -192,6 +192,237 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.info("done calculating term sequences for hdp_annotation results")
 		return annotResults
 
+	def clusterGenotypes(self, gClusterResults, gResults, gannotResults, mpHeaderDict):
+		#
+		# cluster the genotypes
+		#
+
+		logger.debug ('start : processed genotype cluster')
+
+		# sql (38) : genotype-cluster by annotation
+		clusterAnnotDict = {}
+		(cols, rows) = self.results[38]
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		for row in rows:
+			clusterAnnotDict.setdefault(row[genotypeKeyCol],[]).append(row)
+
+                # sql (39) : genotype-cluster
+                logger.debug ('start : processed genotype cluster counts')
+                genoTermRefDict = {}
+                (cols, rows) = self.results[39]
+                key1 = Gatherer.columnNumber (cols, '_Genotype_key')
+                key2 = Gatherer.columnNumber (cols, '_Term_key')
+                key3 =  Gatherer.columnNumber (cols, 'refCount')
+                for row in rows:
+			genoTermRefDict.setdefault((row[key1], row[key2]),[]).append(row[key3])
+
+		# sql (40) : genotype-cluster
+		genoMarkerList = set([])
+		(cols, rows) = self.results[40]
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		for row in rows:
+			genoMarkerList.add((row[genotypeKeyCol], row[markerKeyCol]))
+
+		# sql (41) : genotype-cluster
+		(cols, rows) = self.results[41]
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		allele1KeyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
+		allele2KeyCol = Gatherer.columnNumber (cols, '_Allele_key_2')
+		pairStateKeyCol = Gatherer.columnNumber (cols, '_PairState_key')
+		isConditionalKeyCol = Gatherer.columnNumber (cols, 'isConditional')
+		existsAsKeyCol = Gatherer.columnNumber (cols, '_ExistsAs_key')
+
+		#
+		# store the genotype/allele-pair info
+		#
+
+		byID = {}
+        	for row in rows:
+                	gSet = row[genotypeKeyCol]
+                	cSet = (row[markerKeyCol], \
+                        	row[allele1KeyCol], \
+                        	row[allele2KeyCol], \
+                        	row[pairStateKeyCol], \
+                        	row[isConditionalKeyCol],
+                        	row[existsAsKeyCol])
+			byID.setdefault(gSet,[]).append(cSet)
+
+		#
+		# build dictionary of all genotypes 
+		# organize by the number of allele-pairs in the genotype
+		#
+
+        	byPairCount = {}
+        	for r in byID:
+                	key = len(byID[r])
+                	byPairCount.setdefault(key,{}).setdefault(r,[]).append(byID[r])
+
+		#
+		# cluster genotypes by comparing #-of-allele-pairs + allele-pair-info
+		# using
+		#
+
+		compressSet = {}
+		clusterKey = 1
+
+ 		for allelePairs in byPairCount:
+
+                        checkSet = set([])
+                        diff1 = byPairCount[allelePairs]
+                        diff2 = byPairCount[allelePairs].copy()
+
+                        for g1 in diff1:
+
+                                toDelete = set([])
+
+                                if g1 not in checkSet:
+                                        compressSet.setdefault(clusterKey,{}).setdefault(g1,[]).append(diff1[g1])
+                                        for g2 in diff2:
+                                                if g1 == g2 and diff1[g1] == diff2[g2]:
+                                                        compressSet.setdefault(clusterKey,{}).setdefault(g2,[]).append(diff2[g2])
+                                                        toDelete.add(g2)
+
+                                        checkSet.add(g1)
+
+                                for t in toDelete:
+                                        del diff2[t]
+
+                                clusterKey += 1
+
+	        # at most one cluster/term/qualifier per geno-cluster
+		gannotTermList = set([])
+
+		for clusterKey in compressSet:
+
+                	# at most one cluster/header-term in a genoCluster_annotation
+                	gannotHeaderList = set([])
+
+			# track distinct number of header-annotations per geno-cluster
+			header_count = 0
+
+                        # for each genotype in the cluster
+                        # track the genotype-term-reference-count for this cluster
+                        clusterAnnotCount = {}
+                        for gKey in compressSet[clusterKey]:
+                                if clusterAnnotDict.has_key(gKey):
+                                        for c in clusterAnnotDict[gKey]:
+                                                termKey = c[2]
+                                                key = (gKey, termKey)
+                                                if genoTermRefDict.has_key(key):
+                                                        newCount = genoTermRefDict[key][0]
+                                                        if not clusterAnnotCount.has_key(termKey):
+                                                                clusterAnnotCount[termKey] = newCount
+                                                        else:
+                                                                clusterAnnotCount[termKey] += newCount
+
+                        # for each genotype in the cluster
+                        # add the cluster-genotypes
+                        # add the cluster-annotations
+			for gKey in compressSet[clusterKey]:
+
+				gResults.append( [
+					clusterKey,
+					gKey,
+					])
+				
+				if clusterAnnotDict.has_key(gKey):
+
+					for c in clusterAnnotDict[gKey]:
+
+						annotationKey = c[1]
+						termKey = c[2]
+						termName = c[3]
+						termId = c[4]
+						qualifier = c[6]
+                                                hasBackgroundNote = c[7]
+
+                                                # at most one cluster/term/qualifier per geno-cluster
+                                                if (clusterKey, termKey, qualifier) in gannotTermList:
+                                                        continue
+
+                                                # get the cluster-annotation-count
+                                                genotermref_count = 0
+                                                if clusterAnnotCount.has_key(termKey):
+                                                        genotermref_count = clusterAnnotCount[termKey]
+
+						gannotResults.append( [ 
+			    				clusterKey,
+							termKey,
+							annotationKey,
+							qualifier,
+							'term',
+							termId,
+							termName,
+							hasBackgroundNote,
+							genotermref_count
+							])
+
+						gannotTermList.add((clusterKey, termKey, qualifier))
+
+						# one header per cluster
+						if mpHeaderDict.has_key(termKey):
+                                                        for mpHeader in mpHeaderDict[termKey]:
+                                        			if (annotationKey, qualifier, mpHeader) not in gannotHeaderList:
+                                                			gannotHeaderList.add((annotationKey,\
+										qualifier,
+										mpHeader))
+
+			#
+			# write the headers
+			# fix this up tomorrow...but it seems to work for now
+			#
+			#logger.debug (gannotHeaderList)
+			for gheader in gannotHeaderList:
+
+				annotationKey = gheader[0]
+				qualifier = gheader[1]
+				mpHeader = gheader[2]
+
+				# for the given annotation-key and mpheader-term
+
+				# if both normal-qualifier and null-qualifier exist, use null-qualifier
+				# or
+				# if only null-qualifier exists, use it
+
+				if ((qualifier == 'normal' and (annotationKey, None, mpHeader) in gannotHeaderList) \
+					or \
+				   (qualifier == None and (annotationKey, 'normal', mpHeader) not in gannotHeaderList)):
+					gannotResults.append([clusterKey, None, annotationKey,
+						None, 'header', None, mpHeader, 0, 0])
+					header_count += 1;
+
+				# else if only normal-qualifier exists, then use it
+
+				elif (qualifier == 'normal' and (annotationKey, None, mpHeader) not in gannotHeaderList):
+					gannotResults.append([clusterKey, None, annotationKey,
+						qualifier, 'header', None, mpHeader, 0, 0])
+					header_count += 1;
+
+				# do nothing...as this would create a duplicate row in gannotResults
+				#elif (qualifier == None and (annotationKey, 'normal', mpHeader) in gannotHeaderList)
+
+		#
+		# ready to push the compressedSet into the gClusterResults
+		#
+
+		for clusterKey in compressSet:
+			# the cluster-result (cluster key, allele-pair info)
+			for gKey in compressSet[clusterKey]:
+				for ap1 in compressSet[clusterKey][gKey]:
+					for ap2 in ap1:
+						for ap3 in ap2:
+							if (gKey, ap3[0]) in genoMarkerList \
+								and ([clusterKey, ap3[0], header_count]) not in gClusterResults:
+								gClusterResults.append( [
+									clusterKey, ap3[0], header_count,
+										])
+
+		logger.debug ('end : processed genotype cluster')
+
+		return gClusterResults, gResults, gannotResults
+
         def collateResults(self):
 
 		#
@@ -219,9 +450,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		(cols, rows) = self.results[21]
 		key = Gatherer.columnNumber (cols, '_Marker_key')
 		for row in rows:
-			if not markerHeaderDict.has_key(row[key]):
-				markerHeaderDict[row[key]] = []
-			markerHeaderDict[row[key]].append(row)
+			markerHeaderDict.setdefault(row[key],[]).append(row)
 
 		# hdp_annotation
 		# hdp_marker_to_reference
@@ -261,10 +490,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 key1 = Gatherer.columnNumber (cols, '_Genotype_key')
                 key2 = Gatherer.columnNumber (cols, '_Marker_key')
                 for row in rows:
-			key = (row[key1], row[key2])
-                        if not diseaseMarkerRef1Dict.has_key(key):
-                                diseaseMarkerRef1Dict[key] = []
-                        diseaseMarkerRef1Dict[key].append(row)
+			diseaseMarkerRef1Dict.setdefault((row[key1], row[key2]),[]).append(row)
 		#logger.debug (diseaseMarkerRef1Dict)
 
                 # sql (23)
@@ -273,9 +499,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 (cols, rows) = self.results[23]
                 key = Gatherer.columnNumber (cols, '_Term_key')
                 for row in rows:
-                        if not diseaseTermRefDict.has_key(row[key]):
-                                diseaseTermRefDict[row[key]] = []
-                        diseaseTermRefDict[row[key]].append(row)
+			diseaseTermRefDict.setdefault(row[key],[]).append(row)
 		#logger.debug (diseaseTermRefDict[847181])
 
 		# sql (24)
@@ -405,8 +629,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 for m in diseaseTermRefDict[termKey]:
                                 	if [termKey, m[1]] not in diseaseTermRefResults:
                                         	diseaseTermRefResults.append ( [ termKey, m[1], ])
-						if termKey == 847181:
-							logger.debug (m[1])
 
 		logger.debug ('end : processed complex mouse annotations')
 
@@ -417,9 +639,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		(cols, rows) = self.results[26]
                 key = Gatherer.columnNumber (cols, '_Marker_key')
                 for row in rows:
-                        if not diseaseMarkerRef2Dict.has_key(row[key]):
-                                diseaseMarkerRef2Dict[row[key]] = []
-                        diseaseMarkerRef2Dict[row[key]].append(row)
+			diseaseMarkerRef2Dict.setdefault(row[key],[]).append(row)
 		#logger.debug (diseaseMarkerRef2Dict)
 
 		# sql (27)
@@ -483,8 +703,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 for m in diseaseTermRefDict[termKey]:
                                 	if [termKey, m[1]] not in diseaseTermRefResults:
                                         	diseaseTermRefResults.append ( [ termKey, m[1], ])
-						if termKey == 847181:
-							logger.debug (m[1])
 
 		logger.debug ('end : processed allele/OMIM annotatins')
 
@@ -571,11 +789,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		(cols, rows) = self.results[34]
 		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
 		for row in rows:
-			key = row[clusterKey]
-			value = row
-			if not clusterDict1.has_key(key):
-				clusterDict1[key] = []
-			clusterDict1[key].append(row)
+			clusterDict1.setdefault(row[clusterKey],[]).append(row)
 		#logger.debug (clusterDict1)
 
 		# sql (35)
@@ -585,11 +799,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		(cols, rows) = self.results[35]
 		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
 		for row in rows:
-			key = row[markerKey]
-			value = row
-			if not clusterDict2.has_key(key):
-				clusterDict2[key] = []
-			clusterDict2[key].append(row)
+			clusterDict2.setdefault(row[markerKey],[]).append(row)
 		#logger.debug (clusterDict2)
 
 		# sql (36) : annotations that contain homologene clusters
@@ -758,9 +968,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		#
 
 		gClusterResults = []
-		gClusterCols = [ 'hdp_genocluster_key', '_Marker_key',
-				'_Allele_key_1', '_Allele_key_2',
-		  		'_PairState_key', 'isConditional', '_ExistsAs_key',
+		gClusterCols = [ 'hdp_genocluster_key', 
+				'_Marker_key', 
 				'header_count'
 			]
 
@@ -781,186 +990,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'genotermref_count'
 			]
 
-		# sql (38) : genotype-cluster by annotation
-		clusterDict3 = {}
-		(cols, rows) = self.results[38]
-		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		for row in rows:
-			key = row[genotypeKeyCol]
-			value = row
-			if not clusterDict3.has_key(key):
-				clusterDict3[key] = []
-			clusterDict3[key].append(row)
-		#logger.debug (clusterDict3[14750])
-
-                # sql (39) : genotype-cluster
-                logger.debug ('start : processed genotype cluster counts')
-                genoTermRefDict = {}
-                (cols, rows) = self.results[39]
-                key1 = Gatherer.columnNumber (cols, '_Genotype_key')
-                key2 = Gatherer.columnNumber (cols, '_Term_key')
-                key3 =  Gatherer.columnNumber (cols, 'refCount')
-                for row in rows:
-                        key = (row[key1], row[key2])
-                        if not genoTermRefDict.has_key(key):
-                                genoTermRefDict[key] = []
-                        genoTermRefDict[key].append(row[key3])
-                logger.debug ('end: processed genotype cluster counts')
-
-		# sql (40) : genotype-cluster
+		# sql (41) : genotype-cluster
 		logger.debug ('start : processed genotype cluster')
-		(cols, rows) = self.results[40]
-
-		# set of columns for common sql fields
-		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		allele1KeyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
-		allele2KeyCol = Gatherer.columnNumber (cols, '_Allele_key_2')
-		pairStateKeyCol = Gatherer.columnNumber (cols, '_PairState_key')
-		isConditionalKeyCol = Gatherer.columnNumber (cols, 'isConditional')
-		existsAsKeyCol = Gatherer.columnNumber (cols, '_ExistsAs_key')
-
-		compressSet = {}
-
-        	for row in rows:
-
-                	gSet = row[genotypeKeyCol]
-                	cSet = (row[markerKeyCol], \
-                        	row[allele1KeyCol], \
-                        	row[allele2KeyCol], \
-                        	row[pairStateKeyCol], \
-                        	row[isConditionalKeyCol],
-                        	row[existsAsKeyCol])
-
-                	if not compressSet.has_key(cSet):
-                        	compressSet[cSet] = []
-                	compressSet[cSet].append(gSet)
-		#logger.debug (compressSet)
-
-		clusterKey = 1
-
-	        # at most one cluster/term/qualifier per geno-cluster
-		gannotTermList = set([])
-
-		for r in compressSet:
-
-                	# at most one cluster/header-term in a genoCluster_annotation
-                	gannotHeaderList = set([])
-
-			markerKey = r[0]
-
-			# track distinct number of header-annotations per geno-cluster
-			header_count = 0
-
-                        # for each genotype in the cluster
-                        # track the genotype-term-reference-count for this cluster
-                        clusterAnnotCount = {}
-                        for gKey in compressSet[r]:
-                                if clusterDict3.has_key(gKey):
-                                        for c in clusterDict3[gKey]:
-                                                termKey = c[2]
-                                                key = (gKey, termKey)
-                                                if genoTermRefDict.has_key(key):
-                                                        newCount = genoTermRefDict[key][0]
-                                                        if not clusterAnnotCount.has_key(termKey):
-                                                                clusterAnnotCount[termKey] = newCount
-                                                        else:
-                                                                clusterAnnotCount[termKey] += newCount
-
-                        # for each genotype in the cluster
-                        # add the cluster-genotypes
-                        # add the cluster-annotations
-			for gKey in compressSet[r]:
-
-				gResults.append( [
-					clusterKey,
-					gKey,
-					])
-				
-				if clusterDict3.has_key(gKey):
-
-					for c in clusterDict3[gKey]:
-
-						annotationKey = c[1]
-						termKey = c[2]
-						termName = c[3]
-						termId = c[4]
-						qualifier = c[5]
-						hasBackgroundNote = c[6]
-
-                                                # at most one cluster/term/qualifier per geno-cluster
-                                                if (clusterKey, termKey, qualifier) in gannotTermList:
-                                                        continue
-
-                                                # get the cluster-annotation-count
-                                                genotermref_count = 0
-                                                if clusterAnnotCount.has_key(termKey):
-                                                        genotermref_count = clusterAnnotCount[termKey]
-
-						gannotResults.append( [ 
-			    				clusterKey,
-							termKey,
-							annotationKey,
-							qualifier,
-							'term',
-							termId,
-							termName,
-							hasBackgroundNote,
-							genotermref_count,
-							])
-
-						gannotTermList.add((clusterKey, termKey, qualifier))
-
-						# one header per cluster
-						if mpHeaderDict.has_key(termKey):
-                                                        for mpHeader in mpHeaderDict[termKey]:
-                                        			if (annotationKey, qualifier, mpHeader) not in gannotHeaderList:
-                                                			gannotHeaderList.add((annotationKey,\
-										qualifier,
-										mpHeader))
-
-			#
-			# write the headers
-			# fix this up tomorrow...but it seems to work for now
-			#
-			#logger.debug (gannotHeaderList)
-			for gheader in gannotHeaderList:
-
-				annotationKey = gheader[0]
-				qualifier = gheader[1]
-				mpHeader = gheader[2]
-
-				# for the given annotation-key and mpheader-term
-
-				# if both normal-qualifier and null-qualifier exist, use null-qualifier
-				# or
-				# if only null-qualifier exists, use it
-
-				if ((qualifier == 'normal' and (annotationKey, None, mpHeader) in gannotHeaderList) \
-					or \
-				   (qualifier == None and (annotationKey, 'normal', mpHeader) not in gannotHeaderList)):
-					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, mpHeader, 0, 0])
-					header_count += 1;
-
-				# else if only normal-qualifier exists, then use it
-
-				elif (qualifier == 'normal' and (annotationKey, None, mpHeader) not in gannotHeaderList):
-					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, mpHeader, 0, 0])
-					header_count += 1;
-
-				# do nothing...as this would create a duplicate row in gannotResults
-				#elif (qualifier == None and (annotationKey, 'normal', mpHeader) in gannotHeaderList)
-
-			gClusterResults.append( [
-				clusterKey, r[0], r[1], r[2], r[3], r[4], r[5], header_count,
-				])
-
-			clusterKey = clusterKey + 1
-
+		gClusterResults, gResults, gannotResults = \
+			self.clusterGenotypes(gClusterResults, gResults, gannotResults, mpHeaderDict)
 		logger.debug ('end : processed genotype cluster')
 
+		# sql (42) : genotype-cluster
 		logger.debug("start : calculate termSeqs")	
 		annotResults = self.calculateTermSeqs(annotResults)
 		logger.debug("end : calculate termSeqs")	
@@ -1510,34 +1546,40 @@ cmds = [
 	# *make sure the qualifier is order in descending order*
 	# as this affects the setting of the mp-header
 	'''
-	(
-	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
-		1 as has_backgroundnote
-	from tmp_annot_mouse t
-	where exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
-		where t._AnnotType_key = a._AnnotType_key
+        WITH tmp_background AS (
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
+                1 as has_backgroundnote
+        from tmp_annot_mouse t
+        where exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
+                where t._AnnotType_key = a._AnnotType_key
                 and t._Term_key = a._Term_key
                 and t._Genotype_key = a._Object_key
-		and t._Qualifier_key = a._Qualifier_key
-		and a._Annot_key = e._Annot_key
-		and e._AnnotEvidence_key = n._Object_key
-		and n._MGIType_key = 25
-		and n._NoteType_key = 1015)
-	union
-	select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
-		0 as has_backgroundnote
-	from tmp_annot_mouse t
-	where not exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
-		where t._AnnotType_key = a._AnnotType_key
+                and t._Qualifier_key = a._Qualifier_key
+                and a._Annot_key = e._Annot_key
+                and e._AnnotEvidence_key = n._Object_key
+                and n._MGIType_key = 25
+                and n._NoteType_key = 1015)
+        )
+        (
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
+                1 as has_backgroundnote
+        from tmp_annot_mouse t
+        where exists (select 1 from tmp_background a
+                where t._AnnotType_key = a._AnnotType_key
                 and t._Term_key = a._Term_key
-                and t._Genotype_key = a._Object_key
-		and t._Qualifier_key = a._Qualifier_key
-		and a._Annot_key = e._Annot_key
-		and e._AnnotEvidence_key = n._Object_key
-		and n._MGIType_key = 25
-		and n._NoteType_key = 1015)
-	)
-	order by _Genotype_key, qualifier_type desc
+                and t._Genotype_key = a._Genotype_key
+                and t._Qualifier_key = a._Qualifier_key)
+        union
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
+                0 as has_backgroundnote
+        from tmp_annot_mouse t
+        where not exists (select 1 from tmp_background a
+                where t._AnnotType_key = a._AnnotType_key
+                and t._Term_key = a._Term_key
+                and t._Genotype_key = a._Genotype_key
+                and t._Qualifier_key = a._Qualifier_key)
+        )
+        order by _Genotype_key, qualifier_type
 	''',
 
         # sql (39)
@@ -1553,24 +1595,31 @@ cmds = [
         ''',
 
 	# sql (40)
+	# distinct genotype/marker
+	'''
+	select distinct _Genotype_key, _Marker_key
+	from tmp_annot_mouse
+	''',
+
+	# sql (41)
 	# allele pair information in order to generate the genotype-cluster
 	# include: super-simple + simple (tmp_annot_mouse)
 	# exclude: markers where there exists a double-wild-type allele pair
+        #and g._Genotype_key in (64589, 64590)
 	'''
- 	select p._Genotype_key, p._Marker_key,
+        select distinct p._Genotype_key, p._Marker_key,
                p._Allele_key_1, p._Allele_key_2, p._PairState_key,
                g.isConditional, g._ExistsAs_key
         from GXD_Genotype g, GXD_AllelePair p
         where g._Genotype_key = p._Genotype_key
-        and exists (select 1 from tmp_annot_mouse c where c._Genotype_key = p._Genotype_key
-			and c._Marker_key = p._Marker_key)
+        and exists (select 1 from tmp_annot_mouse c where c._Genotype_key = p._Genotype_key)
         and not exists (select 1 from tmp_exclude tx
                 where p._Genotype_key = tx._Genotype_key
                 and p._Marker_key = tx._Marker_key
                 )
 	''',
 
-	# sql (41)
+	# sql (42)
 	# term sequencenum values for MP
 	'''
 	select _Term_key, sequenceNum from VOC_Term where _Vocab_key = 5
@@ -1610,9 +1659,8 @@ files = [
           'hdp_gridcluster_annotation'),
 
 	('hdp_genocluster',
-		[ 'hdp_genocluster_key', '_Marker_key',
-		  '_Allele_key_1', '_Allele_key_2',
-		  '_PairState_key', 'isConditional', '_ExistsAs_key', 'header_count' ],
+		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Marker_key',
+		   'header_count' ],
           'hdp_genocluster'),
 
 	('hdp_genocluster_genotype',

@@ -23,15 +23,11 @@ tableName = 'hdp_genocluster'
 # see the gatherer for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
+	unique_key              int     not null,
 	hdp_genocluster_key	int	not null,
 	marker_key		int	not null,
-	allele_key_1		int	not null,
-	allele_key_2		int	null,
-	pairstate_key		int	not null,
-	is_conditional		int	not null,
-	exists_as_key		int	not null,
 	header_count	int	not null,
-	PRIMARY KEY(hdp_genocluster_key))''' % tableName
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -50,12 +46,9 @@ clusteredIndex = None
 comments = {
 	Table.TABLE : 'central table for the grid cluster petal, containing one row for each human disease portal grid cluster',
 	Table.COLUMN : {
+		'unique_key' : 'unique key for this record',
 		'hdp_genocluster_key' : 'unique key identifying this human disease portal genotype cluster',
 		'marker_key' : 'mouse marker',
-		'allele_key_1' : 'allele key 1',
-		'allele_key_2' : 'allele key 2',
-		'pairstate_key' : 'pair state',
-		'exists_as_key' : 'does genotype exists as (Mouse Line, Cell Line, etc.)',
 		'header_count' : 'number of annotations by header within this geno-cluster',
 		},
 	}
