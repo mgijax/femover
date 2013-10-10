@@ -197,7 +197,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# cluster the genotypes
 		#
 
-		logger.debug ('start : processed genotype cluster')
+		logger.debug ('start : processed genotype cluster function')
 
 		# sql (38) : genotype-cluster by annotation
 		clusterAnnotDict = {}
@@ -280,11 +280,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 if g1 not in checkSet:
                                         compressSet.setdefault(clusterKey,{}).setdefault(g1,[]).append(diff1[g1])
                                         for g2 in diff2:
-                                                if g1 == g2 and diff1[g1] == diff2[g2]:
+                                                if g1 != g2 and diff1[g1] == diff2[g2]:
                                                         compressSet.setdefault(clusterKey,{}).setdefault(g2,[]).append(diff2[g2])
                                                         toDelete.add(g2)
 
-                                        checkSet.add(g1)
+                                        checkSet.add(g2)
 
                                 for t in toDelete:
                                         del diff2[t]
@@ -419,7 +419,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 									clusterKey, ap3[0], header_count,
 										])
 
-		logger.debug ('end : processed genotype cluster')
+		logger.debug ('end : processed genotype cluster function')
 
 		return gClusterResults, gResults, gannotResults
 
