@@ -192,15 +192,17 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.info("done calculating term sequences for hdp_annotation results")
 		return annotResults
 
+
 	def clusterGenotypes(self, gClusterResults, gResults, gannotResults, mpHeaderDict):
 		#
 		# cluster the genotypes
 		#
 
-		logger.debug ('start : processed genotype cluster function')
+		logger.debug ('start : processed genotype cluster')
 
 		# sql (38) : genotype-cluster by annotation
 		clusterAnnotDict = {}
+		backgroundDict = []
 		(cols, rows) = self.results[38]
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		for row in rows:
@@ -258,6 +260,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
         	for r in byID:
                 	key = len(byID[r])
                 	byPairCount.setdefault(key,{}).setdefault(r,[]).append(byID[r])
+		#logger.debug (byPairCount)
 
 		#
 		# cluster genotypes by comparing #-of-allele-pairs + allele-pair-info
@@ -266,43 +269,45 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		compressSet = {}
 		clusterKey = 1
 
-                for allelePairs in byPairCount:
+        	for allelePairs in byPairCount:
 
-                        diff1 = byPairCount[allelePairs]
-                        diff2 = byPairCount[allelePairs].copy()
+                	diff1 = byPairCount[allelePairs]
+                	diff2 = byPairCount[allelePairs].copy()
 
-                        # track the diff1-genotypes that have been assigned to a cluster
-                        diff1AddedSet = set([])
+			# track the diff1-genotypes that have been assigned to a cluster
+			diff1AddedSet = set([])
 
-                        # iterate thru each genotype
-                        for g1 in diff1:
+			# iterate thru each genotype
+                	for g1 in diff1:
 
-                                # track the diff2-genotypes that have been assigned to a cluster
-                                diff2AddedSet = set([])
+				# track the diff2-genotypes that have been assigned to a cluster
+				diff2AddedSet = set([])
 
-                                # if the genotype has not already been added to the cluster....
+				# if the genotype has not already been added to the cluster....
 
-                                if g1 not in diff1AddedSet:
+				if g1 not in diff1AddedSet:
 
-                                        # add the genotype to the cluster
-                                        compressSet.setdefault(clusterKey,{}).setdefault(g1,[]).append(diff1[g1])
+					# add the genotype to the cluster
+					compressSet.setdefault(clusterKey,{}).setdefault(g1,[]).append(diff1[g1])
 
-                                        # if the genotype has a match...
-                                        for g2 in diff2:
-                                                if g1 != g2 and diff1[g1] == diff2[g2]:
-                                                        # add the genotype to the cluster
-                                                        compressSet.setdefault(clusterKey,{}).setdefault(g2,[]).append(diff2[g2])
+					# if the genotype has a match...
+                        		for g2 in diff2:
+                                		if g1 != g2 and diff1[g1] == diff2[g2]:
+							# add the genotype to the cluster
+							compressSet.setdefault(clusterKey,{}).setdefault(g2,[]).append(diff2[g2])
 
-                                                        # remove the genotype from both diff1 and diff2
-                                                        # that have been assgined to a cluster
-                                                        diff1AddedSet.add(g2)
-                                                        diff2AddedSet.add(g2)
+							# remove the genotype from both diff1 and diff2
+							# that have been assgined to a cluster
+							diff1AddedSet.add(g2)
+							diff2AddedSet.add(g2)
 
-                                # delete items in the diff2AddedSet (because we can)
-                                for t in diff2AddedSet:
-                                        del diff2[t]
+				# delete items in the diff2AddedSet (because we can)
+				for t in diff2AddedSet:
+					del diff2[t]
 
-                                clusterKey += 1
+				clusterKey += 1
+
+		#logger.debug (compressSet)
 
 	        # at most one cluster/term/qualifier per geno-cluster
 		gannotTermList = set([])
@@ -330,6 +335,25 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                         else:
                                                                 clusterAnnotCount[termKey] += newCount
 
+
+                        # for each genotype in the cluster
+			# track the has-background-note (1 or 0) for each cluster/term/qualifier
+			# 1 trumps 0
+			backgroundDict = {}
+			for gKey in compressSet[clusterKey]:
+				for c in clusterAnnotDict[gKey]:
+					termKey = c[2]
+					qualifier = c[5]
+                                       	hasBackgroundNote = c[6]
+
+					key = (termKey, qualifier)
+					if backgroundDict.has_key(key):
+						if backgroundDict[key] == 0:
+							backgroundDict[key] = hasBackgroundNote
+					else:
+						backgroundDict[key] = hasBackgroundNote
+			#logger.debug (backgroundDict)
+
                         # for each genotype in the cluster
                         # add the cluster-genotypes
                         # add the cluster-annotations
@@ -340,6 +364,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					gKey,
 					])
 				
+
 				if clusterAnnotDict.has_key(gKey):
 
 					for c in clusterAnnotDict[gKey]:
@@ -348,8 +373,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						termKey = c[2]
 						termName = c[3]
 						termId = c[4]
-						qualifier = c[6]
-                                                hasBackgroundNote = c[7]
+						qualifier = c[5]
+                                                hasBackgroundNote = backgroundDict[(termKey, qualifier)]
 
                                                 # at most one cluster/term/qualifier per geno-cluster
                                                 if (clusterKey, termKey, qualifier) in gannotTermList:
@@ -420,18 +445,17 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# ready to push the compressedSet into the gClusterResults
 		#
 
+		for clusterKey in compressSet:
+			# the cluster-result (cluster key, allele-pair info)
+			for gKey in compressSet[clusterKey]:
+				for ap1 in compressSet[clusterKey][gKey]:
+					for ap2 in ap1:
+						for ap3 in ap2:
+							if (gKey, ap3[0]) in genoMarkerList \
+								and ([clusterKey, ap3[0], header_count]) not in gClusterResults:
+								gClusterResults.append( [ clusterKey, ap3[0], header_count, ])
 
-                for clusterKey in compressSet:
-                        # the cluster-result (cluster key, allele-pair info)
-                        for gKey in compressSet[clusterKey]:
-                                for ap1 in compressSet[clusterKey][gKey]:
-                                        for ap2 in ap1:
-                                                for ap3 in ap2:
-                                                        if (gKey, ap3[0]) in genoMarkerList \
-                                                                and ([clusterKey, ap3[0], header_count]) not in gClusterResults:
-                                                                gClusterResults.append( [ clusterKey, ap3[0], header_count, ])
-
-		logger.debug ('end : processed genotype cluster function')
+		logger.debug ('end : processed genotype cluster')
 
 		return gClusterResults, gResults, gannotResults
 
@@ -1552,14 +1576,16 @@ cmds = [
 	order by c._Marker_key
 	''',
 
-	# sql (38)
-	# super-simple + simple
-	# mouse annotations by genotype
-	# *make sure the qualifier is order in descending order*
-	# as this affects the setting of the mp-header
-	'''
-        WITH tmp_background AS (
-        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
+        # sql (38)
+        # super-simple + simple
+        # mouse annotations by genotype
+        # *make sure the qualifier is order in descending order*
+        # as this affects the setting of the mp-header
+        #
+        # pull in the 'has_backgrounote' for each genotype/annotation
+        '''
+        (
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
                 1 as has_backgroundnote
         from tmp_annot_mouse t
         where exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
@@ -1571,28 +1597,22 @@ cmds = [
                 and e._AnnotEvidence_key = n._Object_key
                 and n._MGIType_key = 25
                 and n._NoteType_key = 1015)
-        )
-        (
-        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
-                1 as has_backgroundnote
-        from tmp_annot_mouse t
-        where exists (select 1 from tmp_background a
-                where t._AnnotType_key = a._AnnotType_key
-                and t._Term_key = a._Term_key
-                and t._Genotype_key = a._Genotype_key
-                and t._Qualifier_key = a._Qualifier_key)
         union
-        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, _Qualifier_key, qualifier_type,
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
                 0 as has_backgroundnote
         from tmp_annot_mouse t
-        where not exists (select 1 from tmp_background a
+        where not exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
                 where t._AnnotType_key = a._AnnotType_key
                 and t._Term_key = a._Term_key
-                and t._Genotype_key = a._Genotype_key
-                and t._Qualifier_key = a._Qualifier_key)
+                and t._Genotype_key = a._Object_key
+                and t._Qualifier_key = a._Qualifier_key
+                and a._Annot_key = e._Annot_key
+                and e._AnnotEvidence_key = n._Object_key
+                and n._MGIType_key = 25
+                and n._NoteType_key = 1015)
         )
-        order by _Genotype_key, qualifier_type
-	''',
+        order by _Genotype_key, _Term_key, qualifier_type desc
+        ''',
 
         # sql (39)
         # counts by geno-cluster/term/reference
