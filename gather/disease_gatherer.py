@@ -1,8 +1,7 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'genotype_disease', 'genotype_disease_reference',
-# 'allele_disease', 'allele_disease_genotype', and 'allele_disease_reference'
-# tables in the front-end database
+# and 'allele_disease' tables in the front-end database
 
 import Gatherer
 import logger
@@ -119,11 +118,8 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		# loop through the results to create build the output rows
 
 		adData = {}		# allele_disease table
-		adgData = {}		# allele_disease_genotype table
-		adrData = {}		# allele_disease_reference table
 		gdData = {}		# genotype_disease table
 		gdrData = {}		# genotype_disease_reference table
-		adfData = {}		# allele_disease_footnote table
 		gdfData = {}		# genotype_disease_footnote table
 
 		i = 0			# counter of rows
@@ -247,7 +243,6 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					'term' : header,
 					'termID' : None,
 					'hasFootnote' : hasHeaderNote,
-					'genotypeCount' : 0,
 					'sequenceNum' : len(adData) + 1,
 					'by_alpha' : len(adData) + 1
 					}
@@ -255,15 +250,6 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					header)
 				adData[alleleDiseaseH] = row
 				i = i + 1
-
-				if headerNote:
-					adfData[i] = {
-						'alleleDisease' : \
-							alleleDiseaseH,
-						'number' : genotypeNoteNumber,
-						'note' : headerNote,
-						}
-					i = i + 1
 
 			# look up keys for the allele_disease,
 			# allele_disease_genotype, and genotype_disease tables
@@ -280,14 +266,6 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 			# genotype_disease_reference
 
 			if refsKey:
-				adrRow = {
-					'diseaseGenotype' : diseaseGenotype,
-					'referenceKey' : refsKey,
-					'jnumID' : jnumID,
-					'sequenceNum' : len(adrData) + 1
-					}
-				adrData[i] = adrRow
-
 				gdrRow = {
 					'genotypeDisease' : genotypeDisease,
 					'referenceKey' : refsKey,
@@ -376,19 +354,6 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					}
 				i = i + 1
 
-			# add data for the allele_disease_genotype table
-
-			if not adgData.has_key (diseaseGenotype):
-				row = {
-					'alleleGenotype' : alleleGenotype,
-					'alleleDisease' : alleleDisease,
-					'sequenceNum' :len(adgData) + 1
-					}
-				adgData[diseaseGenotype] = row
-				addedGenotype = True
-			else:
-				addedGenotype = False
-
 			# add data for the allele_disease table
 
 			if not adData.has_key (alleleDisease):
@@ -399,33 +364,10 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					'term' : term,
 					'termID' : termID,
 					'hasFootnote' : hasAnyFootnote,
-					'genotypeCount' : 1,
 					'sequenceNum' : len(adData) + 1,
 					'by_alpha' : dSorts[term]
 					}
 				adData[alleleDisease] = row
-
-				if hasFootnote:
-					adfData[i] = {
-						'alleleDisease' : \
-							alleleDisease,
-						'number' : alleleNoteNumber,
-						'note' : genotypeNote,
-						}
-					i = i + 1
-
-				if hasConditionalFootnote:
-					adfData[i] = {
-						'alleleDisease' : \
-							alleleDisease,
-						'number' : alleleNotes[conditionalNote],
-						'note' : conditionalNote,
-						}
-					i = i + 1
-			elif addedGenotype:
-			    # just increment the genotype count
-			    adData[alleleDisease]['genotypeCount'] = \
-				adData[alleleDisease]['genotypeCount'] + 1
 
 			prevHeader = header
 			prevAllele = allele
@@ -447,7 +389,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		# definition of allele_disease table rows
 
 		adCols = [ 'alleleDiseaseKey', 'alleleKey', 'isHeading',
-			'isNot', 'term', 'termID', 'genotypeCount',
+			'isNot', 'term', 'termID', 
 			'hasFootnote', 'sequenceNum','by_alpha' ]
 		adRows = []
 
@@ -510,64 +452,12 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 			r = adData[alleleDisease]
 			adRows.append ( [ alleleDisease,
 				r['alleleKey'], r['isHeading'], r['isNot'],
-				r['term'], r['termID'], r['genotypeCount'],
+				r['term'], r['termID'], 
 				r['hasFootnote'], r['sequenceNum'],r['by_alpha'] ] )
 
 		self.output.append ( (adCols, adRows) )
 		logger.debug ('Compiled %d allele_disease rows' % len(adRows))
 
-		diseaseGenotypeKeys = adgData.keys()
-		diseaseGenotypeKeys.sort()
-
-		for diseaseGenotype in diseaseGenotypeKeys:
-			r = adgData[diseaseGenotype]
-			adgRows.append ( [ diseaseGenotype,
-				r['alleleGenotype'], r['alleleDisease'],
-				r['sequenceNum'] ] )
-
-		self.output.append ( (adgCols, adgRows) )
-		logger.debug ('Compiled %d allele_disease_genotype rows' % \
-			len(adgRows))
-
-		countedKeys = adrData.keys()
-		countedKeys.sort()
-
-		for key in countedKeys:
-			r = adrData[key]
-			adrRows.append ( [ r['diseaseGenotype'],
-				r['referenceKey'], r['jnumID'],
-				r['sequenceNum'] ] )
-
-		self.output.append ( (adrCols, adrRows) )
-		logger.debug ('Compiled %d allele_disease_reference rows' % \
-			len(adrRows))
-
-		countedKeys = adfData.keys()
-		countedKeys.sort()
-
-		for key in countedKeys:
-			r = adfData[key]
-			adfRows.append ( [ r['alleleDisease'],
-				r['number'], r['note'] ] )
-
-		self.output.append ( (adfCols, adfRows) )
-		logger.debug ('Compiled %d allele_disease_footnote rows' % \
-			len(adfRows))
-
-		countedKeys = gdfData.keys()
-		countedKeys.sort()
-
-		#foundFootnotes = []
-		#for key in countedKeys:
-		#	r = gdfData[key]
-		#	if r not in foundFootnotes:
-		#	    gdfRows.append ( [ r['genotypeDisease'],
-		#		    r['number'], r['note'] ] )
-		#	    foundFootnotes.append(r)
-
-		#self.output.append ( (gdfCols, gdfRows) )
-		#logger.debug ('Compiled %d genotype_disease_footnote rows' % \
-		#	len(gdfRows))
 		return
 
 ###--- globals ---###
@@ -612,27 +502,9 @@ files = [
 
 	('allele_disease',
 		[ 'alleleDiseaseKey', 'alleleKey', 'isHeading', 'isNot',
-			'term', 'termID', 'genotypeCount', 'hasFootnote',
+			'term', 'termID', 'hasFootnote',
 			'sequenceNum','by_alpha' ],
 		'allele_disease'),
-
-	('allele_disease_genotype',
-		[ 'diseaseGenotypeKey', 'alleleGenotypeKey',
-			'alleleDiseaseKey', 'sequenceNum' ],
-		'allele_disease_genotype'),
-
-	('allele_disease_reference',
-		[ Gatherer.AUTO, 'diseaseGenotypeKey', 'referenceKey',
-			'jnumID', 'sequenceNum' ],
-		'allele_disease_reference'),
-
-	('allele_disease_footnote',
-		[ Gatherer.AUTO, 'alleleDiseaseKey', 'number', 'note' ],
-		'allele_disease_footnote'),
-
-#	('genotype_disease_footnote',
-#		[ Gatherer.AUTO, 'genotypeDiseaseKey', 'number', 'note' ],
-#		'genotype_disease_footnote'),
 	]
 
 # global instance of a DiseaseGatherer

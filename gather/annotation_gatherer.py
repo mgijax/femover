@@ -9,11 +9,15 @@ import logger
 import GOFilter
 import GenotypeClassifier
 import symbolsort
+import AlleleAndGenotypeSorter
+import AnnotationKeyGenerator
 
 ###--- Constants ---###
 
 MARKER = 2		# MGI Type for markers
+GENOTYPE = 12		# MGI Type for genotypes
 OMIM_GENOTYPE = 1005	# VOC_AnnotType : OMIM/Genotype
+MP_GENOTYPE = 1002	# VOC_AnnotType : MP/Genotype
 GT_ROSA = 37270		# marker Gt(ROSA)26Sor
 DRIVER_NOTE = 1034	# MGI_NoteType Driver
 NOT_QUALIFIER = 1614157	# VOC_Term NOT
@@ -23,34 +27,50 @@ NOT_QUALIFIER = 1614157	# VOC_Term NOT
 MARKER_DATA = {}	# marker key : [ symbol, name, ID, logical db, chrom,
 			# 	sequence number]
 
-###--- Functions ---###
+# used to generate new annotation keys for the front-end database for the
+# majority of data cases.  (Special cases will use their own key generators
+# near where they generate keys.  These will have different rules.)
+KEY_GENERATOR = AnnotationKeyGenerator.EvidenceInferredKeyGenerator()
 
-# annotKey -> (annotTypeKey, objectKey, termKey, qualifierKey)
-annotKeyAttributes = {}
+# used to generate new annotation keys for the front-end database for the
+# Mammalian Phenotype/Genotype annotations, which should not consider
+# evidence codes or inferred-from IDs in identifying distinct annotations.
+MPG_KEY_GENERATOR = AnnotationKeyGenerator.KeyGenerator()
+
+###--- Functions ---###
 
 # annotation keys to be omitted (for GO ND annotations)
 # 	annotKeyToSkip[annot key] = 1
 annotKeyToSkip = {}
 
-def putAnnotAttributes (annotKey, annotType, objectKey, termKey, qualifier):
-	global annotKeyAttributes
-
-	annotKeyAttributes[annotKey] = (annotType, objectKey, termKey,
-		qualifier)
-	return
-
 def getAnnotAttributes (annotKey):
 	# returns (annot type, object key, term key, qualifier) if available,
-	#	or None
+	#	or (None, None, None, None)
 
-	if annotKeyAttributes.has_key(annotKey):
-		return annotKeyAttributes[annotKey]
-	return None
+	return AnnotationKeyGenerator.getAnnotationAttributes(annotKey)
+
+def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
+	# used to get a new annotation key for traditional (not specially
+	# constructed, aka hacked in) annotations.  Masks the complexity of
+	# MP/Genotype annotations versus other annotations.
+
+	global KEY_GENERATOR, MPG_KEY_GENERATOR
+
+	aType = AnnotationKeyGenerator.getAnnotationAttributes(annotKey)[0]
+
+	if aType == MP_GENOTYPE:
+		return MPG_KEY_GENERATOR.getKey(annotKey)
+
+	key =  KEY_GENERATOR.getKey (annotKey,
+		evidenceTermKey = evidenceTermKey,
+		inferredFrom = inferredFrom)
+
+	return key
 
 newAnnotKeys = {}
 
-def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom,
-		noWarn = False):
+def oldGetNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom,
+		specialAnnotType = None):
 
 	# look up (or generate) a "new annotation key" to identify the
 	# annotation described by the input parameters
@@ -61,11 +81,19 @@ def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom,
 	if attributes:
 		(annotType, objectKey, termKey, qualifier) = attributes
 		tpl = (annotType, objectKey, termKey, qualifier,
-			evidenceTermKey, inferredFrom)
+			evidenceTermKey, inferredFrom, specialAnnotType)
+
+		# For now, we do not want to consider evidence term or
+		# any inferred-from IDs when deciding whether an MP annotation
+		# is distinct or not (just type, object, term, and qualifier).
+		# When we decide to show evidence for MP annotations in the
+		# future, we'll want to remove these two lines.
+
+		if annotType == MP_GENOTYPE:
+			tpl = tpl[0:4]
 	else:
-		if not noWarn:
-			logger.debug ('Unknown annotation key: %d' % annotKey)
-		tpl = (annotKey, evidenceTermKey, inferredFrom)
+		tpl = (annotKey, evidenceTermKey, inferredFrom,
+			specialAnnotType)
 
 	if not newAnnotKeys.has_key(tpl):
 		newAnnotKeys[tpl] = len(newAnnotKeys) + 1
@@ -118,6 +146,45 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for markers' GO
 	#	annotations, collates results, writes tab-delimited text files
+
+	def buildAnnotationConsolidator (self):
+		cols, rows = self.results[14]
+
+		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
+		annotTypeCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termCol = Gatherer.columnNumber (cols, '_Term_key')
+		objectCol = Gatherer.columnNumber (cols, '_Object_key')
+		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
+
+		# maps each annotation key to a single key for shared (type,
+		# term, object, qualifier) tuples
+		self.uniqueAnnotKey = {}
+
+		# maps (type, term, object, qualifier) to its annotation key
+		annotForData = {}
+
+		for row in rows:
+			t = (row[annotTypeCol], row[termCol], row[objectCol],
+				row[qualifierCol])
+			
+			# if we've already seen an annotation with these
+			# attributes, then we can re-use its annotation key
+
+			if annotForData.has_key(t):
+				annotKey = annotForData[t]
+				self.uniqueAnnotKey[row[annotKeyCol]] = \
+					annotKey
+			else:
+				annotKey = row[annotKeyCol]
+				self.uniqueAnnotKey[annotKey] = annotKey
+				annotForData[t] = annotKey
+
+		logger.debug ('Consolidated %d annotation keys down to %d' % \
+			(len(rows), len(annotForData)) )
+		return
+
+	def translateAnnotKey (self, annotKey):
+		return self.uniqueAnnotKey[annotKey]
 
 	def buildMarkerCache (self):
 		global MARKER_DATA
@@ -210,7 +277,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		annotationRefs = {}
 
 		for row in rows:
-			annotKey = row[annotKeyCol]
+			annotKey = self.translateAnnotKey(row[annotKeyCol])
 
 			# if we need to skip this, just move on
 			if annotKeyToSkip.has_key(annotKey):
@@ -219,8 +286,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			evidenceTermKey = row[evidenceTermCol]
 			inferredFrom = row[inferredFromCol]
 
+#			newKey = getNewAnnotationKey (annotKey,
+#				evidenceTermKey, inferredFrom)
+
 			newKey = getNewAnnotationKey (annotKey,
-				evidenceTermKey, inferredFrom)
+				evidenceTermKey = evidenceTermKey,
+				inferredFrom = inferredFrom)
 
 			if not mgdToNewKeys.has_key(annotKey):
 				mgdToNewKeys[annotKey] = [ newKey ]
@@ -279,7 +350,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				# ... logical db, preferred)
 
 		for row in rows:
-			annotKey = row[akeyCol]
+			annotKey = self.translateAnnotKey(row[akeyCol])
 
 			# if we need to skip this, just move on
 			if annotKeyToSkip.has_key(annotKey):
@@ -294,8 +365,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# unique (annotation key, evidence term key,
 			# inferred from) tuple
 
+#			newAnnotKey = getNewAnnotationKey (annotKey,
+#				evidence, row[inferredCol])
+
 			newAnnotKey = getNewAnnotationKey (annotKey,
-				evidence, row[inferredCol])
+				evidenceTermKey = evidence,
+				inferredFrom = row[inferredCol])
 
 			# for certain sequences, we want to have any links go
 			# to MGI rather than to the logical database
@@ -367,8 +442,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# kept so far:
 		done = {}	# (marker key, term ID) -> 1
 
+		# need a key generator that defines a unique annotation to
+		# include term ID, marker key, and a special annotation type
+		tmsKeyGenerator = \
+			AnnotationKeyGenerator.TermMarkerSpecialKeyGenerator()
+
 		for row in rows:
-			annotKey = row[annotKeyCol]
+			annotKey = self.translateAnnotKey(row[annotKeyCol])
 
 			# if we need to skip this, just move on
 			# (should not happen here, but we add it just in case)
@@ -390,8 +470,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			# use termID and markerKey to distinguish genotypes
 			# with multiple allele pairs and different markers
-			annotationKey = getNewAnnotationKey (annotKey, 
-				termID, markerKey)
+#			annotationKey = getNewAnnotationKey (annotKey, 
+#				termID, markerKey, 'MP/Marker')
+
+			annotationKey = tmsKeyGenerator.getKey (annotKey,
+				termID = termID,
+				markerKey = markerKey,
+				specialType = 'MP/Marker')
 
 			if done.has_key(annotationKey):
 				continue
@@ -422,7 +507,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				]
 			sRows.append (sRow)
 
-			self.byMarker.append ( (annotationKey,
+			self.byObject.append ( (annotationKey, 'Marker',
 				getMarkerSeqNum(markerKey), vdt) )
 
 		logger.debug ('Pulled %d MP terms up to markers' % \
@@ -446,6 +531,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
 		accKeyCol = Gatherer.columnNumber (cols, '_Accession_key')
 
+		# need a key generator that accounts for accession keys,
+		# term IDs, marker keys, and a special annotation type
+		atmsKeyGenerator = AnnotationKeyGenerator.AccessionTermMarkerSpecialKeyGenerator()
+
 		for row in rows:
 			markerKey = row[markerCol]
 			termID = row[accIDCol]
@@ -455,8 +544,14 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				'_Vocab_key', 'name')
 			accKey = row[accKeyCol]
 
-			annotationKey = getNewAnnotationKey (accKey,
-				termID, markerKey, noWarn = True)
+#			annotationKey = getNewAnnotationKey (accKey,
+#				termID, markerKey, 'PRO/Marker')
+
+			annotationKey = atmsKeyGenerator.getKey (None,
+				accessionKey = accKey,
+				termID = termID,
+				markerKey = markerKey,
+				specialType = 'PRO/Marker')
 
 			annotType = 'Protein Ontology/Marker'
 
@@ -480,7 +575,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				]
 			sRows.append (sRow)
 
-			self.byMarker.append ( (annotationKey,
+			self.byObject.append ( (annotationKey, 'Marker',
 				getMarkerSeqNum(markerKey), vdt) )
 
 		logger.debug ('Pulled in %d Protein Ontology terms' % \
@@ -513,8 +608,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# kept so far:
 		done = {}	# (marker key, term ID) -> 1
 
+		# need a key generator that takes into account the term ID,
+		# marker key, and a special annotation type
+		tmsKeyGenerator = \
+			AnnotationKeyGenerator.TermMarkerSpecialKeyGenerator()
+
 		for row in rows:
-			annotKey = row[annotKeyCol]
+			annotKey = self.translateAnnotKey(row[annotKeyCol])
 
 			# if we need to skip this, just move on
 			# (should not happen here, but we add it just in case)
@@ -542,8 +642,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			# use termID and markerKey to distinguish genotypes
 			# with multiple allele pairs and different markers
-			annotationKey = getNewAnnotationKey (annotKey, 
-				termID, markerKey)
+#			annotationKey = getNewAnnotationKey (annotKey, 
+#				termID, markerKey, 'OMIM/Marker')
+
+			annotationKey = tmsKeyGenerator.getKey (annotKey,
+				termID = termID,
+				markerKey = markerKey,
+				specialType = 'OMIM/Marker')
 
 			if done.has_key(annotationKey):
 				continue
@@ -574,7 +679,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				]
 			sRows.append (sRow)
 
-			self.byMarker.append ( (annotationKey,
+			self.byObject.append ( (annotationKey, 'Marker',
 				getMarkerSeqNum(markerKey), vdt) )
 
 		logger.debug ('Pulled %d OMIM terms up to markers' % \
@@ -600,7 +705,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# for GO annotations (type 1000), we need to check
 			# that we should keep it
 
-			annotKey = row[annotCol]
+			annotKey = self.translateAnnotKey(row[annotCol])
 			annotType = row[annotTypeKeyCol]
 
 			if annotType == 1000:
@@ -608,7 +713,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					annotKeyToSkip[annotKey] = 1
 					continue
 
-			putAnnotAttributes (row[annotCol],
+			AnnotationKeyGenerator.cacheAnnotationAttributes (
+				annotKey,
 				row[annotTypeKeyCol], row[objectCol],
 				row[termKeyCol], row[qualifierCol])
 
@@ -666,23 +772,29 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			'reference_key', 'qualifier', 'annotation_type' ]
 		mRows = []
 
+		# genotype_to_annotation columns and rows
+		gCols = [ 'unique_key', 'genotype_key', 'annotation_key',
+			'reference_key', 'qualifier', 'annotation_type' ]
+		gRows = []
+
 		# annotation_sequence_num columns and rows
 		sCols = [ 'annotation_key', 'by_dag_structure',
 			'by_term_alpha', 'by_vocab', 'by_annotation_type',
 			'by_vocab_dag_term', 'by_marker_dag_term' ]
 		sRows = []
 
-		# marker/dag/term sorting to be done later; just collect the
+		# object/dag/term sorting to be done later; just collect the
 		# needed data for now.  We need to put this in an instance
 		# variable so other methods can populate it as well. Contains:
-		# [ (annot key, marker seq num, vocab/dag/term seq num), ... ]
-		self.byMarker = []
+		# [ (annot key, object type, object seq num,
+		#    vocab/dag/term seq num), ... ]
+		self.byObject = []
 
 		# get our sorting maps for vocab and annotation type
 		byVocab, byAnnotType, byTermAlpha = self.getSortingMaps()
 
 		# get the starter data for markers that we're pulling up from
-		# genotype annotations
+		# MP/genotype annotations
 
 		aRows, mRows, sRows = self.buildQuery9Rows(byVocab,
 			byAnnotType, byTermAlpha)
@@ -691,7 +803,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
 			sRows, byVocab, byAnnotType, byTermAlpha)
 
-		# fill in the OMIM data
+		# fill in the OMIM data (pulled up from genotypes to markers)
 		aRows, mRows, sRows = self.buildQuery12Rows (aRows, mRows,
 			sRows, byVocab, byAnnotType, byTermAlpha)
 
@@ -712,9 +824,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# new annot key -> 1 (once done)
 		done = {}
 
+		# need a key generator that only considers the annotation key
+		# and the special 'no evidence' type
+		sKeyGenerator = AnnotationKeyGenerator.SpecialKeyGenerator()
+
 		for row in rows:
 			# base values that we'll need later
-			annotKey = row[annotCol]
+			annotKey = self.translateAnnotKey(row[annotCol])
 
 			# if we need to skip this, just move on
 			if annotKeyToSkip.has_key(annotKey):
@@ -756,8 +872,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# front-end database; get one now
 			if not mgdToNewKeys.has_key(annotKey):
 				mgdToNewKeys[annotKey] = [
-				    getNewAnnotationKey (
-					annotKey, None, None) ]
+				    sKeyGenerator.getKey(annotKey,
+					    specialType = 'no evidence') ]
+#				    getNewAnnotationKey (
+#					annotKey, None, None, 'no evidence') ]
 
 			for annotationKey in mgdToNewKeys[annotKey]:
 			    refCount = 0	# number of references
@@ -814,11 +932,18 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				]
 			    sRows.append (sRow)
 			
-			    if mgiType == 2:
-				self.byMarker.append ( (annotationKey,
+			    if mgiType == MARKER:
+				self.byObject.append ( (annotationKey,
+				    objectType,
 				    getMarkerSeqNum(objectKey), vdt) )
+			    elif mgiType == GENOTYPE:
+				self.byObject.append ( (annotationKey,
+				    objectType,
+				    AlleleAndGenotypeSorter.getGenotypeSequenceNum(objectKey),
+				    vdt) )
 			    else:
-				self.byMarker.append ( (annotationKey,
+				self.byObject.append ( (annotationKey,
+				    objectType,
 				    self.maxMarkerSequenceNum + 1, vdt) )
 
 			    # remember this annotation for later use
@@ -837,6 +962,14 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				    annotationKey, None, qualifier,
 				    annotType) )
 
+			elif row[objectTypeCol] == GENOTYPE:
+			    for (annotationKey, qualifier, annotType) in \
+				annotations:
+
+				gRows.append ( (len(gRows), objectKey,
+				    annotationKey, None, qualifier,
+				    annotType) )
+
 		logger.debug ('Collected basic data')
 
 		mRows = self.filterInvalidMarkers(mRows)
@@ -844,16 +977,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Filtered invalid markers')
 
 		# now we need to go back, compute, and append to 'sRows' the
-		# sorting by marker and vocab/dag/term for each annotation;
-		# sort by marker nomen, then vocab/dag/term, then annot key
+		# sorting by object and vocab/dag/term for each annotation;
+		# sort by object type, object nomen, then vocab/dag/term, then
+		# annot key
 
-		self.byMarker.sort (lambda a, b : cmp(
-			(a[1], a[2], a[0]),
-			(b[1], b[2], b[0]) ) )
+		self.byObject.sort (lambda a, b : cmp(
+			(a[1], a[2], a[3], a[0]),
+			(b[1], b[2], b[3], b[0]) ) )
 
 		i = 0
 		byAnnotation = {}
-		for (annotationKey, mrkSeqNum, termSeqNum) in self.byMarker:
+		for (annotationKey, objectType, objectSeqNum, termSeqNum) in self.byObject:
 			i = i + 1
 			byAnnotation[annotationKey] = i 
 
@@ -863,12 +997,16 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Appended extra marker/dag sort')
 
 		self.output = [ (aCols, aRows), (iCols, iRows),
-			(rCols, rRows), (mCols, mRows), (sCols, sRows) ]
+			(rCols, rRows), (mCols, mRows), (sCols, sRows),
+			(gCols, gRows) ]
 		logger.debug ('%d annotations, %d IDs, %d refs, %d markers' \
 			% (len(aRows), len(iRows), len(rRows), len(mRows) ) )
 		return
 
 	def collateResults (self):
+		# build annotation consolidator
+		self.buildAnnotationConsolidator()
+
 		# cache marker data
 		self.buildMarkerCache()
 
@@ -922,7 +1060,7 @@ cmds = [
 	from voc_evidence ve,
 		bib_citation_cache bc
 	where ve._Refs_key = bc._Refs_key
-	order by ve._AnnotEvidence_key, bc.numericPart''',
+	order by ve._Annot_key, bc.numericPart''',
 		
 	# 3. 'inferred from' IDs for each annotation/evidence pair
 	'''select ve._Annot_key,
@@ -1091,6 +1229,14 @@ cmds = [
 		and a.preferred = 1
 		and a._LogicalDB_key = ldb._LogicalDB_key
 	order by 1, 4''',
+
+	# 14. get a basic set of data about annotations, so we can consolidate
+	# into one all the disparate annotations that should really be
+	# considered a single annotation (based on matching annotation type,
+	# object key, term key, qualifier key)
+	'''select _Annot_key, _AnnotType_key, _Term_key, _Object_key,
+		_Qualifier_key
+	from voc_annot''',
 	]
 
 # definition of output files, each as:
@@ -1124,6 +1270,11 @@ files = [
 			'by_marker_dag_term',
 			],
 		'annotation_sequence_num'),
+
+	('genotype_to_annotation',
+		[ 'unique_key', 'genotype_key', 'annotation_key',
+			'reference_key', 'qualifier', 'annotation_type' ],
+		'genotype_to_annotation'),
 	]
 
 # global instance of a AnnotationGatherer

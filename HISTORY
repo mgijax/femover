@@ -6,6 +6,65 @@ TR11423/human disease portal
 1) gather/hdp_annotation_gatherer.py: new
 2) gather/marker_gatherer.py: added location, coordinate displays
 
+TAG: femover-tr11468-BP
+DATE: 10/01/2013
+STAFF: jsb
+CHANGES: 
+1) branch-point for GXD Anatomy project (TR11468)
+
+TAG: femover-5-1-5-8
+DATE: 09/26/2013
+STAFF: jsb
+CHANGES: 
+1) removed DOS-style line breaks from batch_marker_snps_gatherer.py that were
+   introduced in the prior tag and were causing it to fail
+
+TAG: femover-5-1-5-7
+DATE: 09/25/2013
+STAFF: jsb
+CHANGES: 
+1) updates to MarkerSnpAssociations.py library to deal with one chromsome at
+   a time, to keep memory minimal
+2) updates to marker_count_sets_gatherer.py and batch_marker_snps_gatherer.py
+   to be in sync with new API for MarkerSnpAssociations.py
+3) revisions to buildDB.sh script to give error code at first femover failure
+
+TAG: femover-5-1-5-6
+DATE: 09/23/2013
+STAFF: jsb
+CHANGES: fixed count of expression images in marker_counts_gatherer.py
+
+TAG: femover-5-1-5-5
+DATE: 09/17/2013
+STAFF: jsb
+CHANGES: brought marker_to_term gatherer and table over from branch
+
+TAG: femover-5-1-5-4
+DATE: 09/17/2013
+STAFF: jsb
+CHANGES: added marker_to_term table to MARKER section of buildDatabase.py
+
+TAG: femover-5-1-5-3
+DATE: 09/06/2013
+STAFF: dbm
+CHANGES: fixed password fix prefix in config.py
+
+TAG: femover-5-1-5-2
+DATE: 09/02/2013
+STAFF: jsb
+CHANGES: added genome build to queryform_option table
+
+TAG: femover-5-1-5-1
+DATE: 08/21/2013
+STAFF: jsb
+CHANGES: merged tr11353 branch into trunk (Infrastructure I)
+
+TAG: femover-5-1-4-9
+DATE: 8/7/2013
+STAFF: kstone
+CHANGES: added glossary pages to fewi
+
+>>>>>>> 1.69
 TAG: femover-tr11423-BP
 DATE: 07/18/2013
 STAFF: lec

@@ -70,17 +70,20 @@ SOURCE_TYPE = os.environ['SOURCE_TYPE'].lower()
 
 if SOURCE_TYPE == 'postgres':
 	prefix = 'PG'
+	prefixPW = 'PG'
 elif SOURCE_TYPE == 'mysql':
 	prefix = 'MYSQL'
+	prefixPW = 'MYSQL'
 elif SOURCE_TYPE == 'sybase':
 	prefix = 'MGDEXP'
+	prefixPW = 'MGDEXP'
 else:
 	raise error, 'Unknown SOURCE_TYPE (%s)' % SOURCE_TYPE
 
 SOURCE_HOST = os.environ['%s_DBSERVER' % prefix]
 SOURCE_DATABASE = os.environ['%s_DBNAME' % prefix]
 SOURCE_USER = os.environ['%s_DBUSER' % prefix]
-SOURCE_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefix],
+SOURCE_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefixPW],
 		SOURCE_USER)
 
 ###--- target database connection (read-write) ---###
@@ -89,15 +92,17 @@ TARGET_TYPE = os.environ['TARGET_TYPE'].lower()
 
 if TARGET_TYPE == 'postgres':
 	prefix = 'PG_FE'
+	prefixPW = 'PG'
 elif TARGET_TYPE == 'mysql':
 	prefix = 'MYSQL_FE'
+	prefixPW = 'MYSQL'
 else:
 	raise error, 'Unknown TARGET_TYPE (%s)' % TARGET_TYPE
 
 TARGET_HOST = os.environ['%s_DBSERVER' % prefix]
 TARGET_DATABASE = os.environ['%s_DBNAME' % prefix]
 TARGET_USER = os.environ['%s_DBUSER' % prefix]
-TARGET_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefix],
+TARGET_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefixPW],
 	TARGET_USER)
 
 ###--- logging levels ---###

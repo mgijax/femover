@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the allele_disease_footnote table
+# contains data definition information for the marker_microarray table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -10,39 +10,40 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'allele_disease_footnote'
+tableName = 'marker_microarray'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int		not null,
-	allele_disease_key	int		not null,
-	number			int		not null,
-	note			varchar(255)	not null,
+	unique_key	int		not null,
+	marker_key	int		not null,
+	probeset_id	varchar(40)	not null,
+	platform	varchar(255)	null,
+	report_name	varchar(255)	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {
-	'allele_disease' : 'create index %s on %s (allele_disease_key, number)',
-	}
+indexes = {} 
 
-keys = { 'allele_disease_key' : ('allele_disease', 'allele_disease_key') }
+# column name -> (related table, column in related table)
+keys = { 'marker_key' : ('marker', 'marker_key') }
 
 # index used to cluster data in the table
-clusteredIndex = None
+clusteredIndex = ('marker_key', 'create index %s on %s (marker_key)')
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the allele flower, containing footnotes for the allele_disease table',
+	Table.TABLE : 'stores microarray probeset data for markes',
 	Table.COLUMN : {
-		'unique_key' : 'unique identifier for this record, no other purpose',
-		'allele_disease_key' : 'identifies the allele/disease pair in allele_disease',
-		'number' : 'number of this footnote for the allele/disease',
-		'note' : 'text of the footnote',
+		'unique_key' : 'unique key identifying this record (no other purpose)',
+		'marker_key' : 'foreign key to marker table',
+		'probeset_id' : 'accession ID for this probeset',
+		'platform' : 'name of the microarray platform',
+		'report_name' : 'filename for the corresponding report on MGI ftp site',
 		},
 	Table.INDEX : {
-		'allele_disease' : 'quick retrieval of a given note for a given allele/disease pair',
+		'marker_key' : 'clustered index to ensure that records for a marker are stored near each other on disk',
 		},
 	}
 

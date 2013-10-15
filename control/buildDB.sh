@@ -33,7 +33,7 @@ usage()
     echo "  will be wiped."
 
     if [ "$1" != "" ]; then
-	    echo "Error: $1"
+        echo "Error: $1"
     fi
 
     exit 1
@@ -42,11 +42,11 @@ usage()
 # handle the first parameter -- which database type to build into
 
 if [ "$1" = "postgres" ]; then
-	TARGET_TYPE=postgres
-	shift
+    TARGET_TYPE=postgres
+    shift
 elif [ "$1" = "mysql" ]; then
-	TARGET_TYPE=mysql
-	shift
+    TARGET_TYPE=mysql
+    shift
 fi
 export TARGET_TYPE
 
@@ -55,61 +55,59 @@ export TARGET_TYPE
 FLAGS=""
 POSSIBLE_FLAGS="-a -A -b -c -d -g -h -i -m -n -p -s -r -v -x -G"
 while [ $# -gt 0 ]; do
-	found=0
-	for flag in ${POSSIBLE_FLAGS}
-	do
-		if [ "${flag}" = "$1" ]; then
-			FLAGS="${FLAGS} ${flag}"
-			found=1
-		fi
-	done
+    found=0
+    for flag in ${POSSIBLE_FLAGS}
+    do
+        if [ "${flag}" = "$1" ]; then
+            FLAGS="${FLAGS} ${flag}"
+            found=1
+        fi
+    done
 
-	if [ ${found} -eq 0 ]; then
-		usage "Invalid command-line flag: $1"
-	else
-		# if naming a specific gatherer to run, then pick up
-		# the gatherer's name, as well
-		if [ "$1" = "-G" ]; then
-			shift
-			FLAGS="${FLAGS} $1"
-		fi
+    if [ ${found} -eq 0 ]; then
+        usage "Invalid command-line flag: $1"
+    else
+        # if naming a specific gatherer to run, then pick up
+        # the gatherer's name, as well
+        if [ "$1" = "-G" ]; then
+            shift
+            FLAGS="${FLAGS} $1"
+        fi
 
-		# if setting flags, then ignore single priority tables
-		# that is, we don't want the single  priority tables to execute
-		# if user has provided flags
-		SINGLE_PRIORITY_TABLES=""
-		export SINGLE_PRIORITY_TABLES
-	fi
-	shift
+        # if setting flags, then ignore single priority tables
+        # that is, we don't want the single  priority tables to execute
+        # if user has provided flags
+        SINGLE_PRIORITY_TABLES=""
+        export SINGLE_PRIORITY_TABLES
+    fi
+    shift
 done
 
 # run the mover with any specified flags
 echo "${FEMOVER}/control/buildDatabase.py ${FLAGS}"
 ${FEMOVER}/control/buildDatabase.py ${FLAGS}
-
 if [ $? -ne 0 ]; then
-	echo "Build failed.  See logs for details."
-	exit 1
+    echo "Build failed.  See logs for details."
+    exit 1
 fi
 
-# copy log file so subsequent calls (see below) will not overwrite
+# rename log file so subsequent calls will not overwrite
 rm -rf ${LOG_DIR}/buildDatabase.log.1
 mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.log.1
 
-# for each table in SINGLE_PRIORITY_TABLES
-echo ${SINGLE_PRIORITY_TABLES}
+# run the mover for single priority tables
 for table in ${SINGLE_PRIORITY_TABLES}
 do
-echo ${FEMOVER}/control/buildDatabase.py -G ${table}
-${FEMOVER}/control/buildDatabase.py -G ${table}
-# copy table build files into new table name so they won't be ovewritten
-rm -rf ${LOG_DIR}/buildDatabase.${table}.log
-mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.${table}.log
-done
-
-if [ $? -ne 0 ]; then
+    echo "${FEMOVER}/control/buildDatabase.py -G ${table}"
+    ${FEMOVER}/control/buildDatabase.py -G ${table}
+    if [ $? -ne 0 ]; then
         echo "Single-Priority Build failed.  See logs for details."
         exit 1
-fi
+    fi
+
+    # rename log file so subsequent calls will not overwrite
+    rm -rf ${LOG_DIR}/buildDatabase.${table}.log
+    mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.${table}.log
+done
 
 dbExecute.py 'grant select on all tables in schema fe to public'

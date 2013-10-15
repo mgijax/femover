@@ -44,19 +44,20 @@ def queryIMSR ():
 		# look for the three tags we need (other counts for KOMP are
 		# included in the same report, so we skip any we don't need)
 
-		id = items[0]
+		accID = items[0]
 		countType = items[1]
 		count = items[2]
 
 		if countType == 'ALL:ES':
-			cellLines[id] = count
+			cellLines[accID] = count
 		elif countType == 'ALL:ST':
-			strains[id] = count
+			strains[accID] = count
 		elif countType == 'MRK:UN':
-			byMarker[id] = count
+			byMarker[accID] = count
 
 	logger.debug ('Cell lines: %d, Strains: %d, byMarker: %d' % (
 		len(cellLines), len(strains), len(byMarker) ) )
+
 	return cellLines, strains, byMarker
 
 ###--- Classes ---###
@@ -110,19 +111,21 @@ class ImsrGatherer (Gatherer.Gatherer):
 			'marker_count' ]
 
 		allAlleles = alleleToMarker.keys()
+		allAlleles.sort()
+
 		for allele in allAlleles:
 			if not key2id.has_key(allele):
 				continue
 
-			id = key2id[allele]
+			accID = key2id[allele]
 
-			if cellLines.has_key(id):
-				cellLineCount = cellLines[id]
+			if cellLines.has_key(accID):
+				cellLineCount = cellLines[accID]
 			else:
 				cellLineCount = 0
 
-			if strains.has_key(id):
-				strainCount = strains[id]
+			if strains.has_key(accID):
+				strainCount = strains[accID]
 			else:
 				strainCount = 0
 
@@ -159,6 +162,7 @@ cmds = [
 		where a._LogicalDB_key = 1
 			and a._MGIType_key = 2
 			and a.private = 0
+			and a.preferred = 1
 			and a._Object_key = m._Marker_key''',
 	]
 

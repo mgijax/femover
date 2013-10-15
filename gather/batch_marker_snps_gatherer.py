@@ -8,7 +8,7 @@ import MarkerSnpAssociations
 
 ###--- Classes ---###
 
-class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
+class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the batch_marker_snps table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for a tiny subset of SNP data
@@ -19,8 +19,11 @@ class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
 		columns = [ '_Marker_key', 'accid', 'sequence_num' ]
 		rows = []
 
+		mrkCol = Gatherer.columnNumber (self.finalColumns,
+			'_Marker_key')
+
 		for row in self.finalResults:
-			marker = row[0]
+			marker = row[mrkCol]
 
 			snps = MarkerSnpAssociations.getSnpIDs(marker)
 
@@ -30,26 +33,21 @@ class BatchMarkerSnpsGatherer (Gatherer.ChunkGatherer):
 				i = i + 1
 				rows.append ( [ marker, snp, i ] )
 
+			del snps
+
 		self.finalColumns = columns
 		self.finalResults = rows
 		return
 
-	def getMinKeyQuery (self):
-		return 'select min(_Marker_key) from snp_consensussnp_marker'
-
-	def getMaxKeyQuery (self):
-		return 'select max(_Marker_key) from snp_consensussnp_marker'
-
-
 ###--- globals ---###
 
 # note there should be no associated SNPs for QTL markers
-cmds = [ '''select distinct _Marker_key
+cmds = [ '''select distinct _Marker_key, chromosome
 	from mrk_marker
 	where _Organism_key = 1
 		and _Marker_Type_key != 6
 		and _Marker_Status_key in (1,3)
-		and _Marker_key >= %d and _Marker_key < %d''',
+	order by chromosome''',
 	]
 
 # order of fields (from the query results) to be written to the
