@@ -1014,7 +1014,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                 logger.debug ('start : hdp_annotation')
                 annotResults, diseaseMarkerRefResults, diseaseTermRefResults = \
-                        self.processAnnotation(annotResults, diseaseMarkerRefResults, diseaseTermRefResults)
+                        self.processAnnotations(annotResults, diseaseMarkerRefResults, diseaseTermRefResults)
                 logger.debug ('end : processed hdp_annotation')
 
 		#
