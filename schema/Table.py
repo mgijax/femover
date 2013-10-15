@@ -252,8 +252,7 @@ class Table:
 
 		# replace all varchar fields with 'text' fields
 		if config.TARGET_TYPE == 'postgres':
-			createStatement = varchar_field_re.sub('text',createStatement)
-
+			createstatement = varchar_field_re.sub('text',createStatement)
 		self.name = name
 		self.createStatement = createStatement
 		self.indexes = indexes

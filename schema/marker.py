@@ -1,5 +1,11 @@
 #!/usr/local/bin/python
 
+#
+# lec   08/06/2013
+#       - TR11423/human disease portal/scrum-dog
+#               added location/coordinate display
+#
+
 import Table
 
 ###--- Globals ---###
@@ -20,6 +26,9 @@ createStatement = '''CREATE TABLE %s  (
 	status       	varchar(255) NULL,
 	has_go_graph	int	NOT NULL,
 	is_in_reference_genome	int	NOT NULL,
+	location_display 	text	NULL,
+	coordinate_display 	text 	NULL,
+	build_identifier	text    NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -48,6 +57,9 @@ comments = {
 		'status' : 'status for this marker',
 		'has_go_graph' : '1 if this marker has a graph of its GO associations available, 0 if not',
 		'is_in_reference_genome' : '1 if this marker is in the reference genome project, 0 if not',
+		'location_display' : 'genetic location (cM, cytogentic offset) display',
+		'coordinate_display' : 'genomic coordinate display',
+		'build_identifier' : 'names the genome build to which the coordinates are relative',
 		},
 	Table.INDEX : {
 		'symbol' : 'look up markers by symbol',

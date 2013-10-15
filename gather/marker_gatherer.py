@@ -1,11 +1,77 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'marker' table in the front-end database
+#
+# lec	08/06/2013
+#	- TR11423/human disease portal/scrum-dog
+#		added location/coordinate display
+#
 
 import Gatherer
 import logger
 import GOGraphs
 import utils
+
+# list of markers in mrk_location_cache
+locationLookup = {}
+
+coordinateDisplay1 = 'Chr%s:%s-%s (%s)'
+coordinateDisplay2 = 'Chr%s:%s-%s'
+locationDisplay1 = 'Chr%s %s cM'
+locationDisplay2 = 'Chr%s %s'
+locationDisplay3 = 'Chr%s syntenic'
+locationDisplay4 = 'Chr%s QTL'
+locationDisplay5 = 'Chr Unknown'
+
+###--- Functions ---###
+
+def getLocationDisplay (marker, organism):
+	#
+	# returns location display
+	# returns coordinate display
+	# returns build identifier (version)
+	#
+
+	if not locationLookup.has_key(marker):
+		return '', '', ''
+
+	gchromosome = locationLookup[marker][1]
+	chromosome = locationLookup[marker][2]
+	startCoordinate = locationLookup[marker][3]
+	endCoordinate = locationLookup[marker][4]
+	strand = locationLookup[marker][5]
+	cmoffset = locationLookup[marker][6]
+	cytooffset = locationLookup[marker][7]
+	buildIdentifier = locationLookup[marker][8]
+	markerType = locationLookup[marker][9]
+
+	if organism == 1:
+		if chromosome == 'UN' or cmoffset == -999:
+			location = locationDisplay5
+		elif markerType == 6:
+			location = locationDisplay4 % (chromosome)
+		elif cmoffset == -1:
+			location = locationDisplay3 % (chromosome)
+		else:
+			location = locationDisplay1 % (chromosome, cmoffset)
+
+	elif cytooffset:
+		location = locationDisplay2 % (chromosome, cytooffset)
+
+	else:
+		location = ''
+
+	if startCoordinate:
+		if strand:
+			coordinate = coordinateDisplay1 \
+				% (gchromosome, startCoordinate, endCoordinate, strand)
+		else:
+			coordinate = coordinateDisplay2 \
+				% (gchromosome, startCoordinate, endCoordinate)
+	else:
+		coordinate = ''
+
+	return location, coordinate, buildIdentifier
 
 ###--- Classes ---###
 
@@ -16,6 +82,8 @@ class MarkerGatherer (Gatherer.Gatherer):
 	#	writes tab-delimited text file
 
 	def collateResults (self):
+		global locationLookup
+
 		self.featureTypes = {}	# marker key -> [ feature types ]
 		self.ids = {}		# marker key -> (id, logical db key)
 		self.inRefGenome = {}	# marker key -> 0/1
@@ -63,6 +131,16 @@ class MarkerGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d reference genome flags' % \
 			len(self.inRefGenome))
 
+		
+                # sql (3)
+                (cols, rows) = self.results[3]
+
+                # set of columns for common sql fields
+		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
+
+                for row in rows:
+                        locationLookup[row[keyCol]] = row
+
 		# last query has the bulk of the data
 		self.finalColumns = self.results[-1][0]
 		self.finalResults = self.results[-1][1]
@@ -85,7 +163,10 @@ class MarkerGatherer (Gatherer.Gatherer):
 			'_Marker_key')
 
 		for r in self.finalResults:
+
 			markerKey = r[keyCol]
+			organism = r[orgCol]
+
 			if self.featureTypes.has_key(markerKey):
 				feature = ', '.join (
 					self.featureTypes[markerKey])
@@ -129,6 +210,13 @@ class MarkerGatherer (Gatherer.Gatherer):
 				r, self.finalColumns)
 			self.addColumn ('isInReferenceGenome', isInRefGenome,
 				r, self.finalColumns)
+
+			# location and coordinate information
+		        location, coordinate, buildIdentifier = getLocationDisplay(markerKey, organism)
+			self.addColumn ('location_display', location, r, self.finalColumns)
+			self.addColumn ('coordinate_display', coordinate, r, self.finalColumns)
+			self.addColumn ('build_identifier', buildIdentifier, r, self.finalColumns)
+
 		return
 
 ###--- globals ---###
@@ -139,7 +227,8 @@ cmds = [
 	'select distinct _Marker_key, directTerms from MRK_MCV_Cache',
 
 	# 1. Gather the set of primary marker IDs
-	# (mouse markers on the top of the union, non-mouse markers below)
+	# (mouse markers on the top of the union , non-mouse markers below)
+	# human below mouse, use Entrez Gene IDs
 	'''select m._Marker_key,
 		a.accID, 
 		a._LogicalDB_key
@@ -159,7 +248,20 @@ cmds = [
 		acc_logicaldb ldb
 	where m._Marker_key = a._Object_key
 		and a._MGIType_key = 2
-		and m._Organism_key != 1
+		and m._Organism_key = 2
+		and a.preferred = 1
+		and a._logicalDB_key = 55
+		and a._LogicalDB_key = ldb._LogicalDB_key
+	union
+	select m._Marker_key,
+		a.accID, 
+		a._LogicalDB_key
+	from mrk_marker m,
+		acc_accession a,
+		acc_logicaldb ldb
+	where m._Marker_key = a._Object_key
+		and a._MGIType_key = 2
+		and m._Organism_key not in (1,2)
 		and a.preferred = 1
 		and a._LogicalDB_key = ldb._LogicalDB_key
 		and ldb._Organism_key = m._Organism_key''',
@@ -167,7 +269,25 @@ cmds = [
 	# 2. markers in the reference genome project
 	'select _Marker_key, isReferenceGene from GO_Tracking',
 
-	# 3. all markers
+	# 3. all markers with mrk_location_cache (mouse/human only)
+        #    + pick up the non-mouse, non-human organisms 
+        #    (as these are not included in MRK_Location_Cache)
+	'''select distinct _Marker_key, genomicchromosome, chromosome,
+                startcoordinate::varchar, endcoordinate::varchar,
+                strand, cmoffset, cytogeneticoffset, version,
+                _marker_type_key
+            from mrk_location_cache
+	    union
+            select  m._Marker_key, m.chromosome, m.chromosome, 
+		null as startcoordinate, null as endcoordinate, null as strand,
+		null as cmoffset, m.cytogeneticOffset, null as version, m._marker_type_key
+            from mrk_marker m
+            where _Marker_Status_key in (1,3)
+		  and cytogeneticOffset is not null
+		  and not exists (select 1 from mrk_location_cache l
+			where m._Marker_key = l._Marker_key)''',
+
+	# 4. all markers
 	'''select _Marker_key, symbol, name, _Marker_Type_key, _Organism_key,
 		_Marker_Status_key
 	from mrk_marker''',
@@ -177,7 +297,8 @@ cmds = [
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
 	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
-	'isInReferenceGenome' ]
+	'isInReferenceGenome', 
+	'location_display', 'coordinate_display', 'build_identifier' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker'
