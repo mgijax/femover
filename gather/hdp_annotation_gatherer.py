@@ -137,7 +137,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			genotype_type = annotResult[5]
 			vocab = annotResult[9]
 			if markerKey \
-				and genotype_type == 'super-simple' \
+				and genotype_type in ('super-simple', 'simple') \
 				and markerKey in self.markerClusterKeyDict \
 				and vocab == 'Mammalian Phenotype':
 				header = annotResult[10]
@@ -170,7 +170,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			termSeq = None
 			termDepth = None
 			if markerKey \
-				and genotype_type == 'super-simple' \
+				and genotype_type in ('super-simple', 'simple') \
 				and markerKey in self.markerClusterKeyDict \
 				and vocab == 'Mammalian Phenotype':
 				header = annotResult[10]
@@ -192,13 +192,323 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		return annotResults
 
 
-	def processGridCluster(self, clusterResults, cmarkerResults, cannotResults, markerHeaderDict):
+	def processAnnotations(self, annotResults, diseaseMarkerRefResults, diseaseTermRefResults):
+		#
+		# hdp_annotation
+		# hdp_marker_to_reference
+		# hdp_term_to_reference
+		#
+		# sql (24)
+		# super-simple + simple genotypes
+		#
+                # sql (25)
+		# complex genotypes
+		#
+		# sql (27)
+		# allele/OMIM annotations
+		#
+		# sql (28)
+		# human gene/OMIM annotations
+		#
+
+		# sql (22)
+		# disease-references by marker
+		# to store distinct marker/reference used for mouse/OMIM
+                diseaseMarkerRef1Dict = {}
+		(cols, rows) = self.results[22]
+                key1 = Gatherer.columnNumber (cols, '_Genotype_key')
+                key2 = Gatherer.columnNumber (cols, '_Marker_key')
+                for row in rows:
+			diseaseMarkerRef1Dict.setdefault((row[key1], row[key2]),[]).append(row)
+		#logger.debug (diseaseMarkerRef1Dict)
+
+                # sql (23)
+                # disease-term-referencees
+                diseaseTermRefDict = {}
+                (cols, rows) = self.results[23]
+                key = Gatherer.columnNumber (cols, '_Term_key')
+                for row in rows:
+			diseaseTermRefDict.setdefault(row[key],[]).append(row)
+		#logger.debug (diseaseTermRefDict[847181])
+
+		# sql (24)
+		# super-simple + simple genotypes
+		logger.debug ('start : processed super-simple + simple mouse annotations')
+		(cols, rows) = self.results[24]
+
+		# set of columns for common sql fields
+		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		termIDCol = Gatherer.columnNumber (cols, 'accID')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
+		genotypeTypeCol = Gatherer.columnNumber (cols, 'genotype_type')
+
+		for row in rows:
+			genotypeKey = row[genotypeKeyCol]
+			markerKey = row[markerKeyCol]
+			annotType = row[annotTypeKeyCol]
+			termKey = row[termKeyCol]
+			genotype_type = row[genotypeTypeCol]
+
+			if self.mpHeaderDict.has_key(termKey):
+				for mpHeader in self.mpHeaderDict[termKey]:
+					annotResults.append ( [ 
+						markerKey,
+						row[organismKeyCol],
+						termKey,
+						annotType,
+						genotypeKey,
+						genotype_type,
+						row[qualifierCol],
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						mpHeader,
+						])
+			else:
+				annotResults.append ( [ 
+					markerKey,
+					row[organismKeyCol],
+					termKey,
+					annotType,
+					genotypeKey,
+					genotype_type,
+					row[qualifierCol],
+					row[termIDCol],
+					row[termCol],
+					row[vocabNameCol],
+					None,
+					])
+
+			# if this super-simple or simple genotype contains
+			# 	annotation type mouse marker/omim (1005)
+			# then store the *unique* marker/reference association
+			key = (genotypeKey, markerKey)
+                	if annotType in [1005] and diseaseMarkerRef1Dict.has_key(key):
+                        	for m in diseaseMarkerRef1Dict[key]:
+					if [markerKey, m[2]] not in diseaseMarkerRefResults:
+                                      		diseaseMarkerRefResults.append ( [ markerKey, m[2], ])
+
+                        # then store the *unique* term/reference association
+                        if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
+                                for m in diseaseTermRefDict[termKey]:
+                                	if [termKey, m[1]] not in diseaseTermRefResults:
+                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
+
+		logger.debug ('end : processed super-simple + simple mouse annotations')
+
+                # sql (25)
+		# complex genotypes
+		logger.debug ('start : processed complex mouse annotations')
+                (cols, rows) = self.results[25]
+
+                # set of columns for common sql fields
+                genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
+                markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+                organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+                annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+                termIDCol = Gatherer.columnNumber (cols, 'accID')
+                termCol = Gatherer.columnNumber (cols, 'term')
+                vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
+		genotypeTypeCol = Gatherer.columnNumber (cols, 'genotype_type')
+
+                for row in rows:
+			termKey = row[termKeyCol]
+			genotype_type = row[genotypeTypeCol]
+
+			if self.mpHeaderDict.has_key(termKey):
+				for mpHeader in self.mpHeaderDict[termKey]:
+					annotResults.append ( [ 
+						row[markerKeyCol],
+						row[organismKeyCol],
+						termKey,
+						row[annotTypeKeyCol],
+						row[genotypeKeyCol],
+                                    		genotype_type,
+						row[qualifierCol],
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						mpHeader,
+						])
+			else:
+                       		annotResults.append ( [
+                                   	row[markerKeyCol],
+                                    	row[organismKeyCol],
+                                     	termKey,
+                                     	row[annotTypeKeyCol],
+                                     	row[genotypeKeyCol],
+                                    	genotype_type,
+					row[qualifierCol],
+                                     	row[termIDCol],
+                                     	row[termCol],
+                                     	row[vocabNameCol],
+					None,
+                                	])
+
+                        # then store the *unique* term/reference association
+                        if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
+                                for m in diseaseTermRefDict[termKey]:
+                                	if [termKey, m[1]] not in diseaseTermRefResults:
+                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
+
+		logger.debug ('end : processed complex mouse annotations')
+
+		# sql (26)
+		# disease-marker-referencees
+		# to store distinct marker/reference used for allelle/OMIM annotations
+                diseaseMarkerRef2Dict = {}
+		(cols, rows) = self.results[26]
+                key = Gatherer.columnNumber (cols, '_Marker_key')
+                for row in rows:
+			diseaseMarkerRef2Dict.setdefault(row[key],[]).append(row)
+		#logger.debug (diseaseMarkerRef2Dict)
+
+		# sql (27)
+		# allele/OMIM annotations
+		logger.debug ('start : processed allele/OMIM annotatins')
+		(cols, rows) = self.results[27]
+
+                # set of columns for common sql fields
+                markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+                organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+                annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+                termIDCol = Gatherer.columnNumber (cols, 'accID')
+                termCol = Gatherer.columnNumber (cols, 'term')
+                vocabNameCol = Gatherer.columnNumber (cols, 'name')
+
+                for row in rows:
+			# no genotypes
+
+			markerKey = row[markerKeyCol]
+			termKey = row[termKeyCol]
+
+			if self.mpHeaderDict.has_key(termKey):
+				for mpHeader in self.mpHeaderDict[termKey]:
+                        		annotResults.append ( [
+                                		markerKey,
+                                		row[organismKeyCol],
+                                		termKey,
+                                		row[annotTypeKeyCol],
+                                		None,
+						None,
+						None,
+                        			row[termIDCol],
+                        			row[termCol],
+                        			row[vocabNameCol],
+						mpHeader,
+                        			])
+			else:
+                        		annotResults.append ( [
+                                		markerKey,
+                                		row[organismKeyCol],
+                                		termKey,
+                                		row[annotTypeKeyCol],
+                                		None,
+						None,
+						None,
+                        			row[termIDCol],
+                        			row[termCol],
+                        			row[vocabNameCol],
+						None,
+                        			])
+
+			# store the *unique* marker/reference association
+                	if diseaseMarkerRef2Dict.has_key(markerKey):
+				for m in diseaseMarkerRef2Dict[markerKey]:
+					if [markerKey, m[1]] not in diseaseMarkerRefResults:
+                                       			diseaseMarkerRefResults.append ( [ markerKey, m[1], ])
+
+                        # then store the *unique* term/reference association
+                        if diseaseTermRefDict.has_key(termKey):
+                                for m in diseaseTermRefDict[termKey]:
+                                	if [termKey, m[1]] not in diseaseTermRefResults:
+                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
+
+		logger.debug ('end : processed allele/OMIM annotatins')
+
+		# sql (28)
+		# human gene/OMIM annotations
+		logger.debug ('start : processed human OMIM annotations')
+		(cols, rows) = self.results[28]
+
+		# set of columns for common sql fields
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
+		termIDCol = Gatherer.columnNumber (cols, 'accID')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		vocabNameCol = Gatherer.columnNumber (cols, 'name')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
+
+		for row in rows:
+			# no genotypes
+
+			termKey = row[termKeyCol]
+			if self.mpHeaderDict.has_key(termKey):
+				for mpHeader in self.mpHeaderDict[termKey]:
+					annotResults.append ( [ 
+                                		row[markerKeyCol],
+						row[organismKeyCol],
+						termKey,
+						row[annotTypeKeyCol],
+						None,
+						None,
+						row[qualifierCol],
+						row[termIDCol],
+						row[termCol],
+						row[vocabNameCol],
+						mpHeader,
+						])
+			else:
+				annotResults.append ( [ 
+                                	row[markerKeyCol],
+					row[organismKeyCol],
+					termKey,
+					row[annotTypeKeyCol],
+					None,
+					None,
+					row[qualifierCol],
+					row[termIDCol],
+					row[termCol],
+					row[vocabNameCol],
+					None,
+					])
+
+		logger.debug ('end : processed human OMIM annotations')
+
+		return annotResults, diseaseMarkerRefResults, diseaseTermRefResults
+
+	def processGridCluster(self, clusterResults, cmarkerResults, cannotResults):
+
+		#
+		# hdp_gridcluster
+		# hdp_gridcluster_marker
+		# hdp_gridcluster_annotation
 		#
                 # sql (36) : annotations that contain homologene clusters
                 # sql (37) : annotations that do-not contain homologene clusters
 		#
 
 		logger.debug ('start : processed mouse/human genes with homolgene clusters')
+
+		#
+		# sql (21)
+		# marker -> mp header term/accession id
+		markerHeaderDict = {}
+		(cols, rows) = self.results[21]
+		key = Gatherer.columnNumber (cols, '_Marker_key')
+		for row in rows:
+			markerHeaderDict.setdefault(row[key],[]).append(row)
 
 		# sql (34)
 		# homologene clusters
@@ -380,7 +690,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		return clusterResults, cmarkerResults, cannotResults
 
-	def processGenotypeCluster(self, gClusterResults, gResults, gannotResults, mpHeaderDict):
+	def processGenotypeCluster(self, gClusterResults, gResults, gannotResults):
+
+		#
+		# hdp_genocluster
+		# hpd_genocluster_genotype
+		# hpd_genocluster_annotation
 		#
 		# sql (41) : genotype-cluster
 		#
@@ -587,8 +902,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						gannotTermList.add((clusterKey, termKey, qualifier))
 
 						# one header per cluster
-						if mpHeaderDict.has_key(termKey):
-                                                        for mpHeader in mpHeaderDict[termKey]:
+						if self.mpHeaderDict.has_key(termKey):
+                                                        for mpHeader in self.mpHeaderDict[termKey]:
                                         			if (annotationKey, qualifier, mpHeader) not in gannotHeaderList:
                                                 			gannotHeaderList.add((annotationKey,\
 										qualifier,
@@ -653,7 +968,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# sql (0)
 		# mp term -> mp header term
 		# includes parent + children
-		mpHeaderDict = {}
+		self.mpHeaderDict = {}
 		self.mpHeaderKeyDict = {}
 		(cols, rows) = self.results[0]
 		termKey = Gatherer.columnNumber (cols, '_Object_key')
@@ -662,19 +977,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	
 		for row in rows:
 			# map term_keys to their header display
-			mpHeaderDict.setdefault(row[termKey],[]).append(row[header])
+			self.mpHeaderDict.setdefault(row[termKey],[]).append(row[header])
 			# also map the header display string to its actual header term_key (for convenience)
 			self.mpHeaderKeyDict[row[header]] = row[headerKey]
-		#logger.debug (mpHeaderDict)
-
-		#
-		# sql (21)
-		# marker -> mp header term/accession id
-		markerHeaderDict = {}
-		(cols, rows) = self.results[21]
-		key = Gatherer.columnNumber (cols, '_Marker_key')
-		for row in rows:
-			markerHeaderDict.setdefault(row[key],[]).append(row)
+		#logger.debug (self.mpHeaderDict)
 
 		# hdp_annotation
 		# hdp_marker_to_reference
@@ -706,280 +1012,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 '_Refs_key',
                         ]
 
-		# sql (22)
-		# disease-references by marker
-		# to store distinct marker/reference used for mouse/OMIM
-                diseaseMarkerRef1Dict = {}
-		(cols, rows) = self.results[22]
-                key1 = Gatherer.columnNumber (cols, '_Genotype_key')
-                key2 = Gatherer.columnNumber (cols, '_Marker_key')
-                for row in rows:
-			diseaseMarkerRef1Dict.setdefault((row[key1], row[key2]),[]).append(row)
-		#logger.debug (diseaseMarkerRef1Dict)
-
-                # sql (23)
-                # disease-term-referencees
-                diseaseTermRefDict = {}
-                (cols, rows) = self.results[23]
-                key = Gatherer.columnNumber (cols, '_Term_key')
-                for row in rows:
-			diseaseTermRefDict.setdefault(row[key],[]).append(row)
-		#logger.debug (diseaseTermRefDict[847181])
-
-		# sql (24)
-		# super-simple + simple genotypes
-		logger.debug ('start : processed super-simple + simple mouse annotations')
-		(cols, rows) = self.results[24]
-
-		# set of columns for common sql fields
-		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		termIDCol = Gatherer.columnNumber (cols, 'accID')
-		termCol = Gatherer.columnNumber (cols, 'term')
-		vocabNameCol = Gatherer.columnNumber (cols, 'name')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
-		genotypeTypeCol = Gatherer.columnNumber (cols, 'genotype_type')
-
-		for row in rows:
-			genotypeKey = row[genotypeKeyCol]
-			markerKey = row[markerKeyCol]
-			annotType = row[annotTypeKeyCol]
-			termKey = row[termKeyCol]
-			genotype_type = row[genotypeTypeCol]
-
-			if mpHeaderDict.has_key(termKey):
-				for mpHeader in mpHeaderDict[termKey]:
-					annotResults.append ( [ 
-						markerKey,
-						row[organismKeyCol],
-						termKey,
-						annotType,
-						genotypeKey,
-						genotype_type,
-						row[qualifierCol],
-						row[termIDCol],
-						row[termCol],
-						row[vocabNameCol],
-						mpHeader,
-						])
-			else:
-				annotResults.append ( [ 
-					markerKey,
-					row[organismKeyCol],
-					termKey,
-					annotType,
-					genotypeKey,
-					genotype_type,
-					row[qualifierCol],
-					row[termIDCol],
-					row[termCol],
-					row[vocabNameCol],
-					None,
-					])
-
-			# if this super-simple or simple genotype contains
-			# 	annotation type mouse marker/omim (1005)
-			# then store the *unique* marker/reference association
-			key = (genotypeKey, markerKey)
-                	if annotType in [1005] and diseaseMarkerRef1Dict.has_key(key):
-                        	for m in diseaseMarkerRef1Dict[key]:
-					if [markerKey, m[2]] not in diseaseMarkerRefResults:
-                                      		diseaseMarkerRefResults.append ( [ markerKey, m[2], ])
-
-                        # then store the *unique* term/reference association
-                        if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
-                                for m in diseaseTermRefDict[termKey]:
-                                	if [termKey, m[1]] not in diseaseTermRefResults:
-                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
-
-		logger.debug ('end : processed super-simple + simple mouse annotations')
-
-                # sql (25)
-		# complex genotypes
-		logger.debug ('start : processed complex mouse annotations')
-                (cols, rows) = self.results[25]
-
-                # set of columns for common sql fields
-                genotypeKeyCol = Gatherer.columnNumber (cols, '_Object_key')
-                markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-                organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-                annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-                termIDCol = Gatherer.columnNumber (cols, 'accID')
-                termCol = Gatherer.columnNumber (cols, 'term')
-                vocabNameCol = Gatherer.columnNumber (cols, 'name')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
-		genotypeTypeCol = Gatherer.columnNumber (cols, 'genotype_type')
-
-                for row in rows:
-			termKey = row[termKeyCol]
-			genotype_type = row[genotypeTypeCol]
-
-			if mpHeaderDict.has_key(termKey):
-				for mpHeader in mpHeaderDict[termKey]:
-					annotResults.append ( [ 
-						row[markerKeyCol],
-						row[organismKeyCol],
-						termKey,
-						row[annotTypeKeyCol],
-						row[genotypeKeyCol],
-                                    		genotype_type,
-						row[qualifierCol],
-						row[termIDCol],
-						row[termCol],
-						row[vocabNameCol],
-						mpHeader,
-						])
-			else:
-                       		annotResults.append ( [
-                                   	row[markerKeyCol],
-                                    	row[organismKeyCol],
-                                     	termKey,
-                                     	row[annotTypeKeyCol],
-                                     	row[genotypeKeyCol],
-                                    	genotype_type,
-					row[qualifierCol],
-                                     	row[termIDCol],
-                                     	row[termCol],
-                                     	row[vocabNameCol],
-					None,
-                                	])
-
-                        # then store the *unique* term/reference association
-                        if annotType in [1005] and diseaseTermRefDict.has_key(termKey):
-                                for m in diseaseTermRefDict[termKey]:
-                                	if [termKey, m[1]] not in diseaseTermRefResults:
-                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
-
-		logger.debug ('end : processed complex mouse annotations')
-
-		# sql (26)
-		# disease-marker-referencees
-		# to store distinct marker/reference used for allelle/OMIM annotations
-                diseaseMarkerRef2Dict = {}
-		(cols, rows) = self.results[26]
-                key = Gatherer.columnNumber (cols, '_Marker_key')
-                for row in rows:
-			diseaseMarkerRef2Dict.setdefault(row[key],[]).append(row)
-		#logger.debug (diseaseMarkerRef2Dict)
-
-		# sql (27)
-		# allele/OMIM annotations
-		logger.debug ('start : processed allele/OMIM annotatins')
-		(cols, rows) = self.results[27]
-
-                # set of columns for common sql fields
-                markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-                organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-                annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-                termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-                termIDCol = Gatherer.columnNumber (cols, 'accID')
-                termCol = Gatherer.columnNumber (cols, 'term')
-                vocabNameCol = Gatherer.columnNumber (cols, 'name')
-
-                for row in rows:
-			# no genotypes
-
-			markerKey = row[markerKeyCol]
-			termKey = row[termKeyCol]
-
-			if mpHeaderDict.has_key(termKey):
-				for mpHeader in mpHeaderDict[termKey]:
-                        		annotResults.append ( [
-                                		markerKey,
-                                		row[organismKeyCol],
-                                		termKey,
-                                		row[annotTypeKeyCol],
-                                		None,
-						None,
-						None,
-                        			row[termIDCol],
-                        			row[termCol],
-                        			row[vocabNameCol],
-						mpHeader,
-                        			])
-			else:
-                        		annotResults.append ( [
-                                		markerKey,
-                                		row[organismKeyCol],
-                                		termKey,
-                                		row[annotTypeKeyCol],
-                                		None,
-						None,
-						None,
-                        			row[termIDCol],
-                        			row[termCol],
-                        			row[vocabNameCol],
-						None,
-                        			])
-
-			# store the *unique* marker/reference association
-                	if diseaseMarkerRef2Dict.has_key(markerKey):
-				for m in diseaseMarkerRef2Dict[markerKey]:
-					if [markerKey, m[1]] not in diseaseMarkerRefResults:
-                                       			diseaseMarkerRefResults.append ( [ markerKey, m[1], ])
-
-                        # then store the *unique* term/reference association
-                        if diseaseTermRefDict.has_key(termKey):
-                                for m in diseaseTermRefDict[termKey]:
-                                	if [termKey, m[1]] not in diseaseTermRefResults:
-                                        	diseaseTermRefResults.append ( [ termKey, m[1], ])
-
-		logger.debug ('end : processed allele/OMIM annotatins')
-
-		# sql (28)
-		# human gene/OMIM annotations
-		logger.debug ('start : processed human OMIM annotations')
-		(cols, rows) = self.results[28]
-
-		# set of columns for common sql fields
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		termIDCol = Gatherer.columnNumber (cols, 'accID')
-		termCol = Gatherer.columnNumber (cols, 'term')
-		vocabNameCol = Gatherer.columnNumber (cols, 'name')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier_type')
-
-		for row in rows:
-			# no genotypes
-
-			termKey = row[termKeyCol]
-			if mpHeaderDict.has_key(termKey):
-				for mpHeader in mpHeaderDict[termKey]:
-					annotResults.append ( [ 
-                                		row[markerKeyCol],
-						row[organismKeyCol],
-						termKey,
-						row[annotTypeKeyCol],
-						None,
-						None,
-						row[qualifierCol],
-						row[termIDCol],
-						row[termCol],
-						row[vocabNameCol],
-						mpHeader,
-						])
-			else:
-				annotResults.append ( [ 
-                                	row[markerKeyCol],
-					row[organismKeyCol],
-					termKey,
-					row[annotTypeKeyCol],
-					None,
-					None,
-					row[qualifierCol],
-					row[termIDCol],
-					row[termCol],
-					row[vocabNameCol],
-					None,
-					])
-
-		logger.debug ('end : processed human OMIM annotations')
+                logger.debug ('start : hdp_annotation')
+                annotResults, diseaseMarkerRefResults, diseaseTermRefResults = \
+                        self.processAnnotation(annotResults, diseaseMarkerRefResults, diseaseTermRefResults)
+                logger.debug ('end : processed hdp_annotation')
 
 		#
 		# hdp_gridcluster
@@ -1007,12 +1043,15 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term',
 			]
 
-                # sql (36) : annotations that contain homologene clusters
-                # sql (37) : annotations that do-not contain homologene clusters
                 logger.debug ('start : hdp_gridcluster')
                 clusterResults, cmarkerResults, cannotResults = \
-                        self.processGridCluster(clusterResults, cmarkerResults, cannotResults, markerHeaderDict)
+                        self.processGridCluster(clusterResults, cmarkerResults, cannotResults)
                 logger.debug ('end : processed hdp_gridcluster')
+
+		# relies on 'processGridCluster:self.markerClusterKeyDict'
+		logger.debug("start : calculate termSeqs")	
+		annotResults = self.calculateTermSeqs(annotResults)
+		logger.debug("end : calculate termSeqs")	
 
 		#
 		# hdp_genocluster
@@ -1043,16 +1082,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'genotermref_count'
 			]
 
-		# sql (41) : genotype-cluster
 		logger.debug ('start : hdp_genocluster')
 		gClusterResults, gResults, gannotResults = \
-			self.processGenotypeCluster(gClusterResults, gResults, gannotResults, mpHeaderDict)
+			self.processGenotypeCluster(gClusterResults, gResults, gannotResults)
 		logger.debug ('end : hdp_genocluster')
-
-		# sql (42) : term sequencenum values for MP
-		logger.debug("start : calculate termSeqs")	
-		annotResults = self.calculateTermSeqs(annotResults)
-		logger.debug("end : calculate termSeqs")	
 
 		# push data to output files
 
