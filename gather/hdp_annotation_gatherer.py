@@ -106,8 +106,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	# post-process all the hdp_annotation results and add the term_seq and term_depth columns
 	def calculateTermSeqs(self,annotResults):
-		# sql (42) : genotype-cluster
-		# term sequencenum values for MP
+		# sql (42) : term sequencenum values for MP
 		logger.info("preparing to calculate term sequences for hdp_annotation results")
 		# get term sequencenum from voc_term
 		origTermSeqDict = {}
@@ -193,9 +192,197 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		return annotResults
 
 
-	def clusterGenotypes(self, gClusterResults, gResults, gannotResults, mpHeaderDict):
+	def processGridCluster(self, clusterResults, cmarkerResults, cannotResults, markerHeaderDict):
 		#
-		# cluster the genotypes
+                # sql (36) : annotations that contain homologene clusters
+                # sql (37) : annotations that do-not contain homologene clusters
+		#
+
+		logger.debug ('start : processed mouse/human genes with homolgene clusters')
+
+		# sql (34)
+		# homologene clusters
+		clusterDict1 = {}
+		(cols, rows) = self.results[34]
+		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
+		for row in rows:
+			clusterDict1.setdefault(row[clusterKey],[]).append(row)
+		#logger.debug (clusterDict1)
+
+		# sql (35)
+		# non-homologene clusters
+		# use the marker key as the "cluster" key
+		clusterDict2 = {}
+		(cols, rows) = self.results[35]
+		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
+		for row in rows:
+			clusterDict2.setdefault(row[markerKey],[]).append(row)
+		#logger.debug (clusterDict2)
+
+		# sql (36) : annotations that contain homologene clusters
+		logger.debug ('start : processed mouse/human genes with homolgene clusters')
+		(cols, rows) = self.results[36]
+
+		# set of columns for common sql fields
+		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
+		homologeneIDCol = Gatherer.columnNumber (cols, 'homologene_id')
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+		# set of distinct clusters
+		clusterKey = 1
+		clusterList = set([])
+
+                # at most one marker in a gridCluster_marker
+                markerList = set([])
+
+                # at most one cluster/term in a gridCluster_annotation
+                cannotList = set([])
+
+		self.markerClusterKeyDict = {}
+		for row in rows:
+
+			clusterKey = row[clusterKeyCol]
+			homologeneID = row[homologeneIDCol]
+			markerKey = row[markerKeyCol]
+
+			#
+			# clusterResults
+			#
+			if clusterKey not in clusterList:
+				clusterResults.append( [ 
+                                     	clusterKey,
+					homologeneID,
+					])
+				clusterList.add(clusterKey)
+
+			#
+			# cmarkerResults
+			#
+			if markerKey not in markerList:
+				self.markerClusterKeyDict[markerKey] = clusterKey
+				cmarkerResults.append ( [ 
+			    		row[clusterKeyCol],
+			    		markerKey,
+			    		row[organismKeyCol],
+			    		row[symbolCol],
+					])
+				markerList.add(markerKey)
+
+			#
+			# cannotResults : include unique instances only
+			#
+                        if clusterDict1.has_key(clusterKey):
+                                for c in clusterDict1[clusterKey]:
+                                        annotationKey = c[2]
+                                        termKey = c[3]
+                                        termName = c[4]
+                                        termId = c[5]
+                                        if (clusterKey, termKey) not in cannotList:
+                                                cannotResults.append( [
+                                                        row[clusterKeyCol],
+                                                        termKey,
+                                                        annotationKey,
+                                                        'term',
+                                                        termId,
+                                                        termName
+                                                        ])
+
+                                                cannotList.add((clusterKey, termKey))
+
+                        if markerHeaderDict.has_key(markerKey):
+                                for markerHeader in markerHeaderDict[markerKey]:
+                                        cannotResults.append( [
+                                                clusterKey,
+                                                markerHeader[2],
+                                                markerHeader[1],
+                                                'header',
+                                                markerHeader[4],
+                                                markerHeader[3],
+                                                ])
+
+		logger.debug ('end : processed mouse/human genes with homolgene clusters')
+
+		# sql (37) : mouse/human markers with annotations that do NOT contain homologene clusters
+		logger.debug ('start : processed mouse/human genes without homolgene clusters')
+		(cols, rows) = self.results[37]
+
+		# set of columns for common sql fields
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+                # at most one marker/term in a gridCluster_annotation
+                cannotList = set([])
+
+		for row in rows:
+
+			# fake cluster key
+			clusterKey = clusterKey + 1
+			markerKey = row[markerKeyCol]
+
+			#
+			# clusterResults
+			#
+			clusterResults.append ( [ 
+                               	clusterKey,
+				None,
+				])
+
+			#
+			# cmarkerResults
+			#
+			if markerKey not in markerList:
+				cmarkerResults.append ( [ 
+                               		clusterKey,
+					markerKey,
+			     		row[organismKeyCol],
+			     		row[symbolCol],
+				])
+				markerList.add(markerKey)
+
+			#
+			# cannotResults
+			#
+			if clusterDict2.has_key(markerKey):
+				for c in clusterDict2[markerKey]:
+					annotationKey = c[1]
+					termKey = c[2]
+					termName = c[3]
+					termId = c[4]
+
+					if (markerKey, termKey) not in cannotList:
+
+						cannotResults.append( [ 
+			    				clusterKey,
+							termKey,
+							annotationKey,
+							'term',
+							termId,
+							termName
+							])
+
+						cannotList.add((markerKey, termKey))
+
+			if markerHeaderDict.has_key(markerKey):
+				for markerHeader in markerHeaderDict[markerKey]:
+                                        cannotResults.append( [
+                                                clusterKey,
+                                                markerHeader[2],
+                                                markerHeader[1],
+                                                'header',
+                                                markerHeader[4],
+                                                markerHeader[3],
+                                                ])
+
+		logger.debug ('end : processed mouse/human genes without homolgene clusters')
+
+		return clusterResults, cmarkerResults, cannotResults
+
+	def processGenotypeCluster(self, gClusterResults, gResults, gannotResults, mpHeaderDict):
+		#
+		# sql (41) : genotype-cluster
 		#
 
 		logger.debug ('start : processed genotype cluster')
@@ -408,8 +595,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 										mpHeader))
 
 			#
-			# write the headers
-			# fix this up tomorrow...but it seems to work for now
+			# within each cluster
+			# determine the header/qualifier for each term
+			# all normals trumps non-normals (null) qualifier
 			#
 			#logger.debug (gannotHeaderList)
 			for gheader in gannotHeaderList:
@@ -819,183 +1007,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				'term',
 			]
 
-		# sql (34)
-		# homologene clusters
-		clusterDict1 = {}
-		(cols, rows) = self.results[34]
-		clusterKey = Gatherer.columnNumber (cols, '_Cluster_key')
-		for row in rows:
-			clusterDict1.setdefault(row[clusterKey],[]).append(row)
-		#logger.debug (clusterDict1)
-
-		# sql (35)
-		# non-homologene clusters
-		# use the marker key as the "cluster" key
-		clusterDict2 = {}
-		(cols, rows) = self.results[35]
-		markerKey = Gatherer.columnNumber (cols, '_Marker_key')
-		for row in rows:
-			clusterDict2.setdefault(row[markerKey],[]).append(row)
-		#logger.debug (clusterDict2)
-
-		# sql (36) : annotations that contain homologene clusters
-		logger.debug ('start : processed mouse/human genes with homolgene clusters')
-		(cols, rows) = self.results[36]
-
-		# set of columns for common sql fields
-		clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
-		homologeneIDCol = Gatherer.columnNumber (cols, 'homologene_id')
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		symbolCol = Gatherer.columnNumber (cols, 'symbol')
-
-		# set of distinct clusters
-		clusterKey = 1
-		clusterList = set([])
-
-                # at most one marker in a gridCluster_marker
-                markerList = set([])
-
-                # at most one cluster/term in a gridCluster_annotation
-                cannotList = set([])
-
-		self.markerClusterKeyDict = {}
-		for row in rows:
-
-			clusterKey = row[clusterKeyCol]
-			homologeneID = row[homologeneIDCol]
-			markerKey = row[markerKeyCol]
-
-			#
-			# clusterResults
-			#
-			if clusterKey not in clusterList:
-				clusterResults.append( [ 
-                                     	clusterKey,
-					homologeneID,
-					])
-				clusterList.add(clusterKey)
-
-			#
-			# cmarkerResults
-			#
-			if markerKey not in markerList:
-				self.markerClusterKeyDict[markerKey] = clusterKey
-				cmarkerResults.append ( [ 
-			    		row[clusterKeyCol],
-			    		markerKey,
-			    		row[organismKeyCol],
-			    		row[symbolCol],
-					])
-				markerList.add(markerKey)
-
-			#
-			# cannotResults : include unique instances only
-			#
-                        if clusterDict1.has_key(clusterKey):
-                                for c in clusterDict1[clusterKey]:
-                                        annotationKey = c[2]
-                                        termKey = c[3]
-                                        termName = c[4]
-                                        termId = c[5]
-                                        if (clusterKey, termKey) not in cannotList:
-                                                cannotResults.append( [
-                                                        row[clusterKeyCol],
-                                                        termKey,
-                                                        annotationKey,
-                                                        'term',
-                                                        termId,
-                                                        termName
-                                                        ])
-
-                                                cannotList.add((clusterKey, termKey))
-
-                        if markerHeaderDict.has_key(markerKey):
-                                for markerHeader in markerHeaderDict[markerKey]:
-                                        cannotResults.append( [
-                                                clusterKey,
-                                                markerHeader[2],
-                                                markerHeader[1],
-                                                'header',
-                                                markerHeader[4],
-                                                markerHeader[3],
-                                                ])
-
-		logger.debug ('end : processed mouse/human genes with homolgene clusters')
-
-		# sql (37) : mouse/human markers with annotations that do NOT contain homologene clusters
-		logger.debug ('start : processed mouse/human genes without homolgene clusters')
-		(cols, rows) = self.results[37]
-
-		# set of columns for common sql fields
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		organismKeyCol = Gatherer.columnNumber (cols, '_Organism_key')
-		symbolCol = Gatherer.columnNumber (cols, 'symbol')
-
-                # at most one marker/term in a gridCluster_annotation
-                cannotList = set([])
-
-		for row in rows:
-
-			# fake cluster key
-			clusterKey = clusterKey + 1
-			markerKey = row[markerKeyCol]
-
-			#
-			# clusterResults
-			#
-			clusterResults.append ( [ 
-                               	clusterKey,
-				None,
-				])
-
-			#
-			# cmarkerResults
-			#
-			if markerKey not in markerList:
-				cmarkerResults.append ( [ 
-                               		clusterKey,
-					markerKey,
-			     		row[organismKeyCol],
-			     		row[symbolCol],
-				])
-				markerList.add(markerKey)
-
-			#
-			# cannotResults
-			#
-			if clusterDict2.has_key(markerKey):
-				for c in clusterDict2[markerKey]:
-					annotationKey = c[1]
-					termKey = c[2]
-					termName = c[3]
-					termId = c[4]
-
-					if (markerKey, termKey) not in cannotList:
-
-						cannotResults.append( [ 
-			    				clusterKey,
-							termKey,
-							annotationKey,
-							'term',
-							termId,
-							termName
-							])
-
-						cannotList.add((markerKey, termKey))
-
-			if markerHeaderDict.has_key(markerKey):
-				for markerHeader in markerHeaderDict[markerKey]:
-                                        cannotResults.append( [
-                                                clusterKey,
-                                                markerHeader[2],
-                                                markerHeader[1],
-                                                'header',
-                                                markerHeader[4],
-                                                markerHeader[3],
-                                                ])
-
-		logger.debug ('end : processed mouse/human genes without homolgene clusters')
+                # sql (36) : annotations that contain homologene clusters
+                # sql (37) : annotations that do-not contain homologene clusters
+                logger.debug ('start : hdp_gridcluster')
+                clusterResults, cmarkerResults, cannotResults = \
+                        self.processGridCluster(clusterResults, cmarkerResults, cannotResults, markerHeaderDict)
+                logger.debug ('end : processed hdp_gridcluster')
 
 		#
 		# hdp_genocluster
@@ -1027,12 +1044,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			]
 
 		# sql (41) : genotype-cluster
-		logger.debug ('start : processed genotype cluster')
+		logger.debug ('start : hdp_genocluster')
 		gClusterResults, gResults, gannotResults = \
-			self.clusterGenotypes(gClusterResults, gResults, gannotResults, mpHeaderDict)
-		logger.debug ('end : processed genotype cluster')
+			self.processGenotypeCluster(gClusterResults, gResults, gannotResults, mpHeaderDict)
+		logger.debug ('end : hdp_genocluster')
 
-		# sql (42) : genotype-cluster
+		# sql (42) : term sequencenum values for MP
 		logger.debug("start : calculate termSeqs")	
 		annotResults = self.calculateTermSeqs(annotResults)
 		logger.debug("end : calculate termSeqs")	
