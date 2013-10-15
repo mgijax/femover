@@ -198,6 +198,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# hdp_marker_to_reference
 		# hdp_term_to_reference
 		#
+		# sql (22)
+		# disease-references by marker
+		#
+                # sql (23)
+                # disease-term-referencees
+		#
 		# sql (24)
 		# super-simple + simple genotypes
 		#
@@ -495,7 +501,18 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# hdp_gridcluster_marker
 		# hdp_gridcluster_annotation
 		#
+		# sql (21)
+		# marker -> mp header term/accession id
+		#
+		# sql (34)
+		# homologene clusters
+		#
+		# sql (35)
+		# non-homologene clusters
+		# use the marker key as the "cluster" key
+		#
                 # sql (36) : annotations that contain homologene clusters
+		#
                 # sql (37) : annotations that do-not contain homologene clusters
 		#
 
@@ -697,12 +714,15 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# hpd_genocluster_genotype
 		# hpd_genocluster_annotation
 		#
-		# sql (41) : genotype-cluster
+		# sql (38) : genotype-cluster : by annotation
+                # sql (39) : genotype-cluster : counts
+		# sql (40) : genotype-cluster : genotype/marker
+		# sql (41) : genotype-cluster : allele pairs
 		#
 
 		logger.debug ('start : processed genotype cluster')
 
-		# sql (38) : genotype-cluster by annotation
+		# sql (38) : genotype-cluster : by annotation
 		clusterAnnotDict = {}
 		backgroundDict = []
 		(cols, rows) = self.results[38]
@@ -710,7 +730,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			clusterAnnotDict.setdefault(row[genotypeKeyCol],[]).append(row)
 
-                # sql (39) : genotype-cluster
+                # sql (39) : genotype-cluster : counts
                 logger.debug ('start : processed genotype cluster counts')
                 genoTermRefDict = {}
                 (cols, rows) = self.results[39]
@@ -720,7 +740,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 for row in rows:
 			genoTermRefDict.setdefault((row[key1], row[key2]),[]).append(row[key3])
 
-		# sql (40) : genotype-cluster
+		# sql (40) : genotype-cluster : genotype/marker
 		genoMarkerList = set([])
 		(cols, rows) = self.results[40]
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
@@ -728,7 +748,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			genoMarkerList.add((row[genotypeKeyCol], row[markerKeyCol]))
 
-		# sql (41) : genotype-cluster
+		# sql (41) : genotype-cluster : allele pairs
 		(cols, rows) = self.results[41]
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
