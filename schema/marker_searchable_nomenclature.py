@@ -26,9 +26,9 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	#'marker_key' : 'create index %s on %s (marker_key)',
-	#'term' : 'create index %s on %s (term)',
-	#'lower_term' : 'create index %s on %s (lower(term))',
+	'marker_key' : 'create index %s on %s (marker_key)',
+	'term' : 'create index %s on %s (term)',
+	'lower_term' : 'create index %s on %s (lower(term))',
 	}
 
 # column name -> (related table, column in related table)
