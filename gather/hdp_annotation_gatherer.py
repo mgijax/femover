@@ -1686,13 +1686,11 @@ cmds = [
 
         # sql (39)
         # counts by geno-cluster/term/reference
-        # exclude: normal annotations
         '''
         select distinct v._Object_key as _Genotype_key, v._Term_key, count(_Refs_key) as refCount
         from VOC_Annot v, VOC_Evidence e
         where (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
-        and v._Term_key not in (293594)
-        and v._Annot_key = e._Annot_key
+        	and v._Annot_key = e._Annot_key
         group by v._Object_key, v._term_key
         ''',
 
@@ -1714,11 +1712,11 @@ cmds = [
                g.isConditional, g._ExistsAs_key
         from GXD_Genotype g, GXD_AllelePair p
         where g._Genotype_key = p._Genotype_key
-        and exists (select 1 from tmp_annot_mouse c where c._Genotype_key = p._Genotype_key)
-        and not exists (select 1 from tmp_exclude tx
-                where p._Genotype_key = tx._Genotype_key
-                and p._Marker_key = tx._Marker_key
-                )
+        	and exists (select 1 from tmp_annot_mouse c where c._Genotype_key = p._Genotype_key)
+        	and not exists (select 1 from tmp_exclude tx
+                	where p._Genotype_key = tx._Genotype_key
+                	and p._Marker_key = tx._Marker_key
+                	)
 	''',
 
 	# sql (42)
