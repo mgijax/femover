@@ -37,7 +37,6 @@ indexes = {
         }
 
 keys = {
-        'hdp_genocluster_key' : ('hdp_genocluster', 'hdp_genocluster_key'),
         'genotype_key' : ('genotype', 'genotype_key'),
         }
 
@@ -48,7 +47,8 @@ clusteredIndex = None
 comments = {
 	Table.TABLE : 'petal table for the grid cluster flower containing data about markers that belong to a given grid cluster',
 	Table.COLUMN : {
-		'hdp_genocluster_key' : 'unique key identifying this human disease portal geno-cluster',
+		'unique_key' : 'unique key identifying this human disease portal geno-cluster',
+		'hdp_genocluster_key' : 'genotype-cluster key',
 		'genotype_key' : 'genotype that is annotated to the geno-cluster',
 		},
 	}

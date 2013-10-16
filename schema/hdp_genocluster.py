@@ -37,7 +37,9 @@ indexes = {
         'marker_key' : 'create index %s on %s (marker_key)',
 	}
 
-keys = {}
+keys = {
+        'marker_key' : ('marker', 'marker_key'),
+	}
 
 # index used to cluster data in the table
 clusteredIndex = None

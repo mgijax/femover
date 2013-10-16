@@ -46,7 +46,6 @@ indexes = {
 keys = {
         'hdp_gridcluster_key' : ('hdp_gridcluster', 'hdp_gridcluster_key'),
         'marker_key' : ('marker', 'marker_key'),
-        'organism_key' : ('organism', 'organism_key'),
         }
 
 # index used to cluster data in the table

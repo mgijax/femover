@@ -61,7 +61,6 @@ indexes = {
 
 keys = {
         'marker_key' : ('marker', 'marker_key'),
-        'organism_key' : ('organism', 'organism_key'),
         'genotype_key' : ('genotype', 'genotype_key'),
         'term_key' : ('term', 'term_key'),
         }

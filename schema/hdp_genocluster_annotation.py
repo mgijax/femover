@@ -50,7 +50,6 @@ indexes = {
         }
 
 keys = {
-        'hdp_genocluster_key' : ('hdp_genocluster', 'hdp_genocluster_key'),
         'term_key' : ('term', 'term_key'),
         }
 
