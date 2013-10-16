@@ -48,7 +48,6 @@ indexes = {
         }
 
 keys = {
-        'hdp_gridcluster_key' : ('hdp_gridcluster', 'hdp_gridcluster_key'),
         'term_key' : ('term', 'term_key'),
         }
 
