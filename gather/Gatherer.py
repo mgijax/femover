@@ -249,6 +249,12 @@ class ChunkGatherer (Gatherer):
 		):
 		Gatherer.__init__ (self, filenamePrefix, fieldOrder, cmds)
 		self.baseCmds = cmds[:]
+		self.chunkSize = config.CHUNK_SIZE
+		return
+
+	def setChunkSize (self, newChunkSize):
+		self.chunkSize = newChunkSize
+		logger.debug ('Set chunk size = %d' % self.chunkSize)
 		return
 
 	def go (self):
@@ -282,7 +288,7 @@ class ChunkGatherer (Gatherer):
 
 		lowKey = minKey
 		while lowKey <= maxKey:
-			highKey = lowKey + config.CHUNK_SIZE
+			highKey = lowKey + self.chunkSize
 			self.results = []
 			self.finalResults = []
 

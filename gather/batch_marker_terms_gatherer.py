@@ -6,17 +6,103 @@ import os
 import Gatherer
 import logger
 import config
+import dbAgnostic
+import gc
+
+###--- Globals ---###
+
+ids = {}	# ids[term key] = [list of IDs for that term]
+ancestors = {}	# ancestors[term key] = [list of parent keys]
+
+###--- Functions ---###
+
+def loadCaches():
+	global ids, ancestors
+
+	# get the list of GO term IDs and keys
+	idQuery = '''select _Object_key,
+			accID
+		from acc_accession
+		where _LogicalDB_key = 31
+			and private = 0
+			and _MGIType_key = 13'''
+
+	# get the GO DAG, mapping a term to all of its subterms
+	dagQuery = '''select c._AncestorObject_key,
+			c._DescendentObject_key
+		from dag_closure c,
+			voc_term t
+		where c._MGIType_key = 13
+			and c._AncestorObject_key = t._Term_key
+			and t._Vocab_key = 4'''
+
+	# gather GO IDs for each term key
+
+	(cols, rows) = dbAgnostic.execute(idQuery)
+	termCol = Gatherer.columnNumber (cols, '_Object_key')
+	idCol = Gatherer.columnNumber (cols, 'accID')
+
+	ids = {}	# ids[term key] = [list of IDs for that term]
+
+	for row in rows:
+		term = row[termCol]
+		if ids.has_key(term):
+			ids[term].append(row[idCol])
+		else:
+			ids[term] = [ row[idCol] ]
+
+	logger.debug ('Collected %d GO IDs for %d terms' % (
+		len(rows), len(ids) ))
+
+	# gather ancestor term keys for each term key
+
+	(cols, rows) = dbAgnostic.execute(dagQuery)
+	parentCol = Gatherer.columnNumber (cols,
+		'_AncestorObject_key')
+	childCol = Gatherer.columnNumber (cols,
+		'_DescendentObject_key')
+
+	ancestors = {}	# ancestors[term key] = [list of parent keys]
+
+	for row in rows:
+		parent = row[parentCol]
+		child = row[childCol]
+		if ancestors.has_key(child):
+			if parent not in ancestors[child]:
+				ancestors[child].append(parent)
+		else:
+			ancestors[child] = [ parent ]
+
+	logger.debug (
+		'Collected %d relationships for %d child GO terms' \
+			% (len(rows), len(ancestors) ))
+	return
 
 ###--- Classes ---###
 
-class BatchMarkerTermsGatherer (Gatherer.Gatherer):
+class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the batch_marker_terms table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for strings to be searched by the
 	#	batch query interface for markers, collates results, writes
 	#	tab-delimited text file
 
+	def getMinKeyQuery (self):
+		return '''select min(_Marker_key) from mrk_marker
+			where _Organism_key = 1
+				and _Marker_Status_key in (1,3)'''
+
+	def getMaxKeyQuery (self):
+		return '''select max(_Marker_key) from mrk_marker
+			where _Organism_key = 1
+				and _Marker_Status_key in (1,3)'''
+
 	def collateResults (self):
+		global ids, ancestors
+
+		gc.collect()
+		logger.debug('Ran garbage collection')
+
 		self.finalColumns = [ 'term', 'term_type', 'marker_key' ]
 		self.finalResults = []
 		i = 0
@@ -91,51 +177,16 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				len(rows), i) )
 			i = i + 1
 
-		# gather GO IDs for each term key
+		done = {}		# free up for garbage collection
+		del done
 
-		(cols, rows) = self.results[4]
-		termCol = Gatherer.columnNumber (cols, '_Object_key')
-		idCol = Gatherer.columnNumber (cols, 'accID')
-
-		ids = {}	# ids[term key] = [list of IDs for that term]
-
-		for row in rows:
-			term = row[termCol]
-			if ids.has_key(term):
-				ids[term].append(row[idCol])
-			else:
-				ids[term] = [ row[idCol] ]
-
-		logger.debug ('Collected %d GO IDs for %d terms' % (
-			len(rows), len(ids) ))
-
-		# gather ancestor term keys for each term key
-
-		(cols, rows) = self.results[5]
-		parentCol = Gatherer.columnNumber (cols,
-			'_AncestorObject_key')
-		childCol = Gatherer.columnNumber (cols,
-			'_DescendentObject_key')
-
-		ancestors = {}	# ancestors[term key] = [list of parent keys]
-
-		for row in rows:
-			parent = row[parentCol]
-			child = row[childCol]
-			if ancestors.has_key(child):
-				if parent not in ancestors[child]:
-					ancestors[child].append(parent)
-			else:
-				ancestors[child] = [ parent ]
-
-		logger.debug (
-			'Collected %d relationships for %d child GO terms' \
-				% (len(rows), len(ancestors) ))
+		gc.collect()
+		logger.debug('Ran garbage collection')
 
 		# go through our marker/GO annotations and produce a row in
 		# finalResults for each term and rows for its ancestors
 
-		(cols, rows) = self.results[6]
+		(cols, rows) = self.results[4]
 		markerCol = Gatherer.columnNumber (cols, '_Object_key')
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
 
@@ -195,10 +246,12 @@ class BatchMarkerTermsGatherer (Gatherer.Gatherer):
 				else:
 					done[markerKey] = { key : 1 }
 
-		logger.debug ('Processed %d GO annotations for %d rows (including ancestors)' % (len(rows), len(self.finalResults) - beforeCount) )
+		logger.debug('Processed GO annotations for %d markers' % len(done))
+		done = {}		# free up for garbage collection
+		del done
 
-		logger.debug ('%d total rows for table' % \
-			len(self.finalResults))
+		gc.collect()
+		logger.debug('Ran garbage collection')
 		return
 
 ###--- globals ---###
@@ -225,6 +278,8 @@ cmds = [
 			and mm._Marker_Status_key in (1,3)
 			and mm._Marker_key = ml._Marker_key
 			and ml.priority not in (3,4)
+			and mm._Marker_key >= %d
+			and mm._Marker_key < %d
 		order by mm._Marker_key, ml.priority''',
 
 	# 1. all public accession IDs for current mouse markers (excluding
@@ -243,6 +298,8 @@ cmds = [
 			and m._Organism_key = 1
 			and a._LogicalDB_key not in (9,13,27,41)
 			and a._LogicalDB_key = l._LogicalDB_key
+			and a._Object_key >= %d
+			and a._Object_key < %d
 		order by a._Object_key, l.name''',
 
 	# 2. Genbank (9), RefSeq (27), and Uniprot (13 and 41) IDs for
@@ -263,8 +320,11 @@ cmds = [
 			and s._Sequence_key = a._Object_key
 			and a._MGIType_key = 19
 			and a.private = 0
+			and m._Marker_key >= %s
+			and m._Marker_key < %s
 			and a._LogicalDB_key in (9, 13, 27, 41)
-			and a._LogicalDB_key = l._LogicalDB_key''' % caseEnd,
+			and a._LogicalDB_key = l._LogicalDB_key''' % (
+				caseEnd, '%d', '%d'),
 
 	# 3. RefSNP IDs for RefSNPs that are directly associated with markers
 	# (no SubSNPs, no distance-based associations in a region around a
@@ -276,6 +336,8 @@ cmds = [
 		snp_accession a,
 		acc_logicaldb ldb
 	where a._LogicalDB_key = ldb._LogicalDB_key
+		and m._Marker_key >= %d
+		and m._Marker_key < %d
 		and m._ConsensusSnp_key = a._Object_key
 		and a._MGIType_key = 30''',
 
@@ -283,28 +345,13 @@ cmds = [
 	# retrieved for either its directly annotated terms or any of their
 	# ancestor terms for its annotated terms
 	
-	# 4. get the list of GO term IDs and keys
-	'''select _Object_key,
-			accID
-		from acc_accession
-		where _LogicalDB_key = 31
-			and private = 0
-			and _MGIType_key = 13''',
-
-	# 5. get the GO DAG, mapping a term to all of its subterms
-	'''select c._AncestorObject_key,
-			c._DescendentObject_key
-		from dag_closure c,
-			voc_term t
-		where c._MGIType_key = 13
-			and c._AncestorObject_key = t._Term_key
-			and t._Vocab_key = 4''',
-
-	# 6. get the marker/GO annotations
+	# 4. get the marker/GO annotations
 	'''select _Object_key,
 			_Term_key
 		from voc_annot
 		where _Qualifier_key not in (1614151, 1614155)
+			and _Object_key >= %d
+			and _Object_key < %d
 			and _AnnotType_key = 1000''', 
 
 	# need to do RefSNP IDs (will require resolving how to access the SNP
@@ -322,10 +369,12 @@ filenamePrefix = 'batch_marker_terms'
 
 # global instance of a BatchMarkerTermsGatherer
 gatherer = BatchMarkerTermsGatherer (filenamePrefix, fieldOrder, cmds)
+gatherer.setChunkSize(10000)
 
 ###--- main program ---###
 
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
+	loadCaches()
 	Gatherer.main (gatherer)

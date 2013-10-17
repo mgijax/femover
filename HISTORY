@@ -1,3 +1,16 @@
+TAG: femover-5-1-5-9
+DATE: 10/17/2013
+STAFF: jsb
+CHANGES: 
+1) added ability to customize chunk size for ChunkGatherer 
+2) lowered memory needs for batch_marker_terms_gatherer.py to prevent
+   out-of-memory error
+
+TAG: femover-5-1-4-10
+DATE: 8/7/2013
+STAFF: kstone
+CHANGES: added glossary pages to fewi
+
 TAG: femover--5-1-6-?
 DATE: 10/15/2013
 STAFF: lec
