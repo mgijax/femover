@@ -724,7 +724,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# sql (38) : genotype-cluster : by annotation
 		clusterAnnotDict = {}
-		backgroundDict = []
 		(cols, rows) = self.results[38]
 		genotypeKeyCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		for row in rows:
@@ -736,9 +735,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 (cols, rows) = self.results[39]
                 key1 = Gatherer.columnNumber (cols, '_Genotype_key')
                 key2 = Gatherer.columnNumber (cols, '_Term_key')
-                key3 =  Gatherer.columnNumber (cols, 'refCount')
+                key3 =  Gatherer.columnNumber (cols, '_Qualifier_key')
+                key4 =  Gatherer.columnNumber (cols, 'refCount')
                 for row in rows:
-			genoTermRefDict.setdefault((row[key1], row[key2]),[]).append(row[key3])
+			genoTermRefDict.setdefault((row[key1], row[key2], row[key3]),[]).append(row[key4])
 
 		# sql (40) : genotype-cluster : genotype/marker
 		genoMarkerList = set([])
@@ -849,13 +849,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                 if clusterAnnotDict.has_key(gKey):
                                         for c in clusterAnnotDict[gKey]:
                                                 termKey = c[2]
-                                                key = (gKey, termKey)
-                                                if genoTermRefDict.has_key(key):
-                                                        newCount = genoTermRefDict[key][0]
-                                                        if not clusterAnnotCount.has_key(termKey):
-                                                                clusterAnnotCount[termKey] = newCount
+						qualifierKey = c[3]
+                                                tkey = (gKey, termKey, qualifierKey)
+                                                if genoTermRefDict.has_key(tkey):
+                                                        newCount = genoTermRefDict[tkey][0]
+							ckey = (termKey, qualifierKey)
+                                                        if not clusterAnnotCount.has_key(ckey):
+                                                                clusterAnnotCount[ckey] = newCount
                                                         else:
-                                                                clusterAnnotCount[termKey] += newCount
+                                                                clusterAnnotCount[ckey] += newCount
+			#logger.debug (clusterAnnotCount)
 
 
                         # for each genotype in the cluster
@@ -865,10 +868,10 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			for gKey in compressSet[clusterKey]:
 				for c in clusterAnnotDict[gKey]:
 					termKey = c[2]
-					qualifier = c[5]
-                                       	hasBackgroundNote = c[6]
+					qualifierKey = c[3]
+                                       	hasBackgroundNote = c[7]
 
-					key = (termKey, qualifier)
+					key = (termKey, qualifierKey)
 					if backgroundDict.has_key(key):
 						if backgroundDict[key] == 0:
 							backgroundDict[key] = hasBackgroundNote
@@ -893,10 +896,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 						annotationKey = c[1]
 						termKey = c[2]
-						termName = c[3]
-						termId = c[4]
-						qualifier = c[5]
-                                                hasBackgroundNote = backgroundDict[(termKey, qualifier)]
+						qualifierKey = c[3]
+						termName = c[4]
+						termId = c[5]
+						qualifier = c[6]
+                                                hasBackgroundNote = backgroundDict[(termKey, qualifierKey)]
 
                                                 # at most one cluster/term/qualifier per geno-cluster
                                                 if (clusterKey, termKey, qualifier) in gannotTermList:
@@ -904,8 +908,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                                                 # get the cluster-annotation-count
                                                 genotermref_count = 0
-                                                if clusterAnnotCount.has_key(termKey):
-                                                        genotermref_count = clusterAnnotCount[termKey]
+                                                if clusterAnnotCount.has_key((termKey, qualifierKey)):
+                                                        genotermref_count = clusterAnnotCount[(termKey, qualifierKey)]
 
 						gannotResults.append( [ 
 			    				clusterKey,
@@ -1651,11 +1655,10 @@ cmds = [
         # mouse annotations by genotype
         # *make sure the qualifier is order in descending order*
         # as this affects the setting of the mp-header
-        #
         # pull in the 'has_backgrounote' for each genotype/annotation
         '''
-        (
-        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
+	(
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, _Qualifier_key, term, accID, qualifier_type,
                 1 as has_backgroundnote
         from tmp_annot_mouse t
         where exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
@@ -1668,7 +1671,7 @@ cmds = [
                 and n._MGIType_key = 25
                 and n._NoteType_key = 1015)
         union
-        select distinct _Genotype_key, _AnnotType_key, _Term_key, term, accID, qualifier_type,
+        select distinct _Genotype_key, _AnnotType_key, _Term_key, _Qualifier_key, term, accID, qualifier_type,
                 0 as has_backgroundnote
         from tmp_annot_mouse t
         where not exists (select 1 from VOC_Annot a, VOC_Evidence e, MGI_Note n
@@ -1680,18 +1683,19 @@ cmds = [
                 and e._AnnotEvidence_key = n._Object_key
                 and n._MGIType_key = 25
                 and n._NoteType_key = 1015)
-        )
-        order by _Genotype_key, _Term_key, qualifier_type desc
+	)
+	order by _Genotype_key, _Term_key, _Qualifier_key, qualifier_type desc
         ''',
 
         # sql (39)
-        # counts by geno-cluster/term/reference
+        # counts by geno-cluster/term/qualifier/reference
         '''
-        select distinct v._Object_key as _Genotype_key, v._Term_key, count(_Refs_key) as refCount
+        select distinct v._Object_key as _Genotype_key, v._Term_key, v._Qualifier_key, count(_Refs_key) as refCount
         from VOC_Annot v, VOC_Evidence e
-        where (v._AnnotType_key = 1002 and v._Qualifier_key != 2181424)
+        where v._AnnotType_key = 1002 
         	and v._Annot_key = e._Annot_key
-        group by v._Object_key, v._term_key
+	        and v._Term_key not in (293594)
+        group by v._Object_key, v._Term_key, v._Qualifier_key
         ''',
 
 	# sql (40)
