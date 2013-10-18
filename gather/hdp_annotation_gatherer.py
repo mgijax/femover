@@ -791,43 +791,34 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		compressSet = {}
 		clusterKey = 1
 
-        	for allelePairs in byPairCount:
+        	for r in byPairCount:
 
-                	diff1 = byPairCount[allelePairs]
-                	diff2 = byPairCount[allelePairs].copy()
+                	# r is a count of allele pairs within a genotype
+                	# diff1 is a dictionary where each genotype key refers to a list of allele pairs
 
-			# track the diff1-genotypes that have been assigned to a cluster
-			diff1AddedSet = set([])
+                	diff1 = byPairCount[r]
 
-			# iterate thru each genotype
-                	for g1 in diff1:
+			# flip the data around and cluster py allele pair => genotype
+                	# cluster[str(allele pairs)] = [ genotype keys ]
+                	cluster = {}
 
-				# track the diff2-genotypes that have been assigned to a cluster
-				diff2AddedSet = set([])
+                	for d1 in diff1:
 
-				# if the genotype has not already been added to the cluster....
+                        	pairs = str(diff1[d1])
+	
+                        	if cluster.has_key(pairs):
+                                	cluster[pairs].append(d1)
+                        	else:
+                                	cluster[pairs] = [d1]
 
-				if g1 not in diff1AddedSet:
+                	# assign a cluster-key to each group of allele pairs
 
-					# add the genotype to the cluster
-					compressSet.setdefault(clusterKey,{}).setdefault(g1,[]).append(diff1[g1])
+                	for pairs in cluster.keys():
+                        	clusterKey = clusterKey + 1
+                        	compressSet[clusterKey] = {}
 
-					# if the genotype has a match...
-                        		for g2 in diff2:
-                                		if g1 != g2 and diff1[g1] == diff2[g2]:
-							# add the genotype to the cluster
-							compressSet.setdefault(clusterKey,{}).setdefault(g2,[]).append(diff2[g2])
-
-							# remove the genotype from both diff1 and diff2
-							# that have been assgined to a cluster
-							diff1AddedSet.add(g2)
-							diff2AddedSet.add(g2)
-
-				# delete items in the diff2AddedSet (because we can)
-				for t in diff2AddedSet:
-					del diff2[t]
-
-				clusterKey += 1
+                        	for genotypeKey in cluster[pairs]:
+                                	compressSet[clusterKey][genotypeKey] = diff1[genotypeKey]
 
 		#logger.debug (compressSet)
 
@@ -977,10 +968,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			for gKey in compressSet[clusterKey]:
 				for ap1 in compressSet[clusterKey][gKey]:
 					for ap2 in ap1:
-						for ap3 in ap2:
-							if (gKey, ap3[0]) in genoMarkerList \
-								and ([clusterKey, ap3[0], header_count]) not in gClusterResults:
-								gClusterResults.append( [ clusterKey, ap3[0], header_count, ])
+						if (gKey, ap2[0]) in genoMarkerList \
+							and ([clusterKey, ap2[0], header_count]) not in gClusterResults:
+							gClusterResults.append( [ clusterKey, ap2[0], header_count, ])
 
 		logger.debug ('end : processed genotype cluster')
 
@@ -1710,6 +1700,7 @@ cmds = [
 	# include: super-simple + simple (tmp_annot_mouse)
 	# exclude: markers where there exists a double-wild-type allele pair
         #and g._Genotype_key in (64589, 64590)
+	#and g._Genotype_key in (29408,29785,55180,58374,9470,55180,21739,58296,59)
 	'''
         select distinct p._Genotype_key, p._Marker_key,
                p._Allele_key_1, p._Allele_key_2, p._PairState_key,
