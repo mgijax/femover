@@ -814,11 +814,11 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                 	# assign a cluster-key to each group of allele pairs
 
                 	for pairs in cluster.keys():
-                        	clusterKey = clusterKey + 1
                         	compressSet[clusterKey] = {}
 
                         	for genotypeKey in cluster[pairs]:
                                 	compressSet[clusterKey][genotypeKey] = diff1[genotypeKey]
+                        	clusterKey = clusterKey + 1
 
 		#logger.debug (compressSet)
 
