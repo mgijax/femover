@@ -26,7 +26,6 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key              int     not null,
 	hdp_genocluster_key	int	not null,
 	marker_key		int	not null,
-	header_count	int	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -51,7 +50,6 @@ comments = {
 		'unique_key' : 'unique key for this record',
 		'hdp_genocluster_key' : 'unique key identifying this human disease portal genotype cluster',
 		'marker_key' : 'mouse marker',
-		'header_count' : 'number of annotations by header within this geno-cluster',
 		},
 	}
 
