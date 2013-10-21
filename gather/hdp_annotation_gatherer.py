@@ -825,13 +825,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 	        # at most one cluster/term/qualifier per geno-cluster
 		gannotTermList = set([])
 
+		# track header-count for each cluster
+		gResultsHeaderCount = {}
+
 		for clusterKey in compressSet:
 
                 	# at most one cluster/header-term in a genoCluster_annotation
                 	gannotHeaderList = set([])
-
-			# track distinct number of header-annotations per geno-cluster
-			header_count = 0
 
                         # for each genotype in the cluster
                         # track the genotype-term-reference-count for this cluster
@@ -880,7 +880,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					gKey,
 					])
 				
-
 				if clusterAnnotDict.has_key(gKey):
 
 					for c in clusterAnnotDict[gKey]:
@@ -930,6 +929,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# all normals trumps non-normals (null) qualifier
 			#
 			#logger.debug (gannotHeaderList)
+
+			header_count = 0
 			for gheader in gannotHeaderList:
 
 				annotationKey = gheader[0]
@@ -959,6 +960,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				# do nothing...as this would create a duplicate row in gannotResults
 				#elif (qualifier == None and (annotationKey, 'normal', mpHeader) in gannotHeaderList)
 
+			# track header-count for each cluster
+			gResultsHeaderCount[clusterKey] = header_count
+
 		#
 		# ready to push the compressedSet into the gClusterResults
 		#
@@ -970,7 +974,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					for ap2 in ap1:
 						if (gKey, ap2[0]) in genoMarkerList \
 							and ([clusterKey, ap2[0], header_count]) not in gClusterResults:
-							gClusterResults.append( [ clusterKey, ap2[0], header_count, ])
+							gClusterResults.append([clusterKey, ap2[0], gResultsHeaderCount[clusterKey],])
 
 		logger.debug ('end : processed genotype cluster')
 
