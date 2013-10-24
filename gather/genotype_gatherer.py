@@ -1,6 +1,10 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'genotype' table in the front-end database
+#
+# 10/24/2013	lec
+#	- TR11423/added 'exists_as' term to 'genotype' table
+#
 
 import Gatherer
 import logger
@@ -203,20 +207,22 @@ cmds = [
 	# 5. assumes that a genotype has only one ID, that it is from MGI, and
 	# that it is both preferred and non-private
 	'''select distinct g._Genotype_key, s.strain, a.accID, g.note,
-			g.isConditional
-		from gxd_genotype g, acc_accession a, prb_strain s
+			g.isConditional, t.term
+		from gxd_genotype g, acc_accession a, prb_strain s, voc_term t
 		where g._Strain_key = s._Strain_key
 			and g._Genotype_key = a._Object_key
 			and a._MGIType_key = 12
 			and a._LogicalDB_key = 1
-			and a.preferred = 1''',
+			and a.preferred = 1
+			and g._ExistsAs_key = t._term_key
+	''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Genotype_key', 'strain', 'accID', 'isConditional', 'note',
 	'combo1', 'combo2', 'hasImage', 'hasPhenoData', 'hasDiseaseModel',
-	'classification', 'cell_lines' ]
+	'classification', 'cell_lines', 'term' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'genotype'

@@ -1,4 +1,7 @@
 #!/usr/local/bin/python
+#
+# 10/24/2013    lec
+#       - TR11423/added 'exists_as' term to 'genotype' table
 
 import Table
 
@@ -26,6 +29,7 @@ createStatement = '''CREATE TABLE %s  (
 	is_disease_model	int		not null,
 	genotype_type		varchar(2)	null,
 	cell_lines		varchar(255)	null,
+	exists_as		text		not null,
 	PRIMARY KEY(genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -33,6 +37,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'primary_id' : 'create index %s on %s (primary_id)',
+	'exists_as' : 'create index %s on %s (exits_as)',
 	}
 
 # index used to cluster data in the table
@@ -54,6 +59,7 @@ comments = {
 		'is_disease_model' : '1 if this genotype is a mouse model for a human disaese, 0 if not',
 		'genotype_type' : 'type of genotype (homozygous, heterozygous, etc.)',
 		'cell_lines' : 'cell lines involved in genotype',
+		'exists_as' : 'genotype exists-as this type of mouse',
 		},
 	Table.INDEX : {
 		'primary_id' : 'quick lookup by accession ID',
