@@ -37,7 +37,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'primary_id' : 'create index %s on %s (primary_id)',
-	'exists_as' : 'create index %s on %s (exits_as)',
+	'exists_as' : 'create index %s on %s (exists_as)',
 	}
 
 # index used to cluster data in the table
