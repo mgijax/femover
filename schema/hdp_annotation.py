@@ -40,7 +40,7 @@ createStatement = '''CREATE TABLE %s  (
 	term_id			text	not null,
 	term			text	not null,
 	vocab_name		text	not null,
-	mp_header		text	null,
+	header			text	null,
 	term_seq		int	null,
 	term_depth		int	null,
 	PRIMARY KEY(hdp_annotation_key))''' % tableName
@@ -83,7 +83,7 @@ comments = {
 		'term_id' : 'primary accession ID for the term',
 		'term' : 'text of the term itself',
 		'vocab_name' : 'name of the vocabulary containing the annotated term',
-		'mp_header' : 'Mammalian Phenotype header that belongs to the given term',
+		'header' : 'MP or Disease header that belongs to the given term',
 		'term_seq' : 'sequence of this term relative to its gridcluster and header combo (for the popup)',
 		'term_depth' : 'depth(indentation) of this term relative to its gridcluster + header combo (for the popup)',
 		},
