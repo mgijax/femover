@@ -308,7 +308,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
-					None
+					row[termCol],
 					])
 
 			# if this super-simple or simple genotype contains
@@ -395,7 +395,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
-					None
+					row[termCol],
 					])
 
                         # then store the *unique* term/reference association
@@ -436,24 +436,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			markerKey = row[markerKeyCol]
 			termKey = row[termKeyCol]
 
-			if self.mpHeaderDict.has_key(termKey):
-				for header in self.mpHeaderDict[termKey]:
-                        		annotResults.append ( [
-                                		markerKey,
-                                		row[organismKeyCol],
-                                		termKey,
-                                		row[annotTypeKeyCol],
-                                		None,
-						None,
-						None,
-                        			row[termIDCol],
-                        			row[termCol],
-                        			row[vocabNameCol],
-						header,
-                        			])
-
 			# header = disease header term
-			elif self.diseaseHeaderDict.has_key(termKey):
+			if self.diseaseHeaderDict.has_key(termKey):
 				for header in self.diseaseHeaderDict[termKey]:
 					annotResults.append ( [ 
 						markerKey,
@@ -482,8 +466,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                         		row[termIDCol],
                         		row[termCol],
                         		row[vocabNameCol],
-					None
-					])
+					header,
+                        		])
 
 			# store the *unique* marker/reference association
                 	if diseaseMarkerRef2Dict.has_key(markerKey):
@@ -518,6 +502,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# no genotypes
 
 			termKey = row[termKeyCol]
+
 			if self.mpHeaderDict.has_key(termKey):
 				for header in self.mpHeaderDict[termKey]:
 					annotResults.append ( [ 
@@ -538,12 +523,12 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			elif self.diseaseHeaderDict.has_key(termKey):
 				for header in self.diseaseHeaderDict[termKey]:
 					annotResults.append ( [ 
-						markerKey,
+                                		row[markerKeyCol],
 						row[organismKeyCol],
 						termKey,
-						annotType,
-						genotypeKey,
-						genotype_type,
+						row[annotTypeKeyCol],
+						None,
+						None,
 						row[qualifierCol],
 						row[termIDCol],
 						row[termCol],
@@ -554,17 +539,18 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# header = disease-term
 			else:
 				annotResults.append ( [ 
-					markerKey,
+                                	row[markerKeyCol],
 					row[organismKeyCol],
 					termKey,
-					annotType,
-					genotypeKey,
-					genotype_type,
+					row[annotTypeKeyCol],
+					None,
+					None,
 					row[qualifierCol],
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
-					None
+					header,
+					row[termCol],
 					])
 
 		logger.debug ('end : processed human OMIM annotations')
