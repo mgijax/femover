@@ -239,6 +239,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# sql (25)
 		# super-simple + simple genotypes
+		# contains MP + OMIM annotations
 		logger.debug ('start : processed super-simple + simple mouse annotations')
 		(cols, rows) = self.results[25]
 
@@ -503,24 +504,8 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			termKey = row[termKeyCol]
 
-			if self.mpHeaderDict.has_key(termKey):
-				for header in self.mpHeaderDict[termKey]:
-					annotResults.append ( [ 
-                                		row[markerKeyCol],
-						row[organismKeyCol],
-						termKey,
-						row[annotTypeKeyCol],
-						None,
-						None,
-						row[qualifierCol],
-						row[termIDCol],
-						row[termCol],
-						row[vocabNameCol],
-						header,
-						])
-
 			# header = disease header term
-			elif self.diseaseHeaderDict.has_key(termKey):
+			if self.diseaseHeaderDict.has_key(termKey):
 				for header in self.diseaseHeaderDict[termKey]:
 					annotResults.append ( [ 
                                 		row[markerKeyCol],
@@ -549,7 +534,6 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					row[termIDCol],
 					row[termCol],
 					row[vocabNameCol],
-					header,
 					row[termCol],
 					])
 
