@@ -331,6 +331,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                 # sql (26)
 		# complex genotypes
+		# contains MP + OMIM annotations
 		logger.debug ('start : processed complex mouse annotations')
                 (cols, rows) = self.results[26]
 
@@ -347,6 +348,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		genotypeTypeCol = Gatherer.columnNumber (cols, 'genotype_type')
 
                 for row in rows:
+
 			termKey = row[termKeyCol]
 			genotype_type = row[genotypeTypeCol]
 
@@ -419,6 +421,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# sql (28)
 		# allele/OMIM annotations
+		# contains OMIM annotations only
 		logger.debug ('start : processed allele/OMIM annotatins')
 		(cols, rows) = self.results[28]
 
@@ -486,6 +489,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# sql (29)
 		# human gene/OMIM annotations
+		# contains OMIM annotations only
 		logger.debug ('start : processed human OMIM annotations')
 		(cols, rows) = self.results[29]
 
