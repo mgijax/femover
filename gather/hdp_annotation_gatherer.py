@@ -352,6 +352,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			termKey = row[termKeyCol]
 			genotype_type = row[genotypeTypeCol]
 
+			# header = mp header term
 			if self.mpHeaderDict.has_key(termKey):
 				for header in self.mpHeaderDict[termKey]:
 					annotResults.append ( [ 
@@ -964,17 +965,19 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 						gannotTermList.add((clusterKey, termKey, qualifier))
 
-						# one header per cluster
+						# header = mp header term
 						if self.mpHeaderDict.has_key(termKey):
                                                         for header in self.mpHeaderDict[termKey]:
                                         			if (annotationKey, qualifier, header) not in gannotHeaderList:
                                                 			gannotHeaderList.add((annotationKey, qualifier, header))
 
+						# header = disease header term
 						elif self.diseaseHeaderDict.has_key(termKey):
                                                         for header in self.diseaseHeaderDict[termKey]:
                                         			if (annotationKey, qualifier, header) not in gannotHeaderList:
                                                 			gannotHeaderList.add((annotationKey, qualifier, header))
 
+						# header = disease-term
 						else:
 							header = termName
                                         		if (annotationKey, qualifier, header) not in gannotHeaderList:
