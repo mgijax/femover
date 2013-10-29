@@ -947,9 +947,9 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                                                         continue
 
                                                 # get the cluster-annotation-count
-                                                genotermref_count = 0
+                                                geno_count = 0
                                                 if clusterAnnotCount.has_key((termKey, qualifierKey)):
-                                                        genotermref_count = clusterAnnotCount[(termKey, qualifierKey)]
+                                                        geno_count = clusterAnnotCount[(termKey, qualifierKey)]
 
 						gannotResults.append( [ 
 			    				clusterKey,
@@ -960,7 +960,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 							termId,
 							termName,
 							hasBackgroundNote,
-							genotermref_count
+							geno_count
 							])
 
 						gannotTermList.add((clusterKey, termKey, qualifier))
@@ -969,25 +969,25 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						if self.mpHeaderDict.has_key(termKey):
                                                         for header in self.mpHeaderDict[termKey]:
                                         			if (annotationKey, qualifier, header) not in gannotHeader:
-                                                			gannotHeader[annotationKey, qualifier, header] = genotermref_count
+                                                			gannotHeader[annotationKey, qualifier, header] = geno_count
 								else:
-                                                			gannotHeader[annotationKey, qualifier, header] += genotermref_count
+                                                			gannotHeader[annotationKey, qualifier, header] += geno_count
 
 						# header = disease header term
 						elif self.diseaseHeaderDict.has_key(termKey):
                                                         for header in self.diseaseHeaderDict[termKey]:
                                         			if (annotationKey, qualifier, header) not in gannotHeader:
-                                                			gannotHeader[annotationKey, qualifier, header] = genotermref_count
+                                                			gannotHeader[annotationKey, qualifier, header] = geno_count
 								else:
-                                                			gannotHeader[annotationKey, qualifier, header] += genotermref_count
+                                                			gannotHeader[annotationKey, qualifier, header] += geno_count
 
 						# header = disease-term
 						else:
 							header = termName
                                         		if (annotationKey, qualifier, header) not in gannotHeader:
-                                                		gannotHeader[annotationKey, qualifier, header] = genotermref_count
+                                                		gannotHeader[annotationKey, qualifier, header] = geno_count
 							else:
-                                                		gannotHeader[annotationKey, qualifier, header] += genotermref_count
+                                                		gannotHeader[annotationKey, qualifier, header] += geno_count
 
 			#
 			# within each cluster
@@ -1001,7 +1001,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				annotationKey = gheader[0]
 				qualifier = gheader[1]
 				header = gheader[2]
-				genotermref_count = gannotHeader[gheader]
+				geno_count = gannotHeader[gheader]
 
 				# for the given annotation-key and header-term
 
@@ -1013,13 +1013,13 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 					or \
 				   (qualifier == None and (annotationKey, 'normal', header) not in gannotHeader)):
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, header, 0, genotermref_count])
+						None, 'header', None, header, 0, geno_count])
 
 				# else if only normal-qualifier exists, then use it
 
 				elif (qualifier == 'normal' and (annotationKey, None, header) not in gannotHeader):
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, header, 0, genotermref_count])
+						qualifier, 'header', None, header, 0, geno_count])
 
 				# do nothing...as this would create a duplicate row in gannotResults
 				#elif (qualifier == None and (annotationKey, 'normal', header) in gannotHeader)
