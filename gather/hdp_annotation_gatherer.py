@@ -879,6 +879,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		for clusterKey in compressSet:
 
                 	# at most one cluster/header-term in a genoCluster_annotation
+			# contains both MP and Disease (OMIM) headers
                 	gannotHeaderList = set([])
 
                         # for each genotype in the cluster
@@ -965,10 +966,19 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 						# one header per cluster
 						if self.mpHeaderDict.has_key(termKey):
-                                                        for mpHeader in self.mpHeaderDict[termKey]:
-                                        			if (annotationKey, qualifier, mpHeader) not in gannotHeaderList:
-                                                			gannotHeaderList.add((annotationKey,\
-										qualifier, mpHeader))
+                                                        for header in self.mpHeaderDict[termKey]:
+                                        			if (annotationKey, qualifier, header) not in gannotHeaderList:
+                                                			gannotHeaderList.add((annotationKey, qualifier, header))
+
+						elif self.diseaseHeaderDict.has_key(termKey):
+                                                        for header in self.diseaseHeaderDict[termKey]:
+                                        			if (annotationKey, qualifier, header) not in gannotHeaderList:
+                                                			gannotHeaderList.add((annotationKey, qualifier, header))
+
+						else:
+							header = termName
+                                        		if (annotationKey, qualifier, header) not in gannotHeaderList:
+                                                		gannotHeaderList.add((annotationKey, qualifier, header))
 
 			#
 			# within each cluster
@@ -981,28 +991,28 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 				annotationKey = gheader[0]
 				qualifier = gheader[1]
-				mpHeader = gheader[2]
+				header = gheader[2]
 
-				# for the given annotation-key and mpheader-term
+				# for the given annotation-key and header-term
 
 				# if both normal-qualifier and null-qualifier exist, use null-qualifier
 				# or
 				# if only null-qualifier exists, use it
 
-				if ((qualifier == 'normal' and (annotationKey, None, mpHeader) in gannotHeaderList) \
+				if ((qualifier == 'normal' and (annotationKey, None, header) in gannotHeaderList) \
 					or \
-				   (qualifier == None and (annotationKey, 'normal', mpHeader) not in gannotHeaderList)):
+				   (qualifier == None and (annotationKey, 'normal', header) not in gannotHeaderList)):
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, mpHeader, 0, 0])
+						None, 'header', None, header, 0, 0])
 
 				# else if only normal-qualifier exists, then use it
 
-				elif (qualifier == 'normal' and (annotationKey, None, mpHeader) not in gannotHeaderList):
+				elif (qualifier == 'normal' and (annotationKey, None, header) not in gannotHeaderList):
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, mpHeader, 0, 0])
+						qualifier, 'header', None, header, 0, 0])
 
 				# do nothing...as this would create a duplicate row in gannotResults
-				#elif (qualifier == None and (annotationKey, 'normal', mpHeader) in gannotHeaderList)
+				#elif (qualifier == None and (annotationKey, 'normal', header) in gannotHeaderList)
 
 		#
 		# ready to push the compressedSet into the gClusterResults
