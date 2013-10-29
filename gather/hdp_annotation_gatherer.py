@@ -23,7 +23,7 @@
 # hdp_annotation
 #	genotypes: super-simple, simple, complex
 #	includes annotationed terms
-#	includes the header terms for each annotation MP-term
+#	includes the header terms for each MP-term and disease/OMIM-term
 #
 #	super-simple (OMG): genotypes that contain only one marker
 # 		include : non-wild type alleles
@@ -71,7 +71,7 @@
 #
 #	'annotaton' : annotations associated with a grid-cluster (both homologene + non-homolgene clusters)
 #		includes annotation type, term info
-#		include header terms
+#		includes the header terms for MP-term and disease/OMIM-term
 #
 # hdp_genocluster
 # hdp_genocluster_genotype
@@ -86,7 +86,7 @@
 #
 #	'annotation' : annotations associated with a geno-cluster
 #		includes annotation type, term info
-#		include header terms
+#		includes the header terms for MP-term and disease/OMIM-term
 #
 # 07/19/2013	lec
 #	- TR11423/Human Disease Portal
@@ -881,7 +881,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
                 	# at most one cluster/header-term in a genoCluster_annotation
 			# contains both MP and Disease (OMIM) headers
-                	gannotHeaderList = set([])
+                	gannotHeader = {}
 
                         # for each genotype in the cluster
                         # track the genotype-term-reference-count for this cluster
@@ -968,33 +968,40 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 						# header = mp header term
 						if self.mpHeaderDict.has_key(termKey):
                                                         for header in self.mpHeaderDict[termKey]:
-                                        			if (annotationKey, qualifier, header) not in gannotHeaderList:
-                                                			gannotHeaderList.add((annotationKey, qualifier, header))
+                                        			if (annotationKey, qualifier, header) not in gannotHeader:
+                                                			gannotHeader[annotationKey, qualifier, header] = genotermref_count
+								else:
+                                                			gannotHeader[annotationKey, qualifier, header] += genotermref_count
 
 						# header = disease header term
 						elif self.diseaseHeaderDict.has_key(termKey):
                                                         for header in self.diseaseHeaderDict[termKey]:
-                                        			if (annotationKey, qualifier, header) not in gannotHeaderList:
-                                                			gannotHeaderList.add((annotationKey, qualifier, header))
+                                        			if (annotationKey, qualifier, header) not in gannotHeader:
+                                                			gannotHeader[annotationKey, qualifier, header] = genotermref_count
+								else:
+                                                			gannotHeader[annotationKey, qualifier, header] += genotermref_count
 
 						# header = disease-term
 						else:
 							header = termName
-                                        		if (annotationKey, qualifier, header) not in gannotHeaderList:
-                                                		gannotHeaderList.add((annotationKey, qualifier, header))
+                                        		if (annotationKey, qualifier, header) not in gannotHeader:
+                                                		gannotHeader[annotationKey, qualifier, header] = genotermref_count
+							else:
+                                                		gannotHeader[annotationKey, qualifier, header] += genotermref_count
 
 			#
 			# within each cluster
 			# determine the header/qualifier for each term
 			# all normals trumps non-normals (null) qualifier
 			#
-			#logger.debug (gannotHeaderList)
+			#logger.debug (gannotHeader)
 
-			for gheader in gannotHeaderList:
+			for gheader in gannotHeader:
 
 				annotationKey = gheader[0]
 				qualifier = gheader[1]
 				header = gheader[2]
+				genotermref_count = gannotHeader[gheader]
 
 				# for the given annotation-key and header-term
 
@@ -1002,20 +1009,20 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				# or
 				# if only null-qualifier exists, use it
 
-				if ((qualifier == 'normal' and (annotationKey, None, header) in gannotHeaderList) \
+				if ((qualifier == 'normal' and (annotationKey, None, header) in gannotHeader) \
 					or \
-				   (qualifier == None and (annotationKey, 'normal', header) not in gannotHeaderList)):
+				   (qualifier == None and (annotationKey, 'normal', header) not in gannotHeader)):
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, header, 0, 0])
+						None, 'header', None, header, 0, genotermref_count])
 
 				# else if only normal-qualifier exists, then use it
 
-				elif (qualifier == 'normal' and (annotationKey, None, header) not in gannotHeaderList):
+				elif (qualifier == 'normal' and (annotationKey, None, header) not in gannotHeader):
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, header, 0, 0])
+						qualifier, 'header', None, header, 0, genotermref_count])
 
 				# do nothing...as this would create a duplicate row in gannotResults
-				#elif (qualifier == None and (annotationKey, 'normal', header) in gannotHeaderList)
+				#elif (qualifier == None and (annotationKey, 'normal', header) in gannotHeader)
 
 		#
 		# ready to push the compressedSet into the gClusterResults
@@ -1761,7 +1768,7 @@ cmds = [
         '''
         select distinct v._Object_key as _Genotype_key, v._Term_key, v._Qualifier_key, count(_Refs_key) as refCount
         from VOC_Annot v, VOC_Evidence e
-        where v._AnnotType_key = 1002 
+        where v._AnnotType_key in (1002, 1005)
         	and v._Annot_key = e._Annot_key
 	        and v._Term_key not in (293594)
         group by v._Object_key, v._Term_key, v._Qualifier_key
