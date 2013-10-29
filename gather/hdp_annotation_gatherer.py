@@ -1768,7 +1768,9 @@ cmds = [
         '''
         select distinct v._Object_key as _Genotype_key, v._Term_key, v._Qualifier_key, count(_Refs_key) as refCount
         from VOC_Annot v, VOC_Evidence e
-        where v._AnnotType_key in (1002, 1005)
+        where (v._AnnotType_key in (1002)
+		or
+	     (v._AnnotType_key = 1005 and v._Qualifier_key != 1614157))
         	and v._Annot_key = e._Annot_key
 	        and v._Term_key not in (293594)
         group by v._Object_key, v._Term_key, v._Qualifier_key
