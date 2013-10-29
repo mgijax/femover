@@ -470,7 +470,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
                         		row[termIDCol],
                         		row[termCol],
                         		row[vocabNameCol],
-					header,
+					row[termCol],
                         		])
 
 			# store the *unique* marker/reference association
