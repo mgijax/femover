@@ -572,7 +572,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		#
 		# sql (22)
-		# marker -> mp header term/accession id
+		# marker/annotation-type -> header term/accession id
 		markerHeaderDict = {}
 		(cols, rows) = self.results[22]
 		key = Gatherer.columnNumber (cols, '_Marker_key')
@@ -1492,7 +1492,7 @@ cmds = [
 	''',
 
 	# sql (22)
-	# marker -> mp header term
+	# marker -> header terms (both MP and Disease/OMIM)
 	'''
 	select distinct s._Marker_key, v._AnnotType_key, v._Term_key, ms.synonym, a.accID
 	from tmp_annot_mouse s, VOC_AnnotHeader v, MGI_Synonym ms, ACC_Accession a
@@ -1500,10 +1500,23 @@ cmds = [
 	and v._AnnotType_key = 1002
 	and v._Term_key = ms._Object_key
 	and ms._MGIType_key = 13
-        and ms._synonymtype_key = 1021
+        and ms._Synonymtype_key = 1021
         and v._Term_key = a._Object_key
         and a._MGIType_key = 13
         and a.preferred = 1
+
+	union
+
+	select distinct s._Marker_key, s._AnnotType_key, s._Term_key, ms.synonym, a.accID
+	from tmp_annot_mouse s, MGI_Synonym ms, ACC_Accession a
+	where s._AnnotType_key = 1005
+	and s._Term_key = ms._Object_key
+	and ms._MGIType_key = 13
+        and ms._Synonymtype_key = 1031
+        and s._Term_key = a._Object_key
+        and a._MGIType_key = 13
+        and a.preferred = 1
+
 	''',
 
 	#
