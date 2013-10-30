@@ -16,6 +16,7 @@ tableName = 'genotype_sequence_num'
 createStatement = '''CREATE TABLE %s  ( 
 	genotype_key		int	not null,
 	by_alleles		int	not null,
+	by_hdp_rules		int	not null,
 	PRIMARY KEY(genotype_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -34,6 +35,7 @@ comments = {
 	Table.COLUMN : {
 		'genotype_key' : 'identifies the genotype',
 		'by_alleles' : 'pre-computed to sort by mutant alleles in the genotype',
+		'by_hdp_rules' : 'pre-computed to sort by the hdp-rules (pair state)',
 		},
 	}
 

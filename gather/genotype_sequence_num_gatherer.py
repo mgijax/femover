@@ -1,6 +1,12 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'genotype_sequence_num' table in the front-end database
+#
+# 10/30/2013	lec
+#	- TR11423/human disease portal (hdp)
+#	- moved "byAlleles" collation/results into its own function
+#	- added "byHDP" function
+#
 
 import Gatherer
 import symbolsort
@@ -16,7 +22,8 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for sorting data for genotypes,
 	#	collates results, writes tab-delimited text file
 
-	def collateResults (self):
+	def byAlleles(self):
+
 		# list of (allele symbol, allele key) to be sorted
 		alleleList = []
 
@@ -72,30 +79,111 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		genotypeList = genotypes.items()
 		genotypeList.sort(lambda a, b : cmp(a[1], b[1]))
 
-		logger.debug ('Sorted %d genotypes' % len(genotypeList))
+		logger.debug ('Sorted %d genotypes by allele' % len(genotypeList))
+
+		return genotypeList
+
+	def byHDP(self):
+
+		#
+		# sql (3)
+		#
+		# sort genotype by:  pair state terms (see order below)
+		# then by "isConditional", "allele 1 symbol"
+		#
+
+		cols, rows = self.results[3]
+		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		conditionalCol = Gatherer.columnNumber (cols, 'isConditional')
+		alleleCol = Gatherer.columnNumber (cols, 'symbol')
+
+		orderedHDP = []
+
+		for row in rows:
+			genotypeKey = row[genotypeCol]
+			term = row[termCol]
+			isConditional = row[conditionalCol]
+			allele = row[alleleCol].lower()
+
+			if term == 'Homozygous':
+				s = 1
+			elif term == 'Homoplasmic':
+				s = 2
+			elif term == 'Heterozygous':
+				s = 3
+			elif term == 'Heteroplasmic':
+				s = 4
+			elif term == 'Hemizygous X-linked':
+				s = 5
+			elif term == 'Hemizygous Y-linked':
+				s = 6
+			elif term == 'Hemizygous Insertion':
+				s = 7
+			elif term == 'Indeterminate':
+				s = 8
+			elif term == 'Hemizygous Deletion':
+				s = 9
+
+			orderedHDP.append((s, isConditional, allele, genotypeKey))
+
+		# order the list by term-specified order, isConditional, allele
+		orderedHDP.sort()
+
+		# assign a unique by-hdp-number (i) to each genotype based on the orderedHDP list
+		genotypeList = {}
+		i = 1
+		for o in orderedHDP:
+			genotypeKey = o[3]
+			if not genotypeList.has_key(genotypeKey):
+				genotypeList[genotypeKey] = []
+			genotypeList[genotypeKey] = i
+			i = i + 1
+		#logger.debug (genotypeList)
+
+		logger.debug ('Sorted %d genotypes by hdp-order' % len(genotypeList))
+
+		return genotypeList
+
+	def collateResults (self):
+
+		# sql (0,1,2)
+		genotypeByAlleleList = self.byAlleles()
+
+		# sql (3)
+		genotypeByHDPList = self.byHDP()
 
 		# prepare set of final results
 
-		self.finalColumns = [ 'genotypeKey', 'byAlleles' ]
+		self.finalColumns = [ 'genotypeKey', 'byAlleles', 'by_hdp_rules' ]
 		self.finalResults = []
 
 		i = 0
-		for (key, alleleList) in genotypeList:
+		for (key, alleleList) in genotypeByAlleleList:
 			i = i + 1
-			self.finalResults.append ( [ key, i ] )
+
+			# find the hdp-order number for this genotype (if it exists)
+			if genotypeByHDPList.has_key(key):
+				byHDP = genotypeByHDPList[key]
+			else:
+				byHDP = 0
+
+			self.finalResults.append ( [ key, i, byHDP ] )
 
 		# now add those without alleles
-		cols, rows = self.results[-1]
+		cols, rows = self.results[2]
 
+		byHDP = 0	# always 0
 		for row in rows:
 			i = i + 1
-			self.finalResults.append ( [ row[0], i ] )
+			self.finalResults.append ( [ row[0], i, byHDP ] )
 
 		return
 
 ###--- globals ---###
 
 cmds = [
+	# sql (0)
 	# get symbols for all alleles which participate in genotypes, so we
 	# can sort them
 	'''select a._Allele_key, a.symbol
@@ -106,11 +194,13 @@ cmds = [
 	from all_allele a, gxd_allelepair g
 	where a._Allele_key = g._Allele_key_2''',
 
+	# sql (1)
 	# get all allele pairs for all genotypes
 	'''select _Genotype_key, _Allele_key_1, _Allele_key_2, sequenceNum
 	from gxd_allelepair
 	order by _Genotype_key, sequenceNum''',
 
+	# sql (2)
 	# get all genotypes which do not have allele pairs, so we can add
 	# them, too
 	'''select g._Genotype_key
@@ -118,11 +208,26 @@ cmds = [
 	where not exists (select 1 from gxd_allelepair p
 		where g._Genotype_key = p._Genotype_key)
 	order by 1''',
+
+	#
+	# sql (3)
+	# get list of genotypes that contains MP/OMIM annotations
+	#
+	'''
+	select distinct g._Genotype_key, t.term, g.isConditional, a.symbol 
+	from GXD_Genotype g, GXD_AllelePair p, ALL_Allele a, VOC_Term t
+	where g._Genotype_key = p._Genotype_key
+	and p._Allele_key_1 = a._Allele_key
+	and p._PairState_key = t._Term_key
+	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1005)
+		and g._Genotype_key = v._Object_key)
+	order by term desc, isConditional, symbol
+	''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ 'genotypeKey', 'byAlleles', ]
+fieldOrder = [ 'genotypeKey', 'byAlleles', 'by_hdp_rules' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'genotype_sequence_num'
