@@ -554,7 +554,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		# hdp_gridcluster_annotation
 		#
 		# sql (22)
-		# marker -> mp header term/accession id
+		# marker -> header term/accession id (MP and Disease/OMIM)
 		#
 		# sql (35)
 		# homologene clusters
@@ -572,7 +572,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		#
 		# sql (22)
-		# marker/annotation-type -> header term/accession id
+		# marker -> header term/accession id
 		markerHeaderDict = {}
 		(cols, rows) = self.results[22]
 		key = Gatherer.columnNumber (cols, '_Marker_key')
