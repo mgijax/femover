@@ -83,7 +83,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 		return genotypeList
 
-	def byHDP(self):
+	def byHDPRules(self):
 
 		#
 		# sql (3)
@@ -152,7 +152,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		genotypeByAlleleList = self.byAlleles()
 
 		# sql (3)
-		genotypeByHDPList = self.byHDP()
+		genotypeByHDPList = self.byHDPRules()
 
 		# prepare set of final results
 
