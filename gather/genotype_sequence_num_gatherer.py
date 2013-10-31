@@ -88,8 +88,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		#
 		# sql (3, 4)
 		#
-		# sort genotype by:  pair state terms (see order below)
-		# then by "isConditional", "allele 1 symbol"
+		# sort genotype by:  isConditional, pair state terms (see order below), allele symbol
 		#
 
 		#
