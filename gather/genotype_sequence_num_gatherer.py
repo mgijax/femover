@@ -99,7 +99,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		alleleList = []
 
 		cols, rows = self.results[3]
-		keyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
 		for row in rows:
