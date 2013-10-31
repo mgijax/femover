@@ -99,7 +99,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		alleleList = []
 
 		cols, rows = self.results[3]
-		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
 		for row in rows:
@@ -123,7 +123,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		conditionalCol = Gatherer.columnNumber (cols, 'isConditional')
-		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
 
 		orderedHDP = []
 
@@ -155,7 +155,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 			# use the alleleSortVal-order
 			alleleCount = alleleSortVal[alleleKey]
 
-			orderedHDP.append((s, isConditional, alleleCount, genotypeKey))
+			orderedHDP.append((isConditional, s, alleleCount, genotypeKey))
 
 		# order the list by term-specified order, isConditional, alleleCount
 		orderedHDP.sort()
@@ -256,7 +256,7 @@ cmds = [
 	# get list of genotypes that contain MP/OMIM annotations
 	#
 	'''
-	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key
+	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key_1
 	from GXD_Genotype g, GXD_AllelePair p, VOC_Term t
 	where g._Genotype_key = p._Genotype_key
 	and p._PairState_key = t._Term_key
