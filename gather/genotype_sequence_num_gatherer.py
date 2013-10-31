@@ -135,8 +135,9 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 		i = 1
 		for o in orderedHDP:
 			genotypeKey = o[3]
-			if not genotypeList.has_key(genotypeKey):
-				genotypeList[genotypeKey] = []
+			if genotypeList.has_key(genotypeKey):
+				continue
+			genotypeList[genotypeKey] = []
 			genotypeList[genotypeKey] = i
 			i = i + 1
 		#logger.debug (genotypeList)
