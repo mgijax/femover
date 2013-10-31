@@ -86,17 +86,44 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 	def byHDPRules(self):
 
 		#
-		# sql (3)
+		# sql (3, 4)
 		#
 		# sort genotype by:  pair state terms (see order below)
 		# then by "isConditional", "allele 1 symbol"
 		#
 
+		#
+		# start: use the "symbolsort.nomenCompare" to sort the allele symbols
+		# list of (allele symbol, allele key) to be sorted
+		#
+		alleleList = []
+
 		cols, rows = self.results[3]
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+		for row in rows:
+			alleleList.append((row[symbolCol].lower(), row[keyCol]))
+		alleleList.sort (lambda a, b : symbolsort.nomenCompare(a[0], b[0]))
+		#logger.debug (alleleList)
+
+		# store the sorted allele-symbols by allele-key 
+		#	and assign them a sequence number
+		alleleSortVal = {}
+		i = 1
+		for (symbol, key) in alleleList:
+			alleleSortVal[key] = i
+			i = i + 1
+		#logger.debug (alleleSortVal)
+		# end: use the "symbolsort.nomenCompare" to sort the allele symbols
+
+		# start: do the rest of the hdp-ordering
+
+		cols, rows = self.results[4]
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		conditionalCol = Gatherer.columnNumber (cols, 'isConditional')
-		alleleCol = Gatherer.columnNumber (cols, 'symbol')
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key')
 
 		orderedHDP = []
 
@@ -104,7 +131,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 			genotypeKey = row[genotypeCol]
 			term = row[termCol]
 			isConditional = row[conditionalCol]
-			allele = row[alleleCol].lower()
+			alleleKey = row[alleleKeyCol]
 
 			if term == 'Homozygous':
 				s = 1
@@ -125,9 +152,12 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 			elif term == 'Hemizygous Deletion':
 				s = 9
 
-			orderedHDP.append((s, isConditional, allele, genotypeKey))
+			# use the alleleSortVal-order
+			alleleCount = alleleSortVal[alleleKey]
 
-		# order the list by term-specified order, isConditional, allele
+			orderedHDP.append((s, isConditional, alleleCount, genotypeKey))
+
+		# order the list by term-specified order, isConditional, alleleCount
 		orderedHDP.sort()
 
 		# assign a unique by-hdp-number (i) to each genotype based on the orderedHDP list
@@ -212,17 +242,27 @@ cmds = [
 
 	#
 	# sql (3)
-	# get list of genotypes that contains MP/OMIM annotations
+	# get list of unique alleles that contain MP/OMIM annotations
 	#
 	'''
-	select distinct g._Genotype_key, t.term, g.isConditional, a.symbol 
-	from GXD_Genotype g, GXD_AllelePair p, ALL_Allele a, VOC_Term t
+	select distinct a._Allele_key, a.symbol 
+	from GXD_AllelePair p, ALL_Allele a
+	where p._Allele_key_1 = a._Allele_key
+	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1005)
+		and p._Genotype_key = v._Object_key)
+	''',
+	#
+	# sql (4)
+	# get list of genotypes that contain MP/OMIM annotations
+	#
+	'''
+	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key
+	from GXD_Genotype g, GXD_AllelePair p, VOC_Term t
 	where g._Genotype_key = p._Genotype_key
-	and p._Allele_key_1 = a._Allele_key
 	and p._PairState_key = t._Term_key
 	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1005)
 		and g._Genotype_key = v._Object_key)
-	order by term desc, isConditional, symbol
+	order by term desc, isConditional
 	''',
 	]
 
