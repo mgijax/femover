@@ -1001,25 +1001,24 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				annotationKey = gheader[0]
 				qualifier = gheader[1]
 				header = gheader[2]
-				geno_count = gannotHeader[gheader]
+				genoCount = gannotHeader[gheader]
 
 				# for the given annotation-key and header-term
 
-				# if both normal-qualifier and null-qualifier exist, use null-qualifier
+				# if we have both qualifiers, use null-qualifier, but add both geno counts
 				# or
-				# if only null-qualifier exists, use it
+				# if this is the only qualifier (whether normal or null) use it
 
-				if ((qualifier == 'normal' and (annotationKey, None, header) in gannotHeader) \
-					or \
-				   (qualifier == None and (annotationKey, 'normal', header) not in gannotHeader)):
+				otherQualifierKey = qualifier=='normal' and (annotationKey, None, header) or (annotationKey, 'normal', header)
+
+				if otherQualifierKey in gannotHeader:
+					otherQualifierGenoCount = gannotHeader[otherQualifierKey]
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, header, 0, geno_count])
-
-				# else if only normal-qualifier exists, then use it
-
-				elif (qualifier == 'normal' and (annotationKey, None, header) not in gannotHeader):
+						None, 'header', None, header, 0, genoCount + otherQualifierGenoCount])
+				else:
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, header, 0, geno_count])
+						qualifier, 'header', None, header, 0, genoCount])
+					
 
 				# do nothing...as this would create a duplicate row in gannotResults
 				#elif (qualifier == None and (annotationKey, 'normal', header) in gannotHeader)
