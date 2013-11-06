@@ -22,32 +22,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for sorting data for genotypes,
 	#	collates results, writes tab-delimited text file
 
-	def byAlleles(self):
-
-		# list of (allele symbol, allele key) to be sorted
-		alleleList = []
-
-		cols, rows = self.results[0]
-		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
-		symbolCol = Gatherer.columnNumber (cols, 'symbol')
-
-		for row in rows:
-			alleleList.append ( (row[symbolCol].lower(),
-				row[keyCol]) )
-
-		alleleList.sort (lambda a, b : symbolsort.nomenCompare(a[0],
-			b[0]) )
-
-		alleleSortVal = {}	# allele key -> sequence num
-		i = 0
-		for (symbol, key) in alleleList:
-			i = i + 1
-			alleleSortVal[key] = i
-
-		# sort null alleles first
-		alleleSortVal[None] = 0
-
-		logger.debug ('Sorted %d allele symbols' % len(alleleSortVal))
+	def byAlleles(self, alleleSortVal):
 
 		# to sort a genotype by its alleles, we need the sequence num
 		# for all of its alleles in order (allele pair 1, ... n)
@@ -70,11 +45,9 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 			if not alleleSortVal.has_key(allele1Key):
 				logger.debug ('No %s' % str(row))
-			genotypes[genotypeKey].append (
-				alleleSortVal[allele1Key])
 
-			genotypes[genotypeKey].append (
-				alleleSortVal[allele2Key])
+			genotypes[genotypeKey].append (alleleSortVal[allele1Key])
+			genotypes[genotypeKey].append (alleleSortVal[allele2Key])
 
 		genotypeList = genotypes.items()
 		genotypeList.sort(lambda a, b : cmp(a[1], b[1]))
@@ -83,46 +56,19 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 		return genotypeList
 
-	def byHDPRules(self):
+	def byHDPRules(self, alleleSortVal):
 
 		#
-		# sql (3, 4)
-		#
+		# sql (3)
 		# sort genotype by:  isConditional, pair state terms (see order below), allele symbol
 		#
 
-		#
-		# start: use the "symbolsort.nomenCompare" to sort the allele symbols
-		# list of (allele symbol, allele key) to be sorted
-		#
-		alleleList = []
-
 		cols, rows = self.results[3]
-		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
-		symbolCol = Gatherer.columnNumber (cols, 'symbol')
-
-		for row in rows:
-			alleleList.append((row[symbolCol].lower(), row[keyCol]))
-		alleleList.sort (lambda a, b : symbolsort.nomenCompare(a[0], b[0]))
-		#logger.debug (alleleList)
-
-		# store the sorted allele-symbols by allele-key 
-		#	and assign them a sequence number
-		alleleSortVal = {}
-		i = 1
-		for (symbol, key) in alleleList:
-			alleleSortVal[key] = i
-			i = i + 1
-		#logger.debug (alleleSortVal)
-		# end: use the "symbolsort.nomenCompare" to sort the allele symbols
-
-		# start: do the rest of the hdp-ordering
-
-		cols, rows = self.results[4]
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		termCol = Gatherer.columnNumber (cols, 'term')
 		conditionalCol = Gatherer.columnNumber (cols, 'isConditional')
-		alleleKeyCol = Gatherer.columnNumber (cols, '_Allele_key_1')
+		alleleKey1Col = Gatherer.columnNumber (cols, '_Allele_key_1')
+		alleleKey2Col = Gatherer.columnNumber (cols, '_Allele_key_2')
 
 		orderedHDP = []
 
@@ -130,7 +76,8 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 			genotypeKey = row[genotypeCol]
 			term = row[termCol]
 			isConditional = row[conditionalCol]
-			alleleKey = row[alleleKeyCol]
+			alleleKey1 = row[alleleKey1Col]
+			alleleKey2 = row[alleleKey2Col]
 
 			if term == 'Homozygous':
 				s = 1
@@ -152,9 +99,10 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 				s = 9
 
 			# use the alleleSortVal-order
-			alleleCount = alleleSortVal[alleleKey]
+			alleleCount1 = alleleSortVal[alleleKey1]
+			alleleCount2 = alleleSortVal[alleleKey2]
 
-			orderedHDP.append((isConditional, s, alleleCount, genotypeKey))
+			orderedHDP.append((isConditional, s, alleleCount1, alleleCount2, genotypeKey))
 
 		# order the list by term-specified order, isConditional, alleleCount
 		orderedHDP.sort()
@@ -177,11 +125,34 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 	def collateResults (self):
 
-		# sql (0,1,2)
-		genotypeByAlleleList = self.byAlleles()
+		# list of (allele symbol, allele key) to be sorted
+		alleleList = []
+
+		cols, rows = self.results[0]
+		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
+		symbolCol = Gatherer.columnNumber (cols, 'symbol')
+
+		for row in rows:
+			alleleList.append ( (row[symbolCol].lower(), row[keyCol]) )
+
+		alleleList.sort (lambda a, b : symbolsort.nomenCompare(a[0], b[0]) )
+
+		alleleSortVal = {}	# allele key -> sequence num
+		i = 0
+		for (symbol, key) in alleleList:
+			i = i + 1
+			alleleSortVal[key] = i
+
+		# sort null alleles first
+		alleleSortVal[None] = 0
+
+		logger.debug ('Sorted %d allele symbols' % len(alleleSortVal))
+
+		# sql (1)
+		genotypeByAlleleList = self.byAlleles(alleleSortVal)
 
 		# sql (3)
-		genotypeByHDPList = self.byHDPRules()
+		genotypeByHDPList = self.byHDPRules(alleleSortVal)
 
 		# prepare set of final results
 
@@ -241,21 +212,10 @@ cmds = [
 
 	#
 	# sql (3)
-	# get list of unique alleles that contain MP/OMIM annotations
+	# get list of genotypes that contain MP/OMIM annotations ONLY
 	#
 	'''
-	select distinct a._Allele_key, a.symbol 
-	from GXD_AllelePair p, ALL_Allele a
-	where p._Allele_key_1 = a._Allele_key
-	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1005)
-		and p._Genotype_key = v._Object_key)
-	''',
-	#
-	# sql (4)
-	# get list of genotypes that contain MP/OMIM annotations
-	#
-	'''
-	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key_1
+	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key_1, p._Allele_key_2
 	from GXD_Genotype g, GXD_AllelePair p, VOC_Term t
 	where g._Genotype_key = p._Genotype_key
 	and p._PairState_key = t._Term_key
