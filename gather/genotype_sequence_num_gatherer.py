@@ -104,7 +104,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 			orderedHDP.append((isConditional, s, alleleCount1, alleleCount2, genotypeKey))
 
-		# order the list by term-specified order, isConditional, alleleCount
+		# order the list by term-specified order, isConditional, pair state, allele-1, allele-2
 		orderedHDP.sort()
 
 		# assign a unique by-hdp-number (i) to each genotype based on the orderedHDP list
@@ -148,10 +148,10 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 		logger.debug ('Sorted %d allele symbols' % len(alleleSortVal))
 
-		# sql (1)
+		# sql (1)/sort by allele
 		genotypeByAlleleList = self.byAlleles(alleleSortVal)
 
-		# sql (3)
+		# sql (3)/sort by hdp-rules
 		genotypeByHDPList = self.byHDPRules(alleleSortVal)
 
 		# prepare set of final results
