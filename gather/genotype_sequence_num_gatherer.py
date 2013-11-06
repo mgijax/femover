@@ -60,7 +60,7 @@ class GenotypeSequenceNumGatherer (Gatherer.Gatherer):
 
 		#
 		# sql (3)
-		# sort genotype by:  isConditional, pair state terms (see order below), allele symbol
+		# sort genotype by:  isConditional, pair state terms, allele symbol 1, allele symbol 2
 		#
 
 		cols, rows = self.results[3]
