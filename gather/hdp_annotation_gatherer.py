@@ -1001,7 +1001,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				annotationKey = gheader[0]
 				qualifier = gheader[1]
 				header = gheader[2]
-				genoCount = gannotHeader[gheader]
+				geno_count = gannotHeader[gheader]
 
 				# for the given annotation-key and header-term
 
@@ -1009,15 +1009,16 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 				# or
 				# if this is the only qualifier (whether normal or null) use it
 
-				otherQualifierKey = qualifier=='normal' and (annotationKey, None, header) or (annotationKey, 'normal', header)
+				otherQualifierKey = qualifier == 'normal' and \
+					(annotationKey, None, header) or (annotationKey, 'normal', header)
 
 				if otherQualifierKey in gannotHeader:
 					otherQualifierGenoCount = gannotHeader[otherQualifierKey]
 					gannotResults.append([clusterKey, None, annotationKey,
-						None, 'header', None, header, 0, genoCount + otherQualifierGenoCount])
+						None, 'header', None, header, 0, geno_count + otherQualifierGenoCount])
 				else:
 					gannotResults.append([clusterKey, None, annotationKey,
-						qualifier, 'header', None, header, 0, genoCount])
+						qualifier, 'header', None, header, 0, geno_count])
 					
 
 				# do nothing...as this would create a duplicate row in gannotResults

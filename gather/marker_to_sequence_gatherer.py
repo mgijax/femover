@@ -16,7 +16,7 @@ MarkerToSequenceGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-	'''select m._Marker_key,
+	'''select distinct on (m._Marker_key,m._Sequence_key) m._Marker_key,
 		m._Sequence_key,
 		m._Refs_key,
 		m._Qualifier_key,
