@@ -713,6 +713,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 			# cmarkerResults
 			#
 			if markerKey not in markerList:
+				self.markerClusterKeyDict[markerKey] = clusterKey
 				cmarkerResults.append ( [ 
                                		clusterKey,
 					markerKey,
@@ -1144,6 +1145,7 @@ class HDPAnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug("start : calculate termSeqs")	
 		annotResults = self.calculateTermSeqs(annotResults)
 		logger.debug("end : calculate termSeqs")	
+
 
 		#
 		# hdp_genocluster
