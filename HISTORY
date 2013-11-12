@@ -1,8 +1,9 @@
-TAG: femover-5-1-6-1
-DATE: 11/11/2013
-STAFF: lec
+TAG: femover-5-1-6-1,femover-5-1-6-2
+DATE: 11/12/2013
+STAFF: lec,kstone
 CHANGES:
 1) TR11423/human-disease-portal
+2) Bug fix with hdp_annotation term_seq column
 
 TAG: femover-5-1-5-9
 DATE: 10/17/2013
