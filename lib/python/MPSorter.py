@@ -71,6 +71,33 @@ class MPSorter:
 	# recursive function to traverse dag and calculate sorts and depths for the given term keys
 	# expects a sortMap as defined above, list of termKeys, system term key 
 	# returns the original sortMap with modified values for "new_seq" and "depth"
+	def recurseSorts(self,sortMap,termKeys,rootKey):
+		dagMap = self.getMPDAG()
+		stack = [(rootKey,(1,),1)]
+		
+		while stack:
+			rootKey, parentSeq, depth = stack.pop()
+			if rootKey in dagMap:
+				for childKey in dagMap[rootKey]:
+					# check if this key is one in our list, then check if it has been set before, if it has,
+					# also check if the depth is less than what we want to set it to (we pick the longest annotated path)
+					if (childKey in termKeys) and \
+						((not sortMap[childKey]["set"]) or (sortMap[childKey]["depth"] < depth)):
+						sortMap[childKey]["set"] = True
+						# perform tuple concatenation on parent seq
+						# we build a sortable tuple like (parent1_seq,parent2_seq,etc,term_seq)
+						childSeq = parentSeq + (sortMap[childKey]["seq"],)
+						sortMap[childKey]["new_seq"] = childSeq
+						# set the depth for this term
+						sortMap[childKey]["depth"] = depth
+						# recurse with new depth and term_seq info
+						stack.append((childKey,childSeq,depth+1))
+					else:
+						# recurse further into dag with current depth and parent_seq info
+						stack.append((childKey,parentSeq,depth))
+		return sortMap
+	"""
+	Gained a couple minutes of performance advantage by switching from recursion to stack based method
 	def recurseSorts(self,sortMap,termKeys,rootKey,parentSeq=(1,),depth=1):
 		dagMap = self.getMPDAG()
 		if rootKey in dagMap:
@@ -92,6 +119,7 @@ class MPSorter:
 					# recurse further into dag with current depth and parent_seq info
 					self.recurseSorts(sortMap,termKeys,childKey,parentSeq,depth)
 		return sortMap
+	"""
 
 if __name__=="__main__":
 	mpSorter = MPSorter()
