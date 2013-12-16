@@ -93,12 +93,12 @@ def _setChromosome (chromosome):
 
 def _getChromosome (markerKey):
 	global MARKER_CHROMOSOME
-
-	if MARKER_CHROMOSOME.has_key(markerKey):
+	if markerKey in MARKER_CHROMOSOME:
 		return CURRENT_CHROMOSOME
 
 	# get all the markers that happen to be on the same chromosome with
 	# the given markerKey
+	# excluding QTL (marker_type 6) and heritable phenotypic marker (mcvterm_key 6238170)
 
 	cmd = '''select mlc1._Marker_key, mlc1.chromosome
 		from mrk_location_cache mlc1, mrk_location_cache mlc2,
@@ -106,6 +106,7 @@ def _getChromosome (markerKey):
 		where mlc2._Marker_key = %d
 			and mlc1._Marker_key = mm._Marker_key
                         and mm._Marker_Type_key != 6
+			and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=mm._marker_key and mcv._mcvterm_key=6238170)
 			and mm._Organism_key = 1
 			and mm._Marker_Status_key in (1,3)
 			and mlc1.startCoordinate is not null
@@ -175,6 +176,7 @@ def _loadDistanceAssociations():
 	global SNP_CACHE
 
 	# markers on a given chromosome, ordered by start coordinate
+	# excluding QTL (marker_type 6) and heritable phenotypic marker (mcvterm_key 6238170)
 	markerQuery = '''select distinct l._Marker_key, l.startCoordinate,
                         l.endCoordinate
                 from mrk_location_cache l,mrk_marker m
@@ -183,6 +185,7 @@ def _loadDistanceAssociations():
                         and l.endCoordinate is not null
                         and m._marker_key=l._marker_key
                         and m._Marker_Type_key!=6
+			and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=m._marker_key and mcv._mcvterm_key=6238170)
 			and m._Marker_Status_key in (1,3)
                 order by l.startCoordinate, l.endCoordinate'''
 
@@ -317,18 +320,17 @@ def _loadDistanceAssociations():
 				# overlap
 
 				if mrkStart <= snpStart <= mrkEnd:
-				    if row[multiCol] == 0:
-					_addAssoc (cache, mrkKey, row[snpCol])
-				    else:
-					# We need to add in all locations for
-					# this SNP, not just the location we
-					# found.
+					if row[multiCol] == 0:
+						_addAssoc (cache, mrkKey, row[snpCol])
+					else:
+						# We need to add in all locations for
+						# this SNP, not just the location we
+						# found.
 
-					for loc in multiLoc[row[snpCol]]:
-					    _addAssoc (cache, mrkKey,
-						row[snpCol], loc)
-				    added = added + 1
-
+						for loc in multiLoc[row[snpCol]]:
+							_addAssoc (cache, mrkKey,
+								row[snpCol], loc)
+					added = added + 1
 				m = m + 1
 
 				if m < markerCount:
@@ -388,15 +390,23 @@ def getSnps (markerKey):
 	# single-coordinate SNPs that are associated with it
 
 	global CURRENT_CHROMOSOME
+	global MARKER_CHROMOSOME
+	#logger.debug("start getSnpsInner")
 
-	chrom = _getChromosome(markerKey)
+	#chrom = _getChromosome(markerKey)
+	chrom=CURRENT_CHROMOSOME
+	if markerKey not in MARKER_CHROMOSOME:
+		chrom=_getChromosome(markerKey)
+	#logger.debug("found chr=%s"%chrom)
 
 	if chrom != CURRENT_CHROMOSOME:
 		CURRENT_CHROMOSOME = chrom
 		_setChromosome(chrom)
 		_initialize()
 
-	if SNP_CACHE.has_key(markerKey):
+	#logger.debug("getSnpsInner() mkey=%s"%markerKey)
+	if markerKey in SNP_CACHE:
+		#logger.debug("getSnps() in cache mkey=%s"%markerKey)
 		snpKeys = []
 		for (key, coord) in SNP_CACHE[markerKey].keys():
 			snpKeys.append (key)
@@ -432,7 +442,9 @@ def getMultiCoordSnpCount (markerKey):
 
 def getSnpIDs (markerKey):
 	global LOADED_IDS
+	#logger.debug("getSnps() mkey=%s"%markerKey)
 	snpKeys = getSnps(markerKey)
+	#logger.debug("gotSnps() mkey=%s"%markerKey)
 
 	if not LOADED_IDS:
 		_loadSnpIDs()
@@ -459,9 +471,10 @@ def getAllMarkerCounts():
 	markers = {}
 
 	cmd = '''select distinct _Marker_key, chromosome
-		from mrk_marker
+		from mrk_marker mm
 		where _Organism_key = 1
 			and _Marker_Type_key != 6
+			and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=mm._marker_key and mcv._mcvterm_key=6238170)
 			and _Marker_Status_key in (1,3)
 			and _Organism_key = 1
 		order by chromosome'''
