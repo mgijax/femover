@@ -40,7 +40,7 @@ class MPSorter:
 			childKey = row[2]
 			self.DAG_MAP.setdefault(parentKey,[]).append(childKey)
 
-		logger.info("done initialising map of MP DAG terms")
+		logger.info("done initialising map of MP DAG terms--testing")
 		return self.DAG_MAP 
 
 	# recurse through the MP dag to figure out how to sort (and indent) a subset of terms for a given system (header)
