@@ -15,25 +15,18 @@ class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
 	#	that we need for batch query results that include SNPs,
 	#	collates results, writes tab-delimited text file
 
-	def postprocessResults (self):
-		columns = [ '_Marker_key', 'accid', 'sequence_num' ]
-		rows = []
-
-		mrkCol = Gatherer.columnNumber (self.finalColumns,
-			'_Marker_key')
+	def postprocessResults(self):
+		columns=['_Marker_key','accid','sequence_num']
+		rows=[]
+		mrkCol=Gatherer.columnNumber(self.finalColumns,'_Marker_key')
 
 		for row in self.finalResults:
-			marker = row[mrkCol]
-
-			snps = MarkerSnpAssociations.getSnpIDs(marker)
-
-			i = 0
-
+			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol])
+			i=0
 			for snp in snps:
-				i = i + 1
-				rows.append ( [ marker, snp, i ] )
-
-			del snps
+				i=i+1
+				rows.append([row[mrkCol],snp,i])
+			#del snps
 
 		self.finalColumns = columns
 		self.finalResults = rows
@@ -42,10 +35,12 @@ class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 # note there should be no associated SNPs for QTL markers
+# also omit subtype heritable phenotypic marker (term_key=6238170)
 cmds = [ '''select distinct _Marker_key, chromosome
-	from mrk_marker
+	from mrk_marker m
 	where _Organism_key = 1
 		and _Marker_Type_key != 6
+		and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=m._marker_key and mcv._mcvterm_key=6238170)
 		and _Marker_Status_key in (1,3)
 	order by chromosome''',
 	]
