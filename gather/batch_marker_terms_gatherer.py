@@ -9,15 +9,30 @@ import config
 import dbAgnostic
 import gc
 
-###--- Globals ---###
-
-ids = {}	# ids[term key] = [list of IDs for that term]
-ancestors = {}	# ancestors[term key] = [list of parent keys]
-
 ###--- Functions ---###
-
+def createTempTables():
+	tempTable1="""
+		select a.accid as term,
+			varchar 'RefSNP' as term_type,
+			m._Marker_key as marker_key
+			into temp table tmp_snp_id
+		from snp_consensussnp_marker m,
+			snp_accession a
+		where m._ConsensusSnp_key = a._Object_key
+			and a._MGIType_key = 30		
+	"""
+	tempIdx1="""
+		create index idx_snp_mrk_key on tmp_snp_id (marker_key)
+	"""
+	logger.debug("creating temp table for SNP IDs")
+	dbAgnostic.execute(tempTable1)
+	logger.debug("indexing temp table for SNP IDs")
+	dbAgnostic.execute(tempIdx1)
+	logger.debug("done creating temp tables")
+	
 def loadCaches():
-	global ids, ancestors
+	ids={}
+	ancestors={}
 
 	# get the list of GO term IDs and keys
 	idQuery = '''select _Object_key,
@@ -76,7 +91,8 @@ def loadCaches():
 	logger.debug (
 		'Collected %d relationships for %d child GO terms' \
 			% (len(rows), len(ancestors) ))
-	return
+
+	return ids,ancestors
 
 ###--- Classes ---###
 
@@ -86,6 +102,11 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 	# Does: queries the source database for strings to be searched by the
 	#	batch query interface for markers, collates results, writes
 	#	tab-delimited text file
+
+	#ids[term key] = [list of IDs for that term]
+	#ancestors[term key] = [list of parent keys]
+	ids={}
+	ancestors={}
 
 	def getMinKeyQuery (self):
 		return '''select min(_Marker_key) from mrk_marker
@@ -98,7 +119,8 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 				and _Marker_Status_key in (1,3)'''
 
 	def collateResults (self):
-		global ids, ancestors
+		if not self.ids:
+			self.ids,self.ancestors=loadCaches()
 
 		gc.collect()
 		logger.debug('Ran garbage collection')
@@ -140,6 +162,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 		ncbiExcluded = {}
 
 		for (cols, rows) in self.results[1:4]:
+			i = i + 1
 			termCol = Gatherer.columnNumber (cols, 'term')
 			typeCol = Gatherer.columnNumber (cols, 'term_type')
 			keyCol = Gatherer.columnNumber (cols, 'marker_key')
@@ -175,7 +198,6 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 
 			logger.debug ('Processed %d IDs from query %d' % (
 				len(rows), i) )
-			i = i + 1
 
 		done = {}		# free up for garbage collection
 		del done
@@ -214,8 +236,8 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 			# IDs for its ancestors
 
 			termKeys = [ termKey ]
-			if ancestors.has_key(termKey):
-				termKeys = termKeys + ancestors[termKey]
+			if self.ancestors.has_key(termKey):
+				termKeys = termKeys + self.ancestors[termKey]
 
 			for key in termKeys:
 
@@ -226,7 +248,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 						continue
 
 				# if this GO term has no IDs, skip it
-				if not ids.has_key(key):
+				if not self.ids.has_key(key):
 					if not noID.has_key(key):
 					    logger.debug (
 						'No ID for GO term key: %s' \
@@ -234,7 +256,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 					    noID[key] = 1
 					continue
 				
-				for id in ids[key]:
+				for id in self.ids[key]:
 					row = [ id, label, markerKey ]
 					self.finalResults.append (row)
 
@@ -329,18 +351,22 @@ cmds = [
 	# 3. RefSNP IDs for RefSNPs that are directly associated with markers
 	# (no SubSNPs, no distance-based associations in a region around a
 	# marker -- just direct associations)
-	'''select a.accid as term,
-		ldb.name as term_type,
-		m._Marker_key as marker_key
-	from snp_consensussnp_marker m,
-		snp_accession a,
-		acc_logicaldb ldb
-	where a._LogicalDB_key = ldb._LogicalDB_key
-		and m._Marker_key >= %d
-		and m._Marker_key < %d
-		and m._ConsensusSnp_key = a._Object_key
-		and a._MGIType_key = 30''',
-
+	#'''select a.accid as term,
+	#	ldb.name as term_type,
+	#	m._Marker_key as marker_key
+	#from snp_consensussnp_marker m,
+	#	snp_accession a,
+	#	acc_logicaldb ldb
+	#where a._LogicalDB_key = ldb._LogicalDB_key
+	#	and m._Marker_key >= %d
+	#	and m._Marker_key < %d
+	#	and m._ConsensusSnp_key = a._Object_key
+	#	and a._MGIType_key = 30''',
+	'''
+		select * from tmp_snp_id 
+		where marker_key >= %d
+			and marker_key < %d
+	''',
 	# need to do GO IDs and their descendent terms, so a marker can be
 	# retrieved for either its directly annotated terms or any of their
 	# ancestor terms for its annotated terms
@@ -367,6 +393,7 @@ fieldOrder = [
 # prefix for the filename of the output file
 filenamePrefix = 'batch_marker_terms'
 
+createTempTables()
 # global instance of a BatchMarkerTermsGatherer
 gatherer = BatchMarkerTermsGatherer (filenamePrefix, fieldOrder, cmds)
 gatherer.setChunkSize(10000)
@@ -376,5 +403,4 @@ gatherer.setChunkSize(10000)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	loadCaches()
 	Gatherer.main (gatherer)
