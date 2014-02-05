@@ -8,6 +8,14 @@ import logger
 ###--- Classes ---###
 
 class databaseInfoTable (Table.Table):
+	def grantSelect (self):
+		cmd = '''grant select on database_info to public'''
+		dbm = Table.DBM
+		dbm.execute(cmd)
+		dbm.commit()
+		logger.debug ('Opened permissions on database_info')
+		return
+
 	def setInfo (self, name, value):
 		dbm = Table.DBM
 		cols, rows = dbm.execute ('''select unique_key

@@ -204,6 +204,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
+	'term_emap', 'term_emaps_child',
 	]
 TESTS = ['test_stats']
 
@@ -1328,6 +1329,7 @@ def main():
 		dropTables(gatherers)
 
 	dbInfoTable.createTable()
+	dbInfoTable.grantSelect()
 	dbInfoTable.setInfo ('status', 'starting')
 	dbInfoTable.setInfo ('source', '%s:%s:%s' % (config.SOURCE_TYPE,
 		config.SOURCE_HOST, config.SOURCE_DATABASE))

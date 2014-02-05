@@ -42,6 +42,14 @@ pathsUpward = {}	# cache of paths upward for each term key
 def pathsToRoots (term, vocab, upEdges):
 	global pathsUpward
 
+	# Needed to fix a fundamental flaw in this function.  The edge type is
+	# supposed to represent the type of edge between the ancestor and
+	# its descendent (looking downward).  Up to this point, it has
+	# represented the edge type from the ancestor to its ancestor (looking
+	# upward).  We just haven't noticed, because we weren't displaying
+	# the edge label from this table before building the fewi-based
+	# anatomy browser. - jsb, 11/21/2013
+
 	# if we've already found and cached this, just return it
 
 	if pathsUpward.has_key (term):
@@ -50,7 +58,8 @@ def pathsToRoots (term, vocab, upEdges):
 	# if this term has no ancestors, it is itself a root
 
 	if (not upEdges.has_key(vocab)) or (not upEdges[vocab].has_key(term)):
-		pathsUpward[term] = [ [ (None, term) ] ]
+		# for a root term, it has an empty path upward
+		pathsUpward[term] = [ [] ]
 		return pathsUpward[term]
 
 	# recursively iterate through this term's ancestors to enumerate all
@@ -61,7 +70,7 @@ def pathsToRoots (term, vocab, upEdges):
 		ancestorPaths = pathsToRoots (ancestor, vocab, upEdges)
 		for p in ancestorPaths:
 			pNew = p[:]
-			pNew.append ( (edgeType, term) )
+			pNew.append ( (edgeType, ancestor) )
 			paths.append (pNew)
 
 	pathsUpward[term] = paths
@@ -878,6 +887,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			'edinburghKey' ]
 		rows = ADVocab.getTermAnatomyExtrasRows(columns)
 		self.output.append ( (columns, rows) )
+
 		return
 
 ###--- globals ---###

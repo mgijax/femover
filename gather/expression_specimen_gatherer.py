@@ -10,6 +10,7 @@
 
 import Gatherer
 import logger
+import ADMapper
 
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
@@ -84,9 +85,18 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			specimenSeq = row[specSeqCol]
 
 			resultKey = row[resultKeyCol]
-			structure = row[structureCol]
 			structureMGDKey = row[structureKeyCol]
-			stage = row[stageCol]
+
+			#structure = row[structureCol]
+			#stage = row[stageCol]
+
+			emapsKey = ADMapper.getEmapsKey(structureMGDKey)
+			structure = ADMapper.getEmapsTerm(emapsKey)
+			stage = ADMapper.getStageByKey(emapsKey)
+
+			if (not emapsKey) or (not stage) or (not structure):
+				continue
+
 			# strength = detection level
 			strength = row[strengthCol]
 			pattern = row[patternCol]
@@ -110,7 +120,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				pattern = ""
 	
 			# structure format is TS26: brain
-			tsStructure = "TS%s: %s"%(stage,structure)
+			tsStructure = "TS%s: %s"%(int(stage),structure)
 
 			# add conditional genotype note, if applicable
 			if isConditionalGenotype == 1:
@@ -123,12 +133,12 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 					age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
 
 			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
-			resultGenKey = (resultKey,structureMGDKey)
+			resultGenKey = (resultKey,emapsKey)
 			if resultGenKey not in uniqueResultKeys:
 				resultCount += 1
 				uniqueResultKeys[resultGenKey] = resultCount
 				# make a new specimen result row
-				resultRows.append((resultCount,specimenKey,tsStructure,structureMGDKey,strength,pattern,resultNote,resultSeq))
+				resultRows.append((resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
 			if imagepaneKey:
 				imagepaneCount += 1
 				# make a new imagepane row

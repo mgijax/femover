@@ -54,8 +54,8 @@ class TermAncestorSimpleGatherer (Gatherer.Gatherer):
 			self.finalResults.append ( [ termKey, row[termCol],
 				accID ] )
 
-			logger.debug ('Collapsed to %d unique ancestors' % \
-				len(self.finalResults))
+#			logger.debug ('Collapsed to %d unique ancestors' % \
+#				len(self.finalResults))
 
 		# next, handle the ancestors from the anatomical dictionary
 
@@ -74,6 +74,7 @@ class TermAncestorSimpleGatherer (Gatherer.Gatherer):
 		# we do not need to worry about omitting duplicates.
 			
 		self.finalResults = self.finalResults + adRows
+
 		logger.debug ('Added %d ancestors for AD' % len(adRows))
 		return
 

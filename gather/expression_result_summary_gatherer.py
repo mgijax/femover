@@ -14,6 +14,7 @@
 import Gatherer
 import logger
 import ADVocab
+import ADMapper
 import symbolsort
 import ReferenceCitations
 import types
@@ -124,10 +125,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	# for building the marker_tissue_expression_counts table
 	markerTissueCounts = {}
 
-	def addMarkerTissueCount(self,marker_key,structure_key,detectionLevel):
+	def addMarkerTissueCount(self,marker_key,emapsKey,detectionLevel):
 		structures = self.markerTissueCounts.setdefault(marker_key,{})
 		# counts format is [allCount,detectedCount,notDetectedCount]
-		counts = structures.setdefault(structure_key,[0,0,0])
+		counts = structures.setdefault(emapsKey,[0,0,0])
 		if detectionLevel in NEGATIVE_STRENGTHS:
 			# negative case
 			counts[0] += 1
@@ -277,9 +278,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			assayKey = row[assayCol]
+
+			emapsKey = ADMapper.getEmapsKey(row[structureCol])
+			if not emapsKey:
+				continue
+
 			extras.setdefault(assayKey,[]).append( [row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
-				row[structureCol], row[ageMinCol],
+				row[structureCol], emapsKey, row[ageMinCol],
 				row[ageMaxCol], row[patternCol],row[specimenKeyCol] ])
 
 		logger.debug ('Got extra data for %d in situ assays' % \
@@ -310,9 +316,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			gelLane = row[gelLaneCol]
 			structure = row[structureCol]
+			emapsKey = ADMapper.getEmapsKey(structure)
+
+			if not emapsKey:
+				continue
+
 			strength = row[strengthCol]
 
-			pair = (gelLane, structure)
+			pair = (gelLane, emapsKey)
 
 			if not strengths.has_key(pair):
 				strengths[pair] = strength
@@ -333,8 +344,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    assayKey = row[assayCol]
 		    gelLane = row[gelLaneCol]
 		    structure = row[structureCol]
+		    emapsKey = ADMapper.getEmapsKey(structure)
 
-		    pair = (gelLane, structure)
+		    if not emapsKey:
+			    continue
+
+		    pair = (gelLane, emapsKey)
 		    strength = strengths[pair]
 
 		    # if we have already added a row for this pair, then we
@@ -348,12 +363,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    if extras.has_key(assayKey):
 			extras[row[assayCol]].append( [ row[genotypeCol],
 				row[ageCol], strength,
-				row[structureCol], row[ageMinCol],
+				structure, emapsKey, row[ageMinCol],
 				row[ageMaxCol] ] )
 		    else:
 			extras[row[assayCol]] = [ [ row[genotypeCol],
-				row[ageCol], strength,
-				row[structureCol], row[ageMinCol],
+				row[ageCol], strength, structure,
+				emapsKey, row[ageMinCol],
 				row[ageMaxCol] ] ]
 
 		logger.debug ('Got extra data for %d gel assays' % \
@@ -514,10 +529,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    # select the 'extra' assay information
 		    #
 
+		    extras = []
 		    if isGel:
-			extras = gelExtras[assayKey]
+			if gelExtras.has_key(assayKey):
+			    extras = gelExtras[assayKey]
 		    else:
-			extras = inSituExtras[assayKey]
+			if inSituExtras.has_key(assayKey):
+			    extras = inSituExtras[assayKey]
 
 		    for items in extras:
 
@@ -528,7 +546,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			if isGel:
 			    [ genotypeKey, age, strength, structureKey,
-				ageMin, ageMax ] = items
+				emapsKey, ageMin, ageMax ] = items
 
 			    pattern = None
 			    specimenKey = None
@@ -540,7 +558,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				    hasImage = 1
 			else:
 			    [ genotypeKey, age, strength, resultKey,
-				structureKey, ageMin, ageMax, pattern,specimenKey ] = items
+				structureKey, emapsKey, ageMin, ageMax,
+				pattern,specimenKey ] = items
 
 			    if panesForInSituResults.has_key(resultKey):
 				panes = panesForInSituResults[resultKey]
@@ -558,7 +577,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    		isWildType = 0
 
 			# while we are in here, add count statistics of tissues
-			self.addMarkerTissueCount(markerKey,structureKey,strength)
+			self.addMarkerTissueCount(markerKey,emapsKey,strength)
 
 			newKey = newKey + 1
 
@@ -569,14 +588,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    markerKey,
 			    symbols[markerKey],
 			    ADVocab.getSystem(structureKey),
-			    ADVocab.getStage(structureKey),
+			    ADMapper.getStageByKey(emapsKey),
 			    age,
 			    abbreviate(age),
 			    ageMin,
 			    ageMax,
-			    ADVocab.getStructure(structureKey),
-			    ADVocab.getPrintname(structureKey),
-			    ADVocab.getTermKey(structureKey),
+			    ADMapper.getEmapsTerm(emapsKey),
+			    ADMapper.getEmapsTerm(emapsKey),
+			    emapsKey,
 			    strength,
 			    getIsExpressed(strength),
 			    refsKey,
@@ -620,11 +639,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	def processMarkerTissueCounts(self,markerTissueCounts):
 		mtRows = []
 		for markerKey,structures in markerTissueCounts.items():
-			for structureKey,counts in structures.items():
-				seqNum = ADVocab.getSequenceNum(structureKey)
-				printname = ADVocab.getPrintname(structureKey)	
-				stage = ADVocab.getStage(structureKey)
-				mtRows.append([markerKey,structureKey,"%s:%s"%(stage,printname),
+			for emapsKey,counts in structures.items():
+				seqNum = VocabSorter.getSequenceNum(emapsKey)
+				printname = ADMapper.getEmapsTerm(emapsKey)	
+				stage = ADMapper.getStageByKey(emapsKey)
+
+				mtRows.append([markerKey,emapsKey,"TS%s: %s"%(stage,printname),
 					counts[0],counts[1],counts[2],seqNum])
 		return mtRows
 
@@ -729,10 +749,18 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    # before getting the sequence number for the structure, we
 		    # need to convert from a term key for the structure to its
 		    # original structure key in mgd
-		    structure = ADVocab.getSequenceNum (
-			ADVocab.getStructureKey (row[structureKeyCol]) )
 
-		    stage = self.getStageSequenceNum (row[stageCol])
+		    # The structure key in ersRows is already an emapsKey, so
+		    # we don't need to convert it.
+		    # emapsKey = ADMapper.getEmapsKey(row[structureKeyCol])
+		    emapsKey = row[structureKeyCol]
+		    structure = VocabSorter.getSequenceNum(emapsKey)
+		    stageVal = ADMapper.getStageByKey(emapsKey)
+
+		    if (not emapsKey) or (not stageVal):
+			    continue
+
+		    stage = self.getStageSequenceNum (stageVal)
 		    ageMin = ageMinMax[resultKey][0]
 		    ageMax = ageMinMax[resultKey][1]
 		    expressed = self.getExpressedSequenceNum (row[expressedCol])
@@ -883,7 +911,7 @@ cmds = [
 		a._ReporterGene_key, t.isGelAssay
 	from gxd_assay a, gxd_assaytype t
 	where a._AssayType_key = t._AssayType_key
-	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key)''',
+	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key and e.isForGxd = 1)''',
 
 	# 6. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
@@ -903,10 +931,15 @@ cmds = [
 		gxd_insituresult r,
 		gxd_strength st,
 		gxd_isresultstructure rs,
-		gxd_pattern p
+		gxd_pattern p,
+		acc_accession a,
+		mgi_emaps_mapping e
 	where s._Specimen_key = r._Specimen_key
 		and r._Strength_key = st._Strength_key
 		and r._Pattern_key = p._Pattern_key
+		and rs._Structure_key = a._Object_key
+		and a._MGIType_key = 38
+		and a.accID = e.accID
 		and r._Result_key = rs._Result_key''', 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
@@ -930,10 +963,15 @@ cmds = [
 	from gxd_gellane g,
 		gxd_gelband b,
 		gxd_strength st,
-		gxd_gellanestructure gs
+		gxd_gellanestructure gs,
+		acc_accession a,
+		mgi_emaps_mapping e
 	where g._GelControl_key = 1
 		and g._GelLane_key = b._GelLane_key
 		and b._Strength_key = st._Strength_key
+		and gs._Structure_key = a._Object_key
+		and a._MGIType_key = 38
+		and a.accID = e.accID
 		and g._GelLane_key = gs._GelLane_key''',
 
 	# 8. allele pairs for genotypes cited in GXD data
@@ -981,7 +1019,7 @@ cmds = [
 	where s._Assay_key = a._Assay_key
 		and a._AssayType_key = 9
 		and s._Genotype_key >= 0
-		and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key)
+		and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key and e.isForGxd = 1)
 		and not exists (select 1 from gxd_allelepair gap
 			where s._Genotype_key = gap._Genotype_key
 			and gap.sequenceNum > 1)
@@ -1016,11 +1054,10 @@ files = [
 		'by_expressed', 'by_mutant_alleles', 'by_reference' ],
 		'expression_result_sequence_num'),
 
-		('marker_tissue_expression_counts',	
-	        	[Gatherer.AUTO, '_Marker_key', '_Structure_key', 'printName',
-			'allCount', 'detectedCount', 'notDetectedCount', 'sequenceNum'],
-			'marker_tissue_expression_counts'),
-
+	('marker_tissue_expression_counts',	
+	       	[Gatherer.AUTO, '_Marker_key', '_Structure_key', 'printName',
+		'allCount', 'detectedCount', 'notDetectedCount', 'sequenceNum'],
+		'marker_tissue_expression_counts'),
 	]
 
 # global instance of a ExpressionResultSummaryGatherer

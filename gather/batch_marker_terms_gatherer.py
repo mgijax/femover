@@ -367,6 +367,7 @@ cmds = [
 		where marker_key >= %d
 			and marker_key < %d
 	''',
+
 	# need to do GO IDs and their descendent terms, so a marker can be
 	# retrieved for either its directly annotated terms or any of their
 	# ancestor terms for its annotated terms
@@ -403,4 +404,5 @@ gatherer.setChunkSize(10000)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
+	loadCaches()
 	Gatherer.main (gatherer)

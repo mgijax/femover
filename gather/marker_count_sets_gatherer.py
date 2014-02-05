@@ -5,14 +5,44 @@
 import Gatherer
 import logger
 import MarkerSnpAssociations
+import ADMapper
 
 ###--- Constants ---###
 
 MARKER_KEY = '_Marker_key'
+STRUCTURE_KEY = '_Structure_key'
 SET_TYPE = 'setType'
 COUNT_TYPE = 'countType'
 COUNT = 'count'
 SEQUENCE_NUM = 'sequenceNum'
+
+ASSAY_TYPE_ORDER = [
+	'Immunohistochemistry',
+	'RNA in situ',
+	'In situ reporter (knock in)',
+	'Northern blot',
+	'Western blot',
+	'RT-PCR',
+	'RNase protection',
+	'Nuclease S1',
+	]
+
+###--- Functions ---###
+
+def stageCompare (a, b):
+	return cmp(int(a), int(b))
+
+def assayTypeSortVal (assayType):
+	global ASSAY_TYPE_ORDER
+
+	if assayType in ASSAY_TYPE_ORDER:
+		return ASSAY_TYPE_ORDER.index(assayType)
+
+	ASSAY_TYPE_ORDER.append(assayType)
+	return ASSAY_TYPE_ORDER.index(assayType)
+
+def assayTypeCompare (a, b):
+	return cmp(assayTypeSortVal(a), assayTypeSortVal(b))
 
 ###--- Classes ---###
 
@@ -23,26 +53,149 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 	#	related to a marker (like counts of alleles by type),
 	#	collates results, writes tab-delimited text file
 
-	def collateResults (self):
-		# combine the result sets from the various queries into a
-		# single set of final results
+	def report (self):
+		logger.debug ('finished set %d, %d rows so far' % (
+			self.j, self.i))
+		self.j = self.j + 1
+		return
 
-		self.finalColumns = [ MARKER_KEY, SET_TYPE, COUNT_TYPE,
-			COUNT, SEQUENCE_NUM ]
-		self.finalResults = []
+	def seqNum (self):
+		self.i = self.i + 1
+		return self.i
 
-		# we need to store an ordering for the items which ensures
-		# that the counts for a various set of a various marker are
-		# ordered correctly.  This does not require starting the order
-		# for each set at 1, so just use a common ascending counter.
+	def collateResultsByTheilerStage (self, resultIndex):
+		# expression results per Theiler stage (now custom, because
+		# we need to translate from AD structures to EMAPS terms)
 
-		i = 0		# counter for ordering of rows
-		j = 0		# counter of result sets
+		setType = 'Expression Results by Theiler Stage'
 
-		# first two sets are special cases:  
-		# 1) reagents
+		cols, rows = self.results[resultIndex]
 
-		(columns, rows) = self.results[0]
+		markerCol = Gatherer.columnNumber (cols, MARKER_KEY)
+		structureCol = Gatherer.columnNumber (cols, STRUCTURE_KEY)
+		countCol = Gatherer.columnNumber (cols, COUNT)
+
+		rows = ADMapper.filterRows (rows, structureCol, setType)
+
+		# first we'll translate each structure to its equivalent EMAPS
+		# term, then we'll find the stage from that EMAPS term.
+
+		# resultCounts[markerKey] = { stage : count of results }
+		resultCounts = {}
+
+		for row in rows:
+			markerKey = row[markerCol]
+			structureKey = row[structureCol]
+			resultCount = row[countCol]
+
+			emapsKey = ADMapper.getEmapsKey(structureKey)
+			stage = ADMapper.getStageByKey(emapsKey)
+			if not stage:
+				continue
+
+			# strip any leading zero
+			if stage[0] == '0':
+				stage = stage[1:]
+
+			if not resultCounts.has_key(markerKey):
+				resultCounts[markerKey] = {
+					stage : resultCount }
+
+			elif not resultCounts[markerKey].has_key(stage):
+				resultCounts[markerKey][stage] = resultCount
+
+			else:
+				resultCounts[markerKey][stage] = resultCount \
+					+ resultCounts[markerKey][stage]
+
+		# At this point, we have collected our counts of expression
+		# results by marker and Theiler stage.  Time to assemble rows
+		# from those data.
+
+		markerKeys = resultCounts.keys()
+		markerKeys.sort()
+
+		for markerKey in markerKeys:
+			stages = resultCounts[markerKey].keys()
+			stages.sort(stageCompare)
+
+			for stage in stages:
+				newRow = [ markerKey, setType, stage,
+					resultCounts[markerKey][stage],
+					self.seqNum() ]
+				self.finalResults.append (newRow)
+		self.report()
+		return
+
+	def collateByAssayType (self, resultIndex, setType):
+		# expression assays or results per Theiler stage (now custom,
+		# because we need to filter out AD structures that do not map
+		# to EMAPS terms)
+
+		cols, rows = self.results[resultIndex]
+
+		markerCol = Gatherer.columnNumber (cols, MARKER_KEY)
+		structureCol = Gatherer.columnNumber (cols, STRUCTURE_KEY)
+		countCol = Gatherer.columnNumber (cols, COUNT)
+		assayTypeCol = Gatherer.columnNumber (cols, COUNT_TYPE)
+
+		# filter out any associations to AD structures which cannot be
+		# mapped to EMAPS terms
+
+		rows = ADMapper.filterRows (rows, structureCol, setType)
+
+		# resultCounts[markerKey] = { assay type : count of results }
+		resultCounts = {}
+
+		for row in rows:
+			markerKey = row[markerCol]
+			count = row[countCol]
+			assayType = row[assayTypeCol]
+
+			if not resultCounts.has_key(markerKey):
+				resultCounts[markerKey] = { assayType : count }
+
+			elif not resultCounts[markerKey].has_key(assayType):
+				resultCounts[markerKey][assayType] = count
+
+			else:
+				resultCounts[markerKey][assayType] = count \
+					+ resultCounts[markerKey][assayType]
+
+		# At this point, we have collected our counts of expression
+		# results by marker and Theiler stage.  Time to assemble rows
+		# from those data.
+
+		markerKeys = resultCounts.keys()
+		markerKeys.sort()
+
+		for markerKey in markerKeys:
+			assayTypes = resultCounts[markerKey].keys()
+			assayTypes.sort(assayTypeCompare)
+
+			for assayType in assayTypes:
+				newRow = [ markerKey, setType, assayType,
+					resultCounts[markerKey][assayType],
+					self.seqNum() ]
+				self.finalResults.append (newRow)
+		self.report()
+		return
+
+	def collateResultsByAssayType (self, resultIndex):
+		setType = 'Expression Results by Assay Type'
+		self.collateByAssayType (resultIndex, setType)
+		return
+
+	def collateAssaysByAssayType (self, resultIndex):
+		# expression results per Theiler stage (now custom, because
+		# we need to translate from AD structures to EMAPS terms)
+
+		setType = 'Expression Assays by Assay Type'
+		self.collateByAssayType (resultIndex, setType)
+		return
+
+	def collateReagents (self, resultIndex):
+		(columns, rows) = self.results[resultIndex]
 		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 		termCol = Gatherer.columnNumber (columns, 'term')
 		countCol = Gatherer.columnNumber (columns, 'myCount')
@@ -90,21 +243,20 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):
-					i = i + 1
 					newRow = [ key, 'Molecular reagents',
-						term, byMarker[key][term], i ]
+						term, byMarker[key][term],
+						self.seqNum() ]
 					self.finalResults.append (newRow)
+		self.report()
+		return
 
-		logger.debug ('finished set %s, %d rows so far' % (j, i) )
-		j = j + 1
-
-		# 2) polymorphisms
-
+	def collatePolymorphisms (self, resultIndex):
+		logger.debug ('Retrieving SNP data')
 		markersWithSNPs = MarkerSnpAssociations.getAllMarkerCounts()
 		logger.debug ('Found %d markers with SNPs' % \
 			len(markersWithSNPs))
 
-		(columns, rows) = self.results[1]
+		(columns, rows) = self.results[resultIndex]
 		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 		termCol = Gatherer.columnNumber (columns, 'term')
 		countCol = Gatherer.columnNumber (columns, 'myCount')
@@ -167,51 +319,101 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):
-					i = i + 1
 					newRow = [ key, 'Polymorphisms',
-						term, byMarker[key][term], i ]
+						term, byMarker[key][term], 
+						self.seqNum() ]
 					self.finalResults.append (newRow)
+		self.report()
+		return
 
-		logger.debug ('finished set %s, %d rows so far' % (j, i) )
-		j = j + 1
+	def collateResults (self):
+		# combine the result sets from the various queries into a
+		# single set of final results
 
-		# the remaining sets are have standard format and can be done
-		# in a nested loop
+		self.finalColumns = [ MARKER_KEY, SET_TYPE, COUNT_TYPE,
+			COUNT, SEQUENCE_NUM ]
+		self.finalResults = []
 
-		for (columns, rows) in self.results[2:]:
+		# we need to store an ordering for the items which ensures
+		# that the counts for a various set of a various marker are
+		# ordered correctly.  This does not require starting the order
+		# for each set at 1, so just use a common ascending counter.
+
+		self.i = 0		# counter for ordering of rows
+		self.j = 0		# counter of result sets
+
+		# first do sets which are special cases:  
+
+		self.collateResultsByTheilerStage(0)
+		self.collateAssaysByAssayType(1)
+		self.collateResultsByAssayType(2)
+		self.collateReagents(3)
+		self.collatePolymorphisms(4)
+
+		# the remaining sets (5 to the end) have a standard format
+		# and can be done in a nested loop
+
+		for (columns, rows) in self.results[5:]:
 			keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 			setCol = Gatherer.columnNumber (columns, SET_TYPE)
 			typeCol = Gatherer.columnNumber (columns, COUNT_TYPE)
 			countCol = Gatherer.columnNumber (columns, COUNT)
 
 			for row in rows:
-				i = i + 1
 				newRow = [ row[keyCol], row[setCol],
-					row[typeCol], row[countCol], i ]
+					row[typeCol], row[countCol], 
+					self.seqNum() ]
 				self.finalResults.append (newRow)
-
-			logger.debug ('finished set %s, %d rows so far' % (
-				j, i) )
-			j = j + 1
+			self.report()
 		return
 
 ###--- globals ---###
 
-sortVal = '''case
-	when gat.assayType = 'Immunohistochemistry' then 'a'
-	when gat.assayType = 'RNA in situ' then 'b'
-	when gat.assayType = 'In situ reporter (knock in)' then 'c'
-	when gat.assayType = 'Northern blot' then 'd'
-	when gat.assayType = 'Western blot' then 'e'
-	when gat.assayType = 'RT-PCR' then 'f'
-	when gat.assayType = 'RNase protection' then 'g'
-	when gat.assayType = 'Nuclease S1' then 'h'
-	else gat.assayType
-	end as typeSort
-'''
-
 cmds = [
-	# counts of reagents by type (these need to be grouped in code, but
+	# 0. expression results by theiler stages 
+	'''select ge._Marker_key,
+		gs._Structure_key,
+		count(distinct ge._Expression_key) as %s
+	from gxd_expression ge,
+		gxd_structure gs,
+		gxd_theilerstage ts
+	where ge.isForGXD = 1
+		and ge._Structure_key = gs._Structure_key
+		and gs._Stage_key = ts._Stage_key
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
+	group by ge._Marker_key, gs._Structure_key
+	order by ge._Marker_key, gs._Structure_key''' % COUNT,
+
+	# 1. expression assays by type
+	'''select ge._Marker_key,
+		ge._Structure_key,
+		gat.assayType as %s,
+		count(distinct ge._Assay_key) as %s
+	from gxd_expression ge,
+		gxd_assaytype gat
+	where ge._AssayType_key = gat._AssayType_key
+		and ge.isForGXD = 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
+	group by ge._Marker_key, gat.assayType, ge._Structure_key
+	order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
+
+	# 2. expression results by type
+	'''select ge._Marker_key,
+		ge._Structure_key,
+		gat.assayType as %s,
+		count(distinct ge._Expression_key) as %s
+	from gxd_expression ge,
+		gxd_assaytype gat
+	where ge._AssayType_key = gat._AssayType_key
+		and ge.isForGXD = 1
+		and exists (select 1 from mrk_marker m
+			where m._Marker_key = ge._Marker_key)
+	group by ge._Marker_key, gat.assayType, ge._Structure_key
+	order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
+
+	# 3. counts of reagents by type (these need to be grouped in code, but
 	# this will give us the raw counts)
 	'''select pm._Marker_key,
 		vt.term,
@@ -225,7 +427,7 @@ cmds = [
 			where m._Marker_key = pm._Marker_key)
 	group by pm._Marker_key, vt.term''',
 
-	# counts of RFLP/PCR polymorphisms by type
+	# 4. counts of RFLP/PCR polymorphisms by type
 	'''select rflv._Marker_key,
 		t.term,
 		count(rflv._Reference_key) as myCount
@@ -240,7 +442,7 @@ cmds = [
 			where m._Marker_key = rflv._Marker_key)
 	group by rflv._Marker_key, t.term''',
 
-	# alleles by type (and these aren't the actual types, but the
+	# 5. alleles by type (and these aren't the actual types, but the
 	# groupings of types defined as vocabulary associations)
 	'''select a._Marker_key,
 		vt.term as %s,
@@ -262,54 +464,6 @@ cmds = [
 	group by a._Marker_key, vt.term, vt.sequenceNum
 	order by a._Marker_key, vt.sequenceNum''' % (COUNT_TYPE, SET_TYPE,
 		COUNT),
-
-	# expression assays by type
-	'''select ge._Marker_key,
-		gat.assayType as %s,
-		'Expression Assays by Assay Type' as %s,
-		count(distinct ge._Assay_key) as %s,
-		%s
-	from gxd_expression ge,
-		gxd_assaytype gat
-	where ge._AssayType_key = gat._AssayType_key
-		and ge.isForGXD = 1
-		and exists (select 1 from mrk_marker m
-			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, gat.assayType
-	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
-		COUNT, sortVal),
-
-	# expression results by type
-	'''select ge._Marker_key,
-		gat.assayType as %s,
-		'Expression Results by Assay Type' as %s,
-		count(distinct ge._Expression_key) as %s,
-		%s
-	from gxd_expression ge,
-		gxd_assaytype gat
-	where ge._AssayType_key = gat._AssayType_key
-		and ge.isForGXD = 1
-		and exists (select 1 from mrk_marker m
-			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, gat.assayType
-	order by ge._Marker_key, typeSort''' % (COUNT_TYPE, SET_TYPE,
-		COUNT, sortVal),
-
-	# expression results by theiler stages 
-	'''select ge._Marker_key,
-		ts.stage as %s,
-		'Expression Results by Theiler Stage' as %s,
-		count(distinct ge._Expression_key) as %s
-	from gxd_expression ge,
-		gxd_structure gs,
-		gxd_theilerstage ts
-	where ge.isForGXD = 1
-		and ge._Structure_key = gs._Structure_key
-		and gs._Stage_key = ts._Stage_key
-		and exists (select 1 from mrk_marker m
-			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, ts.stage
-	order by ge._Marker_key, ts.stage''' % (COUNT_TYPE, SET_TYPE, COUNT),
 	]
 
 # order of fields (from the query results) to be written to the
