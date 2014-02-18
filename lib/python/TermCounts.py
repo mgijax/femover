@@ -9,36 +9,128 @@ import dbAgnostic
 import logger
 import types
 import re
+import gc
 
 ###--- Globals ---###
 
+# We now process a single vocabulary at a time, so we need to keep track of
+# which vocab is currently cached in memory.
+currentVocabKey = None
+
+# term key -> 1
+# We need to track all terms in the current vocab, so we'll know when we need
+# to update to a new vocab.
+termsInCurrentVocab = {}
+
 # term key -> { marker key : 1 }
+# only has terms for the current vocab now.
 markersPerTerm = {}
 
 # term key -> { marker key : 1 } where those markers are in the
 # GXD Literature Index
+# only has terms for the current vocab now.
 markersInGxdIndex = {}
 
 # term key -> { marker key : 1 } where those markers have expression data
+# only has terms for the current vocab now.
 markersWithExpressionData = {}
 
-# term key -> { marker key : 1 } where those markers have expression data
-markersWithCreData = {}
+# marker key -> 1 where those markers have Cre data
+# only has terms for the current vocab now.
+markersWithCreData = None
 
+# have we called _initializeMarkerSets() yet?
+initializedMarkerSets = False
 
-# has this module been initialized?
-isInitialized = False
 
 ###--- Private Functions ---###
 
-def _initialize():
-	global markersPerTerm, markersWithExpressionData, markersWithCreData,markersInGxdIndex, isInitialized
+def _initializeMarkerSets ():
+	global markersWithCreData, markersInGxdIndex
+	global markersWithExpressionData, initializedMarkerSets
 
-	isInitialized = True
-	markersPerTerm = {}
-	markersWithExpressionData = {}
+	if initializedMarkerSets:
+		return
+
 	markersWithCreData = {}
+	markersWithExpressionData = {}
 	markersInGxdIndex = {}
+
+	cmds = [
+		# 0. markers with Cre data
+		''' select distinct _Marker_key
+			from gxd_expression where isrecombinase=1''',
+
+		# 1. markers with full coded expression data
+		'''select distinct _Marker_key
+		from gxd_expression''',
+
+		# 2. markers in GXD literature index
+		'''select distinct _Marker_key
+		from gxd_index''',
+		]
+
+	# find markers with Cre data
+	cols, rows = dbAgnostic.execute(cmds[0])
+	for row in rows:
+		markersWithCreData[row[0]] = 1
+
+	logger.debug ('Found %d markers with cre data' % \
+		len(markersWithCreData))
+
+	# find markers with expression data
+	(cols, rows) = dbAgnostic.execute (cmds[1])
+	for row in rows:
+		markersWithExpressionData[row[0]] = 1
+
+	logger.debug ('Found %d markers with expression data' % \
+		len(markersWithExpressionData))
+
+	# find markers in the GXD literature index
+	(cols, rows) = dbAgnostic.execute (cmds[2])
+	for row in rows:
+		markersInGxdIndex[row[0]] = 1
+
+	logger.debug ('Found %d markers in GXD lit index' % \
+		len(markersInGxdIndex))
+
+	initializedMarkerSets = True
+	return
+
+def _initializeVocab (termKey):
+	# initialize this module to include all terms from the vocabulary
+	# which contains the given 'termKey'
+
+	global markersPerTerm, currentVocabKey, termsInCurrentVocab
+
+	if termsInCurrentVocab.has_key(termKey):
+		# already have this term, so this was called in error
+		# (should not happen)
+		return
+
+	cmd = 'select _Vocab_key from voc_term where _Term_key = %d' % termKey
+
+	cols, rows = dbAgnostic.execute(cmd)
+	if len(rows) == 0:
+		# term key does not exist in the database (should not happen)
+		return
+
+	vocabKey = rows[0][0]
+
+	if vocabKey == currentVocabKey:
+		# term should have been in the currently cached vocab
+		return
+
+	# termKey is from a new vocab, so switch over the caches
+
+	logger.debug('Switching to vocab %d' % vocabKey)
+
+	currentVocabKey = vocabKey
+
+	markersPerTerm = {}
+	termsInCurrentVocab = {}
+
+	gc.collect()
 
 	# Due to the nature of the DAG, it could be problematic to compute
 	# the counts in SQL.  While possible, it would involve heavy use of
@@ -67,11 +159,12 @@ def _initialize():
 		where va._AnnotType_key = vat._AnnotType_key
 			and va._Term_key = t._Term_key
 			and t.isObsolete = 0
+			and t._Vocab_key = %d
 			and va._Object_key = m._Marker_key
 			and va._Qualifier_key not in (1614151, 1614153, 1614155)
 			and va._Term_key not in (120, 6112, 6113, 1098)
 			and m._Organism_key = 1
-			and vat._MGIType_key = 2''',
+			and vat._MGIType_key = 2''' % vocabKey,
 
 		# 1. mouse markers annotated to the terms' descendents
 		# (all annotation types which are direct to markers)
@@ -86,19 +179,23 @@ def _initialize():
 			and va._Term_key = dc._DescendentObject_key
 			and va._Term_key = t._Term_key
 			and t.isObsolete = 0
+			and t._Vocab_key = %d
 			and va._Object_key = m._Marker_key
 			and va._Qualifier_key not in (1614151, 1614153, 1614155)
 			and m._Organism_key = 1
-			and vat._MGIType_key = 2''',
+			and vat._MGIType_key = 2''' % vocabKey,
 
 		# 2. mouse markers with alleles which are directly annotated
 		# to OMIM terms (no restriction on qualifier)
 		'''select va._Term_key,
 			aa._Marker_key
 		from voc_annot va,
-			all_allele aa
+			all_allele aa,
+			voc_term t
 		where va._AnnotType_key = 1012
-			and aa._Allele_key = va._Object_key''',
+			and va._Term_key = t._Term_key
+			and t._Vocab_key = %d
+			and aa._Allele_key = va._Object_key''' % vocabKey,
 
 		# 3. markers for alleles involved in genotypes which are
 		# annotated to the terms themselves
@@ -112,11 +209,12 @@ def _initialize():
 			voc_term t
 		where va._AnnotType_key = vat._AnnotType_key
 			and va._Term_key = t._Term_key
+			and t._Vocab_key = %d
 			and t.isObsolete = 0
 			and va._Object_key = gag._Genotype_key
 			and gag._Allele_key = aa._Allele_key
 			and va._Qualifier_key not in (2181424, 1614157)
-			and vat._MGIType_key = 12''',
+			and vat._MGIType_key = 12''' % vocabKey,
 
 		# 4. markers for alleles involved in genotypes which are
 		# annotated to the terms' descendents
@@ -132,40 +230,30 @@ def _initialize():
 		where va._AnnotType_key = vat._AnnotType_key
 			and va._Term_key = dc._DescendentObject_key
 			and va._Term_key = t._Term_key
+			and t._Vocab_key = %d
 			and t.isObsolete = 0
 			and va._Object_key = gag._Genotype_key
 			and gag._Allele_key = aa._Allele_key
 			and va._Qualifier_key not in (2181424, 1614157)
-			and vat._MGIType_key = 12''',
+			and vat._MGIType_key = 12''' % vocabKey,
 
 		# 5. markers are associated with Protein Ontology terms as
 		# marker accession IDs, rather than through the annotation
 		# tables.  So, pick them up separately.
 		'''select ta._Object_key as _Term_key,
 			ma._Object_key as _Marker_key
-		from acc_accession ma, acc_accession ta
+		from acc_accession ma, acc_accession ta, voc_term t
 		where ma._MGIType_key = 2
 			and ma._LogicalDB_key = 135
 			and ma.private = 0
 			and ma.accID = ta.accID
-			and ta._MGIType_key = 13''',
-
-		# 6. markers with full coded expression data
-		'''select distinct _Marker_key
-		from gxd_expression''',
-
-		# 7. markers in GXD literature index
-		'''select distinct _Marker_key
-		from gxd_index''',
-		
-		# 8. markers with cre expression data
-		''' select distinct _Marker_key
-			from gxd_expression where isrecombinase=1
-		''',
+			and ta._Object_key = t._Term_key
+			and t._Vocab_key = %d
+			and ta._MGIType_key = 13''' % vocabKey,
 	]
 
-	# queries 1-5 to collect marker/term relationships
-	for cmd in cmds[:6]:
+	# queries 0-5 to collect marker/term relationships
+	for cmd in cmds:
 		(cols, rows) = dbAgnostic.execute (cmd)
 
 		termCol = dbAgnostic.columnNumber (cols, '_Term_key')
@@ -179,29 +267,19 @@ def _initialize():
 
 	logger.debug ('Found marker counts for %d terms' % len(markersPerTerm))
 
-	# query 6 to find markers with expression data
-	(cols, rows) = dbAgnostic.execute (cmds[6])
+	# get all terms in this vocab
+
+	cmd = '''select _Term_key
+		from voc_term
+		where _Vocab_key = %d''' % vocabKey
+
+	cols, rows = dbAgnostic.execute (cmd)
+
 	for row in rows:
-		markersWithExpressionData[row[0]] = 1
+		termsInCurrentVocab[row[0]] = 1
 
-	logger.debug ('Found %d markers with expression data' % \
-		len(markersWithExpressionData))
-
-	# query 7 to find markers in the GXD literature index
-	(cols, rows) = dbAgnostic.execute (cmds[7])
-	for row in rows:
-		markersInGxdIndex[row[0]] = 1
-
-	logger.debug ('Found %d markers in GXD lit index' % \
-		len(markersInGxdIndex))
-
-	# query 8 to find markers with Cre data
-	(cols, rows) = dbAgnostic.execute (cmds[8])
-	for row in rows:
-		markersWithCreData[row[0]] = 1
-
-	logger.debug ('Found %d markers with cre data' % \
-		len(markersWithCreData))
+	gc.collect()
+	logger.debug ('Found %d terms in vocab' % len(termsInCurrentVocab))
 	return
 
 def filterBy (fullset, subset):
@@ -215,10 +293,8 @@ def filterBy (fullset, subset):
 
 def getMarkerCount (termKey):
 	# get the count of markers associated to the given term
-	global markersPerTerm
 
-	if not isInitialized:
-		_initialize()
+	_initializeVocab(termKey)
 
 	if markersPerTerm.has_key(termKey):
 		return len(markersPerTerm[termKey])
@@ -227,10 +303,9 @@ def getMarkerCount (termKey):
 def getLitIndexMarkerCount (termKey):
 	# get the count of markers associated to the given term, where those
 	# markers are in the GXD Literature Index
-	global markersInGxdIndex
 
-	if not isInitialized:
-		_initialize()
+	_initializeMarkerSets()
+	_initializeVocab(termKey)
 
 	if markersPerTerm.has_key(termKey):
 		return len(filterBy(markersPerTerm[termKey],
@@ -240,10 +315,9 @@ def getLitIndexMarkerCount (termKey):
 def getExpressionMarkerCount (termKey):
 	# get the count of markers associated to the given term, where those
 	# markers also have expression data
-	global markersWithExpressionData
 
-	if not isInitialized:
-		_initialize()
+	_initializeMarkerSets()
+	_initializeVocab(termKey)
 
 	if markersPerTerm.has_key(termKey):
 		return len(filterBy(markersPerTerm[termKey],
@@ -253,10 +327,9 @@ def getExpressionMarkerCount (termKey):
 def getCreMarkerCount (termKey):
 	# get the count of markers associated to the given term, where those
 	# markers also have cre expression data
-	global markersWithCreData
 
-	if not isInitialized:
-		_initialize()
+	_initializeMarkerSets()
+	_initializeVocab(termKey)
 
 	if markersPerTerm.has_key(termKey):
 		return len(filterBy(markersPerTerm[termKey],
@@ -264,9 +337,26 @@ def getCreMarkerCount (termKey):
 	return 0
 
 def markerHasCre (markerKey):
-	global markersWithCreData
 
-	if not isInitialized:
-		_initialize()
-	
+	_initializeMarkerSets()
+
 	return markerKey in markersWithCreData
+
+def reset():
+	# resets this module to free up memory used
+
+	global initializedMarkerSets, markersWithCreData, markersInGxdIndex
+	global markersWithExpressionData, currentVocabKey, markersPerTerm
+	global termsInCurrentVocab
+
+	initializedMarkerSets = False
+	currentVocabKey = None
+
+	markersWithCreData = {}
+	markersWithExpressionData = {}
+	markersInGxdIndex = {}
+	markersPerTerm = {}
+	termsInCurrentVocab = {}
+
+	gc.collect()
+	return
