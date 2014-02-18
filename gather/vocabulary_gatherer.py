@@ -7,6 +7,22 @@ import logger
 import TermCounts
 import ADVocab
 import GroupedList
+import gc
+import dbAgnostic
+import OutputFile
+
+###--- Globals ---###
+
+# indices indicating which data file is which
+
+VOCAB = 0
+TERM = 1
+TERM_CHILD = 2
+TERM_COUNTS = 3
+TERM_ANCESTOR = 4
+TERM_ANNOT_COUNTS = 5
+TERM_SIBLING = 6
+TERM_ANATOMY_EXTRAS = 7
 
 ###--- Functions ---###
 
@@ -76,6 +92,15 @@ def pathsToRoots (term, vocab, upEdges):
 	pathsUpward[term] = paths
 	return paths
 
+def resetGlobals():
+	global pathsUpward, depthCache
+
+	pathsUpward = {}
+	depthCache = {}
+
+	gc.collect()
+	return
+
 ###--- Classes ---###
 
 class VocabularyGatherer (Gatherer.MultiFileGatherer):
@@ -83,6 +108,18 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for vocabularies,
 	#	collates results, writes tab-delimited text file
+
+	def resetInstanceVariables (self, vocabKey):
+		self.results = []
+		self.output = []
+		self.lastWritten = None
+
+		self.vocabCmds = []
+		for cmd in self.cmds:
+			self.vocabCmds.append (cmd % vocabKey)
+
+		gc.collect()
+		return
 
 	def findVocabularies (self):
 		# edges[vocab] = {parent : [ (edge type 1, child 1), ... ]}
@@ -193,7 +230,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Compiled %d vocab rows' % len(rows))
 
-		rows = rows + ADVocab.getVocabularyRows (columns)
 		return edges, upEdges, isRoot, vocabs, columns, rows
 
 	def collectIDs (self):
@@ -229,6 +265,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		for r in self.results[0][1]:
 			row = [ r[pCol], r[cCol], r[tCol] ]
+
 			if ids.has_key(r[cCol]):
 				row.append (ids[r[cCol]])
 			else:
@@ -247,16 +284,16 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			if edges.has_key(r[vCol]):
 				if edges[r[vCol]].has_key(r[cCol]):
 					isLeaf = 0
-			row.append (isLeaf)
 
 			edgeType = Gatherer.resolve (r[eCol], 'dag_label',
 				'_Label_key', 'label')
+
+			row.append (isLeaf)
 			row.append (edgeType)
 
 			rows.append (row)
 
 		logger.debug ('Found %d parent/child pairs' % len(rows))
-		rows = rows + ADVocab.getTermChildRows(columns)
 		return columns, rows
 
 	def collectDefinitions (self):
@@ -382,7 +419,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d terms' % len(rows))
 
-		rows = rows + ADVocab.getTermRows(columns)
 		return terms, sequenceNum, columns, rows
 
 	def collectDescendentCounts (self):
@@ -403,8 +439,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		rows = []
 		columns = [ 'termKey', 'pathCount', 'descendentCount',
-			'childCount', 'markerCount', 'expressionMarkerCount','creMarkerCount',
-			'gxdLitMarkerCount' ]
+			'childCount', 'markerCount', 'expressionMarkerCount',
+			'creMarkerCount', 'gxdLitMarkerCount' ]
 
 		for r in self.results[4][1]:
 			key = r[kCol]
@@ -431,10 +467,17 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			rows.append (row)
 
 		logger.debug ('Got %d term_counts' % len(rows))
-		rows = rows + ADVocab.getTermCountsRows(columns)
 		return columns, rows
 
-	def findTermAncestors (self, upEdges, ids, termByKey):
+	def findTermAncestors (self, upEdges, ids, termByKey, writer):
+
+		# This method is a huge memory hog, especially for the GO
+		# vocabulary.  Need to do something to reduce the memory
+		# requirements...
+
+		fieldOrder = self.files[TERM_ANCESTOR][1]
+		tableName = 'term_ancestor'
+
 		columns = [ 'termKey', 'ancestorTermKey', 'ancestorTerm',
 			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ]
 		rows = []
@@ -447,6 +490,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		vocabs = upEdges.keys()
 		for voc in vocabs:
 			terms = upEdges[voc].keys()
+
+			# we now write partial results out to 'writer'
+			# roughly every 'threshold' terms
+
+			threshold = 100000
 
 			# for each term, find all its paths up to root terms
 
@@ -482,21 +530,33 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 						depth = depth + 1
 						row = [ term, ancestor,
-							termByKey[ancestor]
-							]
+							termByKey[ancestor] ]
 
 						if ids.has_key(ancestor):
-							row.append (
+							row.append(
 								ids[ancestor])
 						else:
-							row.append (None)
+							row.append(None)
 
 						row.append (pathNum)
 						row.append (depth)
 						row.append (edgeType)
 						rows.append (row)
+
+				if len(rows) > threshold:
+				    writer.writeToFile (fieldOrder, columns,
+					rows)
+				    logger.debug('Wrote %d rows for table %s' \
+					% (len(rows), tableName))
+
+				    for row in rows:
+					del row
+				    del rows
+
+				    rows = []
+				    gc.collect()
+
 		logger.debug ('Found %d ancestors' % len(rows))
-		rows = rows + ADVocab.getTermAncestorRows(columns)
 		return pathCache, columns, rows
 
 	def extractCountsToTerm (self):
@@ -749,7 +809,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				rows.append (row)
 			
 		logger.debug ('Collated %d rows for annot counts' % len(rows))
-		rows = rows + ADVocab.getTermAnnotationCountsRows(columns)
 		return columns, rows
 
 	def findSiblings (self, pathCache, terms, ids, edges, vocabs,
@@ -786,9 +845,9 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 					row = [ term, sibling, termText,
 						termID, sequenceNum[sibling],
 						isLeaf, edgeType, pathNum ]
+
 					rows.append (row)
 		logger.debug ('Collated %d rows for siblings' % len(rows))
-		rows = rows + ADVocab.getTermSiblingRows(columns)
 		return columns, rows
 
 	def getGOOntologies (self):
@@ -803,7 +862,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		return go
 
-	def collateResults (self):
+	def collateResults (self, fileWriters):
 
 		# step 1 -- vocabulary table
 
@@ -833,18 +892,13 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		columns, rows = self.findChildren (ids, edges, sequenceNum)
 		self.output.append ( (columns, rows) )
 
-		# write out tables created so far, so we can free up their
-		# memory before proceeding
-
-		self.writeOneFile()
-		self.writeOneFile()
-		self.writeOneFile()
-
 		# free up memory from a few large objects before proceeding
 
 		del defs
 		del isRoot
 		del goOntologies
+
+		gc.collect()
 
 		# step 6 -- get counts of descendents for each term
 
@@ -856,22 +910,19 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			upEdges)
 		self.output.append ( (columns, rows) )
 
+		del descendentCounts
+		gc.collect()
+
 		# step 8 -- term_ancestor table
 
 		pathCache, columns, rows = self.findTermAncestors (upEdges,
-			ids, terms)
+			ids, terms, fileWriters[TERM_ANCESTOR])
 		self.output.append ( (columns, rows) )
-
-		# write out tables created so far, so we can free up their
-		# memory before proceeding
-
-		self.writeOneFile()
-		self.writeOneFile()
 
 		# free up memory from a few large objects before proceeding
 
-		del descendentCounts
 		del upEdges
+		gc.collect()
 
 		# step 9 -- term_annotation_counts table
 		columns, rows = self.findAnnotationCounts ()
@@ -882,13 +933,152 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			edges, vocabs, sequenceNum)
 		self.output.append ( (columns, rows) ) 
 
-		# step 11 -- term_anatomy_extras table
+		return
+
+	def getVocabularies (self):
+		# get a list of (vocab key, vocab name) tuples, listing each
+		# of the vocabularies we need to process
+
+		cmd = '''select _Vocab_key, name
+			from voc_vocab
+			order by name'''
+
+		(cols, rows) = dbAgnostic.execute (cmd)
+
+		keyCol = dbAgnostic.columnNumber (cols, '_Vocab_key')
+		nameCol = dbAgnostic.columnNumber (cols, 'name')
+
+		vocabularies = []
+
+		for row in rows:
+			vocabularies.append ( (row[keyCol], row[nameCol]) )
+
+		return vocabularies
+
+	def writeFiles (self, files, skipLast = False):
+		# write out data to files
+		# set skipLast = True to skip term_anatomy_extras for vocabs
+		# other than the AD (assumes this table is last in the list)
+
+		i = 0
+		for (filename, fieldOrder, tableName) in self.files:
+
+			if skipLast and (tableName == 'term_anatomy_extras'):
+				break
+
+			writer = files[i]
+			columns, rows = self.output[i]
+
+			writer.writeToFile (fieldOrder, columns, rows) 
+			logger.debug('Wrote %d rows for table %s' % (
+				len(rows), tableName))
+
+			del columns
+			del rows
+			self.output[i] = [ [], [] ]
+			gc.collect()
+
+			i = i + 1
+		return
+
+	def go (self):
+		# override the standard self.go() method so we can control
+		# precisely what gets written to the output files and when.
+		# (To lessen memory requirements, we will not write files out
+		# in their entirety; we will, instead, process one vocabulary
+		# at a time and write them out to the output files piecemeal.)
+
+		logger.debug('Entered self.go() method')
+
+		# instantiate OutputFile objects (one per output file)
+
+		files = []
+		for (filename, fieldOrder, tableName) in self.files:
+			files.append (OutputFile.OutputFile(filename))
+			logger.debug('Opened file for table %s' % tableName)
+
+		# processs standard vocabularies one by one
+
+		for (vocabKey, vocabName) in self.getVocabularies():
+			logger.debug('Beginning %s (%d)' % (vocabName,
+				vocabKey))
+
+			# reset any global variables
+			resetGlobals()
+
+			# reset any instance variables in this Gatherer
+			# (also tweak SQL on a per-vocabulary basis)
+
+			self.resetInstanceVariables(vocabKey)
+
+			# execute SQL
+
+			self.results = []
+			gc.collect()
+
+			self.results = Gatherer.executeQueries(self.vocabCmds)
+
+			# collate results
+
+			self.collateResults(files)
+
+			# post-process results (if needed)
+
+			self.postprocessResults()
+
+			# write to output files (except term_anatomy_extras)
+
+			self.writeFiles(files, skipLast = True)
+
+			logger.debug('Finished %s (%d)' % (vocabName,
+				vocabKey))
+
+		TermCounts.reset()
+
+		# process AD separately
+
+		self.resetInstanceVariables(-1)
+		self.output.append ( (self.files[0][1],
+			ADVocab.getVocabularyRows (self.files[0][1])) )
+		self.output.append ( (self.files[1][1],
+			ADVocab.getTermRows(self.files[1][1])) )
+		self.output.append ( (self.files[2][1][1:],
+			ADVocab.getTermChildRows(self.files[2][1][1:])) )
+		self.output.append ( (self.files[3][1],
+			ADVocab.getTermCountsRows(self.files[3][1])) )
+		self.output.append ( (self.files[4][1][1:],
+			ADVocab.getTermAncestorRows(self.files[4][1][1:])) )
+		self.output.append ( (self.files[5][1][1:],
+			ADVocab.getTermAnnotationCountsRows(
+			    self.files[5][1][1:])) )
+		self.output.append ( (self.files[6][1][1:],
+			ADVocab.getTermSiblingRows(self.files[6][1][1:])) )
+
+		# only for the AD -- term_anatomy_extras table
+
 		columns = [ 'termKey', 'system', 'stage', 'structureKey',
 			'edinburghKey' ]
-		rows = ADVocab.getTermAnatomyExtrasRows(columns)
-		self.output.append ( (columns, rows) )
+		self.output.append ( (columns,
+			ADVocab.getTermAnatomyExtrasRows(columns)) )
 
+		# write AD rows
+
+		self.writeFiles(files)
+		logger.debug('Finished Anatomical Dictionary')
+
+		# close output files
+
+		i = 0
+		for (filename, fieldOrder, tableName) in self.files:
+			files[i].close()
+			logger.debug('Closed file for table %s with %d rows' \
+				% (tableName, files[i].getRowCount()) )
+			print '%s %s' % (files[i].getPath(), tableName)
+			i = i + 1
+
+		logger.debug('Exiting self.go() method')
 		return
+
 
 ###--- globals ---###
 
@@ -908,36 +1098,45 @@ cmds = [
 		where t._Term_key = p._Object_key
 			and p._Node_key = e._Parent_key
 			and c._Object_key = ct._Term_key
+			and t._Vocab_key = %d
 			and e._Child_key = c._Node_key''',
 
 	# query 1 - IDs, sorted by _LogicalDB_key to bring MGI IDs to the top
-	'''select _Object_key, accID, _LogicalDB_key
-		from acc_accession
-		where _MGIType_key = 13
-			and preferred = 1
-			and private = 0
-		order by _LogicalDB_key''',
+	'''select a._Object_key, a.accID, a._LogicalDB_key
+		from acc_accession a, voc_term t
+		where a._MGIType_key = 13
+			and a.preferred = 1
+			and a.private = 0
+			and a._Object_key = t._Term_key
+			and t._Vocab_key = %d
+		order by a._LogicalDB_key''',
 
 	# query 2 - vocabularies
 	'''select v._Vocab_key, v.isSimple, v.name, count(1) as termCount
 		from voc_vocab v,
 			voc_term t
 		where v._Vocab_key = t._Vocab_key
+			and v._Vocab_key = %d
 		group by v._Vocab_key, v.isSimple, v.name''',
 
 	# query 3 - term definitions
-	'''select _Term_key, sequenceNum, note
-		from voc_text
-		order by sequenceNum''',
+	'''select x._Term_key, x.sequenceNum, x.note
+		from voc_text x, voc_term t
+		where x._Term_key = t._Term_key
+			and t._Vocab_key = %d
+		order by x.sequenceNum''',
 
 	# query 4 - terms
 	'''select _Term_key, _Vocab_key, term, sequenceNum, isObsolete
-		from voc_term''',
+		from voc_term
+		where _Vocab_key = %d''',
 
 	# query 5 - descendent counts
-	'''select _AncestorObject_key, count(1) as ct
-		from DAG_Closure
-		group by _AncestorObject_key''',
+	'''select c._AncestorObject_key, count(1) as ct
+		from DAG_Closure c, voc_term t
+		where c._AncestorObject_key = t._Term_key
+			and t._Vocab_key = %d
+		group by c._AncestorObject_key''',
 
 	# query 6 - annotation counts
 	'''select a._Term_key,
@@ -945,13 +1144,17 @@ cmds = [
 			a._Object_key,
 			e._EvidenceTerm_key,
 			a._Qualifier_key
-		from voc_annot a, voc_annottype t, voc_evidence e
+		from voc_annot a, voc_annottype t, voc_evidence e, voc_term v
 		where a._AnnotType_key = t._AnnotType_key
+			and a._Term_key = v._Term_key
+			and v._Vocab_key = %d
 			and a._Annot_key = e._Annot_key''',
 
 	# query 7 - ancestor/descendent relationships from the DAG
-	'''select _AncestorObject_key, _DescendentObject_key
-		from dag_closure''',
+	'''select c._AncestorObject_key, c._DescendentObject_key
+		from dag_closure c, voc_term t
+		where c._AncestorObject_key = t._Term_key
+			and t._Vocab_key = %d''',
 
 	# query 8 - all annotations, so we can get counts "down the DAG".
 	 '''select a._Term_key,
@@ -959,8 +1162,10 @@ cmds = [
 			a._Object_key,
 			e._EvidenceTerm_key,
 			a._Qualifier_key
-		from voc_annot a, voc_annottype t, voc_evidence e
+		from voc_annot a, voc_annottype t, voc_evidence e, voc_term v
 		where a._AnnotType_key = t._AnnotType_key
+			and a._Term_key = v._Term_key
+			and v._Vocab_key = %d
 			and a._Annot_key = e._Annot_key''',
 
 	# query 9 - shorthand notation for display (instead of vocab name)
@@ -975,7 +1180,7 @@ cmds = [
 		from voc_term t, dag_node n, dag_dag d
 		where t._Term_key = n._Object_key 
 			and n._DAG_key = d._DAG_key
-			and t._Vocab_key = 4''',
+			and t._Vocab_key = %d''',
 	]
 
 files = [
