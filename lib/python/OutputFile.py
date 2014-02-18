@@ -7,6 +7,8 @@ import tempfile
 import config
 import logger
 import dbAgnostic
+import zlib
+import gc
 
 ###--- Globals ---###
 
@@ -15,6 +17,39 @@ AUTO = 'OutputFile.AUTO'
 Error = 'OutputFile.error'
 ColumnMismatch = 'Mismatching number of columns: (%d vs %d)'
 ClosedFile = 'File was already closed'
+
+# which mode do we use to interpret our output rows to be written?
+
+LIST_MODE = 'list'	    # default - each row is a list
+STRING_MODE = 'string'	    # each row is a list encoded as a string
+COMPRESS_MODE = 'compress'  # each row is a list encoded as a string, then
+			    # ...compressed using zlib
+
+###--- Classes ---###
+
+def packRow (mode, row):
+	# takes the given 'row' (a list of column values) and encodes it
+	# according to the needs of the given 'mode'
+
+	if mode == LIST_MODE:
+		return row
+
+	if mode == STRING_MODE:
+		return str(row)
+
+	if mode == COMPRESS_MODE:
+		return zlib.compress(str(row))
+
+	raise Error, 'Bad mode (%s) in packRow()' % mode
+
+def packRows (mode, rows):
+	if mode == LIST_MODE:
+		return rows
+
+	newRows = []
+	for row in rows:
+		newRows.append(packRow(mode, row))
+	return newRows
 
 ###--- Classes ---###
 
@@ -31,9 +66,29 @@ class OutputFile:
 		self.columnCount = 0
 		self.isOpen = True
 		self.autoKey = 1
+		self.mode = LIST_MODE
 
 		logger.debug ('Opened output file: %s' % self.path)
 		return
+
+	def setMode (self, mode):
+		if mode not in [ LIST_MODE, STRING_MODE, COMPRESS_MODE ]:
+			raise Error, 'Unrecognized mode: %s' % mode
+
+		self.mode = mode
+		return
+
+	def unpackRow (self, row):
+		if self.mode == LIST_MODE:
+			return row
+
+		if self.mode == STRING_MODE:
+			return eval(row)
+
+		if self.mode == COMPRESS_MODE:
+			return eval(zlib.decompress(row))
+
+		raise Error, 'Bad mode (%s) in unpackRow()' % self.mode
 
 	def close (self):
 		os.close(self.fd)
@@ -87,7 +142,16 @@ class OutputFile:
 		# now go through 'rows' and write each out to the file, with
 		# the given field order
 
+		rowCount = self.rowCount
+
 		for row in rows:
+			if self.mode != LIST_MODE:
+				row = self.unpackRow(row)
+				rowCount = rowCount + 1
+
+				if rowCount % 50000 == 0:
+					gc.collect()
+
 			out = []
 
 			for col in columnNumbers:
