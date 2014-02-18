@@ -1,3 +1,12 @@
+TAG: femover-5-1-7-2
+DATE: 02/17/2014
+STAFF: jsb
+CHANGES: 
+1) revised vocabulary_gatherer.py to process one vocab at a time, writing
+   results incrementally (lowering memory requirements from 4Gb to 1)
+2) revised OutputFile.py library to allow multiple row encodings
+3) revised TermCounts.py to only cache one vocab at a time
+
 TAG: femover-5-1-7-1
 DATE: 02/05/2014
 STAFF: jsb
