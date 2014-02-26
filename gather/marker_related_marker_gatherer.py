@@ -333,6 +333,11 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d rows for queries 2-5' % len(rows))
 		self.output.append ( (cols, rows) )
+
+		# fake data to get extra tables created temporarily
+
+		self.output.append ( (self.files[-2][1][1:], []) )
+		self.output.append ( (self.files[-1][1][1:], []) )
 		return
 
 ###--- globals ---###
@@ -413,6 +418,24 @@ files = [
 	('marker_mrm_property',
 		[ Gatherer.AUTO, 'mrm_key', 'name', 'value', 'sequence_num' ],
 		'marker_mrm_property'),
+
+	# These last two should move to a separate gatherer, once we have
+	# sample data.  They are here only for convenience in initial
+	# implementation.
+
+	('marker_related_allele',
+		[ Gatherer.AUTO, 'marker_key', 'related_allele_key', 
+		'related_allele_symbol', 'related_allele_id',
+		'relationships_category', 'relationship_term', 'qualifier',
+		'evidence_code', 'reference_key', 'jnum_id', 'sequence_num' ],
+		'marker_related_allele'),
+
+	('allele_related_marker',
+		[ Gatherer.AUTO, 'allele_key', 'related_marker_key', 
+		'related_marker_symbol', 'related_marker_id',
+		'relationships_category', 'relationship_term', 'qualifier',
+		'evidence_code', 'reference_key', 'jnum_id', 'sequence_num' ],
+		'allele_related_marker'),
 	]
 
 # global instance of a MrmGatherer
