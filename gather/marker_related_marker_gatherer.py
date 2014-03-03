@@ -50,15 +50,15 @@ Add	Cluster	MGI:96171	Hoxa10	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	
 Add	Cluster	MGI:96172	Hoxa11	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
 Add	Cluster	MGI:96173	Hoxa13	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
 Add	Cluster	MGI:96478	Igh-V10	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	Igh cluster that's a member_of another cluster
-Add	Cluster	MGI:4439620	Ighv10-1	member_of 	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009903	Ighv10-2	member_of 	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:3648785	Ighv10-3	member_of 	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009905	Ighv10-4	member_of 	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:96449	Igh-7	member_of 	MGI:96442	Igh	not specified	UN	J:5559	jrl	Igh member w/coords
-Add	Cluster	MGI:4439620	Ighv10-1	member_of 	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009903	Ighv10-2	member_of 	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:3648785	Ighv10-3	member_of 	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009905	Ighv10-4	member_of 	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:4439620	Ighv10-1	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:5009903	Ighv10-2	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:3648785	Ighv10-3	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:5009905	Ighv10-4	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:96449	Igh-7	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	Igh member w/coords
+Add	Cluster	MGI:4439620	Ighv10-1	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:5009903	Ighv10-2	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:3648785	Ighv10-3	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
+Add	Cluster	MGI:5009905	Ighv10-4	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
 """
 
 ###--- Globals ---###
