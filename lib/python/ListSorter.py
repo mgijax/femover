@@ -5,11 +5,15 @@
 import types
 import logger
 import symbolsort
+import dbAgnostic
 
 ###--- Globals ---###
 
 # exception raised by this module
 error = 'ListSorter.error'
+
+# dictionary; maps from chromosome string to integer sequence number
+chromosomeSeqNum = None
 
 # valid field types:
 
@@ -19,12 +23,43 @@ ALPHA = 2		# sort alphabetically, case insensitive
 SMART_ALPHA = 3		# sort alphabetically, case insensitive, but also sort
 			#   embedded numbers intelligently; (eg- 'abc12' needs
 			#   to come after 'abc2')
+CHROMOSOME = 4		# sort by chromosome number, mouse-oriented.  (mileage
+			#   will vary for other organisms...)
 
 SORTBY = []	# list of (field ID, field type) tuples to specify sorting;
 		#    If sorting lists, then ID should be a column index.  If
 		#    sorting dictionaries, then ID should be a dictionary key.
 
 ###--- Private Functions ---###
+
+def _chromosomeSortValue (chromosome):
+	# get the sort value for a given chromosome
+
+	global chromosomeSeqNum
+
+	if chromosomeSeqNum == None:
+		chromosomeSeqNum = {}
+
+		cmd = '''select chromosome, sequenceNum
+			from mrk_chromosome
+			where _Organism_key = 1
+			order by sequenceNum'''
+
+		(cols, rows) = dbAgnostic.execute(cmd)
+
+		chromCol = dbAgnostic.columnNumber (cols, 'chromosome')
+		seqNumCol = dbAgnostic.columnNumber (cols, 'sequenceNum')
+
+		for row in rows:
+			chromosomeSeqNum[row[chromCol]] = row[seqNumCol]
+
+	if chromosomeSeqNum.has_key(chromosome):
+		return chromosomeSeqNum[chromosome]
+
+	if type(chromosome) == types.StringType:
+		return chromosome.lower()
+
+	return chromosome
 
 def _listValue (myList, index):
 	# return the value at the given 'index' from 'myList', defaulting to
@@ -64,6 +99,9 @@ def _convert (value, fieldType):
 	elif fieldType == ALPHA:
 		return str(value).lower()
 
+	elif fieldType == CHROMOSOME:
+		return _chromosomeSortValue(value)
+
 	# for smart-alpha sorting, we can leave value as-is, as it will get
 	# case converted and broken up later on
 	return value
@@ -77,7 +115,8 @@ def setSortBy (sortBy):
 	global SORTBY
 
 	for (fieldID, fieldType) in sortBy:
-		if fieldType not in [ NUMERIC, ASCII, ALPHA, SMART_ALPHA ]:
+		if fieldType not in [ NUMERIC, ASCII, ALPHA, SMART_ALPHA,
+			CHROMOSOME ]:
 			raise error, 'Invalid field type: %s' % fieldType
 
 	SORTBY = sortBy

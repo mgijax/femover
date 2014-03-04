@@ -6,6 +6,7 @@
 import KeyGenerator
 import Gatherer
 import logger
+import types
 import dbAgnostic
 import ListSorter
 
@@ -67,6 +68,66 @@ mrmGenerator = KeyGenerator.KeyGenerator('marker_related_marker')
 
 ###--- Functions ---###
 
+# marker key -> (genetic chrom, genomic chrom, start coord, end coord)
+coordCache = {}	
+
+def populateCache():
+	# populate the global 'coordCache' with location data for markers
+
+	global coordCache
+
+	cmd = '''select _Marker_key, genomicChromosome, chromosome,
+			startCoordinate, endCoordinate
+		from mrk_location_cache'''
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+
+	keyCol = dbAgnostic.columnNumber(cols, '_Marker_key')
+	genomicChrCol = dbAgnostic.columnNumber(cols, 'genomicChromosome')
+	geneticChrCol = dbAgnostic.columnNumber(cols, 'chromosome')
+	startCol = dbAgnostic.columnNumber(cols, 'startCoordinate')
+	endCol = dbAgnostic.columnNumber(cols, 'endCoordinate')
+
+	for row in rows:
+		coordCache[row[keyCol]] = (row[geneticChrCol],
+			row[genomicChrCol], row[startCol], row[endCol])
+
+	logger.debug ('Cached %d locations' % len(coordCache))
+	return
+
+def getMarkerCoords(marker):
+	# get (genetic chrom, genomic chrom, start coord, end coord) for the
+	# given marker key or ID
+
+	if len(coordCache) == 0:
+		populateCache()
+
+	if type(marker) == types.StringType:
+		markerKey = keyLookup(marker, 2)
+	else:
+		markerKey = marker
+
+	if coordCache.has_key(markerKey):
+		return coordCache[markerKey]
+
+	return (None, None, None, None)
+
+def getChromosome (marker):
+	# get the chromosome for the given marker key or ID, preferring
+	# the genomic one over the genetic one
+
+	(geneticChr, genomicChr, startCoord, endCoord) = getMarkerCoords(marker)
+
+	if genomicChr:
+		return genomicChr
+	return geneticChr
+
+def getStartCoord (marker):
+	return getMarkerCoords(marker)[2]
+
+def getEndCoord (marker):
+	return getMarkerCoords(marker)[3] 
+
 keyCache = {}
 
 def keyLookup (accID, mgiType):
@@ -123,7 +184,7 @@ def emulateQuery0():
 	rows = []
 	for row in slicedData():
 		rows.append (extractColumns (row,
-			[ 0, 1, 12, 13, 3, 2, 4, 7, 8, 14, 9 ]) )
+			[ 0, 1, 13, 12, 6, 5, 4, 7, 8, 14, 9 ]) )
 	return cols, rows
 
 def emulateQuery1():
@@ -137,7 +198,7 @@ def emulateQuery1():
 	rows = []
 	for row in slicedData():
 		rows.append (extractColumns (row,
-			[ 0, 1, 13, 12, 6, 5, 4, 7, 8, 14, 9 ]) )
+			[ 0, 1, 12, 13, 3, 2, 4, 7, 8, 14, 9 ]) )
 
 	for row in rows:
 		if row[6] == 'member_of':
@@ -183,11 +244,15 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		cols, rows = self.results[0]
 
-		relKeyCol = Gatherer.columnNumber (cols, '_Relationship_key')
-		seqNum = 0
+		# add chromosome and start coordinate fields to each row
 
-		cols.append ('mrm_key')
-		cols.append ('sequence_num')
+		cols.append ('chromosome')
+		cols.append ('startCoordinate')
+
+		relMrkCol = Gatherer.columnNumber (cols, 'related_marker_key')
+		for row in rows:
+			row.append(getChromosome(row[relMrkCol]))
+			row.append(getStartCoord(row[relMrkCol]))
 
 		# update sorting of rows to group by marker key, relationship
 		# category, and a smart alpha sort on related marker symbol
@@ -198,16 +263,24 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		categoryCol = Gatherer.columnNumber (cols,
 			'relationship_category')
 		termCol = Gatherer.columnNumber (cols, 'relationship_term')
+		chrCol = Gatherer.columnNumber (cols, 'chromosome')
+		coordCol = Gatherer.columnNumber (cols, 'startCoordinate')
 
 		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
 			(categoryCol, ListSorter.ALPHA),
 			(termCol, ListSorter.ALPHA),
-			(relSymbolCol, ListSorter.SMART_ALPHA) ] )
+			(chrCol, ListSorter.CHROMOSOME),
+			(coordCol, ListSorter.NUMERIC) ] )
 
 		rows.sort (ListSorter.compare)
 		logger.debug ('Sorted %d query 0 rows' % len(rows))
 
 		# add mrm_key field and sequence number field to each row
+
+		relKeyCol = Gatherer.columnNumber (cols, '_Relationship_key') 
+		cols.append ('mrm_key')
+		cols.append ('sequence_num')
+		seqNum = 0
 
 		for row in rows:
 			row.append (mrmGenerator.getKey((row[relKeyCol], 0)))
@@ -227,6 +300,16 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 			if (cols1.index(c) != query1Cols.index(c)):
 				raise 'error', 'List indexes differ'
 
+		# add chromosome and start coordinate fields to each row
+
+		cols1.append ('chromosome')
+		cols1.append ('startCoordinate')
+
+		relMrkCol = Gatherer.columnNumber (cols1, 'related_marker_key')
+		for row in rows1:
+			row.append(getChromosome(row[relMrkCol]))
+			row.append(getStartCoord(row[relMrkCol]))
+
 		# update sorting of rows to group by marker key, relationship
 		# category, and a smart alpha sort on related marker symbol
 
@@ -236,11 +319,14 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		categoryCol = Gatherer.columnNumber (cols1,
 			'relationship_category')
 		termCol = Gatherer.columnNumber (cols1, 'relationship_term')
+		chrCol = Gatherer.columnNumber (cols1, 'chromosome')
+		coordCol = Gatherer.columnNumber (cols1, 'startCoordinate')
 
 		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
 			(categoryCol, ListSorter.ALPHA),
 			(termCol, ListSorter.ALPHA),
-			(relSymbolCol, ListSorter.SMART_ALPHA) ] )
+			(chrCol, ListSorter.CHROMOSOME),
+			(coordCol, ListSorter.NUMERIC) ] )
 
 		rows1.sort (ListSorter.compare)
 		logger.debug ('Sorted %d query 1 rows' % len(rows1))
