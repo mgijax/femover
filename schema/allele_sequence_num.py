@@ -14,6 +14,7 @@ createStatement = '''CREATE TABLE %s  (
 	allele_key	int		not null,
 	by_symbol	int		not null,
 	by_allele_type	int		not null,
+	by_chromosome	int		not null,
 	by_primary_id	int		not null,
 	by_driver	int		not null,
 	PRIMARY KEY(allele_key))''' % tableName
@@ -35,6 +36,7 @@ comments = {
 		'allele_key' : 'identifies the allele',
 		'by_symbol' : 'sort by allele symbol',
 		'by_allele_type' : 'sort by type of allele',
+		'by_chromosome' : 'sort by chromosome of allele',
 		'by_primary_id' : 'sort by primary accession ID',
 		'by_driver' : 'sort by driver then allele symbol, for recombinase alleles (which are the ones with drivers)',
 		},

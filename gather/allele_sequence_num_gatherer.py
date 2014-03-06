@@ -10,6 +10,7 @@ import symbolsort
 
 SYMBOL = 'alleleSymbol'
 TYPE = 'alleleType'
+CHR = 'chromosome'
 ID = 'alleleID'
 DRIVER = 'driver'
 
@@ -66,15 +67,31 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 
 		# allele type
 		# assumes that all alleles will be returned in query 1
-		keyCol = Gatherer.columnNumber (self.results[1][0],
-			'_Allele_key')
-		sortCol = Gatherer.columnNumber (self.results[1][0],
-			'sequenceNum')
 		counts.append (TYPE)
 
 		for row in self.results[1][1]:
-			dict[row[keyCol]].append (row[sortCol])
+			dict[row[0]].append(row[1])
+
 		logger.debug ('Collated type data')
+
+		# allele chromosome 
+		# assumes that all alleles will be returned in query 4
+		counts.append (CHR)
+
+		chrSortOrder=set([])
+		for row in self.results[4][1]:
+			chrSortOrder.add(row[1])
+		chrSortOrder=list(chrSortOrder)
+		chrSortOrder.sort(symbolsort.nomenCompare)
+		chrSortMap={}
+		cnt=0
+		for chr in chrSortOrder:
+			chrSortMap[chr]=cnt
+			cnt+=1
+
+		for row in self.results[4][1]:
+			dict[row[0]].append(chrSortMap[row[1]])
+		logger.debug ('Collated chromosome data')
 
 		# primary ID
 
@@ -152,17 +169,21 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 
 		self.finalColumns = [ '_Allele_key' ] + counts
 		self.finalResults = dict.values() 
+		logger.info(self.finalResults[0])
 		return
 
 ###--- globals ---###
 
 cmds = [
+	#0
 	'select _Allele_key, symbol from all_allele',
 
+	#1
 	'''select a._Allele_key, t.sequenceNum
 		from all_allele a, voc_term t
 		where a._Allele_Type_key = t._Term_key''',
 
+	#2
 	'''select m._Allele_key, a.prefixPart, a.numericPart
 		from acc_accession a, acc_logicalDB ldb, all_allele m
 		where a._MGIType_key = 11
@@ -170,13 +191,24 @@ cmds = [
 			and a.preferred = 1
 			and m._Allele_key = a._Object_key''',
 
+	#3
 	'''select distinct _Allele_key, driverNote from all_cre_cache''',
+
+	#4
+	'''
+	select a._allele_key,
+		(case when m.chromosome is null then 'ZZZ'
+			else m.chromosome end) as chromosome
+	from all_allele a left outer join
+		all_marker_assoc ma on a._allele_key=ma._allele_key left join
+		mrk_marker m on m._marker_key=ma._marker_key	
+	''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Allele_key', SYMBOL, TYPE, ID, DRIVER,
+	'_Allele_key', SYMBOL, TYPE, CHR, ID, DRIVER,
 	]
 
 # prefix for the filename of the output file

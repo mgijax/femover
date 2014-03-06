@@ -6,6 +6,10 @@ import Gatherer
 import re
 import logger
 
+###--- Constants ---###
+NOT_SPECIFIED="Not Specified"
+ALLELE_SUBTYPE_ANNOT_KEY=1014
+
 ###--- Classes ---###
 
 class AlleleGatherer (Gatherer.Gatherer):
@@ -13,6 +17,19 @@ class AlleleGatherer (Gatherer.Gatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for alleles,
 	#	collates results, writes tab-delimited text file
+
+	# maps allele_key to chromosome
+	def initChromosomeLookup(self):
+		chrLookup={}
+		for r in self.results[8][1]:
+			chrLookup[r[0]]=r[1]
+		return chrLookup
+
+	def buildAlleleSubTypes(self):
+		stLookup={}
+		for r in self.results[9][1]:
+			stLookup.setdefault(r[0],[]).append(r[1])
+		return stLookup
 
 	def collateResults (self):
 		# extract driver data from the first query, and cache it
@@ -135,12 +152,15 @@ class AlleleGatherer (Gatherer.Gatherer):
 			len(self.diseaseModels))
 
 		# main results are in the last query
-
-		self.finalColumns = self.results[-1][0]
-		self.finalResults = self.results[-1][1]
+		self.finalColumns = self.results[7][0]
+		self.finalResults = self.results[7][1]
 		return
 
 	def postprocessResults (self):
+		# get a lookup of allele_key->chromosome
+		chrLookup=self.initChromosomeLookup()
+		subTypeLookup=self.buildAlleleSubTypes()
+
 		self.convertFinalResultsToList()
 
 		columns = self.finalColumns
@@ -152,6 +172,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 		modeCol = Gatherer.columnNumber (columns, '_Mode_key')
 		strainCol = Gatherer.columnNumber(columns, 'strain')
 		transCol = Gatherer.columnNumber(columns, '_Transmission_key')
+		collCol = Gatherer.columnNumber(columns, 'collxn')
 
 		# pulls the actual allele symbol out of the combined
 		# marker symbol<allele symbol> field
@@ -159,6 +180,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 		for r in self.finalResults:
 			alleleType = Gatherer.resolve (r[typeCol])
+
 			allele = r[keyCol]
 
 			ldb = Gatherer.resolve (r[ldbCol], 'acc_logicaldb',
@@ -170,9 +192,22 @@ class AlleleGatherer (Gatherer.Gatherer):
 			else:
 				symbol = r[symCol]
 
+			
+			subTypes=""
+			if allele in subTypeLookup:
+				subTypeLookup[allele].sort()
+				subTypes=", ".join(subTypeLookup[allele])
+			chr=allele in chrLookup and chrLookup[allele] or None
+
+			collection=r[collCol]
+			if collection==NOT_SPECIFIED:
+				collection=None
+
 			self.addColumn('logicalDB', ldb, r, columns)
 			self.addColumn('alleleType', alleleType, r, columns)
-			self.addColumn('alleleSubType', None, r, columns)
+			self.addColumn('alleleSubType', subTypes, r, columns)
+			self.addColumn('chromosome', chr, r, columns)
+			self.addColumn('collection', collection, r, columns)
 			self.addColumn('onlyAlleleSymbol', symbol, r, columns)
 
 			if self.driver.has_key (allele):
@@ -290,21 +325,36 @@ cmds = [
 	# 7. assume all alleles have an MGI ID
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
-		a._Transmission_key, a.isWildType, a.isMixed
-	from all_allele a, acc_accession ac, prb_strain s
+		a._Transmission_key, a.isWildType, a.isMixed, coll.term collxn
+	from all_allele a, acc_accession ac, prb_strain s,voc_term coll
 	where a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
 		and ac.preferred = 1 
 		and ac._LogicalDB_key = 1
 		and a._Strain_key = s._Strain_key
-		and ac.private = 0''',
+		and ac.private = 0
+		and coll._term_key=a._collection_key''',
+
+	# 8. map allele_key to chromosome
+	'''
+	select _allele_key,chromosome 
+	from all_marker_assoc ma join 
+	mrk_marker m on m._marker_key=ma._marker_key
+	''',
+	# 9. map allele_key to allele subtypes
+	'''
+	select va._object_key allele_key, st.term subtype
+	from voc_annot va  join
+		voc_term st on va._term_key=st._term_key
+	where va._annottype_key=%s
+	'''%ALLELE_SUBTYPE_ANNOT_KEY,
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
-	'accID', 'logicalDB', 'alleleType', 'alleleSubType',
+	'accID', 'logicalDB', 'alleleType', 'alleleSubType','chromosome','collection',
 	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'inducibleNote',
 	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',

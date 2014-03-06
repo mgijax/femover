@@ -22,6 +22,7 @@ usage()
     echo "    -i : Images"
     echo "    -m : Markers"
     echo "    -n : Annotations"
+    echo "    -o : Disease Portal"
     echo "    -p : Probes"
     echo "    -s : Sequences"
     echo "    -r : References"
@@ -53,7 +54,7 @@ export TARGET_TYPE
 # handle the other (optional) parameters
 
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -d -g -h -i -m -n -p -s -r -v -x -G"
+POSSIBLE_FLAGS="-a -A -b -c -d -g -h -i -m -n -o -p -s -t -r -v -x -G"
 while [ $# -gt 0 ]; do
     found=0
     for flag in ${POSSIBLE_FLAGS}

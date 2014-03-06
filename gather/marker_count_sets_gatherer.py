@@ -1,6 +1,11 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'marker_count_sets' table in the front-end database
+#
+# 01/21/2014	lec
+#	- TR11515/allele type changes
+#
+
 
 import Gatherer
 import logger
@@ -449,14 +454,9 @@ cmds = [
 		'Alleles' as %s,
 		count(1) as %s,
 		vt.sequenceNum
-	from all_allele a,
-		mgi_vocassociationtype mvat,
-		mgi_vocassociation mva,
-		voc_term vt
-	where mvat.associationType = 'Marker Detail Allele Category'
-		and mvat._AssociationType_key = mva._AssociationType_key
-		and mva._Term_key_1 = vt._Term_key
-		and mva._Term_key_2 = a._Allele_Type_key
+	from all_allele a, voc_term vt
+	where vt._Vocab_key = 38
+		and vt._Term_key = a._Allele_Type_key
 		and a.isWildType = 0
 		and a._Marker_key is not null
 		and exists (select 1 from mrk_marker m

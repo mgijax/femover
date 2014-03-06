@@ -38,7 +38,7 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
@@ -148,7 +148,7 @@ ACCESSION = [ 'accession', 'actual_database',
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
-		'mp_annotation', 'allele_cell_line',
+		'mp_annotation', 'allele_cell_line','allele_summary'
 	]
 ANNOTATIONS = [ 'annotation'
 	]
