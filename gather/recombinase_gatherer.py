@@ -119,7 +119,6 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		sysCol = Gatherer.columnNumber (cols, 'system')
 		systemKeyCol = Gatherer.columnNumber (cols, '_System_key')
-		structCol = Gatherer.columnNumber (cols, 'structure')
 		structKeyCol = Gatherer.columnNumber (cols, '_structure_key')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
 		ageCol = Gatherer.columnNumber (cols, 'age')
@@ -127,7 +126,6 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		expCol = Gatherer.columnNumber (cols, 'expressed')
 		hasImageCol = Gatherer.columnNumber (cols, 'hasImage')
-		printNameCol = Gatherer.columnNumber (cols, 'printName')
 
 		#
 		# alleleData: dictonary of unique allele id:symbol for use in other functions
@@ -174,7 +172,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			ageMin = row[ageMinCol]
 			ageMax = row[ageMaxCol]
 			hasImage = row[hasImageCol]
-			printName = row[printNameCol]
+			printName = structure
 			expressed = row[expCol]
 
 			#
@@ -682,7 +680,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
 		systemCol = Gatherer.columnNumber (cols, 'system')
-		structureCol = Gatherer.columnNumber (cols, 'printName')
+		structKeyCol = Gatherer.columnNumber (cols, '_structure_key')
 		assayTypeCol = Gatherer.columnNumber (cols, '_AssayType_key')
 		reporterCol = Gatherer.columnNumber (cols,
 			'_ReporterGene_key')
@@ -732,7 +730,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				newResultKeys[dbResultKey] = [ info ]
 
-			row = [ i, alleleSystemKey, r[structureCol],
+			emapsKey = ADMapper.getEmapsKey(r[structKeyCol])
+                        structure = convert(ADMapper.getEmapsTerm(emapsKey))
+
+			row = [ i, alleleSystemKey, structure,
 				r[ageCol], r[sexCol], r[jnumCol],
 				r[resultNoteCol], r[specimenNoteCol], ]
 			row.append (Gatherer.resolve (r[strengthCol],
@@ -960,9 +961,9 @@ cmds = [
 	# all allele / system / structure / age information
 	# make sure 'expression' is ordered descending so that the '1' are encountered first
 	#
-	'''select c._Allele_key, c.accID, c.system, c.structure, c._structure_key,
+	'''select c._Allele_key, c.accID, c.system, c._structure_key,
 		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
-		c._System_key, c.hasImage, c.printName
+		c._System_key, c.hasImage
 	from all_cre_cache c
 	where c.system is not null
 	order by c._Allele_key, c.system, c.expressed desc''',
@@ -1040,7 +1041,7 @@ cmds = [
 	#
 	# main cre assay result data
 	#
-	'''select distinct c._Allele_key, c.system, c._System_key, c.printName,
+	'''select distinct c._Allele_key, c.system, c._System_key, c._structure_key,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
