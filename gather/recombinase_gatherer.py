@@ -24,6 +24,7 @@ import Gatherer
 import logger
 import re
 import TagConverter
+import ADMapper
 
 # ageTranslation : used to translate an all_cre_cache.age/ageMin/ageMax
 # to the appropriate age/ageMin/ageMax bucket for recombinase display
@@ -119,6 +120,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		sysCol = Gatherer.columnNumber (cols, 'system')
 		systemKeyCol = Gatherer.columnNumber (cols, '_System_key')
 		structCol = Gatherer.columnNumber (cols, 'structure')
+		structKeyCol = Gatherer.columnNumber (cols, '_structure_key')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
 		ageCol = Gatherer.columnNumber (cols, 'age')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
@@ -165,7 +167,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 			key = row[keyCol]
 			system = convert(row[sysCol])
-			structure = convert(row[structCol])
+			#structure = convert(row[structCol])
+			emapsKey = ADMapper.getEmapsKey(row[structKeyCol])
+                        structure = convert(ADMapper.getEmapsTerm(emapsKey))
 			age = row[ageCol]
 			ageMin = row[ageMinCol]
 			ageMax = row[ageMaxCol]
@@ -956,7 +960,7 @@ cmds = [
 	# all allele / system / structure / age information
 	# make sure 'expression' is ordered descending so that the '1' are encountered first
 	#
-	'''select c._Allele_key, c.accID, c.system, c.structure,
+	'''select c._Allele_key, c.accID, c.system, c.structure, c._structure_key,
 		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
 		c._System_key, c.hasImage, c.printName
 	from all_cre_cache c
