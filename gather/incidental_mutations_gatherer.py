@@ -24,8 +24,12 @@ class IncidentalMutationsGatherer (Gatherer.MultiFileGatherer):
 	masterFile=[]
 	###--- Program Flow ---###
 	def readMasterFile(self):
-		fp = open(config.INCIDENTAL_MUTS_FILE)
-		self.masterFile = [r.split("\t") for r in fp.readlines()]
+		try:
+		    fp = open(config.INCIDENTAL_MUTS_FILE)
+		    self.masterFile = [r.split("\t") for r in fp.readlines()]
+		except:
+			logger.debug("Could not open Incidental Mutations file.\n No data will be loaded")
+			
 		logger.debug("done reading input file")
 	
 	def buildMarkerLinks(self):
