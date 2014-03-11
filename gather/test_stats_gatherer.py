@@ -33,6 +33,10 @@ def iterateSqls():
 	all_rows = []
 	# iterate all the tests first in order to map all the ids (necessary for resolving variables later on)
 	for testData in TESTS:
+		# initialize any temp tables
+		if 'TempTables' in dir(testData):
+			for temp_table in testData.TempTables:
+				dbAgnostic.execute(temp_table.strip())
 		for test_sql in testData.Queries:
 			id = test_sql[ID]
 			# sanitise input
