@@ -3,6 +3,47 @@
 # this TestData import brings in the constants used below (E.g. ID, DESCRIPTION,...)
 from TestData import *
 
+# some of these require complex data, so we can create some temp tables
+TempTables = [
+	# temp table mapping _structure_key to emaps_term
+        """
+        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term
+        into temp tmp_emaps_ad
+        from acc_accession ags join
+                mgi_emaps_mapping mem on ags.accid=mem.accid join
+                acc_accession aet on aet.accid=mem.emapsid join
+                voc_term et on et._term_key=aet._object_key
+        where ags._mgitype_key=38
+                and aet._mgitype_key=13
+        """,
+        """
+        create index tmp_emaps_ad_skey on tmp_emaps_ad (_structure_key)
+        """,
+        """
+        create index tmp_emaps_ad_ekey on tmp_emaps_ad (_emaps_key)
+        """,
+	# temp table combining emaps terms with their synonyms for searching
+        """
+        select _term_key,term
+        into temp tmp_emaps_syn
+        from voc_term
+        where _vocab_key=91
+        """,
+        """
+        insert into tmp_emaps_syn (_term_key,term) 
+        select distinct t._term_key, ts.synonym term
+        from mgi_synonym ts join voc_term t on t._term_key=ts._object_key
+        where _mgitype_key=13
+        and t._vocab_key=91
+        """,
+        """
+        create index tmp_emaps_syn_tkey on tmp_emaps_syn (_term_key)
+        """,
+        """
+        create index tmp_emaps_syn_term on tmp_emaps_syn (term)
+        """
+]
+
 # The list of queries to generate GXD test data
 Queries = [
 ###--- Assay type tests
@@ -111,94 +152,71 @@ Queries = [
 # The following queries are all very large, but share similar syntax. Let's define a template to make this more readable.
 SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL = """
 	WITH 
-        struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure ILIKE '%%%s%%'),
-        syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-                AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-        SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+                WHERE t.term ILIKE '%%%s%%'),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL = """
 	WITH 
-        struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure ILIKE '%%%s%%'),
-        syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-                AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+                WHERE t.term ILIKE '%%%s%%'),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL = """
 	WITH 
-        struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure ILIKE '%%%s%%'),
-        syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-                AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+                WHERE t.term ILIKE '%%%s%%'),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL = """
 	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure @@ array_to_string(string_to_array('%s', ' '), ' & ')),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
+"""
+MULTIWORD_ANATOMY_ASSAYS_TEMPLATE_SQL = """
+	WITH 
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
+"""
+MULTIWORD_ANATOMY_GENES_TEMPLATE_SQL = """
+	WITH 
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 ###--- Anatomy Tests
 Queries.extend([
-{	ID:"structureOneWord",
-	DESCRIPTION:"Finds a structure with only one word",
-	SQLSTATEMENT:"""
-	select sn.structure from  gxd_structure s, gxd_structurename sn 
-		where s._structurename_key=sn._structurename_key 
-		and sn.structure not like '% %' and sn.structure not like '%-%' and sn.structure not like '%/%' and sn.structure not like '%(%' 
-		and exists (select 1 from gxd_expression ge where isforgxd=1 and ge._structure_key=s._structure_key) order by random() limit 1;
-	"""
-},
-{	ID:"structureOneWordResultCount",
-	DESCRIPTION:"Find count of results for the above structure",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"${structureOneWord}"
-},
-{	ID:"structureOneWordGeneCount",
-	DESCRIPTION:"finds the count of genes for above structure",
-	SQLSTATEMENT:"""
-	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename WHERE structure ILIKE '%${structureOneWord}%'),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(distinct _marker_key) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
-	"""
-},
 {	ID:"countFor4CellStageResults",
 	DESCRIPTION:"find the results associated to term '4-cell stage'",
 	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"4-cell stage"
 },
 {	ID:"countFor4CellStageAssays",
 	DESCRIPTION:"find the assays associated to term '4-cell stage'",
-	SQLSTATEMENT:"""
-	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename WHERE structure @@ array_to_string(string_to_array('4-cell stage', ' '), ' & ')),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(distinct _assay_key) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
-	"""
+	SQLSTATEMENT:MULTIWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"4-cell stage"
 },
 {	ID:"countFor4CellStageGenes",
 	DESCRIPTION:"find the genes associated to term '4-cell stage'",
-	SQLSTATEMENT:"""
-	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename WHERE structure @@ array_to_string(string_to_array('4-cell stage', ' '), ' & ')),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(distinct _marker_key) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
-	"""
+	SQLSTATEMENT:MULTIWORD_ANATOMY_GENES_TEMPLATE_SQL%"4-cell stage"
 },
 {	ID:"countFor4-8CellStageEmbryoResults",
 	DESCRIPTION:"find the results associated to term '4-8 cell stage embryo'",
@@ -228,17 +246,17 @@ Queries.extend([
 	DESCRIPTION:"find the genes associated to term 'cornea'",
 	SQLSTATEMENT:SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL%"cornea"
 },
-{	ID:"countForBlastocystResults",
-	DESCRIPTION:"find the results associated to term 'blastocyst'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"blastocyst"
+{	ID:"countForOogoniaResults",
+	DESCRIPTION:"find the results associated to term 'oogonia'",
+	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"oogonia"
 },
-{	ID:"countForBlastocystAssays",
-	DESCRIPTION:"find the assays associated to term 'blastocyst'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"blastocyst"
+{	ID:"countForOogoniaAssays",
+	DESCRIPTION:"find the assays associated to term 'oogonia'",
+	SQLSTATEMENT:SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"oogonia"
 },
-{	ID:"countForBlastocystGenes",
-	DESCRIPTION:"find the genes associated to term 'blastocyst'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL%"blastocyst"
+{	ID:"countForOogoniaGenes",
+	DESCRIPTION:"find the genes associated to term 'oogonia'",
+	SQLSTATEMENT:SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL%"oogonia"
 },
 {	ID:"countForAbdominalMuscleResults",
 	DESCRIPTION:"find the count of results associated to the term which has the synonym 'abdominal muscle', and descendants",
@@ -246,29 +264,11 @@ Queries.extend([
 },
 {	ID:"countForMaturingNephronResults",
 	DESCRIPTION:"find the count of results associated to terms containing 'maturing nephron', and their children",
-	SQLSTATEMENT:"""
-	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure ilike '%maturing nephron%'),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
-	"""
+	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"maturing nephron"
 },
 {	ID:"countForMatureNephronResults",
 	DESCRIPTION:"find the count of results associated to terms containing 'mature nephron', and their children",
-	SQLSTATEMENT:"""
-	WITH 
-	struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-		WHERE structure ilike '%mature nephron%'),
-	syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-		WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-		AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-	closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-	SELECT COUNT(*) FROM gxd_expression e, closure s WHERE e._Structure_key = s._Structure_key AND e.isForGXD = 1
-	"""
+	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"mature nephron%%' AND term NOT ilike '%%immature nephron"
 },
 ])
 
