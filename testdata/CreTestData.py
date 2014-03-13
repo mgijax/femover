@@ -2,17 +2,21 @@
 
 # this TestData import brings in the constants used below (E.g. ID, DESCRIPTION,...)
 from TestData import *
+import GXDTestData
 
+TempTables = GXDTestData.TempTables
+RemoveTempTables = GXDTestData.RemoveTempTables
 
+# NOTE: this uses temp tables defined in GXDTestData
 TEMPLATE_CRE_STRUCTURE_SQL = """
-WITH 
-        struct AS (SELECT DISTINCT _Structure_key FROM gxd_structurename 
-                WHERE structure @@ array_to_string(string_to_array('%s', ' '), ' & ')),
-        syn AS (SELECT DISTINCT clo._Descendent_key FROM gxd_structureclosure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._Structure_key = s._Structure_key) 
-                AND NOT EXISTS (SELECT 1 FROM struct s WHERE clo._Descendent_key = s._Structure_key)),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM syn) 
-        SELECT count(distinct cre._allele_key) FROM gxd_expression e,gxd_allelegenotype gag,all_cre_cache cre, closure s WHERE e._Structure_key = s._Structure_key AND e.isrecombinase = 1 AND gag._genotype_key=e._genotype_key AND gag._allele_key=cre._allele_key;
+        WITH 
+        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
+                WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
+        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
+                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
+        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
+        SELECT count(distinct cre._allele_key) FROM gxd_expression e,gxd_allelegenotype gag,all_cre_cache cre, closure s,tmp_emaps_ad tea
+	WHERE e._Structure_key = tea._structure_key and tea._emaps_key=s._term_key AND e.isrecombinase = 1 AND gag._genotype_key=e._genotype_key AND gag._allele_key=cre._allele_key;
 """
 # The list of queries to generate GXD test data
 Queries = [

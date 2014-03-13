@@ -6,9 +6,15 @@ from TestData import *
 # some of these require complex data, so we can create some temp tables
 TempTables = [
 	# temp table mapping _structure_key to emaps_term
+	"""
+	DROP TABLE IF EXISTS tmp_emaps_ad
+	""",
+	"""
+	DROP TABLE IF EXISTS tmp_emaps_syn
+	""",
         """
         select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term
-        into temp tmp_emaps_ad
+        into tmp_emaps_ad
         from acc_accession ags join
                 mgi_emaps_mapping mem on ags.accid=mem.accid join
                 acc_accession aet on aet.accid=mem.emapsid join
@@ -25,7 +31,7 @@ TempTables = [
 	# temp table combining emaps terms with their synonyms for searching
         """
         select _term_key,term
-        into temp tmp_emaps_syn
+        into tmp_emaps_syn
         from voc_term
         where _vocab_key=91
         """,
@@ -42,6 +48,15 @@ TempTables = [
         """
         create index tmp_emaps_syn_term on tmp_emaps_syn (term)
         """
+]
+
+RemoveTempTables = [
+	"""
+	DROP TABLE IF EXISTS tmp_emaps_ad
+	""",
+	"""
+	DROP TABLE IF EXISTS tmp_emaps_syn
+	"""
 ]
 
 # The list of queries to generate GXD test data
