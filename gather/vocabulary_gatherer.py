@@ -12,6 +12,7 @@ import dbAgnostic
 import OutputFile
 
 ###--- Globals ---###
+GO_VOCAB_KEY=4
 
 # indices indicating which data file is which
 
@@ -1180,7 +1181,8 @@ cmds = [
 		from voc_term t, dag_node n, dag_dag d
 		where t._Term_key = n._Object_key 
 			and n._DAG_key = d._DAG_key
-			and t._Vocab_key = %d''',
+			and t._Vocab_key = %d 
+			and t._vocab_key = %s'''%GO_VOCAB_KEY,
 	]
 
 files = [
