@@ -95,7 +95,7 @@ FULL_TEXT_LINKS_PATH=${FEMOVER}/data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
 # path to incidental mutations master file
-INCIDENTAL_MUTS_FILE=/data/loads/mgi/incidental_muts/incidental_mutations.txt
+INCIDENTAL_MUTS_FILE=/lindondata/loads/mgi/incidental_muts/incidental_mutations.txt
 export INCIDENTAL_MUTS_FILE
 
 GLOSSARY_PATH=${FEMOVER}/data/glossary.rcd
