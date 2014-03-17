@@ -25,7 +25,7 @@ class IncidentalMutationsGatherer (Gatherer.MultiFileGatherer):
 	###--- Program Flow ---###
 	def readMasterFile(self):
 		try:
-		    fp = open(config.INCIDENTAL_MUTS_FILE)
+		    fp = open(config.INCIDENTAL_MUTS_FILE,'rU')
 		    self.masterFile = [r.split("\t") for r in fp.readlines()]
 		except:
 			logger.debug("Could not open Incidental Mutations file.\n No data will be loaded")
