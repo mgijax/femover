@@ -38,8 +38,7 @@ class IncidentalMutationsGatherer (Gatherer.MultiFileGatherer):
 		# gen the marker ID lookup {mgiid=>markerKey}
 		markerLookup = {}
 		for r in self.results[1][1]:
-			if len(r)>1:
-				markerLookup[r[1]]=r[0]
+			markerLookup[r[1]]=r[0]
 
 		rows=[]
 		uniqueRows=set([])
