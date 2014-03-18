@@ -1,14 +1,17 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'image_id' table in the front-end database
+#
+# 03/18/2014	lec
+#	 - TR11603/exclude link to BGEM (159)
 
 import Gatherer
 import logger
 
 ###--- Globals ---###
 
-EXCLUDE_FROM_OTHER_DBS = [ 1, 19 ]
-LDB_ORDER = [ 159, 148, 105 ]		# BGEM, Eurexpress, then GenePaint
+EXCLUDE_FROM_OTHER_DBS = [ 1, 19, 159 ]
+LDB_ORDER = [ 148, 105 ]		# Eurexpress, then GenePaint
 
 ###--- Functions ---###
 
