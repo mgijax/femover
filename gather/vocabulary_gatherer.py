@@ -383,7 +383,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 			row.append (vocabName)
 
-			if goOntologies.has_key(key):
+			if voc==GO_VOCAB_KEY and goOntologies.has_key(key):
 				row.append (goOntologies[key])
 			else:
 				row.append (vocabName)
