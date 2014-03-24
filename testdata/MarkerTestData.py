@@ -9,7 +9,7 @@ Queries = [
 {	ID:"allMarkers",
 	DESCRIPTION:"Count of all mouse markers",
 	SQLSTATEMENT:"""
-	select count(*) from mrk_marker where _organism_key in (1) and _marker_status_key in (1,3);
+	select count(*) from mrk_marker where _organism_key in (1) and _marker_status_key!=2 ;
 	"""
 },
 # copy above lines to make more tests
