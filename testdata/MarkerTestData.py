@@ -12,6 +12,9 @@ Queries = [
 	select count(*) from mrk_marker where _organism_key in (1) and _marker_status_key!=2 ;
 	"""
 },
+]
+# Feature Type (MCV) queries
+Queries.extend([
 {	ID:"markerCountMcv1",
 	DESCRIPTION:"Count of polymorphic pseudogene markers",
 	SQLSTATEMENT:"""
@@ -22,7 +25,7 @@ Queries = [
 	"""
 },
 {	ID:"markerCountMcv2",
-	DESCRIPTION:"Count of polymorphic pseudogene markers",
+	DESCRIPTION:"Count of polymorphic pseudogene + other types markers",
 	SQLSTATEMENT:"""
 	select count(distinct m._marker_key) 
 	from mrk_marker m join mrk_mcv_cache mcv on mcv._marker_key=m._marker_key 
@@ -31,5 +34,36 @@ Queries = [
 	"""
 },
 # copy above lines to make more tests
-]
+])
 
+# Chromosome queries
+Queries.extend([
+{	ID:"markerCountChr19",
+	DESCRIPTION:"Count of chr19 mouse markers",
+	SQLSTATEMENT:"""
+	select count(*) 
+	from mrk_marker m 
+	where m._marker_status_key!=2 
+		and m.chromosome in ('19')
+	"""
+},
+{	ID:"markerCountChrY",
+	DESCRIPTION:"Count of chrY mouse markers",
+	SQLSTATEMENT:"""
+	select count(*) 
+	from mrk_marker m 
+	where m._marker_status_key!=2 
+		and m.chromosome in ('Y')
+	"""
+},
+{	ID:"markerCountChr19andY",
+	DESCRIPTION:"Count of chr19 and chrY mouse markers",
+	SQLSTATEMENT:"""
+	select count(*) 
+	from mrk_marker m 
+	where m._marker_status_key!=2 
+		and m.chromosome in ('19','Y')
+	"""
+},
+# copy above lines to make more tests
+])
