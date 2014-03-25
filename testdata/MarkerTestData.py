@@ -44,6 +44,7 @@ Queries.extend([
 	select count(*) 
 	from mrk_marker m 
 	where m._marker_status_key!=2 
+		and _organism_key=1 
 		and m.chromosome in ('19')
 	"""
 },
@@ -53,6 +54,7 @@ Queries.extend([
 	select count(*) 
 	from mrk_marker m 
 	where m._marker_status_key!=2 
+		and _organism_key=1 
 		and m.chromosome in ('Y')
 	"""
 },
@@ -62,6 +64,7 @@ Queries.extend([
 	select count(*) 
 	from mrk_marker m 
 	where m._marker_status_key!=2 
+		and _organism_key=1 
 		and m.chromosome in ('19','Y')
 	"""
 },
