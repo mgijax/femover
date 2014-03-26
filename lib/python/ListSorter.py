@@ -161,6 +161,12 @@ def compare (a, b):
 			cmpAB = cmp(valueA, valueB)
 
 		if cmpAB != 0:
+			# need a special check to push null values to the
+			# bottom, rather than the top
+
+			if (valueA == None) or (valueB == None):
+				return -cmpAB
+
 			return cmpAB
 
 	# We never found a non-matching field, so fall back on Python default
