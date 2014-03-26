@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 # 
-# gathers data for the 'marker_related_marker' and 'marker_mrm_property'
+# gathers data for the 'marker_related_marker' and 'marker_reg_property'
 # tables in the front-end database
 
 import KeyGenerator
@@ -10,61 +10,9 @@ import types
 import dbAgnostic
 import ListSorter
 
-###--- Sample Data ---###
-
-SampleData = \
-"""Add	Cluster	MGI:3629589	Mir181a-1	member_of	MGI:5313566	Mirc14	not specified	UN	J:88535	wp	Sample data - small miRNA cluster
-Add	Cluster	MGI:3618735	Mir181b-1	member_of	MGI:5313566	Mirc14	not specified	UN	J:88535	wp	Sample data - small mi RNA cluster
-Add	Cluster	MGI:3619386	Mir379	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619399	Mir411	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619322	Mir299	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619389	Mir380	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3783370	Mir1197	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619334	Mir323	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3691604	Mir758	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619341	Mir329	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619426	Mir494	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3629899	Mir679	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3783366	Mir1193	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3629901	Mir666	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619432	Mir543	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3629903	Mir495	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3629904	Mir667	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619381	Mir376c	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3718556	Mir654	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619378	Mir376b	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619377	Mir376a	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619323	Mir300	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619391	Mir381	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619424	Mir487b	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3619427	Mir539	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:3718547	Mir544	member_of	MGI:5049944	Mirc6	not specified	UN	J:88535	wp	Sample data - large miRNA cluster
-Add	Cluster	MGI:96170	Hoxa1	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96174	Hoxa2	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96175	Hoxa3	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96176	Hoxa4	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96177	Hoxa5	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96178	Hoxa6	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96179	Hoxa7	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96180	Hoxa9	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96171	Hoxa10	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96172	Hoxa11	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96173	Hoxa13	member_of	MGI:96169	Hoxa	not specified	UN	J:169621	jrl	Sample data - hox cluster
-Add	Cluster	MGI:96478	Igh-V10	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	Igh cluster that's a member_of another cluster
-Add	Cluster	MGI:4439620	Ighv10-1	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009903	Ighv10-2	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:3648785	Ighv10-3	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009905	Ighv10-4	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:96449	Igh-7	member_of	MGI:96442	Igh	not specified	UN	J:5559	jrl	Igh member w/coords
-Add	Cluster	MGI:4439620	Ighv10-1	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009903	Ighv10-2	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:3648785	Ighv10-3	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-Add	Cluster	MGI:5009905	Ighv10-4	member_of	MGI:96478	Igh-V10	not specified	UN	J:5559	jrl	markers that are members of 2 clusters
-"""
-
 ###--- Globals ---###
 
-mrmGenerator = KeyGenerator.KeyGenerator('marker_related_marker')
+regGenerator = KeyGenerator.KeyGenerator('marker_related_marker')
 
 ###--- Functions ---###
 
@@ -78,7 +26,8 @@ def populateCache():
 
 	cmd = '''select _Marker_key, genomicChromosome, chromosome,
 			startCoordinate, endCoordinate
-		from mrk_location_cache'''
+		from mrk_location_cache
+		where _Organism_key = 1'''
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 
@@ -148,78 +97,55 @@ def keyLookup (accID, mgiType):
 
 	return keyCache[key]
 	
-def slicedData():
-	# provides SampleData, broken down into rows and columns.
-	# replaces 'Add' column with row number; adds columns for marker keys
-	# and reference key.
+def mergeResultSets (cols1, rows1, cols2, rows2):
+	# return a unified (cols, rows) pair, accounting for the fact
+	# that column ordering in cols1 and cols2 may be different.
+	# Assumes that every the column names in cols1 and cols2 are
+	# the same names, even if they appear in a different order.
+	# Note: This function can alter rows1.
 
-	rows = []
-	for row in SampleData.split('\n'):
-		if (row.strip() == ''):
-			continue
+	colsMatch = True
 
-		rows.append (row.split('\t'))
-		rows[-1][0] = str(len(rows))
+	for c in cols1:
+		if (cols1.index(c) != cols2.index(c)):
+			colsMatch = False
+			break
 
-		rows[-1].append (keyLookup (rows[-1][5], 2))
-		rows[-1].append (keyLookup (rows[-1][2], 2))
-		rows[-1].append (keyLookup (rows[-1][9], 1))
+	# easy case: the columns are already in the same order, so we
+	# can just concatenate the lists
 
-	return rows
+	if colsMatch:
+		return (cols1, rows1 + rows2)
 
-def extractColumns (row, columnNumbers):
+	# Otherwise, we'll need to ensure we re-order the values in
+	# rows2 to match and append those rows to rows1.
+
+	colOrder = []
+	for c in cols1:
+		colOrder.append(cols2.index(c))
+
+	for row in rows2:
+		r = []
+		for c in colOrder:
+			r.append(row[c])
+		rows1.append(r)
+
+	return (cols1, rows1)
+
+def tuplesToLists (rows):
+	# 'rows' is a list of query results.  If these results are tuples,
+	# then convert them to lists instead.
+
+	if len(rows) == 0:
+		return rows
+
+	if type(rows[0]) == types.ListType:
+		return rows
+
 	r = []
-	for c in columnNumbers:
-		r.append(row[c])
-	return r
-
-def emulateQuery0():
-	# parse SampleData and give results as if data came from query 0
-
-	cols = [ '_Relationship_key', 'relationship_category', 'marker_key',
-		'related_marker_key', 'related_marker_symbol',
-		'related_marker_id', 'relationship_term', 'qualifier',
-		'evidence_code', 'reference_key', 'jnum_id' ]
-
-	rows = []
-	for row in slicedData():
-		rows.append (extractColumns (row,
-			[ 0, 1, 13, 12, 6, 5, 4, 7, 8, 14, 9 ]) )
-	return cols, rows
-
-def emulateQuery1():
-	# parse SampleData and give results as if data came from query 1
-
-	cols = [ '_Relationship_key', 'relationship_category', 'marker_key',
-		'related_marker_key', 'related_marker_symbol',
-		'related_marker_id', 'relationship_term', 'qualifier',
-		'evidence_code', 'reference_key', 'jnum_id' ]
-
-	rows = []
-	for row in slicedData():
-		rows.append (extractColumns (row,
-			[ 0, 1, 12, 13, 3, 2, 4, 7, 8, 14, 9 ]) )
-
 	for row in rows:
-		if row[6] == 'member_of':
-			row[6] = 'has_member'
-		elif row[6] == 'member of':
-			row[6] = 'has member'
-
-	return cols, rows
-
-def emulateQuery2():
-	# parse SampleData and give results as if data came from query 2
-
-	rows = []
-	for row in slicedData():
-		rows.append (extractColumns (row, [ 0, 11 ]))
-		rows[-1].append ('note')
-		rows[-1].append (len(rows))
-
-	cols = [ '_Relationship_key', 'value', 'name' ]
-
-	return cols, rows
+		r.append(list(row))
+	return r
 
 ###--- Classes ---###
 
@@ -229,20 +155,16 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 	# Does: queries the source database for primary data for Templates,
 	#	collates results, writes tab-delimited text file
 
-	def mrmKey (self, relationshipKey, reverse = False):
-		key = (relationshipKey, reverse)
+	def processRelationshipQuery (self, queryNumber, participant = 0):
+		# process a set of results for marker-to-marker relationships.
+		# 'queryNumber' is an index into self.results to identify
+		# which set of results to process.  'participant' indicates if
+		# these relationships are from the participant's perspective
+		# (1) or from the organizer's perspective (0).
 
-		if not self.mrmMap.has_key(key):
-			self.mrmMap[key] = len(self.mrmMap) + 1
+		global regGenerator
 
-		return self.mrmMap[key]
-
-	def processQuery0 (self):
-		# query 0 : basic marker-to-marker relationships
-
-		global mrmGenerator
-
-		cols, rows = self.results[0]
+		cols, rows = self.results[queryNumber]
 
 		# add chromosome and start coordinate fields to each row
 
@@ -250,6 +172,9 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		cols.append ('startCoordinate')
 
 		relMrkCol = Gatherer.columnNumber (cols, 'related_marker_key')
+
+		rows = tuplesToLists(rows)
+
 		for row in rows:
 			row.append(getChromosome(row[relMrkCol]))
 			row.append(getStartCoord(row[relMrkCol]))
@@ -273,7 +198,8 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 			(coordCol, ListSorter.NUMERIC) ] )
 
 		rows.sort (ListSorter.compare)
-		logger.debug ('Sorted %d query 0 rows' % len(rows))
+		logger.debug ('Sorted %d query %d rows' % (len(rows),
+			queryNumber))
 
 		# add mrm_key field and sequence number field to each row
 
@@ -283,74 +209,33 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		seqNum = 0
 
 		for row in rows:
-			row.append (mrmGenerator.getKey((row[relKeyCol], 0)))
+			row.append (regGenerator.getKey((row[relKeyCol], 
+				participant)))
 			seqNum = seqNum + 1 
 			row.append (seqNum)
 
 		return cols, rows
 
+	def processQuery0 (self):
+		# query 0 : basic marker-to-marker relationships
+
+		return self.processRelationshipQuery(0, 0)
+
 	def processQuery1 (self, query1Cols):
 		# query 1 : reversed marker-to-marker relationships
 
-		cols1, rows1 = self.results[1]
+		return self.processRelationshipQuery(1, 1)
 
-		# assume cols == cols1; if not, we need to map them (to do)
+	def processPropertyQuery (self, queryNumber, participant = 0):
+		# process a set of results for marker-to-marker relationships'
+		# properties.  'queryNumber' is an index into self.results to
+		# identify which set of results to process.  'participant'
+		# indicates if the relationships are from the participant's
+		# perspective (1) or from the organizer's perspective (0).
 
-		for c in cols1:
-			if (cols1.index(c) != query1Cols.index(c)):
-				raise 'error', 'List indexes differ'
+		global regGenerator
 
-		# add chromosome and start coordinate fields to each row
-
-		cols1.append ('chromosome')
-		cols1.append ('startCoordinate')
-
-		relMrkCol = Gatherer.columnNumber (cols1, 'related_marker_key')
-		for row in rows1:
-			row.append(getChromosome(row[relMrkCol]))
-			row.append(getStartCoord(row[relMrkCol]))
-
-		# update sorting of rows to group by marker key, relationship
-		# category, and a smart alpha sort on related marker symbol
-
-		mrkKeyCol = Gatherer.columnNumber (cols1, 'marker_key')
-		relSymbolCol = Gatherer.columnNumber (cols1,
-			'related_marker_symbol')
-		categoryCol = Gatherer.columnNumber (cols1,
-			'relationship_category')
-		termCol = Gatherer.columnNumber (cols1, 'relationship_term')
-		chrCol = Gatherer.columnNumber (cols1, 'chromosome')
-		coordCol = Gatherer.columnNumber (cols1, 'startCoordinate')
-
-		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
-			(categoryCol, ListSorter.ALPHA),
-			(termCol, ListSorter.ALPHA),
-			(chrCol, ListSorter.CHROMOSOME),
-			(coordCol, ListSorter.NUMERIC) ] )
-
-		rows1.sort (ListSorter.compare)
-		logger.debug ('Sorted %d query 1 rows' % len(rows1))
-
-		# add mrm_key field and sequence number field to each row
-
-		cols1.append ('mrm_key')
-		cols1.append ('sequence_num')
-
-		relKeyCol = Gatherer.columnNumber (cols1, '_Relationship_key')
-
-		seqNum = 0
-		for row in rows1:
-			row.append (mrmGenerator.getKey((row[relKeyCol], 1)))
-
-			seqNum = seqNum + 1
-			row.append (seqNum)
-
-		return cols1, rows1
-
-	def processQuery2 (self):
-		# query 2 : properties for marker-to-marker relationships
-
-		cols, rows = self.results[2]
+		cols, rows = self.results[queryNumber]
 
 		# add mrm_key to each row
 
@@ -358,23 +243,27 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		cols.append ('mrm_key')
 
+		rows = tuplesToLists(rows)
+
 		for row in rows:
-			row.append (mrmGenerator.getKey((row[relKeyCol], 0)))
+			row.append (regGenerator.getKey((row[relKeyCol], 
+				participant)))
 
 		# sort rows to be ordered by mrm_key, property name, and
 		# property value
 
-		mrmKeyCol = Gatherer.columnNumber (cols, 'mrm_key')
+		regKeyCol = Gatherer.columnNumber (cols, 'mrm_key')
 		nameCol = Gatherer.columnNumber (cols, 'name')
 		valueCol = Gatherer.columnNumber (cols, 'value')
 
 		ListSorter.setSortBy ( [
-			(mrmKeyCol, ListSorter.NUMERIC),
+			(regKeyCol, ListSorter.NUMERIC),
 			(nameCol, ListSorter.ALPHA),
 			(valueCol, ListSorter.SMART_ALPHA)
 			] )
 		rows.sort (ListSorter.compare)
-		logger.debug ('Sorted %d query 2 rows' % len(rows))
+		logger.debug ('Sorted %d query %d rows' % (len(rows),
+			queryNumber))
 
 		# add sequence number to each row
 
@@ -387,62 +276,60 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		return cols, rows
 
+	def processQuery2 (self):
+		# query 2 : properties for marker-to-marker relationships
+
+		return self.processPropertyQuery(2, 0)
+
 	def processQuery3 (self):
-		return [], []
+		# query 3 : properties for reversed marker-to-marker
+		# relationships
 
-	def processQuery4 (self):
-		return [], []
-
-	def processQuery5 (self):
-		return [], []
+		return self.processPropertyQuery(3, 1)
 
 	def collateResults (self):
-		self.results = [ emulateQuery0(), emulateQuery1(),
-			emulateQuery2() ]
-
-		self.mrmMap = {}	# maps _Relationship_key to mrm_key
+		
+		# relationship rows from queries 0 and 1
 
 		cols, rows = self.processQuery0()
 		cols1, rows1 = self.processQuery1(cols)
 
-		logger.debug ('Found %d rows for queries 0-1' % (
-			len(rows) + len(rows1)) )
-		self.output.append ( (cols, rows + rows1) )
+		cols, rows = mergeResultSets (cols, rows, cols1, rows1)
 
-		cols, rows = self.processQuery2()
-
-		# query 3 : properties for reversed mrk-to-mrk relationships
-
-		# query 4 : notes for mrk-to-mrk relationships
-
-		# query 5 : notes for reversed mrk-to-mrk relationships
-
-		logger.debug ('Found %d rows for queries 2-5' % len(rows))
+		logger.debug ('Found %d relationship rows' % len(rows))
 		self.output.append ( (cols, rows) )
 
-		# fake data to get extra tables created temporarily
+		# properties rows from queries 2 and 3
 
-		self.output.append ( (self.files[-2][1][1:], []) )
-		self.output.append ( (self.files[-1][1][1:], []) )
+		cols2, rows2 = self.processQuery2()
+		cols3, rows3 = self.processQuery3()
+
+		cols2, rows2 = mergeResultSets (cols2, rows2, cols3, rows3)
+
+		logger.debug ('Found %d property rows' % len(rows2))
+		self.output.append ( (cols2, rows2) )
+
+		# not yet needed:
+		# query 4 : notes for mrk-to-mrk relationships
+		# query 5 : notes for reversed mrk-to-mrk relationships
+
 		return
 
 ###--- globals ---###
 
-cmds = []
-
-cmds2 = [
+cmds = [
 	# 0. basic marker-to-marker relationship data
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_1 as marker_key,
 			r._Object_key_2 as related_marker_key,
 			m.symbol as related_marker_symbol,
-			t.term as relationship_term,
 			a.accID as related_marker_id,
 			q.term as qualifier,
-			e.term as evidence_code,
+			e.abbreviation as evidence_code,
 			bc._Refs_key as reference_key,
-			bc.jnum_id
+			bc.jnumID as jnum_id,
+			s.synonym as relationship_term
 		from mgi_relationship_category c,
 			mgi_relationship r,
 			mrk_marker m,
@@ -450,7 +337,9 @@ cmds2 = [
 			acc_accession a,
 			voc_term q,
 			voc_term e,
-			bib_citation_cache bc
+			bib_citation_cache bc,
+			mgi_synonym s,
+			mgi_synonymtype st
 		where c._Category_key = r._Category_key
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
@@ -463,11 +352,51 @@ cmds2 = [
 			and r._Qualifier_key = q._Term_key
 			and r._Evidence_key = e._Term_key
 			and r._Refs_key = bc._Refs_key
+			and t._Term_key = s._Object_key
+			and s._SynonymType_key = st._SynonymType_key
+			and st._MGIType_key = 13
+			and st.synonymType = 'related organizer'
 		order by r._Object_key_1''',
 
 	# 1. reversed marker-to-marker relationship data
-	'''TBD
-		''',
+	'''select r._Relationship_key,
+			c.name as relationship_category,
+			r._Object_key_2 as marker_key,
+			r._Object_key_1 as related_marker_key,
+			m.symbol as related_marker_symbol,
+			a.accID as related_marker_id,
+			q.term as qualifier,
+			e.abbreviation as evidence_code,
+			bc._Refs_key as reference_key,
+			bc.jnumID as jnum_id,
+			s.synonym as relationship_term
+		from mgi_relationship_category c,
+			mgi_relationship r,
+			mrk_marker m,
+			voc_term t,
+			acc_accession a,
+			voc_term q,
+			voc_term e,
+			bib_citation_cache bc,
+			mgi_synonym s,
+			mgi_synonymtype st
+		where c._Category_key = r._Category_key
+			and c._MGIType_key_1 = 2
+			and c._MGIType_key_2 = 2
+			and r._Object_key_1 = m._Marker_key
+			and r._RelationshipTerm_key = t._Term_key
+			and m._Marker_key = a._Object_key
+			and a._MGIType_key = 2
+			and a._LogicalDB_key = 1
+			and a.preferred = 1
+			and r._Qualifier_key = q._Term_key
+			and r._Evidence_key = e._Term_key
+			and r._Refs_key = bc._Refs_key
+			and t._Term_key = s._Object_key
+			and s._SynonymType_key = st._SynonymType_key
+			and st._MGIType_key = 13
+			and st.synonymType = 'related participant'
+		order by r._Object_key_2''',
 
 	# 2. properties
 	'''select _Relationship_key,
@@ -478,16 +407,18 @@ cmds2 = [
 		order by _Relationship_key, sequenceNum''', 
 
 	# 3. properties for reverse relationships
-	'''TBD
-		''',
+	'''select _Relationship_key,
+			name,
+			value,
+			sequenceNum
+		from mgi_relationship_property
+		order by _Relationship_key, sequenceNum''', 
 
 	# 4. relationship notes (if needed for display)
-	'''TBD
-		''',
+	#'''TBD''',
 
 	# 5. relationship notes (if needed for display)
-	'''TBD
-		''',
+	#'''TBD''',
 
 	]
 
@@ -504,24 +435,6 @@ files = [
 	('marker_mrm_property',
 		[ Gatherer.AUTO, 'mrm_key', 'name', 'value', 'sequence_num' ],
 		'marker_mrm_property'),
-
-	# These last two should move to a separate gatherer, once we have
-	# sample data.  They are here only for convenience in initial
-	# implementation.
-
-	('marker_related_allele',
-		[ Gatherer.AUTO, 'marker_key', 'related_allele_key', 
-		'related_allele_symbol', 'related_allele_id',
-		'relationships_category', 'relationship_term', 'qualifier',
-		'evidence_code', 'reference_key', 'jnum_id', 'sequence_num' ],
-		'marker_related_allele'),
-
-	('allele_related_marker',
-		[ Gatherer.AUTO, 'allele_key', 'related_marker_key', 
-		'related_marker_symbol', 'related_marker_id',
-		'relationships_category', 'relationship_term', 'qualifier',
-		'evidence_code', 'reference_key', 'jnum_id', 'sequence_num' ],
-		'allele_related_marker'),
 	]
 
 # global instance of a MrmGatherer
