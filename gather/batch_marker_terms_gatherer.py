@@ -299,7 +299,7 @@ cmds = [
 		where mm._Organism_key = 1
 			and mm._Marker_Status_key in (1,3)
 			and mm._Marker_key = ml._Marker_key
-			and ml.priority not in (3,4)
+			and ml.labeltypename not in ('allele symbol','allele name')
 			and mm._Marker_key >= %d
 			and mm._Marker_key < %d
 		order by mm._Marker_key, ml.priority''',
