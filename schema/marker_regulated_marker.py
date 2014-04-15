@@ -26,12 +26,17 @@ createStatement = '''CREATE TABLE %s  (
 	reference_key		int	not null,
 	jnum_id			text	not null,
 	sequence_num		int	not null,
+	in_teaser		int	not null,
+	is_reversed		int	not null,
 	PRIMARY KEY(reg_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+	'forTeaser' :
+	    'create index %s on %s (marker_key, sequence_num, in_teaser)',
+	}
 
 # column name -> (related table, column in related table)
 keys = {
@@ -60,9 +65,11 @@ comments = {
 		'reference_key' : 'foreign key to reference table, identifying the citation supporting this relationship',
 		'jnum_id' : 'accession ID (J: number) for the reference, cached for convenience',
 		'sequence_num' : 'integer, used to order regulated markers for a given base marker',
+		'in_teaser' : 'integer, indicates whether this marker should be included as a teaser (1) or not (0) on the marker detail page for marker_key',
 		},
 	Table.INDEX : {
 		'markerSeqNum' : 'clustered index ensures regulated markers for a given marker are stored in order together on disk',
+		'forTeaser' : 'provides quick access to markers which should be included as teasers on the marker detail page for other markers',
 		},
 	}
 
