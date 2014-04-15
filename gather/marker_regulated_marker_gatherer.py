@@ -10,6 +10,7 @@ import logger
 import types
 import dbAgnostic
 import ListSorter
+import random
 
 ###--- Sample Data ---###
 
@@ -419,6 +420,18 @@ def keyLookup (accID, mgiType):
 
 	return keyCache[key]
 	
+def randomValidation():
+	return random.choice(['validated', 'predicted'])
+
+def randomSource():
+	return 'Source ' + chr(ord('A') + random.choice(range(0,26)))
+
+def randomScore():
+	return random.random()
+
+def randomReference():
+	return 'J:' + str(random.choice(range(1,150000)))
+
 def slicedData():
 	# provides SampleData, broken down into rows and columns.
 	# replaces 'Add' column with row number; adds columns for marker keys
@@ -508,6 +521,13 @@ def emulateQuery2():
 		if properties.strip() == '':
 			continue
 
+		score = randomScore()
+		validation = randomValidation()
+		source = randomSource()
+		reference = randomReference()
+
+		hadScore = False
+
 		# properties string has semicolon-separated name=value pairs
 		propLists = map(lambda x: x.split('='), properties.split(';'))
 
@@ -516,7 +536,57 @@ def emulateQuery2():
 			r = [ relationshipKey, propValue, propName, i ]
 			rows.append (r) 
 
+			if propName == 'miTG_score':
+				score = propValue
+				source = source.replace('Source', 'miTG')
+
+		pairs = [
+			('score', score, 0.8),
+			('reference', reference, 2.0),
+			('score_source', source, 0.8),
+			('validation', validation, 0.8),
+			]
+
+		for (name, value, percentHaving) in pairs:
+			if (random.random() <= percentHaving) or (source == 'miTG'):
+				i = i + 1
+				r = [ relationshipKey, value, name, i ]
+				rows.append(r)
+
 	cols = [ '_Relationship_key', 'value', 'name', 'sequenceNum' ]
+
+	return cols, rows
+
+def addInTeaserFlag (cols, rows):
+	# add an in_teaser column to each row in rows, where in_teaser = 1 for
+	# the first three rows (with distinct regulated markers) for a given
+	# marker and in_teaser = 0 otherwise.  Assumes we are sorted primarily
+	# by marker.
+
+	mrkCol = Gatherer.columnNumber (cols, 'marker_key')
+	regMrkCol = Gatherer.columnNumber (cols, 'regulated_marker_key')
+	cols.append ('in_teaser')
+
+	lastMarkerKey = None
+	teasedKeys = []		# reg marker keys in teaser for current marker
+
+	for row in rows:
+		markerKey = row[mrkCol]
+		regMarkerKey = row[regMrkCol]
+
+		inTeaser = 0
+
+		if lastMarkerKey != markerKey:
+			lastMarkerKey = markerKey
+			teasedKeys = [ regMarkerKey ]
+			inTeaser = 1
+
+		elif len(teasedKeys) < 3:
+			if regMarkerKey not in teasedKeys:
+				teasedKeys.append(regMarkerKey)
+				inTeaser = 1
+
+		row.append(inTeaser)
 
 	return cols, rows
 
@@ -567,9 +637,10 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 
 		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
 			(categoryCol, ListSorter.ALPHA),
-			(termCol, ListSorter.ALPHA),
 			(chrCol, ListSorter.CHROMOSOME),
-			(coordCol, ListSorter.NUMERIC) ] )
+			(coordCol, ListSorter.NUMERIC),
+			(termCol, ListSorter.ALPHA),
+			] )
 
 		rows.sort (ListSorter.compare)
 		logger.debug ('Sorted %d query 0 rows' % len(rows))
@@ -579,14 +650,16 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 		relKeyCol = Gatherer.columnNumber (cols, '_Relationship_key') 
 		cols.append ('reg_key')
 		cols.append ('sequence_num')
+		cols.append ('is_reversed')
 		seqNum = 0
 
 		for row in rows:
 			row.append (regGenerator.getKey((row[relKeyCol], 0)))
 			seqNum = seqNum + 1 
 			row.append (seqNum)
+			row.append (0)
 
-		return cols, rows
+		return addInTeaserFlag(cols, rows)
 
 	def processQuery1 (self, query1Cols):
 		# query 1 : reversed marker-to-marker relationships
@@ -623,9 +696,10 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 
 		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
 			(categoryCol, ListSorter.ALPHA),
-			(termCol, ListSorter.ALPHA),
 			(chrCol, ListSorter.CHROMOSOME),
-			(coordCol, ListSorter.NUMERIC) ] )
+			(coordCol, ListSorter.NUMERIC),
+			(termCol, ListSorter.ALPHA),
+			] )
 
 		rows1.sort (ListSorter.compare)
 		logger.debug ('Sorted %d query 1 rows' % len(rows1))
@@ -634,6 +708,7 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 
 		cols1.append ('reg_key')
 		cols1.append ('sequence_num')
+		cols1.append ('is_reversed')
 
 		relKeyCol = Gatherer.columnNumber (cols1, '_Relationship_key')
 
@@ -643,8 +718,9 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 
 			seqNum = seqNum + 1
 			row.append (seqNum)
+			row.append(1)
 
-		return cols1, rows1
+		return addInTeaserFlag(cols1, rows1)
 
 	def processQuery2 (self):
 		# query 2 : properties for marker-to-marker relationships
@@ -740,15 +816,14 @@ class RegGatherer (Gatherer.MultiFileGatherer):
 		self.regMap = {}	# maps _Relationship_key to reg_key
 
 		cols, rows = self.processQuery0()
-		cols1, rows1 = self.processQuery1(cols)
 
+		cols1, rows1 = self.processQuery1(cols)
 		logger.debug ('Found %d rows for queries 0-1' % (
 			len(rows) + len(rows1)) )
 		self.output.append ( (cols, rows + rows1) )
 
 		cols, rows = self.processQuery2()
 		cols3, rows3 = self.processQuery3(cols)
-
 		self.output.append ( (cols, rows + rows3) )
 
 		# query 3 : properties for reversed mrk-to-mrk relationships
@@ -832,7 +907,8 @@ files = [
 			'regulated_marker_symbol', 'regulated_marker_id',
 			'relationship_category', 'relationship_term',
 			'qualifier', 'evidence_code', 'reference_key',
-			'jnum_id', 'sequence_num', ],
+			'jnum_id', 'sequence_num', 'in_teaser', 'is_reversed'
+			],
 		'marker_regulated_marker'),
 
 	('marker_reg_property',
