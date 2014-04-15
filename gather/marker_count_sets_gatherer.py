@@ -6,6 +6,8 @@ import Gatherer
 import logger
 import MarkerSnpAssociations
 import ADMapper
+import marker_regulated_marker_gatherer
+import GroupedList
 
 ###--- Constants ---###
 
@@ -326,6 +328,66 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.report()
 		return
 
+	def collateRegulatedMarkers (self):
+
+		# forward relationships (organizer -> participant)
+
+		marker_regulated_marker_gatherer.gatherer.collateResults()
+		fCols, fRows = marker_regulated_marker_gatherer.gatherer.processQuery0()
+
+		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
+		regCol = Gatherer.columnNumber (fCols, 'regulated_marker_key')
+
+		regDict = {}	# marker key : GroupedList of reg marker keys
+
+		for row in fRows:
+			mrkKey = row[mrkCol]
+			regKey = row[regCol]
+
+			if not regDict.has_key(mrkKey):
+				regDict[mrkKey] = GroupedList.GroupedList()
+
+			regDict[mrkKey].add(regKey) 
+
+		# reverse relationships (participant -> organizer)
+
+		rCols, rRows = marker_regulated_marker_gatherer.gatherer.processQuery1(fCols)
+
+		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
+		regCol = Gatherer.columnNumber (fCols, 'regulated_marker_key')
+
+		revDict = {}	# marker key : GroupedList of reg marker keys
+
+		for row in rRows:
+			mrkKey = row[mrkCol]
+			regKey = row[regCol]
+
+			if not revDict.has_key(mrkKey):
+				revDict[mrkKey] = GroupedList.GroupedList()
+
+			revDict[mrkKey].add(regKey) 
+
+		# collate the two dictionaries into output rows
+		
+		fTerm = 'regulates'
+		rTerm = 'is regulated by'
+
+		startLen = len(self.finalResults)
+
+		for key in regDict.keys():
+			self.finalResults.append ( [ key, 'Regulation',
+				fTerm, len(regDict[key]), 1 ] )
+
+		for key in revDict.keys():
+			self.finalResults.append ( [ key, 'Regulation',
+				rTerm, len(revDict[key]), 2 ] )
+
+		endLen = len(self.finalResults)
+
+		logger.debug('Added %d rows for Regulation' % \
+			(endLen - startLen))
+		return
+
 	def collateResults (self):
 		# combine the result sets from the various queries into a
 		# single set of final results
@@ -349,6 +411,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateResultsByAssayType(2)
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
+		self.collateRegulatedMarkers()
 
 		# the remaining sets (5 to the end) have a standard format
 		# and can be done in a nested loop
