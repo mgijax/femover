@@ -328,7 +328,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.report()
 		return
 
-	def collateRegulatedMarkers (self):
+	def collateMarkerInteractions (self):
 
 		# forward relationships (organizer -> participant)
 
@@ -356,35 +356,28 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
 		regCol = Gatherer.columnNumber (fCols, 'regulated_marker_key')
 
-		revDict = {}	# marker key : GroupedList of reg marker keys
-
 		for row in rRows:
 			mrkKey = row[mrkCol]
 			regKey = row[regCol]
 
-			if not revDict.has_key(mrkKey):
-				revDict[mrkKey] = GroupedList.GroupedList()
+			if not regDict.has_key(mrkKey):
+				regDict[mrkKey] = GroupedList.GroupedList()
 
-			revDict[mrkKey].add(regKey) 
+			regDict[mrkKey].add(regKey) 
 
 		# collate the two dictionaries into output rows
 		
-		fTerm = 'regulates'
-		rTerm = 'is regulated by'
+		fTerm = 'interacts with'
 
 		startLen = len(self.finalResults)
 
 		for key in regDict.keys():
-			self.finalResults.append ( [ key, 'Regulation',
+			self.finalResults.append ( [ key, 'Interaction',
 				fTerm, len(regDict[key]), 1 ] )
-
-		for key in revDict.keys():
-			self.finalResults.append ( [ key, 'Regulation',
-				rTerm, len(revDict[key]), 2 ] )
 
 		endLen = len(self.finalResults)
 
-		logger.debug('Added %d rows for Regulation' % \
+		logger.debug('Added %d rows for Interactions' % \
 			(endLen - startLen))
 		return
 
@@ -411,7 +404,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateResultsByAssayType(2)
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
-		self.collateRegulatedMarkers()
+		self.collateMarkerInteractions()
 
 		# the remaining sets (5 to the end) have a standard format
 		# and can be done in a nested loop
