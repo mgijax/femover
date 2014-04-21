@@ -6,7 +6,7 @@ import Gatherer
 import logger
 import MarkerSnpAssociations
 import ADMapper
-import marker_regulated_marker_gatherer
+import marker_interaction_gatherer
 import GroupedList
 
 ###--- Constants ---###
@@ -332,11 +332,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		# forward relationships (organizer -> participant)
 
-		marker_regulated_marker_gatherer.gatherer.collateResults()
-		fCols, fRows = marker_regulated_marker_gatherer.gatherer.processQuery0()
+		marker_interaction_gatherer.gatherer.collateResults()
+		fCols, fRows = marker_interaction_gatherer.gatherer.processQuery0()
 
 		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
-		regCol = Gatherer.columnNumber (fCols, 'regulated_marker_key')
+		regCol = Gatherer.columnNumber (fCols, 'interacting_marker_key')
 
 		regDict = {}	# marker key : GroupedList of reg marker keys
 
@@ -351,10 +351,10 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		# reverse relationships (participant -> organizer)
 
-		rCols, rRows = marker_regulated_marker_gatherer.gatherer.processQuery1(fCols)
+		rCols, rRows = marker_interaction_gatherer.gatherer.processQuery1(fCols)
 
 		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
-		regCol = Gatherer.columnNumber (fCols, 'regulated_marker_key')
+		regCol = Gatherer.columnNumber (fCols, 'interacting_marker_key')
 
 		for row in rRows:
 			mrkKey = row[mrkCol]
