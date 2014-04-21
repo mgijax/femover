@@ -15,6 +15,7 @@ import config
 #import MarkerSnpAssociations
 import GOFilter
 import GenotypeClassifier
+from IMSRData import IMSRDatabase
 
 ###--- Globals ---###
 
@@ -45,7 +46,7 @@ PhenotypeImageCount = 'phenotypeImageCount'
 HumanDiseaseCount = 'humanDiseaseCount'
 AllelesWithDiseaseCount = 'allelesWithHumanDiseasesCount'
 AntibodyCount = 'antibodyCount'
-SnpCount = 'snpCount'
+ImsrCount = 'imsrCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -80,6 +81,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		d = {}
 		for row in self.results[0][1]:
 			d[row[0]] = {}
+		logger.debug ('initialized markers data')
 
 		# counts to add in this order, with each tuple being:
 		#	(set of results, count constant, count column)
@@ -102,15 +104,14 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[15], CdnaSourceCount, 'cdnaCount'),
 			(self.results[16], MicroarrayCount, 'affyCount'),
 			(self.results[17], PhenotypeImageCount, 'imageCount'),
-			(self.results[19], AllelesWithDiseaseCount,
-				'alleleCount'),
+			(self.results[19], AllelesWithDiseaseCount, 'alleleCount'),
 
 			# HumanDiseaseCount will be processed separately for
 			# mouse markers; this is only for human markers:
 
 			(self.results[20], HumanDiseaseCount, 'diseaseCount'),
 
-			# SnpCount will be processed separately
+			# IMSR count processed separately
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -129,20 +130,33 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 				else:
 					raise error, \
 					'Unknown marker key: %d' % mrkKey
+		logger.debug("finished initial count processing")
 
-		# compile the count of SNPs associated with each marker and
+		# compile the count of IMSR lines/mice associated with each marker and
 		# add it to the counts in 'd'
 
 		markerKeys = d.keys()
 		markerKeys.sort()
 
-		counts.append (SnpCount)
+		logger.debug("loading mouse accession IDs for IMSR lookup")
+		mouseIds = {}
+		for row in self.results[21][1]:
+			mouseIds[row[0]] = row[1]
+		logger.debug ('loaded mouse marker primary ID lookup')
+		
+
+		imsrDB = IMSRDatabase()
+		imsrCellLines,imsrStrains,imsrMrkCounts = imsrDB.queryAllCounts()
+		imsrCellLines=None # not needed
+		imsrStrains=None # not needed
+		logger.debug("loaded IMSR counts into memory")
+
+		counts.append (ImsrCount)
 
 		for mrk in markerKeys:
-			d[mrk][SnpCount] = 0
-			#TODO: this column can be removed, since it is not used anywhere.
-			#d[mrk][SnpCount] = MarkerSnpAssociations.getSnpCount(
-			#	mrk)
+			if mrk in mouseIds:
+				mouseId = mouseIds[mrk]
+				d[mrk][ImsrCount] = (mouseId in imsrMrkCounts) and imsrMrkCounts[mouseId] or 0
 
 		# compile the count of human diseases associated with each
 		# mouse marker (taking care to skip any a via complex not
@@ -205,7 +219,8 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. all markers
 	'''select _Marker_key
-		from mrk_marker''',
+		from mrk_marker
+	''',
 
 	# 1. count of references for each marker (no longer de-emphasizing
 	# curatorial refs, load refs, etc.)
@@ -444,6 +459,21 @@ cmds = [
 		and va._Qualifier_key = q._Term_key
 		and q.term is null
 	group by mm._Marker_key''' % OMIM_HUMAN_MARKER,
+	
+	# 21. marker acc ids 
+	'''
+	select m._Marker_key,
+                a.accID, 
+                a._LogicalDB_key
+        from mrk_marker m,
+                acc_accession a
+        where m._Marker_key = a._Object_key
+                and a._MGIType_key = 2
+                and a._LogicalDB_key = 1
+                and a.preferred = 1
+                and m._Organism_key = 1
+	''',
+
 	]
 
 # order of fields (from the query results) to be written to the
@@ -454,7 +484,7 @@ fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount,
 	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
 	MappingCount, CdnaSourceCount, MicroarrayCount,
 	PhenotypeImageCount, HumanDiseaseCount, AllelesWithDiseaseCount,
-	AntibodyCount, SnpCount
+	AntibodyCount, ImsrCount
 	]
 
 # prefix for the filename of the output file
