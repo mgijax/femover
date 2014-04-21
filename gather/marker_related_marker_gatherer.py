@@ -399,20 +399,22 @@ cmds = [
 		order by r._Object_key_2''',
 
 	# 2. properties
-	'''select _Relationship_key,
-			name,
-			value,
-			sequenceNum
-		from mgi_relationship_property
-		order by _Relationship_key, sequenceNum''', 
+	'''select p._Relationship_key,
+                        t.term as name,
+                        p.value,
+                        p.sequenceNum
+                from mgi_relationship_property p, VOC_Term t
+		where p._PropertyName_key = t._Term_key
+                order by p._Relationship_key, p.sequenceNum''',
 
 	# 3. properties for reverse relationships
-	'''select _Relationship_key,
-			name,
-			value,
-			sequenceNum
-		from mgi_relationship_property
-		order by _Relationship_key, sequenceNum''', 
+	'''select p._Relationship_key,
+                        t.term as name,
+                        p.value,
+                        p.sequenceNum
+                from mgi_relationship_property p, VOC_Term t
+		where p._PropertyName_key = t._Term_key
+                order by p._Relationship_key, p.sequenceNum''',
 
 	# 4. relationship notes (if needed for display)
 	#'''TBD''',
