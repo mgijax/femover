@@ -6,59 +6,13 @@ import Gatherer
 import config
 import logger
 import httpReader
+from IMSRData import IMSRDatabase
 
 ###--- Functions ---###
 
 def queryIMSR ():
-	logger.debug ('IMSR_COUNT_URL : %s' % config.IMSR_COUNT_URL)
-	logger.debug ('IMSR_COUNT_TIMEOUT : %d' % config.IMSR_COUNT_TIMEOUT)
-
-	(lines, err) = httpReader.getURL (config.IMSR_COUNT_URL,
-		timeout = config.IMSR_COUNT_TIMEOUT)
-
-	cellLines = {}
-	strains = {}
-	byMarker = {}
-
-	if not lines:
-		logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
-		logger.error ('No counts will be stored')
-
-		return cellLines, strains, byMarker
-		
-	for line in lines:
-		items = line.split()
-
-		# skip blank lines
-		if len(line.strip()) == 0:
-			continue
-
-		# report (and skip) lines with too few fields; this would
-		# indicate a bug in IMSR
-		if len(items) < 3:
-			logger.debug (
-				'Line from IMSR has too few fields: %s' % \
-				line)
-			continue
-
-		# look for the three tags we need (other counts for KOMP are
-		# included in the same report, so we skip any we don't need)
-
-		accID = items[0]
-		countType = items[1]
-		count = items[2]
-
-		if countType == 'ALL:ES':
-			cellLines[accID] = count
-		elif countType == 'ALL:ST':
-			strains[accID] = count
-		elif countType == 'MRK:UN':
-			byMarker[accID] = count
-
-	logger.debug ('Cell lines: %d, Strains: %d, byMarker: %d' % (
-		len(cellLines), len(strains), len(byMarker) ) )
-
-	return cellLines, strains, byMarker
+	imsrDB = IMSRDatabase()
+	return imsrDB.queryAllCounts()
 
 ###--- Classes ---###
 
