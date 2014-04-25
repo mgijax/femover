@@ -97,56 +97,6 @@ def keyLookup (accID, mgiType):
 
 	return keyCache[key]
 	
-def mergeResultSets (cols1, rows1, cols2, rows2):
-	# return a unified (cols, rows) pair, accounting for the fact
-	# that column ordering in cols1 and cols2 may be different.
-	# Assumes that every the column names in cols1 and cols2 are
-	# the same names, even if they appear in a different order.
-	# Note: This function can alter rows1.
-
-	colsMatch = True
-
-	for c in cols1:
-		if (cols1.index(c) != cols2.index(c)):
-			colsMatch = False
-			break
-
-	# easy case: the columns are already in the same order, so we
-	# can just concatenate the lists
-
-	if colsMatch:
-		return (cols1, rows1 + rows2)
-
-	# Otherwise, we'll need to ensure we re-order the values in
-	# rows2 to match and append those rows to rows1.
-
-	colOrder = []
-	for c in cols1:
-		colOrder.append(cols2.index(c))
-
-	for row in rows2:
-		r = []
-		for c in colOrder:
-			r.append(row[c])
-		rows1.append(r)
-
-	return (cols1, rows1)
-
-def tuplesToLists (rows):
-	# 'rows' is a list of query results.  If these results are tuples,
-	# then convert them to lists instead.
-
-	if len(rows) == 0:
-		return rows
-
-	if type(rows[0]) == types.ListType:
-		return rows
-
-	r = []
-	for row in rows:
-		r.append(list(row))
-	return r
-
 ###--- Classes ---###
 
 class MrmGatherer (Gatherer.MultiFileGatherer):
@@ -173,7 +123,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		relMrkCol = Gatherer.columnNumber (cols, 'related_marker_key')
 
-		rows = tuplesToLists(rows)
+		rows = dbAgnostic.tuplesToLists(rows)
 
 		for row in rows:
 			row.append(getChromosome(row[relMrkCol]))
@@ -221,7 +171,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		return self.processRelationshipQuery(0, 0)
 
-	def processQuery1 (self, query1Cols):
+	def processQuery1 (self):
 		# query 1 : reversed marker-to-marker relationships
 
 		return self.processRelationshipQuery(1, 1)
@@ -243,7 +193,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 		cols.append ('mrm_key')
 
-		rows = tuplesToLists(rows)
+		rows = dbAgnostic.tuplesToLists(rows)
 
 		for row in rows:
 			row.append (regGenerator.getKey((row[relKeyCol], 
@@ -292,9 +242,9 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		# relationship rows from queries 0 and 1
 
 		cols, rows = self.processQuery0()
-		cols1, rows1 = self.processQuery1(cols)
+		cols1, rows1 = self.processQuery1()
 
-		cols, rows = mergeResultSets (cols, rows, cols1, rows1)
+		cols, rows = dbAgnostic.mergeResultSets (cols, rows, cols1, rows1)
 
 		logger.debug ('Found %d relationship rows' % len(rows))
 		self.output.append ( (cols, rows) )
@@ -304,7 +254,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		cols2, rows2 = self.processQuery2()
 		cols3, rows3 = self.processQuery3()
 
-		cols2, rows2 = mergeResultSets (cols2, rows2, cols3, rows3)
+		cols2, rows2 = dbAgnostic.mergeResultSets (cols2, rows2, cols3, rows3)
 
 		logger.debug ('Found %d property rows' % len(rows2))
 		self.output.append ( (cols2, rows2) )
@@ -327,35 +277,38 @@ cmds = [
 			a.accID as related_marker_id,
 			q.term as qualifier,
 			e.abbreviation as evidence_code,
-			bc._Refs_key as reference_key,
-			bc.jnumID as jnum_id,
+			r._Refs_key as reference_key,
+			bc.accID as jnum_id,
 			s.synonym as relationship_term
 		from mgi_relationship_category c,
 			mgi_relationship r,
 			mrk_marker m,
-			voc_term t,
 			acc_accession a,
 			voc_term q,
 			voc_term e,
-			bib_citation_cache bc,
+			acc_accession bc,
 			mgi_synonym s,
 			mgi_synonymtype st
 		where c._Category_key = r._Category_key
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_2 = m._Marker_key
-			and r._RelationshipTerm_key = t._Term_key
+			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
 			and r._Qualifier_key = q._Term_key
 			and r._Evidence_key = e._Term_key
-			and r._Refs_key = bc._Refs_key
-			and t._Term_key = s._Object_key
+			and r._Refs_key = bc._Object_key
+			and bc._MGIType_key = 1
+			and bc._LogicalDB_key = 1
+			and bc.prefixPart = 'J:'
+			and bc.preferred = 1
 			and s._SynonymType_key = st._SynonymType_key
 			and st._MGIType_key = 13
 			and st.synonymType = 'related organizer'
+			and r._Category_key != 1001
 		order by r._Object_key_1''',
 
 	# 1. reversed marker-to-marker relationship data
@@ -367,35 +320,38 @@ cmds = [
 			a.accID as related_marker_id,
 			q.term as qualifier,
 			e.abbreviation as evidence_code,
-			bc._Refs_key as reference_key,
-			bc.jnumID as jnum_id,
+			r._Refs_key as reference_key,
+			bc.accID as jnum_id,
 			s.synonym as relationship_term
 		from mgi_relationship_category c,
 			mgi_relationship r,
 			mrk_marker m,
-			voc_term t,
 			acc_accession a,
 			voc_term q,
 			voc_term e,
-			bib_citation_cache bc,
+			acc_accession bc,
 			mgi_synonym s,
 			mgi_synonymtype st
 		where c._Category_key = r._Category_key
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_1 = m._Marker_key
-			and r._RelationshipTerm_key = t._Term_key
+			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
 			and r._Qualifier_key = q._Term_key
 			and r._Evidence_key = e._Term_key
-			and r._Refs_key = bc._Refs_key
-			and t._Term_key = s._Object_key
+			and r._Refs_key = bc._Object_key
+			and bc._MGIType_key = 1
+			and bc._LogicalDB_key = 1
+			and bc.prefixPart = 'J:'
+			and bc.preferred = 1
 			and s._SynonymType_key = st._SynonymType_key
 			and st._MGIType_key = 13
 			and st.synonymType = 'related participant'
+			and r._Category_key != 1001
 		order by r._Object_key_2''',
 
 	# 2. properties
@@ -403,8 +359,12 @@ cmds = [
                         t.term as name,
                         p.value,
                         p.sequenceNum
-                from mgi_relationship_property p, VOC_Term t
+                from mgi_relationship_property p,
+			voc_term t,
+			mgi_relationship r
 		where p._PropertyName_key = t._Term_key
+			and p._Relationship_key = r._Relationship_key
+			and r._Category_key != 1001
                 order by p._Relationship_key, p.sequenceNum''',
 
 	# 3. properties for reverse relationships
@@ -412,8 +372,12 @@ cmds = [
                         t.term as name,
                         p.value,
                         p.sequenceNum
-                from mgi_relationship_property p, VOC_Term t
+                from mgi_relationship_property p,
+			voc_term t,
+			mgi_relationship r
 		where p._PropertyName_key = t._Term_key
+			and p._Relationship_key = r._Relationship_key
+			and r._Category_key != 1001
                 order by p._Relationship_key, p.sequenceNum''',
 
 	# 4. relationship notes (if needed for display)

@@ -6,6 +6,7 @@
 
 import config
 import logger
+import types
 import dbManager
 
 ###--- Globals ---###
@@ -104,3 +105,60 @@ def columnNumber (columns, columnName):
 
 	return columns.index(c)
 
+def tuplesToLists (rows):
+	# 'rows' is a list of query results.  If these results are tuples,
+	# then convert them to lists instead.
+
+	if len(rows) == 0:
+		return rows
+
+	if type(rows[0]) == types.ListType:
+		return rows
+
+	r = []
+	for row in rows:
+		r.append(list(row))
+	return r
+
+def mergeResultSets (cols1, rows1, cols2, rows2):
+	# return a unified (cols, rows) pair, accounting for the fact
+	# that column ordering in cols1 and cols2 may be different.
+	# Assumes that the column names in cols1 and cols2 are
+	# the same names, even if they appear in a different order.
+	# Note: This function can alter rows1.
+
+	colsMatch = True
+
+	for c in cols1:
+		if (c not in cols2):
+			raise Error, 'Item "%s" not in cols2: %s' % \
+				(c, str(cols2))
+
+		if (cols1.index(c) != cols2.index(c)):
+			colsMatch = False
+			break
+
+	# easy case: the columns are already in the same order, so we
+	# can just concatenate the lists
+
+	if colsMatch:
+		return (cols1, rows1 + rows2)
+
+	# Otherwise, we'll need to ensure we re-order the values in
+	# rows2 to match and append those rows to rows1.
+
+	colOrder = []
+	for c in cols1:
+		if (c not in cols2):
+			raise Error, 'Item "%s" not in cols2: %s' % \
+				(c, str(cols2))
+
+		colOrder.append(cols2.index(c))
+
+	for row in rows2:
+		r = []
+		for c in colOrder:
+			r.append(row[c])
+		rows1.append(r)
+
+	return (cols1, rows1)
