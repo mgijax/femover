@@ -2662,6 +2662,18 @@ for at least 20 sequential generations. C57BL/6J is a widely-used inbred strain 
 <A HREF="${MGIHOME_URL}nomen/strains.shtml">Rules for Nomenclature of Mouse and Rat Strains</A>. 
 ]
 
+
+Incidental Mutations
+
+[ 
+key=incidental_mutations 
+displayName=Incidental Mutations 
+definition=Some high-throughput mutagenesis projects, such as those that generate chemically induced \
+mutations, may produce mutations in multiple sites in the genome. In MGI, incidental mutations are these \
+types of mutations that have been detected via sequencing but have not yet been confirmed or studied.
+]
+
+
 [ 
 key=incross 
 displayName=Incross 
