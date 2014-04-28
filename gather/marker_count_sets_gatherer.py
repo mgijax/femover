@@ -6,7 +6,7 @@ import Gatherer
 import logger
 import MarkerSnpAssociations
 import ADMapper
-import marker_interaction_gatherer
+import InteractionUtils
 import GroupedList
 
 ###--- Constants ---###
@@ -330,55 +330,16 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 	def collateMarkerInteractions (self):
 
-		# forward relationships (organizer -> participant)
+		counts = InteractionUtils.getMarkerInteractionCounts()
 
-		marker_interaction_gatherer.gatherer.collateResults()
-		fCols, fRows = marker_interaction_gatherer.gatherer.processQuery0()
-
-		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
-		regCol = Gatherer.columnNumber (fCols, 'interacting_marker_key')
-
-		regDict = {}	# marker key : GroupedList of reg marker keys
-
-		for row in fRows:
-			mrkKey = row[mrkCol]
-			regKey = row[regCol]
-
-			if not regDict.has_key(mrkKey):
-				regDict[mrkKey] = GroupedList.GroupedList()
-
-			regDict[mrkKey].add(regKey) 
-
-		# reverse relationships (participant -> organizer)
-
-		rCols, rRows = marker_interaction_gatherer.gatherer.processQuery1(fCols)
-
-		mrkCol = Gatherer.columnNumber (fCols, 'marker_key')
-		regCol = Gatherer.columnNumber (fCols, 'interacting_marker_key')
-
-		for row in rRows:
-			mrkKey = row[mrkCol]
-			regKey = row[regCol]
-
-			if not regDict.has_key(mrkKey):
-				regDict[mrkKey] = GroupedList.GroupedList()
-
-			regDict[mrkKey].add(regKey) 
-
-		# collate the two dictionaries into output rows
-		
 		fTerm = 'interacts with'
 
-		startLen = len(self.finalResults)
-
-		for key in regDict.keys():
+		for (key, count) in counts.items():
 			self.finalResults.append ( [ key, 'Interaction',
-				fTerm, len(regDict[key]), 1 ] )
-
-		endLen = len(self.finalResults)
+				fTerm, count, 1 ] )
 
 		logger.debug('Added %d rows for Interactions' % \
-			(endLen - startLen))
+			len(counts))
 		return
 
 	def collateResults (self):
