@@ -449,6 +449,7 @@ cmds = [
 
 	# 5. alleles by type (and these aren't the actual types, but the
 	# groupings of types defined as vocabulary associations)
+	# do not include 'Not Applicable', 'Not Specified', 'Other'
 	'''select a._Marker_key,
 		vt.term as %s,
 		'Alleles' as %s,
@@ -456,6 +457,7 @@ cmds = [
 		vt.sequenceNum
 	from all_allele a, voc_term vt
 	where vt._Vocab_key = 38
+		and vt.term not in ('Not Applicable', 'Not Specified', 'Other')
 		and vt._Term_key = a._Allele_Type_key
 		and a.isWildType = 0
 		and a._Marker_key is not null
