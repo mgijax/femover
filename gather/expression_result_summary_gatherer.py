@@ -19,6 +19,7 @@ import symbolsort
 import ReferenceCitations
 import types
 import VocabSorter
+import GXDUtils
 
 ###--- Globals ---###
 
@@ -125,10 +126,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	# for building the marker_tissue_expression_counts table
 	markerTissueCounts = {}
 
-	def addMarkerTissueCount(self,marker_key,emapsKey,detectionLevel):
+	def addMarkerTissueCount(self,marker_key,emapaKey,detectionLevel):
 		structures = self.markerTissueCounts.setdefault(marker_key,{})
 		# counts format is [allCount,detectedCount,notDetectedCount]
-		counts = structures.setdefault(emapsKey,[0,0,0])
+		counts = structures.setdefault(emapaKey,[0,0,0])
 		if detectionLevel in NEGATIVE_STRENGTHS:
 			# negative case
 			counts[0] += 1
@@ -577,7 +578,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    		isWildType = 0
 
 			# while we are in here, add count statistics of tissues
-			self.addMarkerTissueCount(markerKey,emapsKey,strength)
+			emapaKey = GXDUtils.getEmapaKey(emapsKey)
+			self.addMarkerTissueCount(markerKey,emapaKey,strength)
 
 			newKey = newKey + 1
 
@@ -639,12 +641,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	def processMarkerTissueCounts(self,markerTissueCounts):
 		mtRows = []
 		for markerKey,structures in markerTissueCounts.items():
-			for emapsKey,counts in structures.items():
-				seqNum = VocabSorter.getSequenceNum(emapsKey)
-				printname = ADMapper.getEmapsTerm(emapsKey)	
-				stage = ADMapper.getStageByKey(emapsKey)
+			for emapaKey,counts in structures.items():
+				seqNum = VocabSorter.getSequenceNum(emapaKey)
+				printname = GXDUtils.getEmapaTerm(emapaKey)	
+				stages = GXDUtils.getEmapaStageRange(emapaKey)
 
-				mtRows.append([markerKey,emapsKey,"TS%s: %s"%(stage,printname),
+				mtRows.append([markerKey,emapaKey,"%s: %s" \
+					% (stages,printname),
 					counts[0],counts[1],counts[2],seqNum])
 		return mtRows
 
