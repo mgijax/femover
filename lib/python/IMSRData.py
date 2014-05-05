@@ -27,6 +27,7 @@ class IMSRDatabase:
 			logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
 			logger.error ('No counts will be stored')
 
+			raise Exception ('Could not retrieve data from IMSR')
 			return cellLines, strains, byMarker
 			
 		for line in lines:
@@ -72,8 +73,9 @@ if __name__=="__main__":
 	class IMSRDBTestCase(unittest.TestCase):
 		def test_queryAllCounts(self):
 			cellLineCount,strainCount,markerCount = imsrDB.queryAllCounts()
-			print len(cellLineCount)
-			print len(strainCount)
-			print len(markerCount)
+			print "count of cell lines = %d"%len(cellLineCount)
+			print "count of strains = %d"%len(strainCount)
+			print "count of markers = %d"%len(markerCount)
 			self.assertTrue(markerCount["MGI:97490"] > 0,"Pax6 count not greater than zero")
+			print "pax6 count = %s"%markerCount["MGI:97490"]
 	unittest.main()
