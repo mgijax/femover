@@ -107,7 +107,7 @@ Queries = [
 {	ID:"RNAInSituResultCount",
 	DESCRIPTION:"Assay Result count for RNA in situ Blot assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RNA in situ'
+        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RNA in situ'
 	"""
 },
 
@@ -121,7 +121,7 @@ Queries = [
 {	ID:"allResults",
 	DESCRIPTION:"count of all gxd results",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1
+	select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1
 	"""
 },
 {	ID:"ts6or7ResultCount",
