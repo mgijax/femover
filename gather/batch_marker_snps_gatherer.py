@@ -19,9 +19,10 @@ class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
 		columns=['_Marker_key','accid']
 		rows=[]
 		mrkCol=Gatherer.columnNumber(self.finalColumns,'_Marker_key')
+		chrCol=Gatherer.columnNumber(self.finalColumns,'chromosome')
 
 		for row in self.finalResults:
-			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol])
+			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol],row[chrCol])
 			for snp in snps:
 				rows.append([row[mrkCol],snp])
 			#del snps
