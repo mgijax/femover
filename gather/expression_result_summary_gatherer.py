@@ -640,15 +640,25 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 	def processMarkerTissueCounts(self,markerTissueCounts):
 		mtRows = []
+		i = 0		# used to compute new seqNum (to include stage)
+
 		for markerKey,structures in markerTissueCounts.items():
+
+			m = []
 			for emapaKey,counts in structures.items():
 				seqNum = VocabSorter.getSequenceNum(emapaKey)
+				startStage = GXDUtils.getEmapaStartStage(emapaKey)
+				m.append ( [ startStage, seqNum, emapaKey ] )
+			m.sort()
+
+			for [ startStage, seqNum, emapaKey ] in m:
+				i = i + 1
 				printname = GXDUtils.getEmapaTerm(emapaKey)	
 				stages = GXDUtils.getEmapaStageRange(emapaKey)
 
-				mtRows.append([markerKey,emapaKey,"%s: %s" \
-					% (stages,printname),
-					counts[0],counts[1],counts[2],seqNum])
+				mtRows.append([markerKey,emapaKey,"%s %s" \
+					% (printname, stages),
+					counts[0],counts[1],counts[2], i])
 		return mtRows
 
 	def getSymbolSequenceNum (self, symbol):

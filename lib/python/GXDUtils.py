@@ -48,6 +48,7 @@ def abbreviateAge (
 EMAPS_TO_EMAPA = None	# dictionary mapping EMAPS key to EMAPA key
 EMAPA_STAGE_RANGE = None	# dictionary mapping EMAPA key -> range string
 EMAPA_TERM = None		# dictionary mapping EMAPA key -> term
+EMAPA_START_STAGE = None	# dictionary mapping EMAPA key -> start stage
 
 def getEmapaKey (emapsKey):
 	# get the EMAPA key corresponding to the given EMAPS key
@@ -136,5 +137,33 @@ def getEmapaTerm (emapaKey):
 
 	if EMAPA_TERM.has_key(emapaKey):
 		return EMAPA_TERM[emapaKey]
+	return None
+
+def getEmapaStartStage (emapaKey):
+	# get the start stage (as an integer) for the given EMAPA key
+
+	global EMAPA_START_STAGE
+
+	if EMAPA_START_STAGE == None:
+		query = 'select _term_key, startStage from voc_term_emapa'
+
+		(cols, rows) = dbAgnostic.execute(query)
+
+		EMAPA_STAGE_RANGE = {}
+
+		emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
+		startCol = dbAgnostic.columnNumber (cols, 'startStage')
+
+		EMAPA_START_STAGE = {}
+
+		for row in rows:
+			EMAPA_START_STAGE[row[emapaCol]] = \
+				int(row[startCol])
+
+		logger.debug('Got start stages for %d EMAPA terms' % \
+			len(EMAPA_START_STAGE))
+
+	if EMAPA_START_STAGE.has_key(emapaKey):
+		return EMAPA_START_STAGE[emapaKey]
 	return None
 
