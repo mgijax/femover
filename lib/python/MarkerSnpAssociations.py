@@ -385,23 +385,22 @@ def _initialize():
 
 ###--- Functions ---###
 
-def getSnps (markerKey):
+def getSnps (markerKey,chromosome):
 	# For the given marker key, return the keys for all the
 	# single-coordinate SNPs that are associated with it
 
 	global CURRENT_CHROMOSOME
 	global MARKER_CHROMOSOME
-	#logger.debug("start getSnpsInner")
 
 	#chrom = _getChromosome(markerKey)
-	chrom=CURRENT_CHROMOSOME
-	if markerKey not in MARKER_CHROMOSOME:
-		chrom=_getChromosome(markerKey)
+	#chrom=CURRENT_CHROMOSOME
+	#if chromosome != CURRENT_CHROMOSOME:
+		#chrom=_getChromosome(markerKey)
 	#logger.debug("found chr=%s"%chrom)
 
-	if chrom != CURRENT_CHROMOSOME:
-		CURRENT_CHROMOSOME = chrom
-		_setChromosome(chrom)
+	if chromosome != CURRENT_CHROMOSOME:
+		CURRENT_CHROMOSOME = chromosome
+		_setChromosome(chromosome)
 		_initialize()
 
 	#logger.debug("getSnpsInner() mkey=%s"%markerKey)
@@ -413,21 +412,21 @@ def getSnps (markerKey):
 		return snpKeys
 	return []
 
-def getSnpCount (markerKey):
-	return len(getSnps(markerKey))
+def getSnpCount (markerKey,chromosome):
+	return len(getSnps(markerKey,chromosome))
 
-def getMultiCoordSnps (markerKey):
+def getMultiCoordSnps (markerKey,chromosome):
 	# For the given marker key, return the keys for all the SNPs (either
 	# single or multi-coordinate) that are associated with it.  Multi-
 	# coordinate SNPs will appear multiple times in the list.
 
 	global CURRENT_CHROMOSOME
 
-	chrom = _getChromosome(markerKey)
+	#chrom = _getChromosome(markerKey)
 
-	if chrom != CURRENT_CHROMOSOME:
-		CURRENT_CHROMOSOME = chrom
-		_setChromosome(chrom)
+	if chromosome != CURRENT_CHROMOSOME:
+		CURRENT_CHROMOSOME = chromosome
+		_setChromosome(chromosome)
 		_initialize()
 
 	if MULTI_SNP_CACHE.has_key(markerKey):
@@ -437,13 +436,13 @@ def getMultiCoordSnps (markerKey):
 		return snpKeys
 	return []
 
-def getMultiCoordSnpCount (markerKey):
-	return len(getMultiCoordSnps(markerKey))
+def getMultiCoordSnpCount (markerKey,chromosome):
+	return len(getMultiCoordSnps(markerKey,chromosome))
 
-def getSnpIDs (markerKey):
+def getSnpIDs (markerKey,chromosome):
 	global LOADED_IDS
 	#logger.debug("getSnps() mkey=%s"%markerKey)
-	snpKeys = getSnps(markerKey)
+	snpKeys = getSnps(markerKey,chromosome)
 	#logger.debug("gotSnps() mkey=%s"%markerKey)
 
 	if not LOADED_IDS:
@@ -482,12 +481,14 @@ def getAllMarkerCounts():
 	(cols, rows) = dbAgnostic.execute (cmd)
 
 	mrkCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+	chrCol = dbAgnostic.columnNumber (cols, 'chromosome')
 
 	for row in rows:
 		markerKey = row[mrkCol]
+		chromosome = row[chrCol]	
 
-		snpCount = getSnpCount(markerKey)
-		multiCount = getMultiCoordSnpCount(markerKey)
+		snpCount = getSnpCount(markerKey,chromosome)
+		multiCount = getMultiCoordSnpCount(markerKey,chromosome)
 
 		if (snpCount > 0) or (multiCount > 0):
 			markers[markerKey] = (snpCount, multiCount)
