@@ -339,10 +339,10 @@ def getTeaserMarkers():
 		for marker in group:
 			markerList = []
 
-			for relatedMarker in relatedMarkers[marker]:
+			for relatedMarker in relatedMarkers[marker].keys():
 				markerList.append ( (
-					MarkerUtils.getSymbol(marker),
-					marker) )
+					MarkerUtils.getSymbol(relatedMarker),
+					relatedMarker) )
 
 			markerList.sort (lambda x, y : symbolsort.nomenCompare(
 				x[0], y[0]) )
