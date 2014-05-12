@@ -1,6 +1,10 @@
 # Module: ListSorter.py
 # Purpose: to provide a flexible sorting mechanism for a list of lists,
 #	where we want to sort the sublists by multiple fields of various types
+# Notes: This module is good on memory usage, as it allows you to sort an
+#	existing list in-place, rather than re-ordering your fields to build a
+#	new list to be sorted.  It is, however, far slower than the standard
+#	Python comparison function.
 
 import types
 import logger
