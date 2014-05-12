@@ -6,6 +6,7 @@
 # gather is completely customized (not using a Gatherer subclass).
 
 import sys
+import copy
 import KeyGenerator
 import Gatherer
 import logger
@@ -29,7 +30,7 @@ maxRowCount = 100000	# max number of interaction rows to process in memory
 rowsPerMarker = {}	# maps marker key -> count of interaction rows with
 			# ...this marker as organizer
 
-maxMarkerKey = None	# maximum marker key to process
+maxMarkerKey = None	# maximum (organizer) marker key to process
 
 categoryName = {}	# category key -> category name
 
@@ -38,6 +39,9 @@ notePropertyName = 'note'	# name of property for relationship notes
 interactionRowCount = 0	# count of rows for interactions
 
 allMarkers = 0		# count of all markers which are organizers
+
+teasers = None		# dictionary of marker keys, referring to a list of
+			# marker keys for its teaser markers
 
 # generator for mi_key values, based on relationship key & reversed flag
 
@@ -53,7 +57,7 @@ propertyFile = OutputFile.OutputFile ('marker_interaction_property')
 def initialize():
 	# set up global variables needed for processing
 
-	global maxMarkerKey, rowsPerMarker, allMarkers
+	global maxMarkerKey, rowsPerMarker, allMarkers, teasers
 
 	# find maximum marker key with interactions
 
@@ -101,6 +105,9 @@ def initialize():
 	# relationship table
 
 	ReferenceUtils.restrict('mgi_relationship')
+
+	# get the teaser markers
+	teasers = getTeaserMarkers()
 	return
 
 def getNextMarkerKey(markerKey):
@@ -156,86 +163,202 @@ def getMarkerRange(previousMax = 0):
 
 	return startMarker, endMarker, currentMarkers
 
-def getTeaserMarkers(startMarker, endMarker):
-	# get the set of (up to three) teaser markers for each marker between
-	# the given start and end marker keys.
+def getTeaserMarkers():
+	# get a dictionary where each marker key refers to a list of its
+	# teaser markers (up to three)
 	# Returns: { marker key : [ teaser marker 1, ... teaser marker 3 ] }
 
-	cmd1 = '''select distinct _Object_key_1, _Object_key_2
-		from mgi_relationship
-		where _Category_key = %d
-		and _Object_key_1 >= %d
-		and _Object_key_1 <= %d''' % (interactionKey, startMarker,
-			endMarker)
+	# to keep memory requirements down, we will go through the set of
+	# records in chunks by marker key. 
 
-	cmd2 = '''select distinct _Object_key_1, _Object_key_2
-		from mgi_relationship
-		where _Category_key = %d
-		and _Object_key_2 >= %d
-		and _Object_key_2 <= %d''' % (interactionKey, startMarker,
-			endMarker)
-
-	# { marker key : GroupedList of related marker keys }
-	relatedMarkers = {}
-
-	(cols1, rows1) = dbAgnostic.execute(cmd1)
-	(cols2, rows2) = dbAgnostic.execute(cmd2)
-
-	for (cols, rows) in [ (cols1, rows1), (cols2, rows2) ]:
-	    organizerCol = dbAgnostic.columnNumber(cols, '_Object_key_1')
-	    participantCol = dbAgnostic.columnNumber(cols, '_Object_key_2')
-
-	    for row in rows:
-		organizer = row[organizerCol]
-		participant = row[participantCol]
-
-		if startMarker <= organizer <= endMarker:
-		    if not relatedMarkers.has_key(organizer):
-			relatedMarkers[organizer] = GroupedList.GroupedList()
-		    relatedMarkers[organizer].add(participant)
-
-		if startMarker <= participant <= endMarker:
-		    if not relatedMarkers.has_key(participant):
-			relatedMarkers[participant] = GroupedList.GroupedList()
-		    relatedMarkers[participant].add(organizer) 
-
-	del rows1
-	del rows2
-	gc.collect()
-
-	logger.debug('Got related markers for %d markers' % len(relatedMarkers))
-
-	# At this point, we've collected all markers involved in interaction
-	# relationships with markers in the given key range.  We now need to 
-	# go through each one and identify its teaser markers.
-
+	# marker key : list of up to three teaser marker keys (to be returned)
 	teasers = {}
 
-	for markerKey in relatedMarkers.keys():
-		markers = []
+	# We already have the global rowsPerMarker identifying the number of
+	# rows where each marker is an organizer.  We now need to pull out the
+	# number of rows where they are participants and add them, to get the
+	# total number of rows we'll need to process for each marker.
 
-		for relMarkerKey in relatedMarkers[markerKey].items():
+	cmd1 = '''select _Object_key_2, count(1) as ct
+		from mgi_relationship
+		where _Category_key = %d
+		group by _Object_key_2''' % interactionKey
 
-			# self-regulating markers should not appear in their
-			# own teaser lists
+	(cols, rows) = dbAgnostic.execute(cmd1)
+	keyCol = dbAgnostic.columnNumber (cols, '_Object_key_2')
+	ctCol = dbAgnostic.columnNumber (cols, 'ct')
 
-			if relMarkerKey == markerKey:
-				continue
+	# marker key -> number of rows involving it (start with organizer rows
+	# then add in the participant rows)
+	totalRows = copy.copy(rowsPerMarker)
 
-			markers.append ( [
-				MarkerUtils.getSymbol(relMarkerKey),
-				relMarkerKey ] )
-			
-		markers.sort(lambda x, y: symbolsort.nomenCompare(x[0], y[0]))
+	for row in rows:
+		key = row[keyCol]
+		ct = row[ctCol]
 
-		teasers[markerKey] = []
-		for (symbol, relMarkerKey) in markers[:3]:
-			teasers[markerKey].append(relMarkerKey)
+		if totalRows.has_key(key):
+			totalRows[key] = totalRows[key] + ct
+		else:
+			# marker is only a participant, never an organizer
+			totalRows[key] = ct
 
-	del relatedMarkers
+	markerKeys = totalRows.keys()
+	markerKeys.sort()
+
+	del cols
+	del rows
 	gc.collect()
 
-	logger.debug('Found teasers for %d markers' % len(teasers))
+	logger.debug('Need to find teasers for %d markers from %d to %d' % (
+		len(markerKeys), markerKeys[0], markerKeys[-1]))
+
+	# let's create our groups of markers, one group for each execution of
+	# the query
+
+	maxMarkersPerGroup = 20
+	groups = []
+	group = []
+	groupRows = 0
+	groupMarkers = 0
+
+	for markerKey in markerKeys:
+		rowCount = totalRows[markerKey]
+
+		# if we can fit this marker's rows into our existing group,
+		# then do it
+
+		if groupRows + rowCount <= maxRowCount:
+			group.append(markerKey)
+			groupRows = groupRows + rowCount
+
+			# if adding this marker made our group hit its maximum
+			# number of markers, save this group and start a new
+			# one
+
+			if len(group) == maxMarkersPerGroup:
+				groups.append(group)
+				group = []
+				groupRows = 0
+
+		# special case - if just this marker is more than the number
+		# of rows per group, then add a special group just for this
+		# one and continue on with our current group.
+
+		elif rowCount > maxRowCount:
+			groups.append ( [ markerKey ] )
+
+		# otherwise, we need to save the current group and start a new
+		# one with the new marker
+
+		else:
+			groups.append(group)
+
+			group = [ markerKey ]
+			groupRows = rowCount
+
+	# if we (as is likely) end with a non-empty group, then add it to our
+	# set of groups, too.
+
+	if group:
+		groups.append(group)
+
+	# Now, we have our groups of markers broken down into bite-size chunks
+	# we can use in queries.
+
+	for group in groups:
+		markers = ','.join(map(str, group))
+
+		# marker key : { related marker key : 1 }
+		relatedMarkers = {}
+
+		# gather the related markers where the ones in our group are
+		# the organizers
+
+		cmd1 = '''select _Object_key_1, _Object_key_2
+			from mgi_relationship
+			where _Category_key = %d
+			and _Object_key_1 in (%s)''' % (interactionKey,
+				markers)
+
+		(cols1, rows1) = dbAgnostic.execute(cmd1)
+
+		organizerCol = dbAgnostic.columnNumber(cols1, '_Object_key_1')
+		participantCol = dbAgnostic.columnNumber(cols1, '_Object_key_2')
+
+		for row in rows1:
+			organizer = row[organizerCol]
+			participant = row[participantCol]
+
+
+			# skip self-interacting markers
+			if organizer == participant:
+				continue
+
+			if not relatedMarkers.has_key(organizer):
+				relatedMarkers[organizer] = {}
+			relatedMarkers[organizer][participant] = 1
+
+		del cols1
+		del rows1
+		gc.collect()
+
+		# gather the related markers where the ones in our group are
+		# the participants
+
+		cmd2 = '''select distinct _Object_key_1, _Object_key_2
+			from mgi_relationship
+			where _Category_key = %d
+			and _Object_key_2 in (%s)''' % (interactionKey,
+				markers)
+
+		(cols2, rows2) = dbAgnostic.execute(cmd2)
+
+		organizerCol = dbAgnostic.columnNumber(cols2, '_Object_key_1')
+		participantCol = dbAgnostic.columnNumber(cols2, '_Object_key_2')
+
+		for row in rows2:
+			organizer = row[organizerCol]
+			participant = row[participantCol]
+
+
+			# skip self-interacting markers
+			if organizer == participant:
+				continue
+
+			if not relatedMarkers.has_key(participant):
+				relatedMarkers[participant] = {}
+			relatedMarkers[participant][organizer] = 1
+
+		del cols2
+		del rows2
+		gc.collect()
+
+		# now for each marker, we need to sort its related markers and
+		# identify the three that will be its teasers.
+
+		for marker in group:
+			markerList = []
+
+			for relatedMarker in relatedMarkers[marker]:
+				markerList.append ( (
+					MarkerUtils.getSymbol(marker),
+					marker) )
+
+			markerList.sort (lambda x, y : symbolsort.nomenCompare(
+				x[0], y[0]) )
+
+			teasers[marker] = []
+			for (symbol, key) in markerList[:3]:
+				teasers[marker].append(key)
+
+		del relatedMarkers
+		del markerList
+		gc.collect()
+
+	del groups
+	gc.collect()
+
+	logger.debug('Returning teasers for %d markers' % len(teasers))
 	return teasers
 
 def getInteractionRows(startMarker, endMarker):
@@ -334,8 +457,8 @@ def getPropertyRows(startMarker, endMarker):
 
 		prevNoteKey = noteKey
 
-	logger.debug('Collated %d rows into %d notes for markers %d-%d' % (
-		len(rows2), len(notes), startMarker, endMarker))
+#	logger.debug('Collated %d rows into %d notes for markers %d-%d' % (
+#		len(rows2), len(notes), startMarker, endMarker))
 
 	# add the notes to the list of other properties
 
@@ -371,7 +494,7 @@ def getPropertyRows(startMarker, endMarker):
 
 	return cols1, rows1
 
-def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
+def expandInteractionRows(iCols, iRows, reverse = 0):
 	# produce the interaction rows for the data file, given the 'iCols'
 	# and 'iRows' as retrieved from getInteractionRows().  If 'reverse' is
 	# 0, then we produce organizer-to-participant rows.  If it is 1, then
@@ -398,6 +521,7 @@ def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
 	category = categoryName[interactionKey]
 
 	sortRows = []
+	teased = {}
 
 	for iRow in iRows:
 		interactionRowCount = interactionRowCount + 1
@@ -419,7 +543,6 @@ def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
 		if teasers.has_key(markerKey1):
 			if markerKey2 in teasers[markerKey1]:
 				inTeaser = 1
-				teasers[markerKey1].remove(markerKey2)
 
 		row = [
 			miGenerator.getKey( (iRow[relationshipCol], reverse) ),
@@ -452,8 +575,8 @@ def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
 			]
 		sortRows.append(sortRow)
 
-	logger.debug('Collated %d interaction rows, reverse = %d' % (
-		len(rows), reverse))
+#	logger.debug('Collated %d interaction rows, reverse = %d' % (
+#		len(rows), reverse))
 
 	# need to modify the sequence numbers now, based on results after we
 	# sort the extra 'sortRows' we compiled.
@@ -475,7 +598,7 @@ def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
 	del seqNum
 	gc.collect()
 
-	logger.debug ('Updated sequence numbers for %d rows' % len(rows))
+#	logger.debug ('Updated sequence numbers for %d rows' % len(rows))
 	return cols, rows
 
 def expandPropertyRows (pCols, pRows, reverse = 0):
@@ -506,8 +629,8 @@ def expandPropertyRows (pCols, pRows, reverse = 0):
 			]
 		rows.append(row)
 
-	logger.debug ('Built %d property rows, reverse = %d' % (
-		len(rows), reverse)) 
+#	logger.debug ('Built %d property rows, reverse = %d' % (
+#		len(rows), reverse)) 
 	return cols, rows
 
 def processMarkers(startMarker, endMarker):
@@ -517,11 +640,10 @@ def processMarkers(startMarker, endMarker):
 	logger.debug('Beginning with markers %d-%d' % (startMarker, endMarker))
 
 	iCols, iRows = getInteractionRows(startMarker, endMarker)
-	teasers = getTeaserMarkers(startMarker, endMarker)
 
 	# write forward interaction rows
 
-	cols, rows = expandInteractionRows (iCols, iRows, teasers, 0)
+	cols, rows = expandInteractionRows (iCols, iRows, 0)
 	interactionFile.writeToFile (cols, cols, rows)
 	logger.debug('Wrote %d rows to interaction file' % len(rows))
 
@@ -531,11 +653,10 @@ def processMarkers(startMarker, endMarker):
 
 	# write reversed interaction rows
 
-	cols, rows = expandInteractionRows (iCols, iRows, teasers, 1)
+	cols, rows = expandInteractionRows (iCols, iRows, 1)
 	interactionFile.writeToFile (cols, cols, rows)
-	logger.debug('Wrote %d rows to interaction file' % len(rows))
+	logger.debug('Wrote %d reversed rows to interaction file' % len(rows))
 
-	del teasers
 	del iCols
 	del iRows
 	del cols
@@ -558,7 +679,7 @@ def processMarkers(startMarker, endMarker):
 
 	cols, rows = expandPropertyRows (pCols, pRows, 1)
 	propertyFile.writeToFile ( [ Gatherer.AUTO ] + cols, cols, rows)
-	logger.debug('Wrote %d rows to property file' % len(rows))
+	logger.debug('Wrote %d reversed rows to property file' % len(rows))
 
 	del pCols
 	del pRows
@@ -568,7 +689,7 @@ def processMarkers(startMarker, endMarker):
 
 	miGenerator.forget()
 
-	logger.debug('Finished with markers %d-%d' % (startMarker, endMarker))
+#	logger.debug('Finished with markers %d-%d' % (startMarker, endMarker))
 	return
 
 def main():
