@@ -1,7 +1,9 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'marker_interaction' and 'marker_interaction_property'
-# tables in the front-end database
+# tables in the front-end database.  This data set is large with the potential
+# to grow very large, so memory usage is at a premium.  As a result, this
+# gather is completely customized (not using a Gatherer subclass).
 
 import sys
 import KeyGenerator
@@ -9,449 +11,286 @@ import Gatherer
 import logger
 import types
 import dbAgnostic
-import ListSorter
 import random
-
+import MarkerUtils 
+import GroupedList
+import gc
+import ReferenceUtils
+import VocabUtils
+import OutputFile
+import symbolsort
 
 ###--- Globals ---###
 
+interactionKey = 1001	# _Category_key for interactions
+
+maxRowCount = 100000	# max number of interaction rows to process in memory
+
+rowsPerMarker = {}	# maps marker key -> count of interaction rows with
+			# ...this marker as organizer
+
+maxMarkerKey = None	# maximum marker key to process
+
+categoryName = {}	# category key -> category name
+
+notePropertyName = 'note'	# name of property for relationship notes
+
+interactionRowCount = 0	# count of rows for interactions
+
+allMarkers = 0		# count of all markers which are organizers
+
+# generator for mi_key values, based on relationship key & reversed flag
+
 miGenerator = KeyGenerator.KeyGenerator('marker_interaction')
+
+# output files
+
+interactionFile = OutputFile.OutputFile ('marker_interaction')
+propertyFile = OutputFile.OutputFile ('marker_interaction_property')
 
 ###--- Functions ---###
 
-# marker key -> (genetic chrom, genomic chrom, start coord, end coord)
-coordCache = {}	
+def initialize():
+	# set up global variables needed for processing
 
-def populateCache():
-	# populate the global 'coordCache' with location data for markers
+	global maxMarkerKey, rowsPerMarker, allMarkers
 
-	global coordCache
+	# find maximum marker key with interactions
 
-	cmd = '''select _Marker_key, genomicChromosome, chromosome,
-			startCoordinate, endCoordinate
-		from mrk_location_cache'''
+	cmd2 = '''select max(_Object_key_1)
+		from mgi_relationship
+		where _Category_key = %d''' % interactionKey
+
+	(cols, rows) = dbAgnostic.execute(cmd2)
+	maxMarkerKey = rows[0][0]
+	logger.debug('Max marker key w/ interactions: %d' % maxMarkerKey)
+
+	# find number of interactions per marker, where the marker is the
+	# organizer
+
+	cmd3 = '''select _Object_key_1, count(1) as ct
+		from mgi_relationship
+		where _Category_key = %d
+		group by _Object_key_1''' % interactionKey
+
+	(cols, rows) = dbAgnostic.execute(cmd3)
+	keyCol = dbAgnostic.columnNumber (cols, '_Object_key_1')
+	ctCol = dbAgnostic.columnNumber (cols, 'ct')
+
+	for row in rows:
+		rowsPerMarker[row[keyCol]] = row[ctCol]
+
+	allMarkers = len(rowsPerMarker)
+
+	logger.debug('Got interaction counts for %d markers' % allMarkers)
+
+	# look up the various category names and cache them by key
+
+	cmd4 = 'select _Category_key, name from mgi_relationship_category'
+
+	(cols, rows) = dbAgnostic.execute(cmd4)
+	keyCol = dbAgnostic.columnNumber(cols, '_Category_key')
+	nameCol = dbAgnostic.columnNumber(cols, 'name')
+
+	for row in rows:
+		categoryName[row[keyCol]] = row[nameCol]
+	
+	logger.debug('Got %d category names' % len(categoryName))
+
+	# restrict our set of cached J: numbers to only those cited in the
+	# relationship table
+
+	ReferenceUtils.restrict('mgi_relationship')
+	return
+
+def getNextMarkerKey(markerKey):
+	# get the next marker key higher than the given 'markerKey' which
+	# is the organizer for interactions.  Returns None if there are no
+	# higher marker keys that have interactions.
+
+	k = markerKey + 1
+	while not rowsPerMarker.has_key(k):
+		k = k + 1
+
+		if k > maxMarkerKey:
+			return None
+	return k
+
+def getMarkerRange(previousMax = 0):
+	# get a (start marker key, end marker key, number of markers) triple,
+	# identifying the next marker range to process, where the start marker
+	# key will be the next marker with interactions beyond the given
+	# previousMax marker key. Returns (None, None, 0) if there are no more
+	# markers to process.
+
+	currentMarkers = 0
+
+	startMarker = getNextMarkerKey(previousMax)
+	if startMarker == None:
+		return None, None, 0
+
+	endMarker = startMarker		# assume only one marker fits
+
+	currentMarkers = 1
+
+	soFar = rowsPerMarker[startMarker]
+
+	nextMarker = getNextMarkerKey(startMarker)
+
+	if nextMarker == None:
+		return startMarker, startMarker, currentMarkers
+
+	nextCount = rowsPerMarker[nextMarker]
+
+	while (soFar + nextCount <= maxRowCount):
+		currentMarkers = currentMarkers + 1
+
+		soFar = soFar + nextCount
+		endMarker = nextMarker
+
+		nextMarker = getNextMarkerKey(nextMarker)
+		if nextMarker != None:
+			nextCount = rowsPerMarker[nextMarker]
+		else:
+			break
+
+	return startMarker, endMarker, currentMarkers
+
+def getTeaserMarkers(startMarker, endMarker):
+	# get the set of (up to three) teaser markers for each marker between
+	# the given start and end marker keys.
+	# Returns: { marker key : [ teaser marker 1, ... teaser marker 3 ] }
+
+	cmd1 = '''select distinct _Object_key_1, _Object_key_2
+		from mgi_relationship
+		where _Category_key = %d
+		and _Object_key_1 >= %d
+		and _Object_key_1 <= %d''' % (interactionKey, startMarker,
+			endMarker)
+
+	cmd2 = '''select distinct _Object_key_1, _Object_key_2
+		from mgi_relationship
+		where _Category_key = %d
+		and _Object_key_2 >= %d
+		and _Object_key_2 <= %d''' % (interactionKey, startMarker,
+			endMarker)
+
+	# { marker key : GroupedList of related marker keys }
+	relatedMarkers = {}
+
+	(cols1, rows1) = dbAgnostic.execute(cmd1)
+	(cols2, rows2) = dbAgnostic.execute(cmd2)
+
+	for (cols, rows) in [ (cols1, rows1), (cols2, rows2) ]:
+	    organizerCol = dbAgnostic.columnNumber(cols, '_Object_key_1')
+	    participantCol = dbAgnostic.columnNumber(cols, '_Object_key_2')
+
+	    for row in rows:
+		organizer = row[organizerCol]
+		participant = row[participantCol]
+
+		if startMarker <= organizer <= endMarker:
+		    if not relatedMarkers.has_key(organizer):
+			relatedMarkers[organizer] = GroupedList.GroupedList()
+		    relatedMarkers[organizer].add(participant)
+
+		if startMarker <= participant <= endMarker:
+		    if not relatedMarkers.has_key(participant):
+			relatedMarkers[participant] = GroupedList.GroupedList()
+		    relatedMarkers[participant].add(organizer) 
+
+	del rows1
+	del rows2
+	gc.collect()
+
+	logger.debug('Got related markers for %d markers' % len(relatedMarkers))
+
+	# At this point, we've collected all markers involved in interaction
+	# relationships with markers in the given key range.  We now need to 
+	# go through each one and identify its teaser markers.
+
+	teasers = {}
+
+	for markerKey in relatedMarkers.keys():
+		markers = []
+
+		for relMarkerKey in relatedMarkers[markerKey].items():
+
+			# self-regulating markers should not appear in their
+			# own teaser lists
+
+			if relMarkerKey == markerKey:
+				continue
+
+			markers.append ( [
+				MarkerUtils.getSymbol(relMarkerKey),
+				relMarkerKey ] )
+			
+		markers.sort(lambda x, y: symbolsort.nomenCompare(x[0], y[0]))
+
+		teasers[markerKey] = []
+		for (symbol, relMarkerKey) in markers[:3]:
+			teasers[markerKey].append(relMarkerKey)
+
+	del relatedMarkers
+	gc.collect()
+
+	logger.debug('Found teasers for %d markers' % len(teasers))
+	return teasers
+
+def getInteractionRows(startMarker, endMarker):
+	# get the basic interaction rows for organizer markers with keys
+	# between 'startMarker' and 'endMarker'
+
+	cmd = '''select _Relationship_key,
+			_Object_key_1 as marker_key,
+			_Object_key_2 as interacting_marker_key,
+			_Refs_key,
+			_RelationshipTerm_key,
+			_Qualifier_key,
+			_Evidence_key
+		from mgi_relationship
+		where _Category_key = %d
+			and _Object_key_1 >= %d
+			and _Object_key_1 <= %d
+		order by _Object_key_1''' % (interactionKey, startMarker,
+			endMarker)
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber(cols, '_Marker_key')
-	genomicChrCol = dbAgnostic.columnNumber(cols, 'genomicChromosome')
-	geneticChrCol = dbAgnostic.columnNumber(cols, 'chromosome')
-	startCol = dbAgnostic.columnNumber(cols, 'startCoordinate')
-	endCol = dbAgnostic.columnNumber(cols, 'endCoordinate')
-
-	for row in rows:
-		coordCache[row[keyCol]] = (row[geneticChrCol],
-			row[genomicChrCol], row[startCol], row[endCol])
-
-	logger.debug ('Cached %d locations' % len(coordCache))
-	return
-
-def getMarkerCoords(markerKey):
-	# get (genetic chrom, genomic chrom, start coord, end coord) for the
-	# given marker key
-
-	if len(coordCache) == 0:
-		populateCache()
-
-	if coordCache.has_key(markerKey):
-		return coordCache[markerKey]
-
-	return (None, None, None, None)
-
-def getChromosome (marker):
-	# get the chromosome for the given marker key or ID, preferring
-	# the genomic one over the genetic one
-
-	(geneticChr, genomicChr, startCoord, endCoord) = getMarkerCoords(marker)
-
-	if genomicChr:
-		return genomicChr
-	return geneticChr
-
-def getStartCoord (marker):
-	return getMarkerCoords(marker)[2]
-
-def getEndCoord (marker):
-	return getMarkerCoords(marker)[3] 
-
-def addInTeaserFlag (cols, rows):
-	# add an in_teaser column to each row in rows, where in_teaser = 1 for
-	# the first three rows (with distinct regulated markers) for a given
-	# marker and in_teaser = 0 otherwise.  Assumes we are sorted primarily
-	# by marker.
-
-	mrkCol = Gatherer.columnNumber (cols, 'marker_key')
-	regMrkCol = Gatherer.columnNumber (cols, 'interacting_marker_key')
-	cols.append ('in_teaser')
-
-	lastMarkerKey = None
-	teasedKeys = []		# reg marker keys in teaser for current marker
-
-	for row in rows:
-		markerKey = row[mrkCol]
-		regMarkerKey = row[regMrkCol]
-
-		inTeaser = 0
-
-		if lastMarkerKey != markerKey:
-			lastMarkerKey = markerKey
-			teasedKeys = [ regMarkerKey ]
-			inTeaser = 1
-
-		elif len(teasedKeys) < 3:
-			if regMarkerKey not in teasedKeys:
-				teasedKeys.append(regMarkerKey)
-				inTeaser = 1
-
-		row.append(inTeaser)
-
+	logger.debug ('Got %d interactions for markers %d-%d' % (
+		len(rows), startMarker, endMarker))
 	return cols, rows
 
-###--- Classes ---###
+def getPropertyRows(startMarker, endMarker):
+	# get the property rows for organizer markers with keys between
+	# 'startMarker' and 'endMarker'
 
-class RegGatherer (Gatherer.MultiFileGatherer):
-	# Is: a data gatherer for the Template table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for Templates,
-	#	collates results, writes tab-delimited text file
+	# properties for relationships in our marker range
 
-	def processInteractionQuery (self, queryNumber, participant = 0):
-		# process a set of results for marker-to-marker interactions.
-		# 'queryNumber' is an index into self.results to identify
-		# which set of results to process.  'participant' indicates if
-		# these interactions are from the participant's perspective
-		# (1) or from the organizer's perspective (0).
-
-		global miGenerator
-
-		cols, rows = self.results[queryNumber]
-
-		# add chromosome and start coordinate fields to each row, to
-		# use for sorting
-
-		cols.append ('chromosome')
-		cols.append ('startCoordinate')
-
-		relMrkCol = Gatherer.columnNumber (cols, 'interacting_marker_key')
-
-		rows = dbAgnostic.tuplesToLists(rows)
-
-		for row in rows:
-			row.append(getChromosome(row[relMrkCol]))
-			row.append(getStartCoord(row[relMrkCol]))
-
-		# update sorting of rows to group by marker key, relationship
-		# category, and a smart alpha sort on interacting marker symbol
-
-		mrkKeyCol = Gatherer.columnNumber (cols, 'marker_key')
-		relSymbolCol = Gatherer.columnNumber (cols,
-			'interacting_marker_symbol')
-		categoryCol = Gatherer.columnNumber (cols,
-			'relationship_category')
-		termCol = Gatherer.columnNumber (cols, 'relationship_term')
-		chrCol = Gatherer.columnNumber (cols, 'chromosome')
-		coordCol = Gatherer.columnNumber (cols, 'startCoordinate')
-
-		ListSorter.setSortBy ( [ (mrkKeyCol, ListSorter.NUMERIC),
-			(categoryCol, ListSorter.ALPHA),
-			(termCol, ListSorter.ALPHA),
-			(chrCol, ListSorter.CHROMOSOME),
-			(coordCol, ListSorter.NUMERIC),
-			] )
-
-		rows.sort (ListSorter.compare)
-		logger.debug ('Sorted %d query %d rows' % (len(rows),
-			queryNumber))
-
-		# add mi_key field and sequence number field to each row, and
-		# one to indicate that these are not reversed relationships
-
-		relKeyCol = Gatherer.columnNumber (cols, '_Relationship_key') 
-		cols.append ('mi_key')
-		cols.append ('sequence_num')
-		cols.append ('is_reversed')
-		seqNum = 0
-
-		for row in rows:
-			row.append (miGenerator.getKey((row[relKeyCol], 
-				participant)))
-			seqNum = seqNum + 1 
-			row.append (seqNum)
-			row.append (participant)
-
-		return addInTeaserFlag(cols, rows)
-
-	def processQuery0 (self):
-		# query 0 : basic marker-to-marker relationships
-
-		return self.processInteractionQuery(0, 0)
-
-	def processQuery1 (self):
-		# query 1 : reversed marker-to-marker relationships
-
-		return self.processInteractionQuery(1, 1)
-
-	def processPropertyQuery (self, queryNumber, participant = 0):
-		# process a set of results for marker-to-marker interactions'
-		# properties.  'queryNumber' is an index into self.results to
-		# identify which set of results to process.  'participant'
-		# indicates if the relationships are from the participant's
-		# perspective (1) or from the organizer's perspective (0).
-
-		cols, rows = self.results[queryNumber]
-
-		# add mi_key to each row
-
-		relKeyCol = Gatherer.columnNumber (cols, '_Relationship_key')
-
-		cols.append ('mi_key')
-
-		rows = dbAgnostic.tuplesToLists(rows)
-
-		for row in rows:
-			row.append (miGenerator.getKey((row[relKeyCol], 
-				participant)))
-
-		# sort rows to be ordered by mi_key, property name, and
-		# property value
-
-		miKeyCol = Gatherer.columnNumber (cols, 'mi_key')
-		nameCol = Gatherer.columnNumber (cols, 'name')
-		valueCol = Gatherer.columnNumber (cols, 'value')
-
-		ListSorter.setSortBy ( [
-			(miKeyCol, ListSorter.NUMERIC),
-			(nameCol, ListSorter.ALPHA),
-			(valueCol, ListSorter.SMART_ALPHA)
-			] )
-		rows.sort (ListSorter.compare)
-		logger.debug ('Sorted %d query %d rows' % (len(rows),
-			queryNumber))
-
-		# add sequence number to each row
-
-		cols.append ('sequence_num')
-
-		for row in rows:
-			self.maxPropertySeqNum = self.maxPropertySeqNum + 1
-			row.append (self.maxPropertySeqNum)
-
-		return cols, rows
-
-	def processQuery2 (self):
-		# query 2 : properties for reverse marker-to-marker
-		# relationships
-
-		return self.processPropertyQuery(2, 0)
-
-	def processQuery2Reversed (self):
-		# query 2 reversed : properties for reverse marker-to-marker
-		# relationships
-
-		return self.processPropertyQuery(2, 1)
-
-	def processNotesQuery (self, queryNumber, participant):
-		cols, rows = self.results[queryNumber]
-
-		keyCol = Gatherer.columnNumber (cols, '_Relationship_key')
-		noteCol = Gatherer.columnNumber (cols, 'note')
-		seqNumCol = Gatherer.columnNumber (cols, 'sequenceNum')
-
-		notes = {}		# mi_key -> note
-
-		for row in rows:
-			miKey = miGenerator.getKey((row[keyCol], participant))
-
-			if notes.has_key(miKey):
-				notes[miKey] = notes[miKey] + row[noteCol]
-			else:
-				notes[miKey] = row[noteCol]
-
-		logger.debug ('Collated %d rows into %d notes' % (len(rows),
-			len(notes)) )
-
-		# now compile the notes into properties-style rows
-
-		miKeys = notes.keys()
-		miKeys.sort()
-
-		pCols = [ 'mi_key', 'name', 'value', 'sequence_num',
-			'_relationship_key', 'sequencenum' ]			
-		pRows = []
-
-		for miKey in miKeys:
-			self.maxPropertySeqNum = self.maxPropertySeqNum + 1
-
-			# Both _Relationship_key and sequenceNum are ignored
-			# from here onward, so we can just toss in zeroes to
-			# ensure that we have the right number of columns to
-			# match the other property rows.  (needed to merge 
-			# the sets of rows together)
-
-			row = [ miKey, 'note', notes[miKey], 
-				self.maxPropertySeqNum, 0, 0 ]
-
-			pRows.append(row)
-
-		logger.debug ('Converted %d notes into properties' % \
-			len(pRows))
-
-		return pCols, pRows
-
-	def processQuery3 (self):
-		# query 3 : notes for marker-to-marker interactions
-
-		return self.processNotesQuery(3, 0)
-
-	def processQuery3Reversed (self):
-		# query 3 : notes for marker-to-marker interactions
-
-		return self.processNotesQuery(3, 1)
-
-	def collateResults (self):
-
-		self.maxPropertySeqNum = 0
-
-		# interaction rows from queryies 0 and 1
-
-		cols, rows = self.processQuery0()
-		cols1, rows1 = self.processQuery1()
-
-		cols, rows = dbAgnostic.mergeResultSets (cols, rows,
-			cols1, rows1)
-
-		logger.debug ('Found %d interaction rows' % len(rows))
-		self.output.append ( (cols, rows) )
-
-		# property rows from query 2 (and also reversed version)
-
-		cols2, rows2 = self.processQuery2()
-		cols3, rows3 = self.processQuery2Reversed()
-
-		cols2, rows2 = dbAgnostic.mergeResultSets (cols2, rows2,
-			cols3, rows3)
-
-		logger.debug ('Found %d property rows' % len(rows2))
-
-		# notes rows from query 3 (and also reversed version)
-
-		cols4, rows4 = self.processQuery3()
-		cols5, rows5 = self.processQuery3Reversed()
-
-		cols2, rows2 = dbAgnostic.mergeResultSets (cols2, rows2,
-			cols4, rows4)
-		cols2, rows2 = dbAgnostic.mergeResultSets (cols2, rows2,
-			cols5, rows5)
-
-		logger.debug ('Found %d notes rows' % (len(rows4) + len(rows5)))
-
-		self.output.append ( (cols2, rows2) )
-		return
-
-###--- globals ---###
-
-cmds = [
-	# 0. basic marker-to-marker relationship data
-	'''select r._Relationship_key,
-			c.name as relationship_category,
-			r._Object_key_1 as marker_key,
-			r._Object_key_2 as interacting_marker_key,
-			m.symbol as interacting_marker_symbol,
-			s.synonym as relationship_term,
-			a.accID as interacting_marker_id,
-			q.term as qualifier,
-			e.abbreviation as evidence_code,
-			r._Refs_key as reference_key,
-			bc.accID as jnum_id
-		from mgi_relationship_category c,
-			mgi_relationship r,
-			mrk_marker m,
-			acc_accession a,
-			voc_term q,
-			voc_term e,
-			acc_accession bc,
-			mgi_synonym s,
-			mgi_synonymtype st
-		where c._Category_key = r._Category_key
-			and c._MGIType_key_1 = 2
-			and c._MGIType_key_2 = 2
-			and r._Object_key_2 = m._Marker_key
-			and r._RelationshipTerm_key = s._Object_key
-			and m._Marker_key = a._Object_key
-			and a._MGIType_key = 2
-			and a._LogicalDB_key = 1
-			and a.preferred = 1
-			and r._Qualifier_key = q._Term_key
-			and r._Evidence_key = e._Term_key
-			and r._Refs_key = bc._Object_key
-			and bc._MGIType_key = 1
-			and bc._LogicalDB_key = 1
-			and bc.preferred = 1
-			and bc.prefixPart = 'J:'
-			and s._SynonymType_key = st._SynonymType_key
-			and st._MGIType_key = 13
-			and st.synonymType = 'related organizer'
-			and r._Category_key = 1001
-		order by r._Object_key_1''',
-
-	# 1. reversed marker-to-marker relationship data
-	'''select r._Relationship_key,
-			c.name as relationship_category,
-			r._Object_key_2 as marker_key,
-			r._Object_key_1 as interacting_marker_key,
-			m.symbol as interacting_marker_symbol,
-			s.synonym as relationship_term,
-			a.accID as interacting_marker_id,
-			q.term as qualifier,
-			e.abbreviation as evidence_code,
-			r._Refs_key as reference_key,
-			bc.accID as jnum_id
-		from mgi_relationship_category c,
-			mgi_relationship r,
-			mrk_marker m,
-			acc_accession a,
-			voc_term q,
-			voc_term e,
-			acc_accession bc,
-			mgi_synonym s,
-			mgi_synonymtype st
-		where c._Category_key = r._Category_key
-			and c._MGIType_key_1 = 2
-			and c._MGIType_key_2 = 2
-			and r._Object_key_1 = m._Marker_key
-			and r._RelationshipTerm_key = s._Object_key
-			and m._Marker_key = a._Object_key
-			and a._MGIType_key = 2
-			and a._LogicalDB_key = 1
-			and a.preferred = 1
-			and r._Qualifier_key = q._Term_key
-			and r._Evidence_key = e._Term_key
-			and r._Refs_key = bc._Object_key
-			and bc._MGIType_key = 1
-			and bc._LogicalDB_key = 1
-			and bc.preferred = 1
-			and bc.prefixPart = 'J:'
-			and s._SynonymType_key = st._SynonymType_key
-			and st._MGIType_key = 13
-			and st.synonymType = 'related participant'
-			and r._Category_key = 1001
-		order by r._Object_key_2''',
-
-	# 2. properties
-	'''select p._Relationship_key,
-			t.term as name,
+	cmd1 = '''select p._Relationship_key,
+			p._PropertyName_key,
 			p.value,
 			p.sequenceNum
 		from mgi_relationship_property p,
-			voc_term t,
 			mgi_relationship r
 		where p._Relationship_key = r._Relationship_key
-			and r._Category_key = 1001
-			and p._PropertyName_key = t._Term_key
-		order by p._Relationship_key, p.sequenceNum''', 
+			and r._Category_key = %d
+			and r._Object_key_1 >= %d
+			and r._Object_key_1 <= %d
+		order by p._Relationship_key, p.sequenceNum''' % (
+			interactionKey, startMarker, endMarker)
 
-	# 3. relationship notes (needed for Excel/tab downloads)
-	'''select r._Relationship_key,
+	(cols1, rows1) = dbAgnostic.execute(cmd1)
+
+	logger.debug('Got %d properties for markers %d-%d' % (
+		len(rows1), startMarker, endMarker))
+
+	# notes for relationships in our marker range (needed for Excel/tab
+	# downloads)
+
+	cmd2 = '''select r._Relationship_key,
+			c._Note_key,
 			c.sequenceNum,
 			c.note
 		from mgi_relationship r,
@@ -459,35 +298,311 @@ cmds = [
 			mgi_note n,
 			mgi_notechunk c
 		where r._Relationship_key = n._Object_key
-			and r._Category_key = 1001
+			and r._Category_key = %d
 			and t._NoteType_key = n._NoteType_key
 			and t._MGIType_key = 40
 			and n._Note_key = c._Note_key
-			order by r._Relationship_key, c.sequenceNum''',
-	]
+			and r._Object_key_1 >= %d
+			and r._Object_key_1 <= %d
+		order by r._Relationship_key, c._Note_key, c.sequenceNum''' % (
+			interactionKey, startMarker, endMarker)
 
-# prefix for the filename of the output file
-files = [
-	('marker_interaction',
-		[ 'mi_key', 'marker_key', 'interacting_marker_key',
-			'interacting_marker_symbol', 'interacting_marker_id',
-			'relationship_category', 'relationship_term',
-			'qualifier', 'evidence_code', 'reference_key',
-			'jnum_id', 'sequence_num', 'in_teaser', 'is_reversed'
-			],
-		'marker_interaction'),
+	(cols2, rows2) = dbAgnostic.execute(cmd2)
 
-	('marker_interaction_property',
-		[ Gatherer.AUTO, 'mi_key', 'name', 'value', 'sequence_num' ],
-		'marker_interaction_property'),
-	]
+	keyCol = dbAgnostic.columnNumber (cols2, '_Relationship_key')
+	noteCol = dbAgnostic.columnNumber (cols2, 'note')
+	noteKeyCol = dbAgnostic.columnNumber (cols2, '_Note_key')
 
-# global instance of a RegGatherer
-gatherer = RegGatherer (files, cmds)
+	notes = {}	# relationship key -> string note
 
-###--- main program ---###
+	prevNoteKey = None
 
-# if invoked as a script, use the standard main() program for gatherers and
-# pass in our particular gatherer
+	for row in rows2:
+		relationshipKey = row[keyCol]
+		noteKey = row[noteKeyCol]
+
+		if not notes.has_key(relationshipKey):
+			notes[relationshipKey] = row[noteCol]
+
+		elif noteKey == prevNoteKey:
+			notes[relationshipKey] = notes[relationshipKey] + \
+				row[noteCol]
+
+		else:
+			notes[relationshipKey] = notes[relationshipKey] + \
+				'; ' + row[noteCol]
+
+		prevNoteKey = noteKey
+
+	logger.debug('Collated %d rows into %d notes for markers %d-%d' % (
+		len(rows2), len(notes), startMarker, endMarker))
+
+	# add the notes to the list of other properties
+
+	keyCol = dbAgnostic.columnNumber (cols1, '_Relationship_key')
+	nameCol = dbAgnostic.columnNumber (cols1, '_PropertyName_key')
+	valueCol = dbAgnostic.columnNumber (cols1, 'value')
+	seqNumCol = dbAgnostic.columnNumber (cols1, 'sequenceNum') 
+
+	fields = [ 0, 1, 2, 3 ]
+	i = len(rows1)
+
+	for relationshipKey in notes.keys():
+		row = []
+		for field in fields:
+			if field == keyCol:
+				row.append(relationshipKey)
+			elif field == nameCol:
+				row.append(notePropertyName)
+			elif field == valueCol:
+				row.append(notes[relationshipKey])
+			elif field == seqNumCol:
+				i = i + 1
+				row.append(i)
+		rows1.append(row)
+
+	logger.debug('Added %d notes as properties for markers %d-%d' % (
+		len(notes), startMarker, endMarker))
+
+	del cols2
+	del rows2
+	del notes
+	gc.collect()
+
+	return cols1, rows1
+
+def expandInteractionRows(iCols, iRows, teasers, reverse = 0):
+	# produce the interaction rows for the data file, given the 'iCols'
+	# and 'iRows' as retrieved from getInteractionRows().  If 'reverse' is
+	# 0, then we produce organizer-to-participant rows.  If it is 1, then
+	# do produce participant-to-organizer rows.
+
+	global interactionRowCount
+
+	cols = [ 'mi_key', 'marker_key', 'interacting_marker_key',
+		'interacting_marker_symbol', 'interacting_marker_id',
+		'relationship_category', 'relationship_term',
+		'qualifier', 'evidence_code', 'reference_key',
+		'jnum_id', 'sequence_num', 'in_teaser', 'is_reversed' ]
+	rows = []
+
+	relationshipCol = dbAgnostic.columnNumber(iCols, '_Relationship_key')
+	organizerCol = dbAgnostic.columnNumber(iCols, 'marker_key')
+	participantCol = dbAgnostic.columnNumber(iCols,
+		'interacting_marker_key')
+	refsCol = dbAgnostic.columnNumber(iCols, '_Refs_key')
+	termCol = dbAgnostic.columnNumber(iCols, '_RelationshipTerm_key')
+	qualifierCol = dbAgnostic.columnNumber(iCols, '_Qualifier_key')
+	evidenceCol = dbAgnostic.columnNumber(iCols, '_Evidence_key')
+
+	category = categoryName[interactionKey]
+
+	sortRows = []
+
+	for iRow in iRows:
+		interactionRowCount = interactionRowCount + 1
+
+		if reverse:
+			markerKey1 = iRow[participantCol]
+			markerKey2 = iRow[organizerCol]
+			term = VocabUtils.getSynonym(iRow[termCol],
+				'related participant')
+		else:
+			markerKey1 = iRow[organizerCol]
+			markerKey2 = iRow[participantCol]
+			term = VocabUtils.getSynonym(iRow[termCol],
+				'related organizer')
+
+		# flag markers which are teasers for marker 2
+
+		inTeaser = 0
+		if teasers.has_key(markerKey1):
+			if markerKey2 in teasers[markerKey1]:
+				inTeaser = 1
+				teasers[markerKey1].remove(markerKey2)
+
+		row = [
+			miGenerator.getKey( (iRow[relationshipCol], reverse) ),
+			markerKey1,
+			markerKey2,
+			MarkerUtils.getSymbol(markerKey2),
+			MarkerUtils.getPrimaryID(markerKey2),
+			category,
+			term,
+			VocabUtils.getTerm(iRow[qualifierCol]),
+			VocabUtils.getAbbrev(iRow[evidenceCol]),
+			iRow[refsCol],
+			ReferenceUtils.getJnumID(iRow[refsCol]),
+			interactionRowCount,
+			inTeaser,
+			reverse,
+			]
+
+		rows.append(row)
+
+		# note that we use intern() here to share a single instance of
+		# the string, keeping memory requirements down
+
+		sortRow = [
+			markerKey1,
+			intern(term.lower()),
+			MarkerUtils.getChromosomeSeqNum(markerKey2),
+			MarkerUtils.getStartCoord(markerKey2),
+			interactionRowCount
+			]
+		sortRows.append(sortRow)
+
+	logger.debug('Collated %d interaction rows, reverse = %d' % (
+		len(rows), reverse))
+
+	# need to modify the sequence numbers now, based on results after we
+	# sort the extra 'sortRows' we compiled.
+
+	sortRows.sort()
+
+	i = 0		# tracks sequence num
+	seqNum = {}	# maps from interactionRowCount -> sequence num
+
+	for (a, b, c, d, interactionRowCount) in sortRows:
+		i = i + 1
+		seqNum[interactionRowCount] = i
+
+	for row in rows:
+		interactionRowCount = row[-3]
+		row[-3] = seqNum[interactionRowCount]
+
+	del sortRows
+	del seqNum
+	gc.collect()
+
+	logger.debug ('Updated sequence numbers for %d rows' % len(rows))
+	return cols, rows
+
+def expandPropertyRows (pCols, pRows, reverse = 0):
+	# produce the property rows for the data file, given the 'pCols'
+	# and 'pRows' as retrieved from getPropertyRows().  If 'reverse' is
+	# 0, then we produce organizer-to-participant rows.  If it is 1, then
+	# do produce participant-to-organizer rows.
+
+	cols = [ 'mi_key', 'name', 'value', 'sequence_num' ]
+	rows = []
+
+	keyCol = dbAgnostic.columnNumber (pCols, '_Relationship_key')
+	nameCol = dbAgnostic.columnNumber (pCols, '_PropertyName_key')
+	valueCol = dbAgnostic.columnNumber (pCols, 'value')
+	seqNumCol = dbAgnostic.columnNumber (pCols, 'sequenceNum') 
+
+	for pRow in pRows:
+		if pRow[nameCol] == 'note':
+			propertyName = pRow[nameCol]
+		else:
+			propertyName = VocabUtils.getTerm(pRow[nameCol])
+
+		row = [
+			miGenerator.getKey( (pRow[keyCol], reverse) ),
+			propertyName,
+			pRow[valueCol],
+			pRow[seqNumCol],
+			]
+		rows.append(row)
+
+	logger.debug ('Built %d property rows, reverse = %d' % (
+		len(rows), reverse)) 
+	return cols, rows
+
+def processMarkers(startMarker, endMarker):
+	# retrieve data and write the rows to the data files for organizer
+	# markers with keys between 'startMarker' and 'endMarker'
+
+	logger.debug('Beginning with markers %d-%d' % (startMarker, endMarker))
+
+	iCols, iRows = getInteractionRows(startMarker, endMarker)
+	teasers = getTeaserMarkers(startMarker, endMarker)
+
+	# write forward interaction rows
+
+	cols, rows = expandInteractionRows (iCols, iRows, teasers, 0)
+	interactionFile.writeToFile (cols, cols, rows)
+	logger.debug('Wrote %d rows to interaction file' % len(rows))
+
+	del cols
+	del rows
+	gc.collect()
+
+	# write reversed interaction rows
+
+	cols, rows = expandInteractionRows (iCols, iRows, teasers, 1)
+	interactionFile.writeToFile (cols, cols, rows)
+	logger.debug('Wrote %d rows to interaction file' % len(rows))
+
+	del teasers
+	del iCols
+	del iRows
+	del cols
+	del rows
+	gc.collect()
+
+	# write forward property rows
+
+	pCols, pRows = getPropertyRows(startMarker, endMarker)
+
+	cols, rows = expandPropertyRows (pCols, pRows, 0)
+	propertyFile.writeToFile ( [ Gatherer.AUTO ] + cols, cols, rows)
+	logger.debug('Wrote %d rows to property file' % len(rows))
+
+	del cols
+	del rows
+	gc.collect()
+
+	# write reversed property rows
+
+	cols, rows = expandPropertyRows (pCols, pRows, 1)
+	propertyFile.writeToFile ( [ Gatherer.AUTO ] + cols, cols, rows)
+	logger.debug('Wrote %d rows to property file' % len(rows))
+
+	del pCols
+	del pRows
+	del cols
+	del rows
+	gc.collect()
+
+	miGenerator.forget()
+
+	logger.debug('Finished with markers %d-%d' % (startMarker, endMarker))
+	return
+
+def main():
+	# main program - the basic logic of this gatherer
+
+	global interactionFile, propertyFile
+
+	initialize()
+
+	doneMarkers = 0		# count of markers already processed
+
+	startMarker, endMarker, currentMarkers = getMarkerRange()
+
+	while (startMarker != None):
+		processMarkers(startMarker, endMarker)
+		doneMarkers = doneMarkers + currentMarkers
+
+		logger.debug('Finished %d of %d markers so far (%0.1f%%)' % (
+			doneMarkers, allMarkers,
+			100.0 * doneMarkers / allMarkers))
+
+		startMarker, endMarker, currentMarkers = \
+			getMarkerRange(endMarker)
+
+	# finalize the files
+
+	interactionFile.close()
+	propertyFile.close()
+
+	# write the info out so that femover knows which output file goes with
+	# which database table
+
+	print '%s %s' % (interactionFile.getPath(), 'marker_interaction')
+	print '%s %s' % (propertyFile.getPath(), 'marker_interaction_property')
+
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+	main()
