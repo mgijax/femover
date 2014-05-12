@@ -358,7 +358,11 @@ def getTeaserMarkers():
 	del groups
 	gc.collect()
 
-	logger.debug('Returning teasers for %d markers' % len(teasers))
+	ct = 0
+	for key in teasers.keys():
+		ct = ct + len(teasers[key])
+
+	logger.debug('Returning %d teasers for %d markers' % (ct,len(teasers)))
 	return teasers
 
 def getInteractionRows(startMarker, endMarker):
