@@ -19,7 +19,6 @@ import symbolsort
 import ReferenceCitations
 import types
 import VocabSorter
-import GXDUtils
 
 ###--- Globals ---###
 
@@ -126,10 +125,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	# for building the marker_tissue_expression_counts table
 	markerTissueCounts = {}
 
-	def addMarkerTissueCount(self,marker_key,emapaKey,detectionLevel):
+	def addMarkerTissueCount(self,marker_key,emapsKey,detectionLevel):
 		structures = self.markerTissueCounts.setdefault(marker_key,{})
 		# counts format is [allCount,detectedCount,notDetectedCount]
-		counts = structures.setdefault(emapaKey,[0,0,0])
+		counts = structures.setdefault(emapsKey,[0,0,0])
 		if detectionLevel in NEGATIVE_STRENGTHS:
 			# negative case
 			counts[0] += 1
@@ -578,8 +577,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    		isWildType = 0
 
 			# while we are in here, add count statistics of tissues
-			emapaKey = GXDUtils.getEmapaKey(emapsKey)
-			self.addMarkerTissueCount(markerKey,emapaKey,strength)
+			self.addMarkerTissueCount(markerKey,emapsKey,strength)
 
 			newKey = newKey + 1
 
@@ -640,25 +638,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 	def processMarkerTissueCounts(self,markerTissueCounts):
 		mtRows = []
-		i = 0		# used to compute new seqNum (to include stage)
-
 		for markerKey,structures in markerTissueCounts.items():
+			for emapsKey,counts in structures.items():
+				seqNum = VocabSorter.getSequenceNum(emapsKey)
+				printname = ADMapper.getEmapsTerm(emapsKey)
+				stage = ADMapper.getStageByKey(emapsKey)
 
-			m = []
-			for emapaKey,counts in structures.items():
-				seqNum = VocabSorter.getSequenceNum(emapaKey)
-				startStage = GXDUtils.getEmapaStartStage(emapaKey)
-				m.append ( [ startStage, seqNum, emapaKey ] )
-			m.sort()
-
-			for [ startStage, seqNum, emapaKey ] in m:
-				i = i + 1
-				printname = GXDUtils.getEmapaTerm(emapaKey)	
-				stages = GXDUtils.getEmapaStageRange(emapaKey)
-
-				mtRows.append([markerKey,emapaKey,"%s %s" \
-					% (printname, stages),
-					counts[0],counts[1],counts[2], i])
+				mtRows.append([markerKey,emapsKey,"TS%s: %s"%(stage,printname),
+					counts[0],counts[1],counts[2],seqNum])
 		return mtRows
 
 	def getSymbolSequenceNum (self, symbol):
