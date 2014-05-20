@@ -13,14 +13,17 @@ TempTables = [
 	DROP TABLE IF EXISTS tmp_emaps_syn
 	""",
         """
-        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term
+        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term, emaps._emapa_term_key _emapa_key, accemapa.accid emapaid
         into tmp_emaps_ad
         from acc_accession ags join
                 mgi_emaps_mapping mem on ags.accid=mem.accid join
                 acc_accession aet on aet.accid=mem.emapsid join
-                voc_term et on et._term_key=aet._object_key
+                voc_term et on et._term_key=aet._object_key join
+		voc_term_emaps emaps on emaps._term_key=et._term_key join
+		acc_accession accemapa on accemapa._object_key=emaps._emapa_term_key
         where ags._mgitype_key=38
                 and aet._mgitype_key=13
+		and accemapa._mgitype_key=13
         """,
         """
         create index tmp_emaps_ad_skey on tmp_emaps_ad (_structure_key)
@@ -30,20 +33,24 @@ TempTables = [
         """,
 	# temp table combining emaps terms with their synonyms for searching
         """
-        select _term_key,term
+        select t._term_key,ead.emapaid,t.term
         into tmp_emaps_syn
-        from voc_term
+        from voc_term t join
+		tmp_emaps_ad ead on ead._emaps_key=t._term_key
         where _vocab_key=91
         """,
         """
-        insert into tmp_emaps_syn (_term_key,term) 
-        select distinct t._term_key, ts.synonym term
+        insert into tmp_emaps_syn (_term_key,emapaid,term) 
+        select distinct t._term_key, '',ts.synonym term
         from mgi_synonym ts join voc_term t on t._term_key=ts._object_key
         where _mgitype_key=13
         and t._vocab_key=91
         """,
         """
         create index tmp_emaps_syn_tkey on tmp_emaps_syn (_term_key)
+        """,
+        """
+        create index tmp_emaps_syn_emapaid on tmp_emaps_syn (emapaid)
         """,
         """
         create index tmp_emaps_syn_term on tmp_emaps_syn (term)
@@ -165,125 +172,59 @@ Queries = [
 ]
 
 # The following queries are all very large, but share similar syntax. Let's define a template to make this more readable.
-SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL = """
+EMAPID_ANATOMY_RESULTS_TEMPLATE_SQL = """
 	WITH 
         struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-                WHERE t.term ILIKE '%%%s%%'),
+                WHERE t.emapaid = '%s'),
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
         SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
-SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL = """
+EMAPID_ANATOMY_ASSAYS_TEMPLATE_SQL = """
 	WITH 
         struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-                WHERE t.term ILIKE '%%%s%%'),
+                WHERE t.emapaid = '%s'),
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
         SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
-SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL = """
+EMAPID_ANATOMY_GENES_TEMPLATE_SQL = """
 	WITH 
         struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-                WHERE t.term ILIKE '%%%s%%'),
+                WHERE t.emapaid = '%s'),
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
         SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
-MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL = """
-	WITH 
-        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
-        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
-"""
-MULTIWORD_ANATOMY_ASSAYS_TEMPLATE_SQL = """
-	WITH 
-        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
-        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
-"""
-MULTIWORD_ANATOMY_GENES_TEMPLATE_SQL = """
-	WITH 
-        struct AS (SELECT DISTINCT t._term_key FROM tmp_emaps_syn t
-		WHERE term @@ array_to_string(string_to_array('%s', ' '), ' & ')),
-        child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
-                WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
-        closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
-"""
+
 ###--- Anatomy Tests
 Queries.extend([
 {	ID:"countFor4CellStageResults",
-	DESCRIPTION:"find the results associated to term '4-cell stage'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"4-cell stage"
+	DESCRIPTION:"find the results associated to term '4-cell stage embryo (EMAPA:31864)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_RESULTS_TEMPLATE_SQL%"EMAPA:31864"
 },
 {	ID:"countFor4CellStageAssays",
-	DESCRIPTION:"find the assays associated to term '4-cell stage'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"4-cell stage"
+	DESCRIPTION:"find the assays associated to term '4-cell stage embryo (EMAPA:31864)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_ASSAYS_TEMPLATE_SQL%"EMAPA:31864"
 },
 {	ID:"countFor4CellStageGenes",
-	DESCRIPTION:"find the genes associated to term '4-cell stage'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_GENES_TEMPLATE_SQL%"4-cell stage"
-},
-{	ID:"countFor4-8CellStageEmbryoResults",
-	DESCRIPTION:"find the results associated to term '4-8 cell stage embryo'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"4-8cell stage embryo"
-},
-{	ID:"countFor3rdBranchialArchResults",
-	DESCRIPTION:"find the results associated to term '3rd branchial arch'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"3rd branchial arch"
-},
-{	ID:"countFor2ndArchBranchialGrooveResults",
-	DESCRIPTION:"find the results associated to term '2nd arch branchial groove'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"2nd arch branchial groove"
-},
-{	ID:"countForDigit1MetacarpusResults",
-	DESCRIPTION:"find the results associated to term 'digit 1 metacarpus'",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"digit 1 metacarpus"
+	DESCRIPTION:"find the genes associated to term '4-cell stage embryo (EMAPA:31864)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_GENES_TEMPLATE_SQL%"EMAPA:31864"
 },
 {	ID:"countForCorneaResults",
-	DESCRIPTION:"find the results associated to term 'cornea'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"cornea"
+	DESCRIPTION:"find the results associated to term 'cornea (EMAPA:17161)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_RESULTS_TEMPLATE_SQL%"EMAPA:17161"
 },
 {	ID:"countForCorneaAssays",
-	DESCRIPTION:"find the assays associated to term 'cornea'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"cornea"
+	DESCRIPTION:"find the assays associated to term 'cornea (EMAPA:17161)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_ASSAYS_TEMPLATE_SQL%"EMAPA:17161"
 },
 {	ID:"countForCorneaGenes",
-	DESCRIPTION:"find the genes associated to term 'cornea'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL%"cornea"
-},
-{	ID:"countForOogoniaResults",
-	DESCRIPTION:"find the results associated to term 'oogonia'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"oogonia"
-},
-{	ID:"countForOogoniaAssays",
-	DESCRIPTION:"find the assays associated to term 'oogonia'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_ASSAYS_TEMPLATE_SQL%"oogonia"
-},
-{	ID:"countForOogoniaGenes",
-	DESCRIPTION:"find the genes associated to term 'oogonia'",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_GENES_TEMPLATE_SQL%"oogonia"
-},
-{	ID:"countForAbdominalMuscleResults",
-	DESCRIPTION:"find the count of results associated to the term which has the synonym 'abdominal muscle', and descendants",
-	SQLSTATEMENT:MULTIWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"abdominal muscle"
-},
-{	ID:"countForMaturingNephronResults",
-	DESCRIPTION:"find the count of results associated to terms containing 'maturing nephron', and their children",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"maturing nephron"
-},
-{	ID:"countForMatureNephronResults",
-	DESCRIPTION:"find the count of results associated to terms containing 'mature nephron', and their children",
-	SQLSTATEMENT:SINGLEWORD_ANATOMY_RESULTS_TEMPLATE_SQL%"mature nephron%%' AND term NOT ilike '%%immature nephron"
+	DESCRIPTION:"find the genes associated to term 'cornea (EMAPA:17161)'",
+	SQLSTATEMENT:EMAPID_ANATOMY_GENES_TEMPLATE_SQL%"EMAPA:17161"
 },
 ])
 
