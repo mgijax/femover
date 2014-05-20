@@ -13,17 +13,14 @@ TempTables = [
 	DROP TABLE IF EXISTS tmp_emaps_syn
 	""",
         """
-        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term, emaps._emapa_term_key _emapa_key, accemapa.accid emapaid
+        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term
         into tmp_emaps_ad
         from acc_accession ags join
                 mgi_emaps_mapping mem on ags.accid=mem.accid join
                 acc_accession aet on aet.accid=mem.emapsid join
-                voc_term et on et._term_key=aet._object_key join
-		voc_term_emaps emaps on emaps._term_key=et._term_key join
-		acc_accession accemapa on accemapa._object_key=emaps._emapa_term_key
+                voc_term et on et._term_key=aet._object_key 
         where ags._mgitype_key=38
                 and aet._mgitype_key=13
-		and accemapa._mgitype_key=13
         """,
         """
         create index tmp_emaps_ad_skey on tmp_emaps_ad (_structure_key)
@@ -33,11 +30,14 @@ TempTables = [
         """,
 	# temp table combining emaps terms with their synonyms for searching
         """
-        select t._term_key,ead.emapaid,t.term
+        select t._term_key,accemapa.accid emapaid,t.term
         into tmp_emaps_syn
         from voc_term t join
+		voc_term_emaps emaps on emaps._term_key=t._term_key join
+		acc_accession accemapa on accemapa._object_key=emaps._emapa_term_key join 
 		tmp_emaps_ad ead on ead._emaps_key=t._term_key
         where _vocab_key=91
+		and accemapa._mgitype_key=13
         """,
         """
         insert into tmp_emaps_syn (_term_key,emapaid,term) 
