@@ -1,3 +1,23 @@
+TAG: femover-tr11654-1
+DATE: 06/02/14
+STAFF: sc
+CHANGES: Merge trunk down to our branch after scrum-dog release
+
+TAG: femover-tr11654-BP
+DATE: 05/14/14
+STAFF: pf
+CHANGES: branch point for TR11654 development
+
+TAG: femover-5-1-8-5
+TAG: femover-5-1-8-4
+TAG: femover-5-1-8-3
+TAG: femover-5-1-8-2
+TAG: femover-5-1-8-1
+DATE: 04/22/2014
+STAFF: kstone/pf
+CHANGES: release tags for 5.18
+1) adding more full text links
+
 TAG: femover-tr11560-BP
 DATE: 02/25/2014
 STAFF: jsb

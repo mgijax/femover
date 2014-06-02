@@ -94,6 +94,10 @@ export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
 FULL_TEXT_LINKS_PATH=${FEMOVER}/data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
+# path to incidental mutations master file
+INCIDENTAL_MUTS_FILE=/lindondata/loads/mgi/incidental_muts/curator_INC.txt
+export INCIDENTAL_MUTS_FILE
+
 GLOSSARY_PATH=${FEMOVER}/data/glossary.rcd
 export GLOSSARY_PATH
 
@@ -116,6 +120,6 @@ export HIGH_PRIORITY_TABLES
 # the wrapper (buildDB.sh) will iterate thru each single-priority-table
 # and call "buildDB.sh -G" for each table in the list
 #
-SINGLE_PRIORITY_TABLES="batch_marker_snps marker_count_sets marker_counts"
+SINGLE_PRIORITY_TABLES="batch_marker_snps marker_count_sets"
 export SINGLE_PRIORITY_TABLES
 

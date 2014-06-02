@@ -1,6 +1,7 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'image_id' table in the front-end database
+#
 
 import Gatherer
 import logger
@@ -8,7 +9,7 @@ import logger
 ###--- Globals ---###
 
 EXCLUDE_FROM_OTHER_DBS = [ 1, 19 ]
-LDB_ORDER = [ 159, 148, 105 ]		# BGEM, Eurexpress, then GenePaint
+LDB_ORDER = [ 148, 159, 105 ]		# Eurexpress, then GenePaint
 
 ###--- Functions ---###
 

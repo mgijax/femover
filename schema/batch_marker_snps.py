@@ -14,7 +14,6 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int		not null,
 	marker_key	int		not null,
 	snp_id		varchar(30)	null,
-	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -34,7 +33,6 @@ comments = {
 		'unique_key' : 'uniquely identifies this marker/SNP pair',
 		'marker_key' : 'identifies the marker',
 		'snp_id' : 'consensus SNP ID',
-		'sequence_num' : 'orders SNP IDs for each marker',
 		},
 	Table.INDEX : {
 		'marker_key' : 'clusters data together by marker key, so all SNPs for a marker will be together on disk (for speed of efficiency)',

@@ -171,4 +171,14 @@ J:190968 http://mousemutant.jax.org/articles/mmrmutantclec16acurtupdate.html
 J:185265 http://mousemutant.jax.org/articles/mmrmutantfrem2neupdate.html
 J:179503 http://mousemutant.jax.org/articles/MMRMutantPld4thssupdate.html
 J:181237 http://mousemutant.jax.org/articles/mmrmutationchkytdocloning.html
+J:203621 http://mousemutant.jax.org/articles/mmrmutanttl5.html
+J:178673 http://mousemutant.jax.org/articles/mmrmutanttmem79m1j.html
+J:201119 http://mousemutant.jax.org/articles/mmrmutantTpp1m1J.html
+J:187506 http://mousemutant.jax.org/articles/mmrmutanttrlshcn2update.html
+J:206791 http://mousemutant.jax.org/articles/mmrmutanttrms.html
+J:195767 http://mousemutant.jax.org/articles/mmrmutanttsed.html
+J:177024 http://mousemutant.jax.org/articles/mmrremutationtth2j.html
+J:203032 http://mousemutant.jax.org/articles/mmrmutantusl.html
+J:123336 http://mousemutant.jax.org/articles/mmrmutantwavytiger.html
+J:202595 http://mousemutant.jax.org/articles/mmrremutationzfp191hmcns2j.html
 

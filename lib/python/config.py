@@ -53,6 +53,8 @@ else:
 
 FULL_TEXT_LINKS = os.environ['FULL_TEXT_LINKS_PATH']
 
+INCIDENTAL_MUTS_FILE = os.environ['INCIDENTAL_MUTS_FILE']
+
 GLOSSARY_FILE = os.environ['GLOSSARY_PATH']
 
 ###--- general ---###

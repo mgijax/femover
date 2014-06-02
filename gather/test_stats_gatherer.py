@@ -14,8 +14,8 @@ import re
 from TestData import *
 
 # define which groups of test data we will actually run and load
-import GXDTestData,GXDLitTestData,VocabTestData,CreTestData
-TESTS = [GXDTestData,GXDLitTestData,VocabTestData,CreTestData]
+import GXDTestData,GXDLitTestData,VocabTestData,CreTestData,MarkerTestData
+TESTS = [GXDTestData,GXDLitTestData,VocabTestData,CreTestData,MarkerTestData]
 
 SQL_VAR_PATTERN = "\$\{([a-zA-Z0-9]+)\}"
 # compile the regex for parsing out variable strings in the SQL statements
@@ -31,6 +31,19 @@ EXISTING_ERROR = "###ExistingError###"
 # this function iterates the TestData SQLs and returns each row with the result data or error fields populated
 def iterateSqls():
 	all_rows = []
+	# initialize any temp tables
+	initQueries = []
+	uniqueQueries = set([])
+	for testData in TESTS:
+		if 'TempTables' in dir(testData):
+			for temp_table in testData.TempTables:
+				q = temp_table.strip()
+				if q not in uniqueQueries:
+					uniqueQueries.add(q)
+					initQueries.append(q)
+	for query in initQueries:
+		dbAgnostic.execute(query)
+
 	# iterate all the tests first in order to map all the ids (necessary for resolving variables later on)
 	for testData in TESTS:
 		for test_sql in testData.Queries:
@@ -49,6 +62,20 @@ def iterateSqls():
 	for row in all_rows:
 		run_sql_statement(row)
 	#logger.debug(all_rows)
+
+	# destroy any temp tables
+	removalQueries = []
+	uniqueQueries = set([])
+	for testData in TESTS:
+		if 'RemoveTempTables' in dir(testData):
+			for removal_query in testData.RemoveTempTables:
+				q = removal_query.strip()
+				if q not in uniqueQueries:
+					uniqueQueries.add(q)
+					removalQueries.append(q)
+	for query in removalQueries:
+		dbAgnostic.execute(query)
+
 	return all_rows
 
 # process SQL and perform any variable substitutions

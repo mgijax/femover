@@ -38,7 +38,7 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
@@ -94,6 +94,9 @@ FAILED_FK = []
 # are not critical)
 FAILED_COMMENTS = []
 
+# list of (dispatcher_id, error_message)
+FAILED_DISPATCHERS = []
+
 # time (in seconds) at which we start the build
 START_TIME = time.time()
 
@@ -148,7 +151,8 @@ ACCESSION = [ 'accession', 'actual_database',
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
-		'mp_annotation', 'allele_cell_line',
+		'mp_annotation', 'allele_cell_line','allele_summary',
+		'incidental_mutations'
 	]
 ANNOTATIONS = [ 'annotation'
 	]
@@ -332,12 +336,17 @@ def processCommandLine():
 	return uniqueGatherers
 
 def checkStderr (dispatcher, id, message):
+	global FAILED_DISPATCHERS
 	# check the return code for 'id' in 'dispatcher', and if it is errant
 	# then dump stderr and show the given 'message'
 
 	if dispatcher.getReturnCode(id) != 0:
-		print '\n'.join (dispatcher.getStderr(id))
-		raise error, message
+		errMsg = '\n'.join (dispatcher.getStderr(id))
+		print "Warning: %s"%message
+		print errMsg
+		print "carrying on..."
+		FAILED_DISPATCHERS.append((id,message))
+		#raise error, message
 	return
 
 def dbExecuteCmd (cmd):
@@ -1435,6 +1444,12 @@ if __name__ == '__main__':
 		INDEX_DISPATCHER.terminateProcesses()
 		COMMENT_DISPATCHER.terminateProcesses()
 		FK_DISPATCHER.terminateProcesses()
+
+	if FAILED_DISPATCHERS:
+		status = 'failed'
+		excType = error
+		excValue = '\n\nWARNING: The Following tasks failed and may need to be rerun:\n\t-'
+		excValue += '\n\t-'.join([l[1] for l in FAILED_DISPATCHERS])
 
 	elapsed = hms(time.time() - START_TIME)
 	try:

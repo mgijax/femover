@@ -1316,20 +1316,20 @@ cmds = [
 
         # sql (10-17)
 	# simple genotypes
-	# include : wild type alleles where allele type is *not* 'Trangenic (Reporter)'
+	# include : wild type alleles
 	# include : genotypes that contains mouse/MP or mouse/OMIM annotations
 	# exclude : genotypes that contain driver notes (cre) AND is-conditional
 	# exclude : genotypes that contain 'slash' alleles and are not transgenes
 	# exclude : genotypes that contain 'Gt(ROSA)' marker
 	# exclude : genotypes already designated as super-simple
+	# exdlude : wild type alleles where allele type is 'Trangenic/allele subtype is 'Reporter'
         '''
         select distinct g._Genotype_key, g._Marker_key
         into temporary table tmp_simple
         from GXD_AlleleGenotype g
         where exists (select 1 from ALL_Allele a
                 where g._Allele_key = a._Allele_key
-                and a.isWildType = 0
-                and a._Allele_Type_key != 847129)
+                and a.isWildType = 0)
         and exists (select 1 from VOC_Annot v
                 where g._Genotype_key = v._Object_key
                 and (v._AnnotType_key in (1002)
@@ -1340,6 +1340,13 @@ cmds = [
                 and gg.isConditional = 1
                 and g._Allele_key = n._Object_key
                 and n._MGIType_key = 11 and n._NoteType_key = 1034)
+        and not exists (select 1 from ALL_Allele a, VOC_Annot va
+                where g._Allele_key = a._Allele_key
+                and a.isWildType = 0
+                and a._Allele_Type_key = 847126
+		and a._Allele_key = va._Object_key 
+		and va._AnnotType_key = 1014
+		and va._Term_key = 11025589)
         ''',
 
         '''

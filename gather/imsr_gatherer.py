@@ -6,59 +6,13 @@ import Gatherer
 import config
 import logger
 import httpReader
+from IMSRData import IMSRDatabase
 
 ###--- Functions ---###
 
 def queryIMSR ():
-	logger.debug ('IMSR_COUNT_URL : %s' % config.IMSR_COUNT_URL)
-	logger.debug ('IMSR_COUNT_TIMEOUT : %d' % config.IMSR_COUNT_TIMEOUT)
-
-	(lines, err) = httpReader.getURL (config.IMSR_COUNT_URL,
-		timeout = config.IMSR_COUNT_TIMEOUT)
-
-	cellLines = {}
-	strains = {}
-	byMarker = {}
-
-	if not lines:
-		logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
-		logger.error ('No counts will be stored')
-
-		return cellLines, strains, byMarker
-		
-	for line in lines:
-		items = line.split()
-
-		# skip blank lines
-		if len(line.strip()) == 0:
-			continue
-
-		# report (and skip) lines with too few fields; this would
-		# indicate a bug in IMSR
-		if len(items) < 3:
-			logger.debug (
-				'Line from IMSR has too few fields: %s' % \
-				line)
-			continue
-
-		# look for the three tags we need (other counts for KOMP are
-		# included in the same report, so we skip any we don't need)
-
-		accID = items[0]
-		countType = items[1]
-		count = items[2]
-
-		if countType == 'ALL:ES':
-			cellLines[accID] = count
-		elif countType == 'ALL:ST':
-			strains[accID] = count
-		elif countType == 'MRK:UN':
-			byMarker[accID] = count
-
-	logger.debug ('Cell lines: %d, Strains: %d, byMarker: %d' % (
-		len(cellLines), len(strains), len(byMarker) ) )
-
-	return cellLines, strains, byMarker
+	imsrDB = IMSRDatabase()
+	return imsrDB.queryAllCounts()
 
 ###--- Classes ---###
 
@@ -69,14 +23,11 @@ class ImsrGatherer (Gatherer.Gatherer):
 	#	markers, collates results, writes tab-delimited text file
 
 	def collateResults (self):
-
 		# download data from IMSR
-
 		cellLines, strains, byMarker = queryIMSR()
 		logger.debug ('Finished querying IMSR')
 
 		# collect the allele ID for each allele key
-
 		key2id = {}
 		columns, rows = self.results[0]
 		keyCol = Gatherer.columnNumber (columns, '_Object_key')
@@ -88,7 +39,6 @@ class ImsrGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d allele IDs' % len(key2id))
 
 		# map from each allele key to the ID of its marker
-
 		alleleToMarker = {}
 		columns, rows = self.results[1]
 		keyCol = Gatherer.columnNumber (columns, '_Allele_key')
@@ -105,46 +55,30 @@ class ImsrGatherer (Gatherer.Gatherer):
 			len(alleleToMarker))
 
 		# mash together the various counts for each allele...
-
 		out = []
-		columns = [ '_Allele_key', 'cell_line_count', 'strain_count',
-			'marker_count' ]
+		columns = [ '_Allele_key', 'cell_line_count', 'strain_count', 'marker_count' ]
 
-		allAlleles = alleleToMarker.keys()
-		allAlleles.sort()
+		for allele,alleleID in key2id.items():
+			cellLineCount = 0
+			strainCount = 0
+			byMarkerCount = 0
 
-		for allele in allAlleles:
-			if not key2id.has_key(allele):
-				continue
+			if alleleID in cellLines:
+				cellLineCount = cellLines[alleleID]
 
-			accID = key2id[allele]
+			if alleleID in strains:
+				strainCount = strains[alleleID]
 
-			if cellLines.has_key(accID):
-				cellLineCount = cellLines[accID]
-			else:
-				cellLineCount = 0
+			if allele in alleleToMarker:
+				markerID = alleleToMarker[allele]
+				if markerID in byMarker:
+					byMarkerCount = byMarker[markerID]
 
-			if strains.has_key(accID):
-				strainCount = strains[accID]
-			else:
-				strainCount = 0
-
-			markerID = alleleToMarker[allele]
-			if byMarker.has_key(markerID):
-				byMarkerCount = byMarker[markerID]
-			else:
-				byMarkerCount = 0
-
-			row = [ allele, cellLineCount, strainCount,
-				byMarkerCount ]
-
-			if cellLineCount or strainCount or byMarkerCount:
-				out.append (row)
+			out.append([allele,cellLineCount,strainCount,byMarkerCount])
 
 		self.finalColumns = columns
 		self.finalResults = out
 		logger.debug ('Found counts for %d alleles' % len(out))
-		return
 
 ###--- globals ---###
 

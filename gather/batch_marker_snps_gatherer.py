@@ -16,16 +16,15 @@ class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
 	#	collates results, writes tab-delimited text file
 
 	def postprocessResults(self):
-		columns=['_Marker_key','accid','sequence_num']
+		columns=['_Marker_key','accid']
 		rows=[]
 		mrkCol=Gatherer.columnNumber(self.finalColumns,'_Marker_key')
+		chrCol=Gatherer.columnNumber(self.finalColumns,'chromosome')
 
 		for row in self.finalResults:
-			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol])
-			i=0
+			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol],row[chrCol])
 			for snp in snps:
-				i=i+1
-				rows.append([row[mrkCol],snp,i])
+				rows.append([row[mrkCol],snp])
 			#del snps
 
 		self.finalColumns = columns
@@ -48,7 +47,7 @@ cmds = [ '''select distinct _Marker_key, chromosome
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Marker_key', 'accid', 'sequence_num'
+	Gatherer.AUTO, '_Marker_key', 'accid'
 	]
 
 # prefix for the filename of the output file
