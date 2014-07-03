@@ -16,6 +16,7 @@ createStatement = '''CREATE TABLE %s  (
 	reference_count			int	NULL,
 	expression_assay_result_count	int	NULL,
 	image_count			int	NULL,
+	mutation_involves_marker_count	int	NULL,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -37,6 +38,7 @@ comments = {
 		'reference_count' : 'count of references',
 		'expression_assay_result_count' : 'count of expression assays involving this allele',
 		'image_count' : 'count of images',
+		'mutation_involves_marker_count' : 'count of markers associated via "mutation involves" relationships with this allele',
 		},
 	}
 

@@ -11,6 +11,8 @@ import Gatherer
 import logger
 import MarkerSnpAssociations
 import ADMapper
+import InteractionUtils
+import GroupedList
 
 ###--- Constants ---###
 
@@ -331,6 +333,20 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.report()
 		return
 
+	def collateMarkerInteractions (self):
+
+		counts = InteractionUtils.getMarkerInteractionCounts()
+
+		fTerm = 'interacts with'
+
+		for (key, count) in counts.items():
+			self.finalResults.append ( [ key, 'Interaction',
+				fTerm, count, 1 ] )
+
+		logger.debug('Added %d rows for Interactions' % \
+			len(counts))
+		return
+
 	def collateResults (self):
 		# combine the result sets from the various queries into a
 		# single set of final results
@@ -354,6 +370,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateResultsByAssayType(2)
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
+		self.collateMarkerInteractions()
 
 		# the remaining sets (5 to the end) have a standard format
 		# and can be done in a nested loop

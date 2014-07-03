@@ -152,7 +152,7 @@ ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
 		'allele_sequence_num', 'allele_to_sequence',
 		'allele_to_reference', 'allele_synonym', 'allele_mutation',
 		'mp_annotation', 'allele_cell_line','allele_summary',
-		'incidental_mutations'
+		'incidental_mutations', 'allele_related_marker'
 	]
 ANNOTATIONS = [ 'annotation'
 	]
@@ -191,7 +191,8 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
-		'marker_microarray', 'marker_to_term',
+		'marker_microarray', 'marker_to_term', 'marker_related_marker',
+		'marker_interaction',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]

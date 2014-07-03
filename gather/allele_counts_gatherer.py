@@ -20,6 +20,7 @@ MarkerCount = 'markerCount'
 ReferenceCount = 'referenceCount'
 ExpressionCount = 'expressionAssayResultCount'
 ImageCount = 'imageCount'
+MutationInvolvesCount = 'mutationInvolvesMarkerCount'
 
 ###--- Classes ---###
 
@@ -49,6 +50,7 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 		toAdd = [ (self.results[1], MarkerCount, 'mrkCount'),
 			(self.results[2], ReferenceCount, 'refCount'),
 			(self.results[3], ExpressionCount, 'expCount'),
+			(self.results[4], MutationInvolvesCount, 'miCount'),
 			]
 
 		for (r, countName, colName) in toAdd:
@@ -69,7 +71,7 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 		# non-standard handling for images; we need to collect the
 		# image keys for each allele, then get the counts from there
 
-		columns, rows = self.results[4]
+		columns, rows = self.results[5]
 
 		logger.debug ('Processing ImageCount, %d rows' % \
 			len(rows) )
@@ -120,22 +122,22 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	# all alleles
+	# 0. all alleles
 	'''select _Allele_key from all_allele''',
 
-	# count of markers for each allele
+	# 1. count of markers for each allele
 	'''select m._Allele_key, count(1) as mrkCount
 		from all_marker_assoc m
 		group by m._Allele_key''',
 
-	# count of references for each allele
+	# 2. count of references for each allele
 	'''select _Object_key as _Allele_key, 
 			count(distinct _Refs_key) as refCount
 		from mgi_reference_assoc
 		where _MGIType_key = 11
 		group by _Object_key''',
 
-	# count of expression assay results for each allele
+	# 3. count of expression assay results for each allele
 	'''select gag._Allele_key, count(distinct _Expression_key) as expCount
 		from gxd_allelegenotype gag,
 			gxd_expression ge
@@ -148,7 +150,15 @@ cmds = [
 					and a.accID = e.accID)
 		group by gag._Allele_key''',
 
-	# allele images by key (we count them in Python, since I didn't see
+	# 4. "mutation involves" relationships for an allele
+	'''select r._Object_key_1 as _Allele_key,
+			count(distinct r._Object_key_2) as miCount
+		from mgi_relationship r, mgi_relationship_category c
+		where c._Category_key = r._Category_key
+			and c.name = 'mutation_involves'
+		group by r._Object_key_1''',
+
+	# 5. allele images by key (we count them in Python, since I didn't see
 	# an obvious way to handle the 'union' in a 'select count')
 	'''select ipa._Object_key as _Allele_key,
 			ip._Image_key
@@ -170,7 +180,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, 
-		ImageCount, ]
+		ImageCount, MutationInvolvesCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'allele_counts'

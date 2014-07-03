@@ -641,7 +641,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for markerKey,structures in markerTissueCounts.items():
 			for emapsKey,counts in structures.items():
 				seqNum = VocabSorter.getSequenceNum(emapsKey)
-				printname = ADMapper.getEmapsTerm(emapsKey)	
+				printname = ADMapper.getEmapsTerm(emapsKey)
 				stage = ADMapper.getStageByKey(emapsKey)
 
 				mtRows.append([markerKey,emapsKey,"TS%s: %s"%(stage,printname),

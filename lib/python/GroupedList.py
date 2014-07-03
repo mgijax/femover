@@ -71,6 +71,15 @@ class GroupedList:
 			size = size + len(self.groups[group])
 		return size
 
+	def items (self):
+		# Purpose: get the full set of items contained in this object
+		# Returns: list
+
+		allItems = []
+		for group in self.groupNumbers:
+			allItems = allItems + self.groups[group]
+		return allItems
+
 	def __getitem__ (self,
 		index		# integer; 
 		):
