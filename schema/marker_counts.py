@@ -33,6 +33,7 @@ createStatement = '''CREATE TABLE %s  (
 	alleles_with_human_disease_count	int	NULL,
 	antibody_count				int	NULL,
 	imsr_count				int	NULL,
+	mutation_involves_count			int	NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -71,6 +72,7 @@ comments = {
 		'alleles_with_human_disease_count' : 'count of alleles of this marker which are mouse models of a human disease',
 		'antibody_count' : 'count of antibodies',
 		'imsr_count' : 'count of lines/mice in IMSR',
+		'mutation_involves_count' : 'count of alleles with this marker in a mutation-involves relationship',
 		},
 	}
 
