@@ -12,7 +12,7 @@
 import Gatherer
 import logger
 import config
-#import MarkerSnpAssociations
+import MarkerUtils
 import GOFilter
 import GenotypeClassifier
 from IMSRData import IMSRDatabase
@@ -47,6 +47,7 @@ HumanDiseaseCount = 'humanDiseaseCount'
 AllelesWithDiseaseCount = 'allelesWithHumanDiseasesCount'
 AntibodyCount = 'antibodyCount'
 ImsrCount = 'imsrCount'
+MutationInvolvesCount = 'mutationInvolvesCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -73,6 +74,30 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		goData = [ ['_Marker_key', 'numGO'], goAnnot ]
 		logger.debug ('Pre-processed %d GO counts' % len(goAnnot))
 
+		# pre-process the allele counts
+
+		alleleCols = ['_Marker_key', 'numAlleles' ]
+		alleleRows = []
+		markerCounts = MarkerUtils.getAlleleCounts()
+
+		for markerKey in markerCounts.keys():
+			alleleRows.append (
+				[ markerKey, markerCounts[markerKey] ] )
+
+		alleleData = [ alleleCols, alleleRows ]
+
+		# pre-process the mutation involves counts
+
+		miCols = [ '_Marker_key', 'numMI' ]
+		miRows = []
+
+		miCounts = MarkerUtils.getMutationInvolvesCounts()
+
+		for markerKey in miCounts.keys():
+			miRows.append ( [ markerKey, miCounts[markerKey] ] )
+
+		miData = [ miCols, miRows ]
+
 		# list of count types (like field names)
 		counts = []
 
@@ -88,8 +113,9 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 
 		toAdd = [ (self.results[1], ReferenceCount, 'numRef'),
 			(self.results[2], SequenceCount, 'numSeq'),
-			(self.results[3], AlleleCount, 'numAll'),
+			(alleleData, AlleleCount, 'numAlleles'),
 			(goData, GOCount, 'numGO'),
+			(miData, MutationInvolvesCount, 'numMI'),
 			(self.results[4], AntibodyCount, 'antibodyCount'),
 			(self.results[5], GxdAssayCount, 'numAssay'),
 			(self.results[6], OrthologCount, 'numOrtho'),
@@ -233,14 +259,10 @@ cmds = [
 		from seq_marker_cache
 		group by _Marker_key''',
 
-	# 3. count of alleles for each marker
-	'''select m._Marker_key, count(1) as numAll
-		from all_marker_assoc m, voc_term t, all_allele a
-		where m._Status_key = t._Term_key
-			and t.term != 'deleted'
-			and m._Allele_key = a._Allele_key
-			and a.isWildType != 1
-		group by m._Marker_key''',
+	# 3. count of alleles for each marker (altered to make a bogus query,
+	# since we now count alleles differently).  This keeps us from having
+	# to re-number the various result sets below when processing them.
+	'''select 1 as _Marker_key, 2 as numAlleles''',
 
 	# 4. count of antibodies for the marker
 	'''select _Marker_key, count(distinct _Antibody_key) as antibodyCount
@@ -484,7 +506,7 @@ fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount,
 	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
 	MappingCount, CdnaSourceCount, MicroarrayCount,
 	PhenotypeImageCount, HumanDiseaseCount, AllelesWithDiseaseCount,
-	AntibodyCount, ImsrCount
+	AntibodyCount, ImsrCount, MutationInvolvesCount
 	]
 
 # prefix for the filename of the output file

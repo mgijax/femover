@@ -4,6 +4,8 @@
 
 import dbAgnostic
 import logger
+import gc
+import GroupedList
 
 ###--- globals ---###
 
@@ -16,6 +18,19 @@ symbolCache = {}
 
 # marker key -> primary ID cache
 idCache = {}
+
+# cache of rows for traditional allele-to-marker relationships.  Each row is:
+#	[ allele key, marker key, count type, count type sequence num ]
+amRows = None
+
+# cache of rows for 'mutation involves' allele-to-marker relationships, each:
+#	[ allele key, marker key, count type, count type sequence num ]
+miRows = None
+
+# constants specifying which set of marker/allele pairs to return
+TRADITIONAL = 'traditional'
+MUTATION_INVOLVES = 'mutation_involves'
+UNIFIED = 'unified'
 
 ###--- private functions ---###
 
@@ -43,6 +58,10 @@ def _populateCoordCache():
 			row[genomicChrCol], row[startCol], row[endCol],
 			row[seqNumCol])
 
+	del cols
+	del rows
+	gc.collect()
+
 	logger.debug ('Cached %d locations' % len(coordCache))
 	return
 
@@ -63,6 +82,10 @@ def _populateSymbolCache():
 
 	for row in rows:
 		symbolCache[row[keyCol]] = row[symbolCol]
+
+	del cols
+	del rows
+	gc.collect()
 
 	logger.debug ('Cached %d marker symbols' % len(symbolCache))
 	return
@@ -91,8 +114,124 @@ def _populateIDCache():
 	for row in rows:
 		idCache[row[keyCol]] = row[idCol]
 
+	del cols
+	del rows
+	gc.collect()
+
 	logger.debug ('Cached %d marker IDs' % len(idCache))
 	return
+
+def _populateMarkerAlleleCache():
+	global amRows
+
+	if amRows != None:
+		return
+
+	cmd1 = '''select distinct a._Marker_key,
+			vt.term as countType,
+			_Allele_key,
+			vt.sequenceNum
+		from all_allele a, voc_term vt
+		where vt._Vocab_key = 38
+			and vt.term not in ('Not Applicable', 'Not Specified',
+				'Other')
+			and vt._Term_key = a._Allele_Type_key
+			and a.isWildType = 0
+			and a._Marker_key is not null
+			and exists (select 1 from mrk_marker m
+				where a._Marker_key = m._Marker_key)
+		order by a._Marker_key, vt.sequenceNum'''
+
+	(cols1, rows1) = dbAgnostic.execute(cmd1)
+
+	markerCol = dbAgnostic.columnNumber (cols1, '_Marker_key')
+	alleleCol = dbAgnostic.columnNumber (cols1, '_Allele_key')
+	typeCol = dbAgnostic.columnNumber (cols1, 'countType')
+	seqNumCol = dbAgnostic.columnNumber (cols1, 'sequenceNum')
+
+	amRows = []
+	for row in rows1:
+		amRows.append ( [ row[alleleCol], row[markerCol],
+			row[typeCol], row[seqNumCol] ] )
+
+	del cols1
+	del rows1
+	gc.collect()
+
+	logger.debug ('Got %d traditional allele/marker pairs' % len(amRows))
+	return 
+
+def _populateMutationInvolvesCache():
+	global miRows
+
+	if miRows != None:
+		return
+
+	cmd2 = '''select distinct r._Object_key_1 as allele_key,
+			r._Object_key_2 as marker_key,
+			t.term as countType,
+			t.sequenceNum
+		from mgi_relationship r,
+			mgi_relationship_category c,
+			all_allele a,
+			voc_term t
+		where c.name = 'mutation_involves'
+			and r._Category_key = c._Category_key
+			and r._Object_key_1 = a._Allele_key
+			and a._Allele_Type_key = t._Term_key'''
+
+	(cols2, rows2) = dbAgnostic.execute(cmd2)
+
+	markerCol = dbAgnostic.columnNumber (cols2, 'marker_key')
+	alleleCol = dbAgnostic.columnNumber (cols2, 'allele_key')
+	typeCol = dbAgnostic.columnNumber (cols2, 'countType')
+	seqNumCol = dbAgnostic.columnNumber (cols2, 'sequenceNum')
+
+	miRows = []
+	for row in rows2:
+		miRows.append ( [ row[alleleCol], row[markerCol], 
+			row[typeCol], row[seqNumCol] ] ) 
+
+	del cols2
+	del rows2
+	gc.collect()
+
+	logger.debug ('Got %d mutation involves allele/marker pairs' % \
+		len(miRows))
+	return 
+
+def _getMarkerAllelePairs(whichSet):
+	# get a list of rows for allele/marker relationships, where each row is:
+	#	[ allele key, marker key, count type, count type seq num ]
+	# 'whichSet' should be one of TRADITIONAL, MUTATION_INVOVLES, or
+	# UNIFIED (which is the unique set of rows -- no duplicates)
+
+	_populateMutationInvolvesCache()
+	_populateMarkerAlleleCache()
+
+	if whichSet == TRADITIONAL:
+		return amRows
+
+	if whichSet == MUTATION_INVOLVES:
+		return miRows
+
+	unifiedList = []
+	pairs = GroupedList.GroupedList()
+
+	for myList in [ amRows, miRows ]:
+		for row in myList:
+			pair = (row[0], row[1])		# allele + marker keys
+			if not pairs.contains(pair):
+				unifiedList.append(row)
+				pairs.add(pair)
+
+	logger.debug('Calculated set of %d distinct allele/marker pairs' % \
+		len(unifiedList))
+
+	del pairs
+	gc.collect()
+
+	return unifiedList
 
 ###--- functions dealing with location data ---###
 
@@ -162,3 +301,100 @@ def getSymbol (markerKey):
 	if symbolCache.has_key(markerKey):
 		return symbolCache[markerKey]
 	return None
+
+###--- functions dealing with allele counts ---###
+
+def getAlleleCounts():
+	# returns { marker key : count of all alleles }
+	# includes both direct marker-to-allele relationships and ones from
+	# 'mutation involves' relationships
+
+	# each row has:
+	# [ allele key, marker key, count type, count type order ]
+	rows = _getMarkerAllelePairs(UNIFIED)
+
+	alleles = {}		# alleles[markerKey] = [ allele keys ]
+
+	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+		if alleles.has_key(markerKey):
+			if alleleKey not in alleles[markerKey]:
+				alleles[markerKey].append(alleleKey)
+		else:
+			alleles[markerKey] = [ alleleKey ]
+
+	counts = {}
+
+	for markerKey in alleles.keys():
+		counts[markerKey] = len(alleles[markerKey])
+
+	logger.debug('Found allele counts for %d markers' % len(counts))
+	return counts
+
+def getAlleleCountsByType():
+	# returns two-item tuple with:
+	#	{ marker key : { count type : count of all alleles } }
+	#	{ count type sequence num : count type }
+	# includes both direct marker-to-allele relationships and ones from
+	# 'mutation involves' relationships
+
+	# each row has:
+	# [ allele key, marker key, count type, count type order ]
+	rows = _getMarkerAllelePairs(UNIFIED)
+
+	m = {}		# m[markerKey] = { count type : [ allele keys ] }
+	c = {}		# c[count type seq num] = count type
+
+	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+
+		# make sure we have the mapping from count type to its seq num
+		if not c.has_key(countTypeOrder):
+			c[countTypeOrder] = countType
+
+		# track the alleles for each marker, separated by count type
+
+		if not m.has_key(markerKey):
+			m[markerKey] = { countType : [ alleleKey ] }
+
+		elif not m[markerKey].has_key(countType):
+			m[markerKey][countType] = [ alleleKey ]
+
+		elif alleleKey not in m[markerKey][countType]:
+			m[markerKey][countType].append (alleleKey)
+
+	counts = {}
+
+	for markerKey in m.keys():
+		counts[markerKey] = {}
+
+		for countType in m[markerKey].keys():
+			counts[markerKey][countType] = \
+				len(m[markerKey][countType])
+
+	logger.debug('Found %d types of allele counts for %d markers' % (
+		len(c), len(counts)) )
+	return counts, c
+
+def getMutationInvolvesCounts():
+	# returns dictionary:
+	#	{ marker key : count of alleles with that marker in a
+	#		'mutation involves' relationship }
+
+	rows = _getMarkerAllelePairs(MUTATION_INVOLVES)
+
+	m = {}
+
+	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+		if not m.has_key(markerKey):
+			m[markerKey] = [ alleleKey ]
+
+		elif alleleKey not in m[markerKey]:
+			m[markerKey].append (alleleKey)
+
+	c = {}
+
+	for markerKey in m.keys():
+		c[markerKey] = len(m[markerKey])
+
+	logger.debug('Found %d markers with mutation involves relationships' \
+		% len(c))
+	return c

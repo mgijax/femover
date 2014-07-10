@@ -12,6 +12,7 @@ import logger
 import MarkerSnpAssociations
 import ADMapper
 import InteractionUtils
+import MarkerUtils
 import GroupedList
 
 ###--- Constants ---###
@@ -347,6 +348,38 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			len(counts))
 		return
 
+	def collateAlleleCounts (self):
+		# collate the allele counts, including the special handling
+		# for markers associated with alleles via 'mutation involves'
+		# relationships
+
+		counts, countSets = MarkerUtils.getAlleleCountsByType()
+
+		orderedSets = countSets.items()
+		orderedSets.sort()
+
+		markerKeys = counts.keys()
+		markerKeys.sort()
+
+		setType = 'Alleles'
+		i = 0
+
+		for markerKey in markerKeys:
+			i = i + len(counts[markerKey])
+
+			for (seqNum, countType) in orderedSets:
+				if counts[markerKey].has_key(countType):
+					row = [ markerKey,
+						setType,
+						countType, 
+						counts[markerKey][countType],
+						seqNum ]
+
+					self.finalResults.append (row)
+
+		logger.debug('Added %d rows for Alleles' % i) 
+		return
+
 	def collateResults (self):
 		# combine the result sets from the various queries into a
 		# single set of final results
@@ -371,22 +404,24 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
 		self.collateMarkerInteractions()
+		self.collateAlleleCounts()
 
 		# the remaining sets (5 to the end) have a standard format
 		# and can be done in a nested loop
 
-		for (columns, rows) in self.results[5:]:
-			keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
-			setCol = Gatherer.columnNumber (columns, SET_TYPE)
-			typeCol = Gatherer.columnNumber (columns, COUNT_TYPE)
-			countCol = Gatherer.columnNumber (columns, COUNT)
-
-			for row in rows:
-				newRow = [ row[keyCol], row[setCol],
-					row[typeCol], row[countCol], 
-					self.seqNum() ]
-				self.finalResults.append (newRow)
-			self.report()
+# currently no queries from 5...
+#		for (columns, rows) in self.results[5:]:
+#			keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
+#			setCol = Gatherer.columnNumber (columns, SET_TYPE)
+#			typeCol = Gatherer.columnNumber (columns, COUNT_TYPE)
+#			countCol = Gatherer.columnNumber (columns, COUNT)
+#
+#			for row in rows:
+#				newRow = [ row[keyCol], row[setCol],
+#					row[typeCol], row[countCol], 
+#					self.seqNum() ]
+#				self.finalResults.append (newRow)
+#			self.report()
 		return
 
 ###--- globals ---###
@@ -463,26 +498,6 @@ cmds = [
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = rflv._Marker_key)
 	group by rflv._Marker_key, t.term''',
-
-	# 5. alleles by type (and these aren't the actual types, but the
-	# groupings of types defined as vocabulary associations)
-	# do not include 'Not Applicable', 'Not Specified', 'Other'
-	'''select a._Marker_key,
-		vt.term as %s,
-		'Alleles' as %s,
-		count(1) as %s,
-		vt.sequenceNum
-	from all_allele a, voc_term vt
-	where vt._Vocab_key = 38
-		and vt.term not in ('Not Applicable', 'Not Specified', 'Other')
-		and vt._Term_key = a._Allele_Type_key
-		and a.isWildType = 0
-		and a._Marker_key is not null
-		and exists (select 1 from mrk_marker m
-			where a._Marker_key = m._Marker_key)
-	group by a._Marker_key, vt.term, vt.sequenceNum
-	order by a._Marker_key, vt.sequenceNum''' % (COUNT_TYPE, SET_TYPE,
-		COUNT),
 	]
 
 # order of fields (from the query results) to be written to the
