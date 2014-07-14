@@ -186,7 +186,9 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 
 		# compile the count of human diseases associated with each
 		# mouse marker (taking care to skip any a via complex not
-		# conditional genotypes) and add it to the counts in 'd'
+		# conditional genotypes) and add it to the counts in 'd'.
+
+		diseasesByMarker = {}
 
 		cols, rows = self.results[18]
 
@@ -195,8 +197,6 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
 
 		# first need to collate disease terms by marker
-
-		diseasesByMarker = {}
 
 		for row in rows:
 			genoKey = row[genoCol]
@@ -458,7 +458,7 @@ cmds = [
 
 	# 19. count of alleles for the marker which are associated with
 	# human diseases.
-	'''select a._Marker_key, count(distinct a._Allele_key) as alleleCount
+	'''with tempTable as (select a._Marker_key, a._Allele_key
 		from all_allele a,
 			gxd_allelegenotype gag,
 			voc_annot va,
@@ -469,7 +469,26 @@ cmds = [
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key
 			and vt.term is null
-		group by a._Marker_key''',
+		union
+		select r._Object_key_2 as Marker_key, a._Allele_key
+		from mgi_relationship r,
+			mgi_relationship_category c,
+			all_allele a,
+			gxd_allelegenotype gag,
+			voc_annot va,
+			voc_term vt
+		where a._Allele_key = gag._Allele_key
+			and c.name = 'mutation_involves'
+			and c._Category_key = r._Category_key
+			and a._Allele_key = r._Object_key_1
+			and gag._Genotype_key = va._Object_key
+			and va._AnnotType_key = 1005
+			and a.isWildType = 0
+			and va._Qualifier_key = vt._Term_key
+			and vt.term is null)
+		select _Marker_key, count(distinct _Allele_key) as alleleCount
+		from tempTable
+		group by 1''',
 
 	# 20. OMIM annotations to human markers
 	'''select mm._Marker_key, count(q._Term_key) as diseaseCount
@@ -495,7 +514,6 @@ cmds = [
                 and a.preferred = 1
                 and m._Organism_key = 1
 	''',
-
 	]
 
 # order of fields (from the query results) to be written to the
