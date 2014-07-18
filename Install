@@ -6,39 +6,34 @@
 # remember the top-level directory
 
 cd `dirname $0`
-TOP=`pwd`
 
 # if no Configuration file, bail out
 
-if [ ! -f ${TOP}/Configuration ]; then
+if [ ! -f Configuration ]; then
 	echo "Missing Configuration file"
 	exit 1
 fi
 
 # source the Configuration file
 
-. ${TOP}/Configuration
+. Configuration
 echo "Sourced Configuration file"
 
 # add/update links to config.py library
 
-CONFIG=${TOP}/lib/python/config.py
+CONFIG=lib/python/config.py
 
 for dir in gather control schema
 do
-	if [ -h ${TOP}/${dir}/config.py ]; then
-		rm ${TOP}/${dir}/config.py
+	if [ -h ${dir}/config.py ]; then
+		rm ${dir}/config.py
 	fi
-	if [ -f ${TOP}/${dir}/config.pyc ]; then
-		rm ${TOP}/${dir}/config.pyc
+	if [ -f ${dir}/config.pyc ]; then
+		rm ${dir}/config.pyc
 	fi
-	ln -s ${CONFIG} ${TOP}/${dir}/config.py 
-	echo "Created symlink: ${TOP}/${dir}/config.py"
+	ln -s ${CONFIG} ${dir}/config.py 
+	echo "Created symlink: ${dir}/config.py"
 done
-
-# back to top level...
-
-cd ${TOP}
 
 # if we don't have a data and a logs directory, make them
 
@@ -54,7 +49,7 @@ fi
 
 # update permissions on gatherers and controllers
 
-chmod ug+x ${TOP}/gather/*Gatherer.py ${TOP}/control/*
+chmod ug+x gather/*Gatherer.py control/*
 echo "Granted execute permissions for gatheres and control scripts"
 
 echo "Finished"
