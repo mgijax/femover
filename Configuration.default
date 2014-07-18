@@ -21,11 +21,7 @@ FILE_DIR=${DATALOADSOUTPUT}/femover
 LOG_DIR=${FILE_DIR}/logs
 DATA_DIR=${FILE_DIR}/data
 
-DUMP_DIR=/export/dump
-
-FE_POSTGRES_DUMP=${DUMP_DIR}/fe.postgres.dump
-
-export FILE_DIR LOG_DIR DATA_DIR DUMP_DIR FE_POSTGRES_DUMP
+export FILE_DIR LOG_DIR DATA_DIR
 
 #
 # Numbers of concurrent processes by stage.
