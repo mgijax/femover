@@ -85,8 +85,8 @@ while [ $# -gt 0 ]; do
 done
 
 # run the mover with any specified flags
-echo "${FEMOVER}/control/buildDatabase.py ${FLAGS}"
-${FEMOVER}/control/buildDatabase.py ${FLAGS}
+echo "buildDatabase.py ${FLAGS}"
+buildDatabase.py ${FLAGS}
 if [ $? -ne 0 ]; then
     echo "Build failed.  See logs for details."
     exit 1
@@ -99,8 +99,8 @@ mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.log.1
 # run the mover for single priority tables
 for table in ${SINGLE_PRIORITY_TABLES}
 do
-    echo "${FEMOVER}/control/buildDatabase.py -G ${table}"
-    ${FEMOVER}/control/buildDatabase.py -G ${table}
+    echo "buildDatabase.py -G ${table}"
+    buildDatabase.py -G ${table}
     if [ $? -ne 0 ]; then
         echo "Single-Priority Build failed.  See logs for details."
         exit 1

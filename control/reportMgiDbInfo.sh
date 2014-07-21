@@ -34,7 +34,7 @@ fi
 export SOURCE_TYPE
 
 # run the Python script to do the reporting
-${FEMOVER}/control/reportMgiDbInfo.py
+reportMgiDbInfo.py
 
 if [ $? -ne 0 ]; then
 	echo "Failed to read from MGI_dbInfo in $1 database"
