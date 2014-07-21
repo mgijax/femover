@@ -87,17 +87,17 @@ TARGET_TYPE=postgres	# build into postgres or mysql
 export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
 
 # path to data file for short papers' Full Text links
-FULL_TEXT_LINKS_PATH=${FEMOVER}/data/fullTextLinks.txt
+FULL_TEXT_LINKS_PATH=../data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
 # path to incidental mutations master file
 INCIDENTAL_MUTS_FILE=/lindondata/loads/mgi/incidental_muts/curator_INC.txt
 export INCIDENTAL_MUTS_FILE
 
-GLOSSARY_PATH=${FEMOVER}/data/glossary.rcd
+GLOSSARY_PATH=../data/glossary.rcd
 export GLOSSARY_PATH
 
-PYTHONPATH=${FEMOVER}/lib/python:.:${FEMOVER}/testdata:${PYTHONPATH}
+PYTHONPATH=../lib/python:.:../gatherer:../testdata:${PYTHONPATH}
 export PYTHONPATH
 
 #
