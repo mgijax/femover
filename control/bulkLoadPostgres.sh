@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 
 # bulk load an input file into a Postgres table
 # Usage: bulkLoadPostgres.sh <server> <database> <user> <password> <input file> <table name>
 
-. ../Configuration
+. Configuration
+echo $PATH
+which psql
 
 PGPASSWORD=$4
 export PGPASSWORD

@@ -6,7 +6,7 @@
 
 # Usage: optimizeTablePostgres.sh <server> <database> <user> <password> <table name>
 
-. ../Configuration
+. Configuration
 
 PGPASSWORD=$4
 export PGPASSWORD

@@ -1450,6 +1450,7 @@ if __name__ == '__main__':
 		excType = error
 		excValue = '\n\nWARNING: The Following tasks failed and may need to be rerun:\n\t-'
 		excValue += '\n\t-'.join([l[1] for l in FAILED_DISPATCHERS])
+		print "excType: %s, excValue: %s"%(excType,excValue)
 
 	elapsed = hms(time.time() - START_TIME)
 	try:
