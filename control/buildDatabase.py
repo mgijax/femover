@@ -628,7 +628,7 @@ def scheduleConversion (
 		script = os.path.join (config.CONTROL_DIR,
 			'mysqlConverter.sh')
 
-	id = CONVERT_DISPATCHER.schedule ('%s %s' % (script, path))
+	id = CONVERT_DISPATCHER.schedule ([script, path])
 	CONVERT_IDS.append ( (table, path, id) )
 	return
 
