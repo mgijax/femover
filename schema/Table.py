@@ -101,15 +101,15 @@ def loadFile (filename,	# string; full path to the data file to load
 		pgDispatcher = Dispatcher.Dispatcher()
 		script = os.path.join (config.CONTROL_DIR,
 			'bulkLoadPostgres.sh')
-		id = pgDispatcher.schedule (
-			'%s %s %s %s %s %s %s' % (
-				script,
-				config.TARGET_HOST,
-				config.TARGET_DATABASE,
-				config.TARGET_USER,
-				config.TARGET_PASSWORD,
-				filename,
-				myTable.getName() ) )
+		id = pgDispatcher.schedule ([
+                        script,
+                        config.TARGET_HOST,
+                        config.TARGET_DATABASE,
+                        config.TARGET_USER,
+                        config.TARGET_PASSWORD,
+                        filename,
+                        myTable.getName()
+                        ])
 		pgDispatcher.wait()
 		if pgDispatcher.getReturnCode(id):
 			bailout ('Failed to load %s table in postgres' % \
