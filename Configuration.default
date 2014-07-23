@@ -97,7 +97,7 @@ export INCIDENTAL_MUTS_FILE
 GLOSSARY_PATH=../data/glossary.rcd
 export GLOSSARY_PATH
 
-PYTHONPATH=../lib/python:.:../gatherer:../testdata:${PYTHONPATH}
+PYTHONPATH=../lib/python:.:../gatherer:../schema:../testdata:${PYTHONPATH}
 export PYTHONPATH
 
 #
