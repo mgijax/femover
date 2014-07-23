@@ -21,11 +21,11 @@
 #sed 's/#=#\\$//g' | \
 #sed 's/&=&/	/g' > $1.new
 
-cat $1 | $MGI_PYTHONLIB/postgresTextCleaner.py > $1.new
+cat "$1" | $MGI_PYTHONLIB/postgresTextCleaner.py > "$1".new
 
 # replace the original file
-rm $1
-mv $1.new $1
+rm "$1"
+mv "$1".new "$1"
 
 # report back the file to be loaded
-echo $1
+echo "$1"
