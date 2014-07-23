@@ -662,7 +662,7 @@ def checkForFinishedGathering():
 			for line in GATHER_DISPATCHER.getStdout(id):
 				line = line.strip()
 
-				[ inputFile, table ] = line.split()
+				[ inputFile, table ] = line.rsplit(" ",1)
 
 				if not FULL_BUILD:
 					dropTables( [table] )
@@ -703,7 +703,7 @@ def scheduleLoad (
 
 	script = os.path.join (config.SCHEMA_DIR, table + '.py')
 
-	id = BCPIN_DISPATCHER.schedule ('%s --lf %s' % (script, path))
+	id = BCPIN_DISPATCHER.schedule ([script,"--lf",path])
 	BCPIN_IDS.append ( (table, path, id) )
 	return
 
