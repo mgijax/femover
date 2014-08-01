@@ -23,7 +23,7 @@ preferredOrganisms = [
 	'cattle', 'dog',
 
 	# others, alphabetical
-	'chicken', 'zebrafish',
+	'chicken', 'western clawed frog', 'zebrafish',
 	]
 
 ###--- Functions ---###
@@ -210,7 +210,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 			'humanMarkerCount', 'ratMarkerCount',
 			'cattleMarkerCount', 'chimpMarkerCount',
 			'dogMarkerCount', 'monkeyMarkerCount',
-			'chickenMarkerCount', 'zebrafishMarkerCount', ]
+			'chickenMarkerCount', 'xenopusMarkerCount', 'zebrafishMarkerCount', ]
 		hccRows = []
 
 		clusterKeys = clusters.keys()
@@ -254,7 +254,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 			hccRow = [ clusterKey ]
 			for organism in [ 'mouse', 'human', 'rat', 'cattle',
 					'chimpanzee', 'dog', 'rhesus macaque',
-					'chicken', 'zebrafish', ]:
+					'chicken', 'xenopus', 'zebrafish', ]:
 				if counts.has_key(organism):
 					hccRow.append (counts[organism])
 				else:
@@ -316,7 +316,7 @@ files = [
 			'ratMarkerCount', 'cattleMarkerCount',
 			'chimpMarkerCount', 'dogMarkerCount', 
 			'monkeyMarkerCount', 'chickenMarkerCount',
-			'zebrafishMarkerCount', ],
+			'xenopusMarkerCount', 'zebrafishMarkerCount', ],
 		'homology_cluster_counts'),
 	]
 
