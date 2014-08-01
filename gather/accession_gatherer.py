@@ -48,7 +48,7 @@ HGNC = 64
 ORGANISM_ORDER = [
 	'mouse, laboratory', 'human', 'rat',
 	'cattle', 'chicken', 'chimpanzee', 'dog, domestic', 'rhesus macaque',
-	'zebrafish',
+	'western clawed frog','zebrafish',
 	]
 
 ###--- Functions ---###
