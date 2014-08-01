@@ -1,3 +1,11 @@
+TAG: femover-5-1-9-4
+DATE: 08/01/2014
+STAFF: dbm
+CHANGES: TR11662
+1) accession_gatherer.py: added 'western clawed frog'
+2) homology_cluster_gatherer.py: added 'western clawed frog' / xenopus
+3) homology_cluster_counts.py: added xenopus
+
 TAG: femover-5-1-9-3
 DATE: 07/14/2014
 STAFF: jsb
