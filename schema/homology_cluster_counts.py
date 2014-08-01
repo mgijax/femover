@@ -23,6 +23,7 @@ createStatement = '''CREATE TABLE %s  (
 	dog_marker_count	int	not null,
 	monkey_marker_count	int	not null,
 	chicken_marker_count	int	not null,
+	xenopus_marker_count	int	not null,
 	zebrafish_marker_count	int	not null,
 	PRIMARY KEY(cluster_key))''' % tableName
 
@@ -50,6 +51,7 @@ comments = {
 		'dog_marker_count' : 'count of dog markers in the cluster',
 		'monkey_marker_count' : 'count of monkey (rhesus macaque) markers in the cluster',
 		'chicken_marker_count' : 'count of chicken markers in the cluster',
+		'xenopus_marker_count' : 'count of xenopus markers in the cluster',
 		'zebrafish_marker_count' : 'count of zebrafish markers in the cluster',
 		},
 	Table.INDEX : {},
