@@ -18,3 +18,41 @@ index ea16f4f..f4f3559 100755
  
  # Purpose: to make any bcp file tweaks, in preparation for bulk load into
  #	Postgres:
+diff --git a/femover.patch b/femover.patch
+index 9839469..e69de29 100644
+--- a/femover.patch
++++ b/femover.patch
+@@ -1,20 +0,0 @@
+-diff --git a/control/mysqlConverter.sh b/control/mysqlConverter.sh
+-index 4f1a3f7..3681976 100755
+---- a/control/mysqlConverter.sh
+-+++ b/control/mysqlConverter.sh
+-@@ -1,4 +1,4 @@
+--#!/usr/bin/sh
+-+#!/bin/sh
+- 
+- # Purpose: currently a no-op; in the future, if processing of text files is
+- #	needed before loading them into MySQL, this is where it would go
+-diff --git a/control/postgresConverter.sh b/control/postgresConverter.sh
+-index ea16f4f..f4f3559 100755
+---- a/control/postgresConverter.sh
+-+++ b/control/postgresConverter.sh
+-@@ -1,4 +1,4 @@
+--#!/usr/bin/sh
+-+#!/bin/sh
+- 
+- # Purpose: to make any bcp file tweaks, in preparation for bulk load into
+- #	Postgres:
+diff --git a/schema/marker_link.py b/schema/marker_link.py
+index ce85f32..a123313 100755
+--- a/schema/marker_link.py
++++ b/schema/marker_link.py
+@@ -47,7 +47,7 @@ comments = {
+ 		'associated_id' : 'the accession ID associated with this link, if any',
+ 		'display_text' : 'of text which should be displayed as the clickable text of the link',
+ 		'url' : 'URL that the link should go to (not parameterized for IDs -- any IDs, coordinates, etc. should already be plugged in)',
+-		'has_markups' : 'are there any MGI-specific markups in the ‘url’ field such that fewi should run the URL through the NotesTagConverter?  (0/1)  This allows us to point MGI links to various developer, production, or public instances, etc.',
++		'has_markups' : 'are there any MGI-specific markups in the url field such that fewi should run the URL through the NotesTagConverter?  (0/1)  This allows us to point MGI links to various developer, production, or public instances, etc.',
+ 		'use_new_window' : 'should this link open a new window/tab when clicked? (0/1)',
+ 		},
+ 	Table.INDEX : {
