@@ -290,7 +290,7 @@ cmds = [
 			mgi_synonym s,
 			mgi_synonymtype st
 		where c._Category_key = r._Category_key
-			and c._MGIType_key_1 in (2, 11)
+			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_2 = m._Marker_key
 			and r._RelationshipTerm_key = s._Object_key
