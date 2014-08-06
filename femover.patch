@@ -69,7 +69,7 @@ index 7bd0f77..4fdc6b3 100755
 +		rm "${TOP}/${dir}/config.pyc"
  	fi
 -	ln -s ${CONFIG} ${TOP}/${dir}/config.py 
-+	ln -s ${CONFIG} "${TOP}/${dir}/config.py"
++	ln -s "${CONFIG}" "${TOP}/${dir}/config.py"
  	echo "Created symlink: ${TOP}/${dir}/config.py"
  done
  
@@ -97,7 +97,7 @@ index 7bd0f77..4fdc6b3 100755
  # update permissions on gatherers and controllers
  
 -chmod ug+x ${TOP}/gather/*Gatherer.py ${TOP}/control/*
-+chmod ug+x "${TOP}/gather/*Gatherer.py" "${TOP}/control/*"
++chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*
  echo "Granted execute permissions for gatheres and control scripts"
  
  echo "Finished"
