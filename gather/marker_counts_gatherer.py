@@ -20,6 +20,7 @@ from IMSRData import IMSRDatabase
 ###--- Globals ---###
 
 OMIM_GENOTYPE = 1005		# from VOC_AnnotType
+OMIM_MARKER = 1016		# from VOC_AnnotType
 OMIM_HUMAN_MARKER = 1006	# from VOC_AnnotType
 NOT_QUALIFIER = 1614157		# from VOC_Term
 TERM_MGITYPE = 13		# from ACC_MGIType
@@ -130,11 +131,12 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[15], CdnaSourceCount, 'cdnaCount'),
 			(self.results[16], MicroarrayCount, 'affyCount'),
 			(self.results[17], PhenotypeImageCount, 'imageCount'),
-			(self.results[19], AllelesWithDiseaseCount, 'alleleCount'),
 
-			# HumanDiseaseCount will be processed separately for
-			# mouse markers; this is only for human markers:
+			# query 18 is for mouse markers, query 20 for human
 
+			(self.results[18], HumanDiseaseCount, 'diseaseCount'),
+			(self.results[19], AllelesWithDiseaseCount,
+				'alleleCount'),
 			(self.results[20], HumanDiseaseCount, 'diseaseCount'),
 
 			# IMSR count processed separately
@@ -143,7 +145,10 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 		for (r, countName, colName) in toAdd:
 			logger.debug ('Processing %s, %d rows' % (countName,
 				len(r[1])) )
-			counts.append (countName)
+
+			if countName not in counts:
+				counts.append (countName)
+
 			mrkKeyCol = Gatherer.columnNumber(r[0], '_Marker_key')
 			countCol = Gatherer.columnNumber(r[0], colName)
 
@@ -183,47 +188,6 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			if mrk in mouseIds:
 				mouseId = mouseIds[mrk]
 				d[mrk][ImsrCount] = (mouseId in imsrMrkCounts) and imsrMrkCounts[mouseId] or 0
-
-		# compile the count of human diseases associated with each
-		# mouse marker (taking care to skip any a via complex not
-		# conditional genotypes) and add it to the counts in 'd'.
-
-		diseasesByMarker = {}
-
-		cols, rows = self.results[18]
-
-		genoCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		termCol = Gatherer.columnNumber (cols, '_Term_key')
-
-		# first need to collate disease terms by marker
-
-		for row in rows:
-			genoKey = row[genoCol]
-			termKey = row[termCol]
-			markerKey = row[markerCol]
-
-			if GenotypeClassifier.getClass(genoKey) == 'cx':
-				continue
-
-			if diseasesByMarker.has_key(markerKey):
-				diseasesByMarker[markerKey][termKey] = 1
-			else:
-				diseasesByMarker[markerKey] = { termKey : 1 } 
-
-		# skip adding this, as it was already added above:
-		# counts.append (HumanDiseaseCount)
-
-		for mrkKey in diseasesByMarker.keys():
-			diseaseCount = len(diseasesByMarker[mrkKey])
-
-			if d.has_key(mrkKey):
-				d[mrkKey][HumanDiseaseCount] = diseaseCount
-			elif mrkKey != None:
-				d[mrkKey] = { HumanDiseaseCount : diseaseCount }
-
-		logger.debug ('Found OMIM diseases for %d markers' % \
-			len(diseasesByMarker))
 
 		# compile the list of collated counts in self.finalResults
 		self.finalResults = []
@@ -431,30 +395,16 @@ cmds = [
 			and _MGIType_key = 2
 		group by _Marker_key''',
 
-	# 18. pull OMIM annotations up from genotypes to mouse markers.
-	#    Exclude paths from markers to genotypes which involve:
-	#	a. recombinase alleles (ones with driver notes)
-	#	b. wild-type alleles
-	#	c. complex, not conditional genotypes
-	#	d. complex, not conditional genotypes with transgenes
-	#	e. marker Gt(ROSA)
-	'''select distinct gag._Marker_key,
-		gag._Genotype_key,
-		va._Term_key
-	from gxd_allelegenotype gag,
-		voc_annot va,
-		all_allele a
-	where gag._Genotype_key = va._Object_key
-		and va._AnnotType_key = %d
+	# 18. get a count of distinct OMIM (disease) annotations which have
+	# been associated with mouse markers via a set of rollup rules in
+	# the production database.
+	# Exclude: annotations with a NOT qualifier
+	'''select va._Object_key as _Marker_key,
+			count(distinct va._Term_key) as diseaseCount
+		from voc_annot va
+		where va._AnnotType_key = %d
 		and va._Qualifier_key != %d
-		and gag._Allele_key = a._Allele_key
-		and a.isWildType = 0
-		and not exists (select 1 from MGI_Note mn
-			where mn._NoteType_key = %d
-			and mn._Object_key = gag._Allele_key)
-		and gag._Marker_key != %d
-	order by gag._Marker_key''' % (
-		OMIM_GENOTYPE, NOT_QUALIFIER, DRIVER_NOTE, GT_ROSA),	
+		group by va._Object_key''' % (OMIM_MARKER, NOT_QUALIFIER),
 
 	# 19. count of alleles for the marker which are associated with
 	# human diseases.

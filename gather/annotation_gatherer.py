@@ -17,6 +17,7 @@ import AnnotationKeyGenerator
 MARKER = 2		# MGI Type for markers
 GENOTYPE = 12		# MGI Type for genotypes
 OMIM_GENOTYPE = 1005	# VOC_AnnotType : OMIM/Genotype
+OMIM_MARKER = 1016	# VOC_AnnotType : OMIM/Marker (Derived)
 MP_GENOTYPE = 1002	# VOC_AnnotType : MP/Genotype
 GT_ROSA = 37270		# marker Gt(ROSA)26Sor
 DRIVER_NOTE = 1034	# MGI_NoteType Driver
@@ -585,9 +586,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	def buildQuery12Rows (self, aRows, mRows, sRows,
 			byVocab, byAnnotType, byTermAlpha):
-		# build the extra rows from query 12, where we pull a summary
-		# of OMIM annotations up from genotypes through alleles to
-		# markers
+		# build the extra rows from query 12, where we pull a set of
+		# of derived OMIM annotations to mouse markers
 
 		# see aCols, mCols, and sCols in buildRows() for column order
 		# for these three lists, respectively:
@@ -598,10 +598,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
 		accIDCol = Gatherer.columnNumber (cols, 'accID')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+		markerCol = Gatherer.columnNumber (cols, '_Object_key')
 		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-		typeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
+
+		annotTypeKey = OMIM_MARKER
+		annotType = 'OMIM/Marker'
 
 		# We only want to keep the first annotation for a given
 		# (marker, term) pair, so we need to track what ones we have
@@ -621,12 +622,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			if annotKeyToSkip.has_key(annotKey):
 				continue
 
-			genotypeKey = row[genotypeCol]
-
-			# skip 'complex not conditional' genotypes
-			if GenotypeClassifier.getClass(genotypeKey) == 'cx':
-				continue
-
 			markerKey = row[markerCol]
 			termID = row[accIDCol]
 			pair = (markerKey, termID)
@@ -642,22 +637,15 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 			# use termID and markerKey to distinguish genotypes
 			# with multiple allele pairs and different markers
-#			annotationKey = getNewAnnotationKey (annotKey, 
-#				termID, markerKey, 'OMIM/Marker')
 
 			annotationKey = tmsKeyGenerator.getKey (annotKey,
 				termID = termID,
 				markerKey = markerKey,
-				specialType = 'OMIM/Marker')
+				specialType = annotType)
 
 			if done.has_key(annotationKey):
 				continue
 			done[annotationKey] = 1
-
-			annotTypeKey = row[typeKeyCol]
-			annotType = Gatherer.resolve (row[typeKeyCol],
-				'voc_annottype', '_AnnotType_key', 'name')
-			annotType = annotType.replace ('Genotype', 'Marker')
 
 			aRow = [ annotationKey, None, None, vocab,
 				row[termCol], termID, None, 'Marker',
@@ -1175,45 +1163,27 @@ cmds = [
 	# 11. get the valid marker keys
 	'''select _Marker_key from mrk_marker''',
 
-	# 12. get OMIM annotations made to genotypes, and pull a brief
-	# set of info for them up through their alleles to their markers.
-	# Exclude:
-	#	a. recombinase alleles (ones with driver notes)
-	#	b. wild-type alleles
-	#	c. complex not conditional genotypes
-	#	d. complex not conditional genotypes including transgenes
-	#	e. marker Gt(ROSA)
-	'''select distinct va._Annot_key,
-		vt._Term_key,
-		vt.term,
-		aa.accID,
-		vt._Vocab_key,
-		gag._Marker_key,
-		va._AnnotType_key,
-		gag._Genotype_key
-	from gxd_allelegenotype gag,
-		voc_annot va,
-		voc_term vt,
-		voc_term vq,
-		acc_accession aa,
-		all_allele a
-	where gag._Genotype_key = va._Object_key
-		and gag._Allele_key = a._Allele_key
-		and a.isWildType = 0
-		and va._AnnotType_key = %d
-		and va._Qualifier_key != %d
-		and va._Term_key = vt._Term_key
-		and va._Qualifier_key = vq._Term_key
-		and va._Term_key = aa._Object_key
-		and aa._MGIType_key = 13
-		and aa.preferred = 1
-		and gag._Marker_key is not null
-		and not exists (select 1 from MGI_Note mn
-			where mn._NoteType_key = %d
-				and mn._Object_key = gag._Allele_key)
-		and gag._Marker_key != %d
-		and vq.term is null''' % (OMIM_GENOTYPE, NOT_QUALIFIER,
-			DRIVER_NOTE, GT_ROSA),
+	# 12. get OMIM annotations that have been derived for mouse markers
+	# via a series of rollup rules in the production database.  (These
+	# annotations are made to genotypes and the rollup rules determine
+	# when they should be tied to a specific marker.)
+	# Exclude: annotations with a NOT qualifier
+	'''select va._Annot_key,
+		va._Term_key,
+		t.term,
+		t._Vocab_key,
+		a.accID,
+		va._Object_key
+	from voc_annot va,
+		voc_term t,
+		acc_accession a
+	where va._AnnotType_key = %d
+		and va._Term_key = t._Term_key
+		and va._Term_key = a._Object_key
+		and a._MGIType_key = 13
+		and a.preferred = 1
+		and va._Qualifier_key != %d''' % (
+			OMIM_MARKER, NOT_QUALIFIER),
 
 	# 13. get a set of basic data about markers so we can cache the marker
 	# data for each annotation (order by logical db key so MGI IDs come
