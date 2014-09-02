@@ -11,6 +11,7 @@ import GenotypeClassifier
 import symbolsort
 import AlleleAndGenotypeSorter
 import AnnotationKeyGenerator
+import gc
 
 ###--- Constants ---###
 
@@ -18,6 +19,7 @@ MARKER = 2		# MGI Type for markers
 GENOTYPE = 12		# MGI Type for genotypes
 OMIM_GENOTYPE = 1005	# VOC_AnnotType : OMIM/Genotype
 OMIM_MARKER = 1016	# VOC_AnnotType : OMIM/Marker (Derived)
+MP_MARKER = 1015	# VOC_AnnotType : MP/Marker (Derived)
 MP_GENOTYPE = 1002	# VOC_AnnotType : MP/Genotype
 GT_ROSA = 37270		# marker Gt(ROSA)26Sor
 DRIVER_NOTE = 1034	# MGI_NoteType Driver
@@ -67,38 +69,6 @@ def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
 		inferredFrom = inferredFrom)
 
 	return key
-
-newAnnotKeys = {}
-
-def oldGetNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom,
-		specialAnnotType = None):
-
-	# look up (or generate) a "new annotation key" to identify the
-	# annotation described by the input parameters
-
-	global newAnnotKeys
-
-	attributes = getAnnotAttributes(annotKey)
-	if attributes:
-		(annotType, objectKey, termKey, qualifier) = attributes
-		tpl = (annotType, objectKey, termKey, qualifier,
-			evidenceTermKey, inferredFrom, specialAnnotType)
-
-		# For now, we do not want to consider evidence term or
-		# any inferred-from IDs when deciding whether an MP annotation
-		# is distinct or not (just type, object, term, and qualifier).
-		# When we decide to show evidence for MP annotations in the
-		# future, we'll want to remove these two lines.
-
-		if annotType == MP_GENOTYPE:
-			tpl = tpl[0:4]
-	else:
-		tpl = (annotKey, evidenceTermKey, inferredFrom,
-			specialAnnotType)
-
-	if not newAnnotKeys.has_key(tpl):
-		newAnnotKeys[tpl] = len(newAnnotKeys) + 1
-	return newAnnotKeys[tpl]
 
 def getMarker (markerKey):
 	if MARKER_DATA.has_key(markerKey):
@@ -182,6 +152,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Consolidated %d annotation keys down to %d' % \
 			(len(rows), len(annotForData)) )
+
+		self.results[14] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory for result set 14')
 		return
 
 	def translateAnnotKey (self, annotKey):
@@ -212,6 +187,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached basic data for %d markers' % \
 			len(MARKER_DATA))
 
+		self.results[13] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory for result set 13')
+
 		toSort = []	# [ (symbol, name, marker key), ... ]
 		for (key, (symbol, name, accID, ldb, chrom)) \
 			in MARKER_DATA.items():
@@ -231,6 +211,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# put other object types after it for sorts by marker
 
 		self.maxMarkerSequenceNum = i
+
+		del toSort
+		gc.collect()
+		logger.debug('Freed memory used to sort markers')
 		return
 
 	def getTermIDs (self):
@@ -243,6 +227,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			termKeyToID[row[keyCol]] = row[idCol]
 
 		logger.debug ('Found %d term IDs' % len(termKeyToID))
+
+		self.results[0] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug('Freed memory for result set 0')
+
 		return termKeyToID
 
 	def getDags (self):
@@ -256,6 +246,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d DAG keys for terms' % \
 			len(termKeyToDagKey))
+
+		self.results[1] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug('Freed memory for result set 1')
+
 		return termKeyToDagKey
 
 	def getEvidence (self):
@@ -311,6 +307,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found evidence info for %d annotations' % \
 			len(annotationEvidence) )
+
+		self.results[2] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug('Freed memory for result set 2')
 
 		return mgdToNewKeys, annotationEvidence, annotationRefs
 
@@ -392,6 +393,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found inferred-from IDs for %d records' % \
 			len(ids))
+
+		self.results[3] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory from result set 3')
+
 		return ids
 
 	def getSortingMaps (self):
@@ -413,13 +420,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				d[row[keyCol]] = i
 				d[row[nameCol]] = i
 
+			self.results[num] = (cols, [])
+			del rows
+			gc.collect()
+			logger.debug('Freed memory from result set %d' % num)
+
 		logger.debug ('Loaded %d sorting maps' % len(toDo))
 		return byVocab, byAnnotType, byTermAlpha
 
 	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
-		# build the extra rows from query 9, where we pull a summary
-		# of MP annotations up from genotypes through alleles to
-		# markers
+		# build the extra rows from query 9, where we get the set of
+		# MP annotations that have been rolled-up to markers
 
 		# see aCols, mCols, and sCols in buildRows() for column order
 		# for these three lists, respectively:
@@ -448,6 +459,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		tmsKeyGenerator = \
 			AnnotationKeyGenerator.TermMarkerSpecialKeyGenerator()
 
+		annotTypeKey = MP_MARKER
+		annotType = 'Mammalian Phenotype/Marker'
+
 		for row in rows:
 			annotKey = self.translateAnnotKey(row[annotKeyCol])
 
@@ -469,11 +483,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
 				'_Vocab_key', 'name')
 
-			# use termID and markerKey to distinguish genotypes
-			# with multiple allele pairs and different markers
-#			annotationKey = getNewAnnotationKey (annotKey, 
-#				termID, markerKey, 'MP/Marker')
-
 			annotationKey = tmsKeyGenerator.getKey (annotKey,
 				termID = termID,
 				markerKey = markerKey,
@@ -482,11 +491,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			if done.has_key(annotationKey):
 				continue
 			done[annotationKey] = 1
-
-			annotTypeKey = row[typeKeyCol]
-			annotType = Gatherer.resolve (row[typeKeyCol],
-				'voc_annottype', '_AnnotType_key', 'name')
-			annotType = annotType.replace ('Genotype', 'Marker')
 
 			aRow = [ annotationKey, None, None, vocab,
 				row[termCol], termID, None, 'Marker',
@@ -513,6 +517,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Pulled %d MP terms up to markers' % \
 			len(aRows) )
+
+		self.results[9] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory from result set 9')
+
 		return aRows, mRows, sRows
 
 	def buildQuery10Rows (self, aRows, mRows, sRows, byVocab, byAnnotType,
@@ -581,6 +591,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Pulled in %d Protein Ontology terms' % \
 			len(rows) )
+
+		self.results[10] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug('Freed memory from result set 10')
 
 		return aRows, mRows, sRows
 
@@ -672,6 +687,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Pulled %d OMIM terms up to markers' % \
 			len(aRows) )
+
+		self.results[12] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory from result set 12')
+
 		return aRows, mRows, sRows
 
 	def cacheAnnotationData (self):
@@ -731,6 +752,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			i = i - 1
 
 		logger.debug ('Filtered out %d marker annotation rows' % ct) 
+
+		self.results[11] = (cols, [])
+		del rows
+		gc.collect()
+		logger.debug ('Freed memory for result set 11')
+
 		return mRows
 
 	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
@@ -1022,6 +1049,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 ###--- globals ---###
 
 cmds = [
+	# Note that we're excluding the two derived annotation types from most
+	# of these queries, as they're handled specially.  (This ensures that
+	# NOTs are removed.  If we want all the derived annotations available
+	# here -- with their original annotation types -- then we just need to
+	# remove the restrictions.)
+
 	# 0. vocab terms' primary IDs
 	'''select _Object_key,
 		accID
@@ -1046,9 +1079,12 @@ cmds = [
 		ve.inferredFrom,
 		ve._EvidenceTerm_key
 	from voc_evidence ve,
-		bib_citation_cache bc
+		bib_citation_cache bc,
+		voc_annot va
 	where ve._Refs_key = bc._Refs_key
-	order by ve._Annot_key, bc.numericPart''',
+		and ve._Annot_key = va._Annot_key
+		and va._AnnotType_key not in (%d, %d)
+	order by ve._Annot_key, bc.numericPart''' % (OMIM_MARKER, MP_MARKER),
 		
 	# 3. 'inferred from' IDs for each annotation/evidence pair
 	'''select ve._Annot_key,
@@ -1063,11 +1099,15 @@ cmds = [
 		ve._EvidenceTerm_key
 	from voc_evidence ve,
 		acc_accession aa,
-		acc_logicaldb ldb
+		acc_logicaldb ldb,
+		voc_annot va
 	where ve._AnnotEvidence_key = aa._Object_key
 		and aa._MGIType_key = 25
 		and aa._LogicalDB_key = ldb._LogicalDB_key
-	order by ve._AnnotEvidence_key, aa.prefixPart, aa.numericPart''',
+		and ve._Annot_key = va._Annot_key
+		and va._AnnotType_key not in (%d, %d)
+	order by ve._AnnotEvidence_key, aa.prefixPart, aa.numericPart''' % (
+		OMIM_MARKER, MP_MARKER),
 
 	# 4. get the set of IDs which are sequence IDs from NCBI, EMBL, and
 	# UniProt; for these, we will need to replace the logical database
@@ -1097,7 +1137,8 @@ cmds = [
 		voc_term vt
 	where va._AnnotType_key = vat._AnnotType_key
 		and va._Term_key = vt._Term_key
-	order by _Object_key''',
+		and va._AnnotType_key not in (%d, %d)
+	order by _Object_key''' % (OMIM_MARKER, MP_MARKER),
 
 	# 6. get all vocabularies
 	'''select _Vocab_key as myKey,
@@ -1117,30 +1158,26 @@ cmds = [
 	from voc_term
 	order by term''',
 
-	# 9. get MP annotations made to genotypes, and pull a brief
-	# set of info for them up through their alleles to their markers
-	# (only null qualifiers, to avoid NOT and "normal" annotations).
+	# 9. get the set of MP annotations that have been rolled up to markers
+	# (only keep null qualifiers, to avoid NOT and "normal" annotations).
 	'''select distinct va._Annot_key,
-		vt._Term_key,
-		vt.term,
-		aa.accID,
-		vt._Vocab_key,
-		gag._Marker_key,
+		va._Term_key,
+		t.term,
+		t._Vocab_key,
+		a.accID,
+		va._Object_key as _Marker_key,
 		va._AnnotType_key
-	from gxd_allelegenotype gag,
-		voc_annot va,
-		voc_term vt,
-		voc_term vq,
-		acc_accession aa
-	where gag._Genotype_key = va._Object_key
-		and va._AnnotType_key = 1002
-		and va._Term_key = vt._Term_key
-		and va._Qualifier_key = vq._Term_key
-		and va._Term_key = aa._Object_key
-		and aa._MGIType_key = 13
-		and aa.preferred = 1
-		and gag._Marker_key is not null
-		and vq.term is null''',
+	from voc_annot va,
+		voc_term t,
+		acc_accession a,
+		voc_term q
+	where va._AnnotType_key = %d
+		and va._Term_key = t._Term_key
+		and va._Term_key = a._Object_key
+		and a._MGIType_key = 13
+		and a.preferred = 1
+		and va._Qualifier_key = q._Term_key
+		and q.term is null''' % MP_MARKER,
 
 	# 10. get the Protein Ontology IDs for each marker, so we can convert
 	# them to be annotations
