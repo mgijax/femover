@@ -43,6 +43,10 @@ allMarkers = 0		# count of all markers which are organizers
 teasers = None		# dictionary of marker keys, referring to a list of
 			# marker keys for its teaser markers
 
+badRelationships = {}	# dictionary of relationship keys where the marker
+			# status of at least one marker is "withdrawn" (so we
+			# must skip these relationships)
+
 # generator for mi_key values, based on relationship key & reversed flag
 
 miGenerator = KeyGenerator.KeyGenerator('marker_interaction')
@@ -58,6 +62,7 @@ def initialize():
 	# set up global variables needed for processing
 
 	global maxMarkerKey, rowsPerMarker, allMarkers, teasers
+	global badRelationships
 
 	# find maximum marker key with interactions
 
@@ -100,6 +105,28 @@ def initialize():
 		categoryName[row[keyCol]] = row[nameCol]
 	
 	logger.debug('Got %d category names' % len(categoryName))
+
+	# look up the markers that have been withdrawn
+
+	cmd5 = '''select r._Relationship_key
+		from mgi_relationship r, mgi_relationship_category c
+		where r._Category_key = c._Category_key
+			and c.name = 'interacts_with'
+			and exists (select 1 from mrk_marker m
+				where r._Object_key_1 = m._Marker_key
+				and m._Marker_Status_key = 2)'''
+
+	cmd6 = cmd5.replace('_Object_key_1', '_Object_key_2')
+
+	badRelationships = {}
+
+	for cmd in [ cmd5, cmd6 ]:
+		(cols, rows) = dbAgnostic.execute(cmd)
+		for row in rows:
+			badRelationships[row[0]] = 1
+	
+	logger.debug('Found %d relationships with withdrawn markers' % \
+		len(badRelationships)) 
 
 	# restrict our set of cached J: numbers to only those cited in the
 	# relationship table
@@ -528,6 +555,10 @@ def expandInteractionRows(iCols, iRows, reverse = 0):
 	teased = {}
 
 	for iRow in iRows:
+		# skip relationships involving withdrawn markers
+		if badRelationships.has_key(iRow[relationshipCol]):
+			continue
+
 		interactionRowCount = interactionRowCount + 1
 
 		if reverse:
@@ -620,6 +651,10 @@ def expandPropertyRows (pCols, pRows, reverse = 0):
 	seqNumCol = dbAgnostic.columnNumber (pCols, 'sequenceNum') 
 
 	for pRow in pRows:
+		# skip relationships involving withdrawn markers
+		if badRelationships.has_key(pRow[keyCol]):
+			continue
+
 		if pRow[nameCol] == 'note':
 			propertyName = pRow[nameCol]
 		else:
