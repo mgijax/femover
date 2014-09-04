@@ -206,10 +206,16 @@ def getTeaserMarkers():
 	# number of rows where they are participants and add them, to get the
 	# total number of rows we'll need to process for each marker.
 
-	cmd1 = '''select _Object_key_2, count(1) as ct
-		from mgi_relationship
-		where _Category_key = %d
-		group by _Object_key_2''' % interactionKey
+	cmd1 = '''select r._Object_key_2, count(1) as ct
+		from mgi_relationship r
+		where r._Category_key = %d
+			and not exists (select 1 from mrk_marker m
+				where m._Marker_key = r._Object_key_2
+				and m._Marker_key = 2)
+			and not exists (select 1 from mrk_marker n
+				where n._Marker_key = r._Object_key_1
+				and n._Marker_key = 2)
+		group by r._Object_key_2''' % interactionKey
 
 	(cols, rows) = dbAgnostic.execute(cmd1)
 	keyCol = dbAgnostic.columnNumber (cols, '_Object_key_2')
@@ -301,18 +307,27 @@ def getTeaserMarkers():
 		# gather the related markers where the ones in our group are
 		# the organizers
 
-		cmd1 = '''select _Object_key_1, _Object_key_2
-			from mgi_relationship
-			where _Category_key = %d
-			and _Object_key_1 in (%s)''' % (interactionKey,
-				markers)
+		cmd1 = '''select r._Object_key_1, r._Object_key_2,
+				r._Relationship_key
+			from mgi_relationship r
+			where r._Category_key = %d
+				and not exists (select 1 from mrk_marker m
+					where m._Marker_key = r._Object_key_2
+					and m._Marker_Status_key = 2)
+				and r._Object_key_1 in (%s)''' % (
+				interactionKey, markers)
 
 		(cols1, rows1) = dbAgnostic.execute(cmd1)
 
 		organizerCol = dbAgnostic.columnNumber(cols1, '_Object_key_1')
 		participantCol = dbAgnostic.columnNumber(cols1, '_Object_key_2')
+		keyCol = dbAgnostic.columnNumber(cols1, '_Relationship_key')
 
 		for row in rows1:
+			if badRelationships.has_key(row[keyCol]):
+				# skip relationships with withdrawn markers
+				continue
+
 			organizer = row[organizerCol]
 			participant = row[participantCol]
 
@@ -332,7 +347,8 @@ def getTeaserMarkers():
 		# gather the related markers where the ones in our group are
 		# the participants
 
-		cmd2 = '''select distinct _Object_key_1, _Object_key_2
+		cmd2 = '''select distinct _Object_key_1, _Object_key_2,
+				_Relationship_key
 			from mgi_relationship
 			where _Category_key = %d
 			and _Object_key_2 in (%s)''' % (interactionKey,
@@ -342,8 +358,13 @@ def getTeaserMarkers():
 
 		organizerCol = dbAgnostic.columnNumber(cols2, '_Object_key_1')
 		participantCol = dbAgnostic.columnNumber(cols2, '_Object_key_2')
+		keyCol = dbAgnostic.columnNumber(cols2, '_Relationship_key')
 
 		for row in rows2:
+			if badRelationships.has_key(row[keyCol]):
+				# skip relationships with withdrawn markers
+				continue
+
 			organizer = row[organizerCol]
 			participant = row[participantCol]
 
@@ -364,6 +385,11 @@ def getTeaserMarkers():
 		# identify the three that will be its teasers.
 
 		for marker in group:
+			if not relatedMarkers.has_key(marker):
+				# if marker was withdrawn, it will have no
+				# related markers
+				continue
+
 			markerList = []
 
 			for relatedMarker in relatedMarkers[marker].keys():
