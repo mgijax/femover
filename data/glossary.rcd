@@ -4996,8 +4996,13 @@ definition=Used to describe an <A HREF="!FEWI_URL!glossary/enzyme">enzyme</A> or
 [ 
 key=theiler 
 displayName=Theiler Stage 
-definition=One of a standard set of stages describing mouse development. See the \ 
-<A HREF="http://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagecriteria.html">Table</A> of Theiler stages and the summary at Edinburgh. 
+definition=Theiler stages define mouse development by a set of morphological \
+criteria (Theiler, Karl. <i>The House Mouse: Atlas of Embryonic Development.</i> \
+New York: Springer-Verlag, 1989).  This staging scheme is used because embryos \
+at the same gestational age can have developed at different rates and therefore \
+exhibit different morphological characteristics.  Theiler stages may in some \
+cases correspond to a single gestation age, but more often cover a range of ages. \
+<i><a href="http://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagedefinition.html">More details</a></i>.
 ]
 
 [ 
