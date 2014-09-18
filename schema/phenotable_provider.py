@@ -2,7 +2,8 @@
 
 import Table
 
-# contains MP term information for the pheno summary table 
+# maps from genotypes (in phenotable_to_genotype) to the various providers
+# (in phenotable_center) of annotations for those genotypes
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -14,11 +15,11 @@ tableName = 'phenotable_provider'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	phenotable_provider_key		int		not null,
+	unique_key			int		not null,
 	phenotable_genotype_key		int		not null,
-        provider          varchar(255)    null,
-	provider_seq		int		not null,
-	PRIMARY KEY(phenotable_provider_key))''' % tableName
+        phenotyping_center_key		int	null,
+        interpretation_center_key	int	null,
+	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -27,17 +28,22 @@ indexes = {
 	'genotype_key' : 'create index %s on %s (phenotable_genotype_key)',
 }
 
+keys = {
+	'phenotyping_center_key' : ('phenotable_center', 'provider_key'),
+	'interpretation_center_key' : ('phenotable_center', 'provider_key'),
+}
+
 # index used to cluster data in the table
 clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'represents the data needed to render phenotype information on the allele and genotype detail pages ',
+	Table.TABLE : 'includes pairs of providers for annotations to genotypes (used for the allele and genotype detail pages); there can be multiple rows per genotype',
 	Table.COLUMN : {
-		'phenotable_provider_key' : 'unique key identifying this row',
+		'unique_key' : 'unique key identifying this row',
 		'phenotable_genotype_key' : 'key for corresponding genotype object',
-		'provider' : 'provider name',
-		'provider_seq' : 'sequence for the corresponding provider',
+		'phenotyping_center_key' : 'identifies the provider serving as phenotyping center',
+		'interpretation_center_key' : 'identifies the provider serving as data interpretation center',
 		},
 	}
 
