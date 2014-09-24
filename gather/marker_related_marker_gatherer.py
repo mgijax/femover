@@ -268,7 +268,9 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 ###--- globals ---###
 
 cmds = [
-	# 0. basic marker-to-marker relationship data
+	# 0. basic marker-to-marker relationship data (only for categories
+	# where both objects are markers, and only for markers which are
+	# current or interim)
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_1 as marker_key,
@@ -288,13 +290,17 @@ cmds = [
 			voc_term e,
 			acc_accession bc,
 			mgi_synonym s,
-			mgi_synonymtype st
+			mgi_synonymtype st,
+			mrk_marker m2
 		where c._Category_key = r._Category_key
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
+			and r._Object_key_1 = m2._Marker_key
+			and m2._Marker_Status_key in (1,3)
 			and r._Object_key_2 = m._Marker_key
 			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
+			and m._Marker_Status_key in (1,3)
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
@@ -311,7 +317,9 @@ cmds = [
 			and r._Category_key != 1001
 		order by r._Object_key_1''',
 
-	# 1. reversed marker-to-marker relationship data
+	# 1. reversed marker-to-marker relationship data (only for categories
+	# with markers for both object types, and only including data for
+	# markers which are current or interim)
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_2 as marker_key,
@@ -331,13 +339,17 @@ cmds = [
 			voc_term e,
 			acc_accession bc,
 			mgi_synonym s,
-			mgi_synonymtype st
+			mgi_synonymtype st,
+			mrk_marker m2
 		where c._Category_key = r._Category_key
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
+			and r._Object_key_2 = m2._Marker_key
+			and m2._Marker_Status_key in (1,3)
 			and r._Object_key_1 = m._Marker_key
 			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
+			and m._Marker_Status_key in (1,3)
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
@@ -354,30 +366,54 @@ cmds = [
 			and r._Category_key != 1001
 		order by r._Object_key_2''',
 
-	# 2. properties
+	# 2. properties (for relationships involving two markers -- except
+	# interaction relationships -- where those two markers are either
+	# current or interim)
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
                         p.sequenceNum
                 from mgi_relationship_property p,
 			voc_term t,
-			mgi_relationship r
+			mgi_relationship r,
+			mgi_relationship_category c,
+			mrk_marker m1,
+			mrk_marker m2
 		where p._PropertyName_key = t._Term_key
 			and p._Relationship_key = r._Relationship_key
 			and r._Category_key != 1001
+			and r._Category_key = c._Category_key
+			and c._MGIType_key_1 = 2
+			and c._MGIType_key_2 = 2
+			and r._Object_key_1 = m1._Marker_key
+			and m1._Marker_Status_key in (1,3)
+			and r._Object_key_2 = m2._Marker_key
+			and m2._Marker_Status_key in (1,3)
                 order by p._Relationship_key, p.sequenceNum''',
 
-	# 3. properties for reverse relationships
+	# 3. properties for reverse relationships (for relationships involving
+	# two markers -- except interaction relationships -- where those two
+	# markers are either current or interim)
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
                         p.sequenceNum
                 from mgi_relationship_property p,
 			voc_term t,
-			mgi_relationship r
+			mgi_relationship r,
+			mgi_relationship_category c,
+			mrk_marker m1,
+			mrk_marker m2
 		where p._PropertyName_key = t._Term_key
 			and p._Relationship_key = r._Relationship_key
 			and r._Category_key != 1001
+			and r._Category_key = c._Category_key
+			and c._MGIType_key_1 = 2
+			and c._MGIType_key_2 = 2
+			and r._Object_key_1 = m1._Marker_key
+			and m1._Marker_Status_key in (1,3)
+			and r._Object_key_2 = m2._Marker_key
+			and m2._Marker_Status_key in (1,3)
                 order by p._Relationship_key, p.sequenceNum''',
 
 	# 4. relationship notes (if needed for display)
