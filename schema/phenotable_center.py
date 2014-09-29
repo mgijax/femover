@@ -16,7 +16,7 @@ tableName = 'phenotable_center'
 createStatement = '''CREATE TABLE %s  ( 
 	center_key	int		not null,
 	name		varchar(255)	not null,
-	definition	text		null,
+	abbreviation	text		null,
 	sequence_num	int		not null,
 	PRIMARY KEY(center_key))''' % tableName
 
@@ -39,7 +39,7 @@ comments = {
 	Table.COLUMN : {
 		'center_key' : 'unique key for this table',
 		'name' : 'center name',
-		'definition' : 'longer textual description of this center',
+		'abbreviation' : 'shorter code for this center',
 		'sequence_num' : 'orders the various centers in this table',
 		},
 	Table.INDEX : {
