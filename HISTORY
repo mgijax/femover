@@ -1,3 +1,19 @@
+TAG: femover-5-2-0-1
+DATE: 9/15/14
+STAFF: pf
+CHANGES: alpha tags
+
+TAG: femover-5-1-9-8
+DATE: 09/04/2014
+STAFF: jsb
+CHANGES: another round of fixes re: withdrawn markers with interactions
+
+TAG: femover-5-1-9-7
+DATE: 09/04/2014
+STAFF: jsb
+CHANGES: updated marker_interaction_gatherer.py to skip relationships with
+  withdrawn markers
+
 TAG: femover-tr11674-BP
 DATE: 08/14/14
 STAFF: oblod

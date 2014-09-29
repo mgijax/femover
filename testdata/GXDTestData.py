@@ -5,6 +5,9 @@ from TestData import *
 
 # some of these require complex data, so we can create some temp tables
 TempTables = [
+	
+	"drop view if exists tmp_gxdview",
+    "create view tmp_gxdview as select * from gxd_expression where isforgxd=1 and _emaps_key is not null",
 	# temp table mapping _structure_key to emaps_term
 	"""
 	DROP TABLE IF EXISTS tmp_emaps_ad
@@ -72,49 +75,49 @@ Queries = [
 {	ID:"RNaseProtectionResultCount",
 	DESCRIPTION:"Assay Result count for RNaseProtection assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RNase protection'
+        select count(*) from tmp_gxdview ge , gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='RNase protection'
 	"""
 },
 {	ID:"WesternBlotResultCount",
 	DESCRIPTION:"Assay Result count for Western Blot assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Western blot'
+        select count(*) from tmp_gxdview ge , gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='Western blot'
 	"""
 },
 {	ID:"NorthernBlotResultCount",
 	DESCRIPTION:"Assay Result count for Northern Blot assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Northern blot'
+        select count(*) from tmp_gxdview ge , gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='Northern blot'
 	"""
 },
 {	ID:"NucleaseS1ResultCount",
 	DESCRIPTION:"Assay Result count for Nuclease S1 assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Nuclease S1'
+        select count(*) from tmp_gxdview ge , gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='Nuclease S1'
 	"""
 },
 {	ID:"RT-PCRResultCount",
 	DESCRIPTION:"Assay Result count for RT-PCR assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RT-PCR'
+        select count(*) from tmp_gxdview ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='RT-PCR'
 	"""
 },
 {	ID:"InSituKnockInResultCount",
 	DESCRIPTION:"Assay Result count for In situ knockin assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='In situ reporter (knock in)'
+        select count(*) from tmp_gxdview ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='In situ reporter (knock in)'
 	"""
 },
 {	ID:"ImmunohistochemistryResultCount",
 	DESCRIPTION:"Assay Result count for Immunohistochemistry assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='Immunohistochemistry'
+        select count(*) from tmp_gxdview ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='Immunohistochemistry'
 	"""
 },
 {	ID:"RNAInSituResultCount",
 	DESCRIPTION:"Assay Result count for RNA in situ Blot assay type",
 	SQLSTATEMENT:"""
-        select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and ge.isforgxd=1 and gt.assaytype='RNA in situ'
+        select count(*) from tmp_gxdview ge, gxd_assaytype gt where ge._assaytype_key=gt._assaytype_key and gt.assaytype='RNA in situ'
 	"""
 },
 
@@ -122,31 +125,31 @@ Queries = [
 {	ID:"ts6ResultCount",
 	DESCRIPTION:"Assay Result count for Theiler Stage 6",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1 and gs._stage_key=6
+	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key=6
 	"""
 },
 {	ID:"allResults",
 	DESCRIPTION:"count of all gxd results",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge join tmp_emaps_ad ead on ead._structure_key=ge._structure_key, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1
+	select count(*) from tmp_gxdview ge
 	"""
 },
 {	ID:"ts6or7ResultCount",
 	DESCRIPTION:"Assay Result count for TS 6 or 7",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1 and gs._stage_key in (6,7)
+	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key in (6,7)
 	"""
 },
 {	ID:"ts28ResultCount",
 	DESCRIPTION:"Assay Result count for TS 28",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1 and gs._stage_key=28
+	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key=28
 	"""
 },
 {	ID:"allGenes",
 	DESCRIPTION:"Count of all GXD markers",
 	SQLSTATEMENT:"""
-	select count(distinct _marker_key) from gxd_expression ge, gxd_Structure gs where ge._structure_key=gs._structure_key and ge.isforgxd=1
+	select count(distinct _marker_key) from tmp_gxdview ge
 	"""
 },
 
@@ -154,19 +157,19 @@ Queries = [
 {	ID:"age2-3ResultCount",
 	DESCRIPTION:"Assay Result count for ages 2.0,2.5,3.0",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_Expression where isforgxd=1 and (agemin <3.25 and agemax >=1.75)
+	select count(*) from tmp_gxdview where (agemin <3.25 and agemax >=1.75)
 	"""
 },
 {	ID:"age5and6and7ResultCount",
 	DESCRIPTION:"Assay Result count for ages 5.0,6.0,7.0",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_Expression where isforgxd=1 and ((agemin <5.25 and agemax >=4.75) or (agemin <6.25 and agemax >=5.75) or (agemin <7.25 and agemax >=6.75))
+	select count(*) from tmp_gxdview where ((agemin <5.25 and agemax >=4.75) or (agemin <6.25 and agemax >=5.75) or (agemin <7.25 and agemax >=6.75))
 	"""
 },
 {	ID:"age1and4ResultCount",
 	DESCRIPTION:"Result count for ages 1.0 and 4.0",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_Expression where isforgxd=1 and ((agemin <1.25 and agemax >=0.75) or (agemin <4.25 and agemax >=3.75))
+	select count(*) from tmp_gxdview where ((agemin <1.25 and agemax >=0.75) or (agemin <4.25 and agemax >=3.75))
 	"""
 },
 ]
@@ -233,20 +236,18 @@ Queries.extend([
 {	ID:"resultCountShhTS21",
 	DESCRIPTION:"Count of results for Shh and TS21",
 	SQLSTATEMENT:"""
-	select count(*) from gxd_expression ge, mrk_marker m, gxd_structure s 
+	select count(*) from tmp_gxdview ge, mrk_marker m, gxd_structure s 
 	where m._marker_key=ge._marker_key
 	    and s._structure_key=ge._structure_key
 	    and m.symbol='Shh'
-	    and s._stage_key=21
-	    and ge.isforgxd=1;
+	    and s._stage_key=21;
 	"""
 },
 {	ID:"resultCountPax*Immunohistochemistry",
 	DESCRIPTION:"Count of results for pax* and Immunohistochemistry",
 	SQLSTATEMENT:"""
-	Select count(distinct ge._expression_key) from mrk_marker m, gxd_Expression ge, mrk_label ml 
-	where ge.isforgxd=1 
-	    and ge._assaytype_key=6
+	Select count(distinct ge._expression_key) from mrk_marker m, tmp_gxdview ge, mrk_label ml 
+	where ge._assaytype_key=6
 	    and ge._marker_key=m._marker_key 
 	    and ml._marker_key=m._marker_key and ml.label ilike 'pax%'
 	    and ml.labeltypename in ('current name','current symbol','synonym','related synonym');
@@ -255,9 +256,8 @@ Queries.extend([
 {	ID:"geneCountPax*Immunohistochemistry",
 	DESCRIPTION:"Count of genes for pax* and Immunohistochemistry",
 	SQLSTATEMENT:"""
-	Select count(distinct ge._marker_key) from mrk_marker m, gxd_Expression ge, mrk_label ml 
-	where ge.isforgxd=1 
-	    and ge._assaytype_key=6
+	Select count(distinct ge._marker_key) from mrk_marker m, tmp_gxdview ge, mrk_label ml 
+	where ge._assaytype_key=6
 	    and ge._marker_key=m._marker_key 
 	    and ml._marker_key=m._marker_key and ml.label ilike 'pax%'
 	    and ml.labeltypename in ('current name','current symbol','synonym','related synonym');
@@ -266,9 +266,8 @@ Queries.extend([
 {	ID:"resultCountTS14NorthernBlot",
 	DESCRIPTION:"Count of Results for TS14 and Northern Blot",
 	SQLSTATEMENT:"""
-	select count(distinct ge._expression_key) from gxd_expression ge, gxd_structure s
-	where ge.isforgxd=1
-	    and ge._structure_key=s._structure_key
+	select count(distinct ge._expression_key) from tmp_gxdview ge, gxd_structure s
+	where ge._structure_key=s._structure_key
 	    and s._stage_key=14
 	    and ge._assaytype_key=2;
 	"""
@@ -276,9 +275,8 @@ Queries.extend([
 {	ID:"geneCountTS14NorthernBlot",
 	DESCRIPTION:"Count of genes for TS14 and Northern Blot",
 	SQLSTATEMENT:"""
-	select count(distinct ge._marker_key) from gxd_expression ge, gxd_structure s
-	where ge.isforgxd=1
-	    and ge._structure_key=s._structure_key
+	select count(distinct ge._marker_key) from tmp_gxdview ge, gxd_structure s
+	where ge._structure_key=s._structure_key
 	    and s._stage_key=14
 	    and ge._assaytype_key=2;
 	"""
@@ -288,9 +286,8 @@ Queries.extend([
 ###--- Nomenclature query Tests
 # these share a similar query syntax, let's make a template
 NOMEN_TEMPLATE_SQL="""
-	Select count(%s) from mrk_marker m, gxd_Expression ge, mrk_label ml 
-	where ge.isforgxd=1 
-	    and ge._marker_key=m._marker_key 
+	Select count(%s) from mrk_marker m, tmp_gxdview ge, mrk_label ml 
+	where ge._marker_key=m._marker_key 
 	    and ml._marker_key=m._marker_key and ml.label ilike '%s'
 	    and ml.labeltypename in ('current name','current symbol','synonym','related synonym');
 """
@@ -318,20 +315,18 @@ Queries.extend([
 	)
 	select count(distinct _imagepane_key) pane_count
 	from ((select distinct ga._imagepane_key,ga._marker_key 
-		from gxd_assay ga,gxd_expression ge,pax6_markers pm,img_imagepane iip,img_image ii
+		from gxd_assay ga,tmp_gxdview ge,pax6_markers pm,img_imagepane iip,img_image ii
 		where ga._imagepane_key is not null and ge._assay_key=ge._assay_key
-			and ge.isforgxd=1
 			and pm._marker_key=ga._marker_key
 			and iip._imagepane_key=ga._imagepane_key
 			and ii._image_key=iip._image_key
 			and ii.xdim is not null) UNION 
 	    (select distinct ipv._imagepane_key,ga._marker_key 
 		from gxd_isresultimage_view ipv,gxd_specimen sp,gxd_assay ga,
-			gxd_expression ge,pax6_markers pm,img_imagepane iip,img_image ii
+			tmp_gxdview ge,pax6_markers pm,img_imagepane iip,img_image ii
 		where ga._assay_key=sp._assay_key
 			and ipv._specimen_key=sp._specimen_key
 			and ga._assay_key=ge._assay_key
-			and ge.isforgxd=1
 			and pm._marker_key=ga._marker_key
 			and iip._imagepane_key=ipv._imagepane_key
 			and ii._image_key=iip._image_key
@@ -369,9 +364,8 @@ Queries.extend([
 {	ID:"nomenNotSymbols",
 	DESCRIPTION:"Finds all the marker symbols for the query 'not'",
 	SQLSTATEMENT:"""
-	Select distinct m.symbol from mrk_marker m, gxd_Expression ge, mrk_label ml 
-	where ge.isforgxd=1 
-	    and ge._marker_key=m._marker_key 
+	Select distinct m.symbol from mrk_marker m, tmp_gxdview ge, mrk_label ml 
+	where ge._marker_key=m._marker_key 
 	    and ml._marker_key=m._marker_key and (ml.label ~* '[^\\\\d\\\\w]not[^\\\\d\\\\w]' or ml.label ilike 'not')
 	    and ml.labeltypename in ('current name','current symbol','synonym','related synonym') order by m.symbol;
 
@@ -383,8 +377,8 @@ Queries.extend([
 ###--- Mutants Query Tests
 # NOTE: most of these queries return multi-valued (i.e. 2 column) results. These get translted into an html table in concordion
 MUTANTS_BY_GENE_TEMPLATE_SQL = """
-	Select acc.accid,count(distinct _expression_key) from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
-	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+	Select acc.accid,count(distinct _expression_key) from tmp_gxdview ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge._genotype_key=ag._genotype_key 
 		and ml._marker_key=ag._marker_key and ml.label = '%s' 
 		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
 		and acc._object_key=ge._assay_key and acc._mgitype_key=8 and acc.preferred=1 
@@ -410,8 +404,8 @@ Queries.extend([
 {	ID:"resultCountMutantAscl3NomenAscl3GroupByAssayId",
 	DESCRIPTION:"Gets result count for mutant Ascl3, and Nomen Ascl3 grouped by assayid",
 	SQLSTATEMENT:"""
-	Select acc.accid,count(distinct _expression_key) from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc,mrk_marker m 
-	where ge._marker_key=m._marker_key and m.symbol='Ascl3' and ge.isforgxd=1 
+	Select acc.accid,count(distinct _expression_key) from tmp_gxdview ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc,mrk_marker m 
+	where ge._marker_key=m._marker_key and m.symbol='Ascl3'
 		and ge._genotype_key=ag._genotype_key and ml._marker_key=ag._marker_key 
 		and ml.label = 'Ascl3' and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
 		and acc._object_key=ge._assay_key and acc._mgitype_key=8 and acc.preferred=1 
@@ -422,8 +416,8 @@ Queries.extend([
 	DESCRIPTION:"Gets result count for 'beta catenin' grouped by assayid",
 	SQLSTATEMENT:"""
 	Select acc.accid,count(distinct _expression_key) 
-	from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
-	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+	from tmp_gxdview ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge._genotype_key=ag._genotype_key 
 		and ml._marker_key=ag._marker_key 
 		and ml.label @@ 'beta & catenin'
 		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
@@ -436,8 +430,8 @@ Queries.extend([
 	DESCRIPTION:"Gets result count for 'Krox-20' grouped by assayid",
 	SQLSTATEMENT:"""
 	Select acc.accid,count(distinct _expression_key) 
-	from gxd_Expression ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
-	where ge.isforgxd=1 and ge._genotype_key=ag._genotype_key 
+	from tmp_gxdview ge, gxd_allelegenotype ag,mrk_label ml,acc_accession acc 
+	where ge._genotype_key=ag._genotype_key 
 		and ml._marker_key=ag._marker_key 
 		and ml.label @@ 'Krox-20'
 		and ml.labeltypename in ('current name','current symbol','synonym','related synonym') 
@@ -449,7 +443,7 @@ Queries.extend([
 {	ID:"wildtypeSpecimenCount",
 	DESCRIPTION:"non-insitu reporters specimens that are wild type",
 	SQLSTATEMENT:"""
-	select count(distinct e._assay_key) from GXD_Expression e, GXD_Specimen g 
+	select count(distinct e._assay_key) from tmp_gxdview e, GXD_Specimen g 
 	where e._assaytype_key != 9 
 		and e._assay_key = g._assay_key 
 		and not exists (select 1 from GXD_AlleleGenotype ag where g._Genotype_key = ag._Genotype_key)
@@ -458,7 +452,7 @@ Queries.extend([
 {	ID:"wildtypeGelLaneCount",
 	DESCRIPTION:"non-insitu reporters gel lanes that are wild type",
 	SQLSTATEMENT:"""
-	select count(distinct e._assay_key) from GXD_Expression e, GXD_GelLane g 
+	select count(distinct e._assay_key) from tmp_gxdview e, GXD_GelLane g 
 	where e._assaytype_key != 9 
 		and e._assay_key = g._assay_key 
 		and g._gelcontrol_key = 1 
@@ -471,7 +465,7 @@ Queries.extend([
 	select ag._genotype_key into temporary tmp_genotype 
 		from GXD_AllelePair ag group by ag._Genotype_key 
 		having count(*) = 1;create index idx1 on tmp_genotype(_genotype_key);
-	select count(distinct e._assay_key )from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+	select count(distinct e._assay_key )from tmp_gxdview e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
 	where e._assaytype_key = 9 
 		and e._genotype_key = ag._genotype_key 
 		and ag._genotype_key = agg._genotype_key 
@@ -484,15 +478,14 @@ Queries.extend([
 	DESCRIPTION:"count of all the new wild type results",
 	SQLSTATEMENT:"""
 	WITH tmp_genotype AS (select ag._genotype_key from GXD_AllelePair ag group by ag._Genotype_key having count(*) = 1),
-	new_wildtypes AS (select distinct e._expression_key from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
-		where e.isforgxd=1 
-			and e._assaytype_key = 9 
+	new_wildtypes AS (select distinct e._expression_key from tmp_gxdview e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+		where e._assaytype_key = 9 
 			and e._genotype_key = ag._genotype_key 
 			and ag._genotype_key = agg._genotype_key 
 			and agg._marker_key = e._marker_key 
 			and agg._allele_key = a._allele_key 
 			and a.iswildtype = 1),
-	old_wildtypes AS (select distinct ge._expression_key from gxd_Expression ge 
+	old_wildtypes AS (select distinct ge._expression_key from tmp_gxdview ge 
 		where ge.isforgxd=1 
 			and ge._assaytype_key!=9 
 			and not exists (select 1 from gxd_allelegenotype ag where ag._genotype_key=ge._genotype_key))
@@ -503,15 +496,14 @@ Queries.extend([
 	DESCRIPTION:"count of all wildtype results for Ascl3 grouped by assay id",
 	SQLSTATEMENT:"""
 	WITH tmp_genotype AS (select ag._genotype_key from GXD_AllelePair ag group by ag._Genotype_key having count(*) = 1),
-	new_wildtypes AS (select e.* from GXD_Expression e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
-		where e.isforgxd=1 
-		and e._assaytype_key = 9 
+	new_wildtypes AS (select e.* from tmp_gxdview e, tmp_genotype ag, GXD_AlleleGenotype agg, ALL_Allele a 
+		where e._assaytype_key = 9 
 		and e._genotype_key = ag._genotype_key 
 		and ag._genotype_key = agg._genotype_key 
 		and agg._marker_key = e._marker_key 
 		and agg._allele_key = a._allele_key 
 		and a.iswildtype = 1),
-	old_wildtypes AS (select ge.* from gxd_Expression ge 
+	old_wildtypes AS (select ge.* from tmp_gxdview ge 
 		where ge.isforgxd=1 
 			and ge._assaytype_key!=9 
 			and not exists (select 1 from gxd_allelegenotype ag where ag._genotype_key=ge._genotype_key))

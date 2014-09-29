@@ -18,6 +18,31 @@ index ea16f4f..f4f3559 100755
  
  # Purpose: to make any bcp file tweaks, in preparation for bulk load into
  #	Postgres:
+diff --git a/femover.patch b/femover.patch
+index 9839469..e69de29 100644
+--- a/femover.patch
++++ b/femover.patch
+@@ -1,20 +0,0 @@
+-diff --git a/control/mysqlConverter.sh b/control/mysqlConverter.sh
+-index 4f1a3f7..3681976 100755
+---- a/control/mysqlConverter.sh
+-+++ b/control/mysqlConverter.sh
+-@@ -1,4 +1,4 @@
+--#!/usr/bin/sh
+-+#!/bin/sh
+- 
+- # Purpose: currently a no-op; in the future, if processing of text files is
+- #	needed before loading them into MySQL, this is where it would go
+-diff --git a/control/postgresConverter.sh b/control/postgresConverter.sh
+-index ea16f4f..f4f3559 100755
+---- a/control/postgresConverter.sh
+-+++ b/control/postgresConverter.sh
+-@@ -1,4 +1,4 @@
+--#!/usr/bin/sh
+-+#!/bin/sh
+- 
+- # Purpose: to make any bcp file tweaks, in preparation for bulk load into
+- #	Postgres:
 diff --git a/schema/marker_link.py b/schema/marker_link.py
 index ce85f32..a123313 100755
 --- a/schema/marker_link.py
@@ -31,73 +56,3 @@ index ce85f32..a123313 100755
  		'use_new_window' : 'should this link open a new window/tab when clicked? (0/1)',
  		},
  	Table.INDEX : {
-diff --git a/Install b/Install
-index 7bd0f77..4fdc6b3 100755
---- a/Install
-+++ b/Install
-@@ -10,51 +10,51 @@ TOP=`pwd`
- 
- # if no Configuration file, bail out
- 
--if [ ! -f ${TOP}/Configuration ]; then
-+if [ ! -f "${TOP}/Configuration" ]; then
- 	echo "Missing Configuration file"
- 	exit 1
- fi
- 
- # source the Configuration file
- 
--. ${TOP}/Configuration
-+. "${TOP}/Configuration"
- echo "Sourced Configuration file"
- 
- # add/update links to config.py library
- 
--CONFIG=${TOP}/lib/python/config.py
-+CONFIG="${TOP}/lib/python/config.py"
- 
- for dir in gather control schema
- do
--	if [ -h ${TOP}/${dir}/config.py ]; then
--		rm ${TOP}/${dir}/config.py
-+	if [ -h "${TOP}/${dir}/config.py" ]; then
-+		rm "${TOP}/${dir}/config.py"
- 	fi
--	if [ -f ${TOP}/${dir}/config.pyc ]; then
--		rm ${TOP}/${dir}/config.pyc
-+	if [ -f "${TOP}/${dir}/config.pyc" ]; then
-+		rm "${TOP}/${dir}/config.pyc"
- 	fi
--	ln -s ${CONFIG} ${TOP}/${dir}/config.py 
-+	ln -s "${CONFIG}" "${TOP}/${dir}/config.py"
- 	echo "Created symlink: ${TOP}/${dir}/config.py"
- done
- 
- # back to top level...
- 
--cd ${TOP}
-+cd "${TOP}"
- 
- # if we don't have a data and a logs directory, make them
- 
--if [ ! -d ${DATA_DIR} ]; then
--	mkdir -p ${DATA_DIR}
-+if [ ! -d "${DATA_DIR}" ]; then
-+	mkdir -p "${DATA_DIR}"
- 	echo "Created data directory: ${DATA_DIR}"
- fi
- 
--if [ ! -d ${LOG_DIR} ]; then
--	mkdir ${LOG_DIR}
-+if [ ! -d "${LOG_DIR}" ]; then
-+	mkdir "${LOG_DIR}"
- 	echo "Created log directory: ${LOG_DIR}"
- fi
- 
- # update permissions on gatherers and controllers
- 
--chmod ug+x ${TOP}/gather/*Gatherer.py ${TOP}/control/*
-+chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*
- echo "Granted execute permissions for gatheres and control scripts"
- 
- echo "Finished"

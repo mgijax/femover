@@ -8,7 +8,8 @@ import logger
 
 ###--- Constants ---###
 
-MGI = 1				# logical db
+# logical db
+MGI = 1				
 OMIM = 15
 ENTREZ_GENE = 55
 HGNC = 64
@@ -17,18 +18,30 @@ ENSEMBL_GENE_MODEL = 60
 # preferred ordering for human/mouse links, by logical database
 LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
 
-MOUSE = 1			# organism
+# organism 
+MOUSE = 1			
 HUMAN = 2
 
-MARKER = 2			# MGI Type
+# MGI Type
+MARKER = 2			
 
-HOMOLOGY_CLUSTER = 9272150	# marker cluster type (vocab term)
+# marker cluster type (vocab term)
+HOMOLOGY_CLUSTER = 9272150	
 
-HOMOLOGY_LINK_GROUP = 'homology gene links'	# link group name
+# link group name
+HOMOLOGY_LINK_GROUP = 'homology gene links'	
+GXD_CHICKEN_EXPRESSION_LINK_GROUP = 'gxd chicken expression links'
+GXD_ZFIN_EXPRESSION_LINK_GROUP = 'gxd zfin expression links'
 
+# note type
+EXPRESSION_LINK_CHICKEN = 1043
+EXPRESSION_LINK_ZFIN = 1044
+
+# markup?
 NO_MARKUPS = 0
 HAS_MARKUPS = 1
 
+# open in a new window?
 NO_NEW_WINDOW = 0
 USE_NEW_WINDOW = 1
 
@@ -74,8 +87,7 @@ def sortResultSet (results, ldbKeyCol, markerKeyCol):
 
 	# reshuffle results into a new list based on newly-sorted 'sortable'
 	newList = []
-	for (markerKey, ldbKey, i) in sortable:
-		newList.append (results[i])
+	for (markerKey, ldbKey, i) in sortable:		newList.append (results[i])
 
 	return newList
 
@@ -366,15 +378,87 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 		logger.debug ('Stored %d other homology links' % seqNum)
 		return links
 
+	def getGxdChickenExpressionLinks (self):
+		# returns a list with one row for each link for links to
+		# homologous chicken markers, if they have expression
+		# Each row includes:
+		#	[ 'marker_key', 'link_group', 'sequence_num',
+		#	'associated_id', 'display_text', 'url', 'has_markups',
+		#	'use_new_window' ]
+
+		links = []
+
+		cols, rows = self.results[4]
+
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		chickSymbolCol = Gatherer.columnNumber (cols, 'chickSymbol')
+		urlCol = Gatherer.columnNumber (cols, 'note')
+
+		seqNum = 0
+
+		logger.debug ('Found %d chicken expression links' % len(rows))
+
+		for row in rows:
+
+			markerKey = row[markerKeyCol]
+			chickSymbol = row[chickSymbolCol]
+			url = row[urlCol]
+			seqNum = seqNum + 1
+
+			links.append ( [ markerKey, GXD_CHICKEN_EXPRESSION_LINK_GROUP,
+				seqNum, ' ', chickSymbol,
+				url, NO_MARKUPS, NO_NEW_WINDOW ] )
+
+		logger.debug ('Stored %d chicken expression links' % seqNum)
+		return links
+
+	def getGxdZfinExpressionLinks (self):
+		# returns a list with one row for each link for links to
+		# homologous zfin markers, if they have expression
+		# Each row includes:
+		#	[ 'marker_key', 'link_group', 'sequence_num',
+		#	'associated_id', 'display_text', 'url', 'has_markups',
+		#	'use_new_window' ]
+
+		links = []
+
+		cols, rows = self.results[5]
+
+		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
+		zfinSymbolCol = Gatherer.columnNumber (cols, 'zfinSymbol')
+		urlCol = Gatherer.columnNumber (cols, 'note')
+
+		seqNum = 0
+
+		logger.debug ('Found %d chicken expression links' % len(rows))
+
+		for row in rows:
+
+			markerKey = row[markerKeyCol]
+			zfinSymbol = row[zfinSymbolCol]
+			url = row[urlCol]
+			seqNum = seqNum + 1
+
+			links.append ( [ markerKey, GXD_ZFIN_EXPRESSION_LINK_GROUP,
+				seqNum, ' ', zfinSymbol,
+				url, NO_MARKUPS, NO_NEW_WINDOW ] )
+
+		logger.debug ('Stored %d zfin expression links' % seqNum)
+		return links
+
+
 	def collateResults (self):
 		self.finalColumns = [ 'marker_key', 'link_group',
 			'sequence_num', 'associated_id', 'display_text',
 			'url', 'has_markups', 'use_new_window' ]
 
 		self.finalResults = self.getHumanHomologyRows() + \
-			self.getMouseHomologyRows() + \
-			self.getOtherHomologyRows()
-		logger.debug ('Found %d total homology links' % \
+				    self.getMouseHomologyRows() + \
+				    self.getOtherHomologyRows() + \
+				    self.getGxdChickenExpressionLinks() + \
+				    self.getGxdZfinExpressionLinks()
+
+		logger.debug ('Found %d total links' % \
 			len(self.finalResults))
 		return
 
@@ -470,6 +554,43 @@ cmds = [
 --			and mcm._Cluster_key = mc._Cluster_key
 --			and mc._ClusterType_key = %d)''' % (
 		HUMAN, MOUSE, MARKER, ENTREZ_GENE, HOMOLOGY_CLUSTER),
+
+	# 4. GXD Marker Detail external links to chicken orthologs
+	'''select mmrk._Marker_key, mnc.note, 
+		cmrk.symbol as chickSymbol
+	from MGI_Note mn, MGI_NoteChunk mnc, MRK_Marker cmrk, MRK_Marker mmrk,
+		MRK_ClusterMember mcm, MRK_ClusterMember mmcm, MRK_Cluster mc
+	where mn._MGIType_key = 2
+  		and mn._Notetype_key = %d
+  		and mn._Note_key = mnc._Note_key
+  		and mn._Object_key = cmrk._Marker_key 
+  		and mn._Object_key = mcm._Marker_key 
+  		and mcm._Cluster_key = mc._Cluster_key
+  		and mc._ClusterType_key = %d
+  		and mmcm._Cluster_key = mc._Cluster_key 
+  		and mmcm._Marker_key = mmrk._Marker_key
+  		and mmrk._Organism_key = 1
+	order by cmrk.symbol
+	''' % (EXPRESSION_LINK_CHICKEN, HOMOLOGY_CLUSTER),
+
+	# 5. GXD Marker Detail external links to zfin orthologs
+	'''select mmrk._Marker_key, mnc.note, 
+		zmrk.symbol as zfinSymbol
+	from MGI_Note mn, MGI_NoteChunk mnc, MRK_Marker zmrk, MRK_Marker mmrk,
+		MRK_ClusterMember mcm, MRK_ClusterMember mmcm, MRK_Cluster mc
+	where mn._MGIType_key = 2
+  		and mn._Notetype_key = %d
+  		and mn._Note_key = mnc._Note_key
+  		and mn._Object_key = zmrk._Marker_key 
+  		and mn._Object_key = mcm._Marker_key 
+  		and mcm._Cluster_key = mc._Cluster_key
+  		and mc._ClusterType_key = %d
+  		and mmcm._Cluster_key = mc._Cluster_key 
+  		and mmcm._Marker_key = mmrk._Marker_key
+  		and mmrk._Organism_key = 1
+	order by zmrk.symbol
+	''' % (EXPRESSION_LINK_ZFIN, HOMOLOGY_CLUSTER),
+
 	]
 
 # order of fields (from the query results) to be written to the
