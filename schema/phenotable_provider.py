@@ -26,11 +26,13 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'genotype_key' : 'create index %s on %s (phenotable_genotype_key)',
+	'pc_key' : 'create index %s on %s (phenotyping_center_key)',
+	'ic_key' : 'create index %s on %s (interpretation_center_key)',
 }
 
 keys = {
-	'phenotyping_center_key' : ('phenotable_center', 'provider_key'),
-	'interpretation_center_key' : ('phenotable_center', 'provider_key'),
+	'phenotyping_center_key' : ('phenotable_center', 'center_key'),
+	'interpretation_center_key' : ('phenotable_center', 'center_key'),
 }
 
 # index used to cluster data in the table
@@ -48,7 +50,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, {}, comments,
+table = Table.Table (tableName, createStatement, indexes, keys, comments,
 		clusteredIndex)
 
 ###--- Main program ---###
