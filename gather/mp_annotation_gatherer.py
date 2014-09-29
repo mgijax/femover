@@ -64,6 +64,9 @@ INTERPRETATION_CENTER = 12798366
 # "Phenotyping Center" term key
 PHENOTYPING_CENTER = 12798367
 
+# maximum term key from database
+MAX_TERM_KEY = 0
+
 ###--- Functions ---###
 # resolve a jnumber into the source display value
 # QUESTION: should we be using jnum ID to determine this?
@@ -111,6 +114,10 @@ class LabCache:
 
 		self.byName[term] = lab
 		self.byKey[key] = lab
+
+		abbrev = lab.getAbbreviation()
+		if abbrev:
+			self.byName[abbrev] = lab
 		return
 
 	def getByKey (self, termKey):
@@ -140,11 +147,6 @@ class LabInfo:
 		self.sequenceNum = sequenceNum
 		self.term = term
 		self.abbreviation = abbreviation
-		self.definition = None
-		return
-
-	def setDefinition (self, definition):
-		self.definition = definition
 		return
 
 	def getTermKey (self):
@@ -158,9 +160,6 @@ class LabInfo:
 
 	def getAbbreviation (self):
 		return self.abbreviation
-
-	def getDefinition (self):
-		return self.definition
 
 class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for mp_annotation table 
@@ -528,7 +527,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
                                 call = 0
                         jnum = row[jnumCol]
-                        sourceDisplay = self.getSource(evidenceKey)
+                        sourceDisplay = self.getSource(evidenceKey, jnum)
 			sex = row[sexCol]
 			if sex not in SEX_SORT_ORDER:
 				logger.info("invalid sex value found: %s,annotKey=%s,genotypeKey=%s"%(sex,annotKey,gkey))
@@ -663,7 +662,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
                                 call = 0
                         jnum = row[jnumCol]
-                        sourceDisplay = self.getSource(row[evidKeyCol])
+                        sourceDisplay = self.getSource(row[evidKeyCol], jnum)
 			sex = row[sexCol]
 			if sex not in SEX_SORT_ORDER:
 				logger.info("invalid sex value found: %s,annotKey=%s,genotypeKey=%s"%(sex,annotKey,gkey))
@@ -937,22 +936,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	def buildCenters (self):
 		# gather the phenotyping / data interpretation centers
 
-		# cache definitions
+		# prepare for fake terms
 
-		cols, rows = self.results[9]
-
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		chunkCol = Gatherer.columnNumber (cols, 'note')
-
-		defs = {}
-
-		for row in rows:
-			key = row[termKeyCol]
-
-			if defs.has_key(key):
-				defs[key] = defs[key] + row[chunkCol]
-			else:
-				defs[key] = row[chunkCol]
+		mgiKey = MAX_TERM_KEY + 1
+		europhenomeKey = MAX_TERM_KEY + 2
 
 		# populate basic lab data
 
@@ -962,6 +949,18 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		termCol = Gatherer.columnNumber (cols1, 'term')
 		abbrevCol = Gatherer.columnNumber (cols1, 'abbreviation')
 		sequenceNumCol = Gatherer.columnNumber (cols1, 'sequenceNum')
+
+		fakeRows = [ (mgiKey, MGI, MGI, mgiKey),
+			(europhenomeKey, 'EuroPhenome', EUROPHENOME,
+				europhenomeKey) ]
+
+		for (key, center, abbrev, seqNum) in fakeRows:
+			row = [ '', '', '', '' ]
+			row[termKeyCol] = key
+			row[sequenceNumCol] = seqNum
+			row[termCol] = center
+			row[abbrevCol] = abbrev
+			rows.append(row)
 
 		# Not only do we need to build a set of output rows for the
 		# phenotable_center table, we also need to cache a set of 
@@ -975,20 +974,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			term = row[termCol]
 			seqNum = row[sequenceNumCol]
 			abbrev = row[abbrevCol]
-			definition = None
 
-			lab = LabInfo (termKey, term, seqNum, abbrev)
+			self.labCache.add(LabInfo (termKey, term, seqNum,
+				abbrev) )
 
-			if defs.has_key(termKey):
-				definition = defs[termKey]
-				lab.setDefinition(definition)
-
-			self.labCache.add(lab)
-
-			outRows.append ([ termKey, term, definition, seqNum ])
+			outRows.append ([ termKey, term, abbrev, seqNum ])
 
 		self.results[8] = (cols1, [])
-		self.results[9] = (cols, [])
 
 		del rows
 		gc.collect()
@@ -1016,7 +1008,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# evidence record, as we'll need these later.  Assumes that we
 		# have already called buildCenters().
 
-		cols, rows = self.results[10]
+		cols, rows = self.results[9]
 
 		keyCol = Gatherer.columnNumber (cols, '_AnnotEvidence_key')
 		termCol = Gatherer.columnNumber (cols, '_PropertyTerm_key')
@@ -1049,12 +1041,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached centers for %d evidence rows' % \
 			len(rows))
 
-		self.results[10] = (cols, [])
+		self.results[9] = (cols, [])
 		del rows
 		gc.collect()
 		return
 
-	def getSource (self, evidenceKey):
+	def getSource (self, evidenceKey, jnum):
 		# return a tuple identifying the source for the given
 		# _AnnotEvidence_key as:
 		#    (term key of phenotyping center,
@@ -1067,6 +1059,19 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			pc = self.phenotypingCenters[evidenceKey]
 		if self.interpretationCenters.has_key(evidenceKey):
 			ic = self.interpretationCenters[evidenceKey]
+
+		# fallback on old rules, if no properties
+
+		if (ic == None) and (pc == None):
+			if jnum == SANGER_JNUM:
+				icText = WTSI
+			elif jnum == EUROPHENOME_JNUM:
+				icText = EUROPHENOME
+			else:
+				icText = MGI
+
+			labInfo = self.labCache.getByName(icText)
+			ic = labInfo.getTermKey()
 
 		return (pc, ic)
 
@@ -1085,7 +1090,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# gather the provider data for HTMP Phenotyping Centers
 		logger.debug('preparing to gather phenotyping center data')
-		centerCols = [ 'center_key', 'name', 'definition',
+		centerCols = [ 'center_key', 'name', 'abbreviation',
 			'sequence_num' ]
 		centerRows = self.buildCenters()
 		logger.debug('built %d phenotyping centers' % len(centerRows))
@@ -1171,6 +1176,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	# this is a function that gets called for every gatherer
 	def collateResults (self):
+		global MAX_TERM_KEY
+
+		cols, rows = self.results[10]
+		MAX_TERM_KEY = rows[0][0]
+		logger.debug('found max term key: %d' % MAX_TERM_KEY)
 
 		# process all queries
 		self.buildRows()
@@ -1369,15 +1379,7 @@ cmds = [
 	where _Vocab_key = %d
 	order by sequenceNum''' % PHENO_CENTER_VOCAB,
 
-	# 9. gather definitions for the phenotyping centers and data
-	# interpretation centers
-	'''select x._Term_key, x.note, x.sequenceNum
-	from voc_term t, voc_text x
-	where t._Term_key = x._Term_key
-		and t._Vocab_key = %d
-	order by x._Term_key, x.sequenceNum''' % PHENO_CENTER_VOCAB,
-
-	# 10. get phenotyping/interpretation centers for MP annotations made
+	# 9. get phenotyping/interpretation centers for MP annotations made
 	# to genotypes (only null qualifiers, to avoid NOT and "normal"
 	# annotations).
 	'''
@@ -1392,6 +1394,9 @@ cmds = [
 		and ve._annotevidence_key=vep._annotevidence_key
                 and vep._propertyterm_key in (%d, %d)
 	''' % (INTERPRETATION_CENTER, PHENOTYPING_CENTER),
+
+	# 10. get the maximum term key, so we know where to insert fake terms
+	'select max(_Term_key) from voc_term',
 	]
 
 ###--- Table Definitions ---###
@@ -1450,7 +1455,7 @@ files = [
 			'genotype_id','cell_seq','genotype_seq'],
 		'diseasetable_disease_cell'),
 	('phenotable_center', 
-		[ 'center_key', 'name', 'definition', 'sequence_num' ],
+		[ 'center_key', 'name', 'abbreviation', 'sequence_num' ],
 		'phenotable_center'),
 	]
 
@@ -1463,4 +1468,5 @@ gatherer = AnnotationGatherer (files, cmds)
 # pass in our particular gatherer
 if __name__ == '__main__':
 	Gatherer.main (gatherer)
+	logger.debug('finished gatherer...  exiting')
 
