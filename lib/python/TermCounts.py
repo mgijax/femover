@@ -42,6 +42,9 @@ markersWithCreData = None
 # have we called _initializeMarkerSets() yet?
 initializedMarkerSets = False
 
+MP = 5		# vocab key for 'Mammalian Phenotype'
+PRO = 77	# vocab key for 'Protein Ontology'
+OMIM = 44	# vocab key for 'OMIM'
 
 ###--- Private Functions ---###
 
@@ -97,6 +100,130 @@ def _initializeMarkerSets ():
 	initializedMarkerSets = True
 	return
 
+def _proteinOntologyQueries(vocabKey):
+	cmds = [
+		# markers are associated with Protein Ontology terms as
+		# marker accession IDs, rather than through the annotation
+		# tables.  So, pick them up via acc_accession.
+		'''select ta._Object_key as _Term_key,
+			ma._Object_key as _Marker_key
+		from acc_accession ma, acc_accession ta, voc_term t
+		where ma._MGIType_key = 2
+			and ma._LogicalDB_key = 135
+			and ma.private = 0
+			and ma.accID = ta.accID
+			and ta._Object_key = t._Term_key
+			and t._Vocab_key = %d
+			and ta._MGIType_key = 13''' % vocabKey
+		]
+	return cmds 
+
+def _vocabDefaultQueries(vocabKey):
+	# fall back on these queries, if this vocab doesn't have its own
+	# customized set of queries.
+
+	cmds = [
+		# mouse markers annotated to the terms themselves
+		# (all annotation types which are direct to markers).
+		# skip: four GO top-level terms
+		# skip: annotations with NOT qualifiers
+		'''select distinct va._Term_key,
+			va._Object_key as _Marker_key
+		from voc_annot va,
+			voc_annottype vat,
+			voc_term t,
+			mrk_marker m
+		where va._AnnotType_key = vat._AnnotType_key
+			and va._Term_key = t._Term_key
+			and t.isObsolete = 0
+			and t._Vocab_key = %d
+			and va._Object_key = m._Marker_key
+			and va._Qualifier_key not in (1614151, 1614153, 1614155)
+			and va._Term_key not in (120, 6112, 6113, 1098)
+			and m._Organism_key = 1
+			and vat._MGIType_key = 2''' % vocabKey,
+
+		# mouse markers annotated to the terms' descendents
+		# (all annotation types which are direct to markers)
+		# skip: annotations with NOT qualifiers
+		'''select distinct dc._AncestorObject_key as _Term_key,
+			va._Object_key as _Marker_key
+		from voc_annot va,
+			dag_closure dc,
+			voc_annottype vat,
+			voc_term t,
+			mrk_marker m
+		where va._AnnotType_key = vat._AnnotType_key
+			and va._Term_key = dc._DescendentObject_key
+			and va._Term_key = t._Term_key
+			and t.isObsolete = 0
+			and t._Vocab_key = %d
+			and va._Object_key = m._Marker_key
+			and va._Qualifier_key not in (1614151, 1614153, 1614155)
+			and m._Organism_key = 1
+			and vat._MGIType_key = 2''' % vocabKey,
+		]
+	return cmds
+
+def _omimAlleleQueries(vocabKey):
+	cmds = [
+		# mouse markers with alleles which are directly annotated
+		# to OMIM terms (no restriction on qualifier)
+		'''select va._Term_key,
+			aa._Marker_key
+		from voc_annot va,
+			all_allele aa,
+			voc_term t
+		where va._AnnotType_key = 1012
+			and va._Term_key = t._Term_key
+			and t._Vocab_key = %d
+			and aa._Allele_key = va._Object_key''' % vocabKey
+		]
+	return cmds 
+
+def _rollupQueries(vocabKey):
+	# queries to extract marker/term relationships that were computed
+	# using rollup rules (in the rollupload product) and stored in the
+	# database.  Currently valid for MP and OMIM.
+
+	cmds = [
+		# annotations rolled up to the terms themselves
+		# skip: NOT qualifiers, Normal qualifiers, obsolete terms
+		'''select distinct va._Object_key as _Marker_key,
+			t._Term_key
+		from voc_annottype vat,
+			voc_annot va,
+			voc_term t,
+			voc_term q
+		where vat._Vocab_key = %d
+			and vat._MGIType_key = 2
+			and vat._AnnotType_key = va._AnnotType_key
+			and va._Qualifier_key = q._Term_key
+			and va._Term_key = t._Term_key
+			and t.isObsolete = 0
+			and q.term is null''' % vocabKey,
+
+		# ancestor terms for those annotations which were rolled up,
+		# used to power searching 'down the DAG'
+		# skip: NOT qualifiers, Normal qualifiers, obsolete terms
+		'''select distinct va._Object_key as _Marker_key,
+			t._Term_key
+		from voc_annottype vat,
+			voc_annot va,
+			dag_closure dc,
+			voc_term t,
+			voc_term q
+		where vat._Vocab_key = %d
+			and vat._MGIType_key = 2
+			and vat._AnnotType_key = va._AnnotType_key
+			and va._Qualifier_key = q._Term_key
+			and va._Term_key = dc._DescendentObject_key
+			and dc._AncestorObject_key = t._Term_key
+			and t.isObsolete = 0
+			and q.term is null''' % vocabKey,
+		]
+	return cmds
+
 def _initializeVocab (termKey):
 	# initialize this module to include all terms from the vocabulary
 	# which contains the given 'termKey'
@@ -127,6 +254,9 @@ def _initializeVocab (termKey):
 
 	currentVocabKey = vocabKey
 
+	# Wipe the previously cached data (if any), and reclaim its memory
+	# for re-use.
+
 	markersPerTerm = {}
 	termsInCurrentVocab = {}
 
@@ -137,122 +267,22 @@ def _initializeVocab (termKey):
 	# temp tables.  So, we're going to go the simpler route and just
 	# collate the markers for each term and its descendents in code.
 
-	# special cases:
-	#	a. no obsolete terms
-	#	b. no "normal" annotations for MP terms (term key 2181424)
-	#	c. no "not" annotations for GO terms (term keys 1614151,
-	#		1614153, 1614155)
-	#	d. no "not" annotations for OMIM terms (term key 1614157)
-	#		to genotypes
-	#	e. no annotations to top-level GO terms (term keys 120, 6112, 
-	#		6113, 1098)
+	# We have different rules for associating markers with terms,
+	# depending on the vocabulary:
 
-	cmds = [
-		# 0. mouse markers annotated to the terms themselves
-		# (all annotation types which are direct to markers)
-		'''select distinct va._Term_key,
-			va._Object_key as _Marker_key
-		from voc_annot va,
-			voc_annottype vat,
-			voc_term t,
-			mrk_marker m
-		where va._AnnotType_key = vat._AnnotType_key
-			and va._Term_key = t._Term_key
-			and t.isObsolete = 0
-			and t._Vocab_key = %d
-			and va._Object_key = m._Marker_key
-			and va._Qualifier_key not in (1614151, 1614153, 1614155)
-			and va._Term_key not in (120, 6112, 6113, 1098)
-			and m._Organism_key = 1
-			and vat._MGIType_key = 2''' % vocabKey,
+	if vocabKey == MP:
+		cmds = _rollupQueries(vocabKey)
 
-		# 1. mouse markers annotated to the terms' descendents
-		# (all annotation types which are direct to markers)
-		'''select distinct dc._AncestorObject_key as _Term_key,
-			va._Object_key as _Marker_key
-		from voc_annot va,
-			dag_closure dc,
-			voc_annottype vat,
-			voc_term t,
-			mrk_marker m
-		where va._AnnotType_key = vat._AnnotType_key
-			and va._Term_key = dc._DescendentObject_key
-			and va._Term_key = t._Term_key
-			and t.isObsolete = 0
-			and t._Vocab_key = %d
-			and va._Object_key = m._Marker_key
-			and va._Qualifier_key not in (1614151, 1614153, 1614155)
-			and m._Organism_key = 1
-			and vat._MGIType_key = 2''' % vocabKey,
+	elif vocabKey == OMIM:
+		cmds = _rollupQueries(vocabKey) + _omimAlleleQueries(vocabKey)
 
-		# 2. mouse markers with alleles which are directly annotated
-		# to OMIM terms (no restriction on qualifier)
-		'''select va._Term_key,
-			aa._Marker_key
-		from voc_annot va,
-			all_allele aa,
-			voc_term t
-		where va._AnnotType_key = 1012
-			and va._Term_key = t._Term_key
-			and t._Vocab_key = %d
-			and aa._Allele_key = va._Object_key''' % vocabKey,
+	elif vocabKey == PRO:
+		cmds = _proteinOntologyQueries(vocabKey)
 
-		# 3. markers for alleles involved in genotypes which are
-		# annotated to the terms themselves
-		# (all annotation types which go to genotypes)
-		'''select distinct va._Term_key,
-			aa._Marker_key
-		from voc_annot va,
-			voc_annottype vat,
-			all_allele aa,
-			gxd_allelegenotype gag,
-			voc_term t
-		where va._AnnotType_key = vat._AnnotType_key
-			and va._Term_key = t._Term_key
-			and t._Vocab_key = %d
-			and t.isObsolete = 0
-			and va._Object_key = gag._Genotype_key
-			and gag._Allele_key = aa._Allele_key
-			and va._Qualifier_key not in (2181424, 1614157)
-			and vat._MGIType_key = 12''' % vocabKey,
+	else:
+		cmds = _vocabDefaultQueries(vocabKey)
 
-		# 4. markers for alleles involved in genotypes which are
-		# annotated to the terms' descendents
-		# (all annotation types which go to genotypes)
-		'''select distinct dc._AncestorObject_key as _Term_key,
-			aa._Marker_key
-		from voc_annot va,
-			dag_closure dc,
-			voc_annottype vat,
-			all_allele aa,
-			gxd_allelegenotype gag,
-			voc_term t
-		where va._AnnotType_key = vat._AnnotType_key
-			and va._Term_key = dc._DescendentObject_key
-			and va._Term_key = t._Term_key
-			and t._Vocab_key = %d
-			and t.isObsolete = 0
-			and va._Object_key = gag._Genotype_key
-			and gag._Allele_key = aa._Allele_key
-			and va._Qualifier_key not in (2181424, 1614157)
-			and vat._MGIType_key = 12''' % vocabKey,
-
-		# 5. markers are associated with Protein Ontology terms as
-		# marker accession IDs, rather than through the annotation
-		# tables.  So, pick them up separately.
-		'''select ta._Object_key as _Term_key,
-			ma._Object_key as _Marker_key
-		from acc_accession ma, acc_accession ta, voc_term t
-		where ma._MGIType_key = 2
-			and ma._LogicalDB_key = 135
-			and ma.private = 0
-			and ma.accID = ta.accID
-			and ta._Object_key = t._Term_key
-			and t._Vocab_key = %d
-			and ta._MGIType_key = 13''' % vocabKey,
-	]
-
-	# queries 0-5 to collect marker/term relationships
+	# execute queries and collect marker/term relationships
 	for cmd in cmds:
 		(cols, rows) = dbAgnostic.execute (cmd)
 
@@ -264,6 +294,10 @@ def _initializeVocab (termKey):
 				markersPerTerm[row[termCol]] = {}
 
 			markersPerTerm[row[termCol]][row[markerCol]] = 1
+
+		cols = []
+		rows = []
+		gc.collect()
 
 	logger.debug ('Found marker counts for %d terms' % len(markersPerTerm))
 
