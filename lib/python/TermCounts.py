@@ -169,15 +169,17 @@ def _extraOmimQueries(vocabKey):
 	cmds = [
 		# mouse markers with alleles which are directly annotated
 		# to OMIM terms (no restriction on qualifier)
-		'''select va._Term_key,
-			aa._Marker_key
-		from voc_annot va,
-			all_allele aa,
-			voc_term t
-		where va._AnnotType_key = 1012
-			and va._Term_key = t._Term_key
-			and t._Vocab_key = %d
-			and aa._Allele_key = va._Object_key''' % vocabKey,
+## US25 : We no longer include markers in the count due to directly annotated
+## alleles. (Oct 2014)
+##		'''select distinct va._Term_key,
+##			aa._Marker_key
+##		from voc_annot va,
+##			all_allele aa,
+##			voc_term t
+##		where va._AnnotType_key = 1012
+##			and va._Term_key = t._Term_key
+##			and t._Vocab_key = %d
+##			and aa._Allele_key = va._Object_key''' % vocabKey,
 
 		# mouse markers which are associated with human markers via
 		# a homology relationship, where those human markers are
