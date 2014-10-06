@@ -940,6 +940,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		mgiKey = MAX_TERM_KEY + 1
 		europhenomeKey = MAX_TERM_KEY + 2
+		fKey = MAX_TERM_KEY + 3
+		mKey = MAX_TERM_KEY + 4
+		mrcKey = MAX_TERM_KEY + 5
+		naKey = MAX_TERM_KEY + 6
 
 		# populate basic lab data
 
@@ -952,7 +956,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		fakeRows = [ (mgiKey, MGI, MGI, mgiKey),
 			(europhenomeKey, 'EuroPhenome', EUROPHENOME,
-				europhenomeKey) ]
+				europhenomeKey),
+			(fKey, 'F', 'F', fKey),
+			(mKey, 'M', 'M', mKey),
+			(mrcKey, 'MRCHarwell', 'MRCHarwell', mrcKey),
+			(naKey, 'NA', 'NA', naKey),
+			]
 
 		for (key, center, abbrev, seqNum) in fakeRows:
 			row = [ '', '', '', '' ]
