@@ -211,7 +211,9 @@ VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
 	'term_emap', 'term_emaps_child',
 	]
-TESTS = ['test_stats']
+# temporarily commented out until new scrum-dog schema gets into production
+#TESTS = ['test_stats']
+TESTS = []
 
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
@@ -723,6 +725,8 @@ def checkForFinishedConversion():
 	while (i >= 0):
 		(table, path, id) = CONVERT_IDS[i]
 
+		logger.debug('convert: %s, %s, %s' % (table, path, CONVERT_DISPATCHER.getStatus(id)))
+
 		# if a file conversion operation finished, then remove it from
 		# the list of unfinished processes, schedule the file to be
 		# loaded
@@ -737,6 +741,7 @@ def checkForFinishedConversion():
 			scheduleLoad(table, path)
 
 		i = i - 1
+		logger.debug('convert: finished loop')
 
 	# if the gathering stage finished and there are no more unfinished
 	# conversions, then the conversion stage has finished -- report it
@@ -850,6 +855,8 @@ def checkForFinishedLoad():
 	while (i >= 0):
 		(table, path, id) = BCPIN_IDS[i]
 
+		logger.debug ('bcp-in: %s, %s, %s' % (table, path, BCPIN_DISPATCHER.getStatus(id)))
+
 		# if a load operation finished, then remove it from the list
 		# of unfinished processes, schedule creation of that
 		# table's indexes, and remove the data file that was loaded
@@ -865,6 +872,7 @@ def checkForFinishedLoad():
 			os.remove(path)
 
 		i = i - 1
+		logger.debug('bcp-in: finished loop')
 
 	# if the file conversion stage finished and there are no more
 	# unfinished loads, then the load stage has finished -- report it
