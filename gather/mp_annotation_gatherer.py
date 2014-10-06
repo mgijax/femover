@@ -1477,5 +1477,4 @@ gatherer = AnnotationGatherer (files, cmds)
 # pass in our particular gatherer
 if __name__ == '__main__':
 	Gatherer.main (gatherer)
-	logger.debug('finished gatherer...  exiting')
 
