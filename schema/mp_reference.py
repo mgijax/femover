@@ -14,12 +14,12 @@ tableName = 'mp_reference'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	mp_reference_key		int		not null,
-	mp_term_key		int		not null,
-	mp_annotation_key		int		not null,
-	jnum_id		text	null,
-	source		text	null,
-	source_seq		int	null,
+	mp_reference_key		int	not null,
+	mp_term_key			int	not null,
+	mp_annotation_key		int	not null,
+	jnum_id				text	null,
+        phenotyping_center_key		int	null,
+        interpretation_center_key	int	null,
 	PRIMARY KEY(mp_reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -28,6 +28,13 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
 	'mp_term_key' : 'create index %s on %s (mp_term_key)',
 	'mp_annotation_key' : 'create index %s on %s (mp_annotation_key)',
+	'pc_key' : 'create index %s on %s (phenotyping_center_key)',
+	'ic_key' : 'create index %s on %s (interpretation_center_key)',
+}
+
+keys = {
+	'phenotyping_center_key' : ('phenotable_center', 'center_key'),
+	'interpretation_center_key' : ('phenotable_center', 'center_key'),
 }
 
 # index used to cluster data in the table
@@ -41,8 +48,8 @@ comments = {
 		'mp_term_key' : 'key for the term',
 		'mp_annotation_key' : 'key for the annotation',
 		'jnum_id' : 'display name for an MP header term',
-		'source' : 'source provider',
-		'source_seq' : 'source provider sequence',
+		'phenotyping_center_key' : 'identifies the provider serving as phenotyping center',
+		'interpretation_center_key' : 'identifies the provider serving as data interpretation center',
 		},
 	}
 

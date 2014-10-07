@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	phenotable_genotype_key		int		not null,
         phenotyping_center_key		int	null,
         interpretation_center_key	int	null,
+	sequence_num			int	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -46,6 +47,7 @@ comments = {
 		'phenotable_genotype_key' : 'key for corresponding genotype object',
 		'phenotyping_center_key' : 'identifies the provider serving as phenotyping center',
 		'interpretation_center_key' : 'identifies the provider serving as data interpretation center',
+		'sequence_num' : 'used to order the providers for a given genotype',
 		},
 	}
 

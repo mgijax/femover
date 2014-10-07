@@ -855,8 +855,6 @@ def checkForFinishedLoad():
 	while (i >= 0):
 		(table, path, id) = BCPIN_IDS[i]
 
-		logger.debug ('bcp-in: %s, %s, %s' % (table, path, BCPIN_DISPATCHER.getStatus(id)))
-
 		# if a load operation finished, then remove it from the list
 		# of unfinished processes, schedule creation of that
 		# table's indexes, and remove the data file that was loaded
@@ -872,7 +870,6 @@ def checkForFinishedLoad():
 			os.remove(path)
 
 		i = i - 1
-		logger.debug('bcp-in: finished loop')
 
 	# if the file conversion stage finished and there are no more
 	# unfinished loads, then the load stage has finished -- report it

@@ -596,7 +596,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				# build reference rows
 				# references get attached to both an annotation and the term (to accomadate both displays in the genotype popup)
 				ref_count += 1
-				refRows.append([ref_count,mp_term_key,mp_annot_key,jnum,source,ref_count])
+				refRows.append([ref_count,mp_term_key,mp_annot_key,jnum,source[0],source[1]])
 				# build notes
 				for note in self.getNotes(evidenceKey):
 					note_count += 1
@@ -782,11 +782,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				#if suppress_providers:
 				#	provider=""
 
+				p_seq = self.getProviderSeq(provider)
+
 				pRows.append( (provider_count,
 					self.getGenotypeRowKey(allele_key,
 						genotype_key),
 					provider[0],
-					provider[1]) )
+					provider[1], p_seq) )
 
 		logger.debug("done creating pheno_* tables")
                 return systemRows, termRows, termCellRows,systemCellRows,pRows
@@ -1115,7 +1117,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		annotCols = [ 'mp_annotation_key', 'mp_term_key', 'call',
 			 'sex','annotation_seq'],
 		annotRows = []
-		refCols = ['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','source','source_seq']
+		refCols = ['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','phenotyping_center_key', 'interpretation_center_key']
 		refRows = []	
 		noteCols = ['mp_note_key','mp_annotation_key','note']
 		noteRows = []
@@ -1133,8 +1135,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         'term_id','indentation_depth','term_seq','term_key']
                 ptTermRows = []
 		
-#		ptProviderCols = ['phenotable_provider_key','phenotable_genotype_key','provider','provider_seq'],
-		ptProviderCols = [ 'unique_key','phenotable_genotype_key','phenotyping_center_key', 'interpretation_center_key' ]
+		ptProviderCols = [ 'unique_key','phenotable_genotype_key','phenotyping_center_key', 'interpretation_center_key', 'sequence_num' ]
 		ptProviderRows = []
 
 		ptTermCellCols = ['phenotable_term_cell_key','phenotable_term_key','call','sex',
@@ -1425,7 +1426,7 @@ files = [
 			 'sex','annotation_seq'],
 		'mp_annot'),
 	('mp_reference',
-		['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','source','source_seq'],
+		['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','phenotyping_center_key', 'interpretation_center_key'],
 		'mp_reference'),
 	('mp_annotation_note',
 		[ 'mp_note_key','mp_annotation_key', 'note'],
@@ -1443,7 +1444,7 @@ files = [
 	('phenotable_provider',
 		[ 'unique_key', 'phenotable_genotype_key',
 			'phenotyping_center_key',
-			'interpretation_center_key' ],
+			'interpretation_center_key', 'sequence_num' ],
 		'phenotable_provider'),
 	('phenotable_term_cell',
 		['phenotable_term_cell_key','phenotable_term_key','call','sex',
