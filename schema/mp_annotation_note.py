@@ -15,8 +15,10 @@ tableName = 'mp_annotation_note'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	mp_note_key		int		not null,
-	mp_reference_key		int		not null,
-	note		text		not null,
+	mp_reference_key	int		not null,
+	note			text		not null,
+	note_type		text		not null,
+	has_normal_qualifier	int		not null,
 	PRIMARY KEY(mp_note_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -36,6 +38,8 @@ comments = {
 		'mp_note_key' : 'unique key identifying this annotation (does not correspond to _Annot_key in mgd)',
 		'mp_reference_key' : 'foreign key to mp_reference',
 		'note' : 'the annotation note',
+		'note_type' : 'the type of annotation note (General, Normal, Background Sensitivity)',
+		'has_normal_qualifier' : '1 if this note is for an annotation which has a "normal" qualifier, 0 if not',
 		},
 	}
 

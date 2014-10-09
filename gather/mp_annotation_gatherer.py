@@ -15,6 +15,7 @@
 
 import Gatherer
 import VocabSorter
+import Lookup
 import logger
 import GOFilter
 import GenotypeClassifier
@@ -66,6 +67,12 @@ PHENOTYPING_CENTER = 12798367
 
 # maximum term key from database
 MAX_TERM_KEY = 0
+
+# term key for a "normal" qualifier for MP annotations
+NORMAL_TERM_KEY = 2181424
+
+# annotation type key for MP/Genotype annotations
+MP_ANNOT_TYPE = 1002
 
 ###--- Functions ---###
 # resolve a jnumber into the source display value
@@ -414,6 +421,11 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		cur_note_chunk = ''
 		last_seq = 1
 		last_evidence_key=-1
+
+		# type of note we are building that has not yet been stored
+		# in self.noteMap
+		note_type = None
+
 		for row in rows:
 			evidence_key = row[1]
 			note_chunk = row[2]
@@ -423,7 +435,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				# we have a new note, we can stop adding chunks, save the previously built note, and start a new one.
 				full_note = cur_note_chunk.strip()
 				if full_note:
-				    self.noteMap.setdefault(last_evidence_key,[]).append(full_note)
+				    self.noteMap.setdefault(last_evidence_key,[]).append((full_note,note_type))
 				cur_note_chunk = ''
 				if notetype_key==BS_NOTETYPE:
 					# append special label for background sensitivity notes
@@ -432,14 +444,17 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			cur_note_chunk = '%s%s'%(cur_note_chunk,note_chunk)
 			last_seq = seq
 			last_evidence_key=evidence_key
+			note_type = notetype_key
+
 		# end of rows, save the last note
 		full_note = cur_note_chunk.strip()
 		if full_note:
-		    self.noteMap.setdefault(last_evidence_key,[]).append(full_note)
+		    self.noteMap.setdefault(last_evidence_key,[]).append(
+			(full_note, note_type))
 		cur_note_chunk = ''
 				
 		return self.noteMap
-	# returns a list of notes for the given evidence key
+	# returns a list of (note, note type) pairs for the given evidence key
 	def getNotes(self,evidenceKey):
 		if not self.noteMap:
 			self.buildNotes()
@@ -471,6 +486,23 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                 if genotypeKey in self.alleleMap:
                         return self.alleleMap[genotypeKey]
                 return [] 
+
+	# gather the set of annotation evidence keys which are for annotations
+	# with a 'normal' qualifier
+	def getNormalEvidenceKeys (self):
+		logger.debug('gathering map of normal evidence keys')
+		cols, rows = self.results[11]
+
+		ek = {}
+		for row in rows:
+			ek[row[0]] = 1
+
+		self.results[11] = [ cols,[] ]
+		gc.collect()
+
+		logger.debug('found %d evidence keys for normal annot' % \
+			len(ek))
+		return ek
 
 	###--- MP table function---###
 	# builds all the mp_* tables
@@ -557,6 +589,12 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                 annot_count = 0
 		ref_count = 0
 		note_count = 0
+
+		lookup = Lookup.Lookup ('mgi_notetype', '_NoteType_key',
+			'noteType')
+
+		normalEvidenceKeys = self.getNormalEvidenceKeys()
+
 		# use a map to keep track of jnum/term combos
                 logger.debug("looping through %s mp/allele system groups to create all mp_* tables"%len(systemDict)) 
                 for sr_key,systemObj in systemDict.items():
@@ -598,9 +636,16 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				ref_count += 1
 				refRows.append([ref_count,mp_term_key,mp_annot_key,jnum,source[0],source[1]])
 				# build notes
-				for note in self.getNotes(evidenceKey):
+				for (note, note_type) in self.getNotes(evidenceKey):
 					note_count += 1
-					noteRows.append([note_count,ref_count,note]) 
+					noteType = lookup.get(note_type)
+
+					if normalEvidenceKeys.has_key(evidenceKey):
+						normal = 1
+					else:
+						normal = 0
+
+					noteRows.append([note_count,ref_count,note,noteType,normal]) 
                         if system_count % 1000 == 0:
                                 pass
                                 #logger.info("processed %s systems"%system_count);
@@ -1119,7 +1164,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		annotRows = []
 		refCols = ['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','phenotyping_center_key', 'interpretation_center_key']
 		refRows = []	
-		noteCols = ['mp_note_key','mp_annotation_key','note']
+		noteCols = ['mp_note_key','mp_annotation_key','note',
+			'note_type', 'has_normal_qualifier']
 		noteRows = []
 
 		logger.debug("preparing to build list of mp annotations")
@@ -1407,6 +1453,15 @@ cmds = [
 
 	# 10. get the maximum term key, so we know where to insert fake terms
 	'select max(_Term_key) from voc_term',
+
+	# 11. get the set of annotation evidence keys which have annotations
+	# with a "normal" qualifier
+	'''select distinct e._AnnotEvidence_key
+	from voc_annot a,
+		voc_evidence e
+	where a._Annot_key = e._Annot_key
+		and a._Qualifier_key = %d
+		and a._AnnotType_key = %d''' % (NORMAL_TERM_KEY, MP_ANNOT_TYPE)
 	]
 
 ###--- Table Definitions ---###
@@ -1429,7 +1484,8 @@ files = [
 		['mp_reference_key','mp_term_key','mp_annotation_key','jnum_id','phenotyping_center_key', 'interpretation_center_key'],
 		'mp_reference'),
 	('mp_annotation_note',
-		[ 'mp_note_key','mp_annotation_key', 'note'],
+		[ 'mp_note_key','mp_annotation_key', 'note', 'note_type',
+			'has_normal_qualifier'],
 		'mp_annotation_note'),
 	('phenotable_system',
                 [ 'phenotable_system_key', 'allele_key', 'system', 'system_seq'],
