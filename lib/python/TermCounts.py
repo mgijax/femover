@@ -184,28 +184,27 @@ def _extraOmimQueries(vocabKey):
 		# mouse markers which are associated with human markers via
 		# a homology relationship, where those human markers are
 		# associated with OMIM diseases
-## US49 : uncomment this for bringing human annotations across
-##		'''select m._Marker_key,
-##			a._Term_key  
-##		from voc_annot a,
-##			voc_term q,
-##			mrk_marker h,
-##			mrk_clustermember hcm,
-##			mrk_cluster mc,
-##			mrk_clustermember mcm,
-##			mrk_marker m
-##		where a._AnnotType_key = 1006
-##			and a._Qualifier_key = q._Term_key
-##			and q.term is null
-##			and a._Object_key = h._Marker_key
-##			and h._Organism_key = 2
-##			and h._Marker_key = hcm._Marker_key
-##			and hcm._Cluster_key = mc._Cluster_key
-##			and mc._ClusterType_key = 9272150
-##			and mc._Cluster_key = mcm._Cluster_key
-##			and mcm._Marker_key = m._Marker_key
-##			and m._Organism_key = 1
-##			and m._Marker_Status_key in (1,3)''',		
+		'''select m._Marker_key,
+  			a._Term_key
+  		from voc_annot a,
+  			voc_term q,
+  			mrk_marker h,
+  			mrk_clustermember hcm,
+  			mrk_cluster mc,
+  			mrk_clustermember mcm,
+  			mrk_marker m
+  		where a._AnnotType_key = 1006
+  			and a._Qualifier_key = q._Term_key
+  			and q.term is null
+  			and a._Object_key = h._Marker_key
+  			and h._Organism_key = 2
+  			and h._Marker_key = hcm._Marker_key
+  			and hcm._Cluster_key = mc._Cluster_key
+  			and mc._ClusterType_key = 9272150
+  			and mc._Cluster_key = mcm._Cluster_key
+  			and mcm._Marker_key = m._Marker_key
+  			and m._Organism_key = 1
+  			and m._Marker_Status_key in (1,3)''',		
 		]
 	return cmds 
 
