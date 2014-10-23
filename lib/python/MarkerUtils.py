@@ -27,9 +27,14 @@ amRows = None
 #	[ allele key, marker key, count type, count type sequence num ]
 miRows = None
 
+# cache of rows for 'expresses component' allele-to-marker relationships, each:
+#	[ allele key, marker key, count type, count type sequence num ]
+ecRows = None
+
 # constants specifying which set of marker/allele pairs to return
 TRADITIONAL = 'traditional'
 MUTATION_INVOLVES = 'mutation_involves'
+EXPRESSES_COMPONENT = 'expresses_component'
 UNIFIED = 'unified'
 
 ###--- private functions ---###
@@ -161,11 +166,9 @@ def _populateMarkerAlleleCache():
 	logger.debug ('Got %d traditional allele/marker pairs' % len(amRows))
 	return 
 
-def _populateMutationInvolvesCache():
-	global miRows
-
-	if miRows != None:
-		return
+def _getRelationships(typeName):
+	# get a list of marker/allele pairs based on the given type of
+	# relationships.
 
 	cmd2 = '''select distinct r._Object_key_1 as allele_key,
 			r._Object_key_2 as marker_key,
@@ -175,10 +178,10 @@ def _populateMutationInvolvesCache():
 			mgi_relationship_category c,
 			all_allele a,
 			voc_term t
-		where c.name = 'mutation_involves'
+		where c.name = '%s'
 			and r._Category_key = c._Category_key
 			and r._Object_key_1 = a._Allele_key
-			and a._Allele_Type_key = t._Term_key'''
+			and a._Allele_Type_key = t._Term_key''' % typeName
 
 	(cols2, rows2) = dbAgnostic.execute(cmd2)
 
@@ -187,26 +190,51 @@ def _populateMutationInvolvesCache():
 	typeCol = dbAgnostic.columnNumber (cols2, 'countType')
 	seqNumCol = dbAgnostic.columnNumber (cols2, 'sequenceNum')
 
-	miRows = []
+	out = []
 	for row in rows2:
-		miRows.append ( [ row[alleleCol], row[markerCol], 
+		out.append ( [ row[alleleCol], row[markerCol], 
 			row[typeCol], row[seqNumCol] ] ) 
 
 	del cols2
 	del rows2
 	gc.collect()
 
-	logger.debug ('Got %d mutation involves allele/marker pairs' % \
-		len(miRows))
-	return 
+	logger.debug ('Got %d %s allele/marker pairs' % (len(out), typeName))
+	return out
+
+def _populateMutationInvolvesCache():
+	# populate the cache of marker/allele pairs based on
+	# 'mutation_involves' relationships
+
+	global miRows
+
+	if miRows != None:
+		return
+
+	miRows = _getRelationships(MUTATION_INVOLVES)
+	return
+
+def _populateExpressesComponentCache():
+	# populate the cache of marker/allele pairs based on
+	# 'expresses_component' relationships
+
+	global ecRows
+
+	if ecRows != None:
+		return
+
+	ecRows = _getRelationships(EXPRESSES_COMPONENT)
+	return
 
 def _getMarkerAllelePairs(whichSet):
 	# get a list of rows for allele/marker relationships, where each row is:
 	#	[ allele key, marker key, count type, count type seq num ]
-	# 'whichSet' should be one of TRADITIONAL, MUTATION_INVOVLES, or
-	# UNIFIED (which is the unique set of rows -- no duplicates)
+	# 'whichSet' should be one of TRADITIONAL, MUTATION_INVOVLES,
+	# EXPRESSES_COMPONENT, or UNIFIED (which is the unique set of rows --
+	# no duplicates)
 
 	_populateMutationInvolvesCache()
+	_populateExpressesComponentCache()
 	_populateMarkerAlleleCache()
 
 	if whichSet == TRADITIONAL:
@@ -215,10 +243,13 @@ def _getMarkerAllelePairs(whichSet):
 	if whichSet == MUTATION_INVOLVES:
 		return miRows
 
+	if whichSet == EXPRESSES_COMPONENT:
+		return ecRows
+
 	unifiedList = []
 	pairs = GroupedList.GroupedList()
 
-	for myList in [ amRows, miRows ]:
+	for myList in [ amRows, miRows, ecRows ]:
 		for row in myList:
 			pair = (row[0], row[1])		# allele + marker keys
 			if not pairs.contains(pair):
@@ -307,7 +338,7 @@ def getSymbol (markerKey):
 def getAlleleCounts():
 	# returns { marker key : count of all alleles }
 	# includes both direct marker-to-allele relationships and ones from
-	# 'mutation involves' relationships
+	# 'mutation involves' and 'expresses component' relationships
 
 	# each row has:
 	# [ allele key, marker key, count type, count type order ]
@@ -335,7 +366,7 @@ def getAlleleCountsByType():
 	#	{ marker key : { count type : count of all alleles } }
 	#	{ count type sequence num : count type }
 	# includes both direct marker-to-allele relationships and ones from
-	# 'mutation involves' relationships
+	# 'mutation involves' and 'expresses component' relationships
 
 	# each row has:
 	# [ allele key, marker key, count type, count type order ]
