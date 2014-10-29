@@ -211,9 +211,7 @@ VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
 	'term_emap', 'term_emaps_child',
 	]
-# temporarily commented out until new scrum-dog schema gets into production
-#TESTS = ['test_stats']
-TESTS = []
+TESTS = ['test_stats']
 
 # list of high priority gatherers, in order of precedence
 # (these will be moved up in the queue of to-do items, as they are the
