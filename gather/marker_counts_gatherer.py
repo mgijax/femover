@@ -30,6 +30,8 @@ GT_ROSA = 37270			# MRK_Marker for 'Gt(ROSA)26Sor'
 MUTATION_INVOLVES = 1003
 EXPRESSES_COMPONENT = 1004
 
+PHENOTYPE_IMAGE = 6481782	# VOC_Term for phenotype image class
+
 ReferenceCount = 'referenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
@@ -400,6 +402,7 @@ cmds = [
 			all_allele aa,
 			mrk_marker m
 		where i._Image_key = p._Image_key
+			and i._ImageClass_key = %d
 			and p._ImagePane_key = a._ImagePane_key
 			and a._MGIType_key = 11
 			and a._Object_key = aa._Allele_key
@@ -407,11 +410,12 @@ cmds = [
 		union
 		select distinct i._Image_key,
 			r._Object_key_2 as _Marker_key
-			from img_image i,
+		from img_image i,
 			img_imagepane p,
 			img_imagepane_assoc a,
 			mgi_relationship r
 		where i._Image_key = p._Image_key
+			and i._ImageClass_key = %d
 			and p._ImagePane_key = a._ImagePane_key
 			and a._MGIType_key = 11
 			and a._Object_key = r._Object_key_1
@@ -419,8 +423,8 @@ cmds = [
 		)
 		select _Marker_key, count(distinct _Image_key) as imageCount
 		from temp_table
-		group by _Marker_key''' % (MUTATION_INVOLVES,
-			EXPRESSES_COMPONENT),
+		group by _Marker_key''' % (PHENOTYPE_IMAGE, PHENOTYPE_IMAGE,
+			MUTATION_INVOLVES, EXPRESSES_COMPONENT),
 
 	# 18. get a count of distinct OMIM (disease) annotations which have
 	# been associated with mouse markers via a set of rollup rules in
