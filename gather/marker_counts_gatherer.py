@@ -27,6 +27,9 @@ TERM_MGITYPE = 13		# from ACC_MGIType
 DRIVER_NOTE = 1034		# from MGI_NoteType
 GT_ROSA = 37270			# MRK_Marker for 'Gt(ROSA)26Sor'
 
+MUTATION_INVOLVES = 1003
+EXPRESSES_COMPONENT = 1004
+
 ReferenceCount = 'referenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
@@ -388,12 +391,36 @@ cmds = [
 		group by _Object_key''',
 
 	# 17. count of phenotype images for each marker
-	'''select _Object_key as _Marker_key,
-			count(distinct _Image_key) as imageCount
-		from img_cache
-		where _ImageMGIType_key = 11
-			and _MGIType_key = 2
-		group by _Marker_key''',
+	'''with temp_table as (
+		select distinct i._Image_key,
+			m._Marker_key
+		from img_image i,
+			img_imagepane p,
+			img_imagepane_assoc a,
+			all_allele aa,
+			mrk_marker m
+		where i._Image_key = p._Image_key
+			and p._ImagePane_key = a._ImagePane_key
+			and a._MGIType_key = 11
+			and a._Object_key = aa._Allele_key
+			and aa._Marker_key = m._Marker_key
+		union
+		select distinct i._Image_key,
+			r._Object_key_2 as _Marker_key
+			from img_image i,
+			img_imagepane p,
+			img_imagepane_assoc a,
+			mgi_relationship r
+		where i._Image_key = p._Image_key
+			and p._ImagePane_key = a._ImagePane_key
+			and a._MGIType_key = 11
+			and a._Object_key = r._Object_key_1
+			and r._Category_key in (%d,%d)
+		)
+		select _Marker_key, count(distinct _Image_key) as imageCount
+		from temp_table
+		group by _Marker_key''' % (MUTATION_INVOLVES,
+			EXPRESSES_COMPONENT),
 
 	# 18. get a count of distinct OMIM (disease) annotations which have
 	# been associated with mouse markers via a set of rollup rules in
@@ -428,7 +455,7 @@ cmds = [
 			voc_annot va,
 			voc_term vt
 		where a._Allele_key = gag._Allele_key
-			and (c.name = 'mutation_involves' or c.name='expresses_component')
+			and c.name = 'mutation_involves'
 			and c._Category_key = r._Category_key
 			and a._Allele_key = r._Object_key_1
 			and gag._Genotype_key = va._Object_key

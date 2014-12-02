@@ -4,6 +4,9 @@
 
 import Gatherer
 
+MUTATION_INVOLVES = 1003
+EXPRESSES_COMPONENT = 1004
+
 ###--- Classes ---###
 
 class MarkerToPhenoImageGatherer (Gatherer.Gatherer):
@@ -57,7 +60,21 @@ cmds = [ '''select distinct i._Image_key,
 		and a._MGIType_key = 11
 		and a._Object_key = aa._Allele_key
 		and aa._Marker_key = m._Marker_key
-	order by m._Marker_key'''
+	union
+	select distinct i._Image_key,
+		i._ThumbnailImage_key,
+		i._Refs_key,
+		r._Object_key_2 as _Marker_key
+	from img_image i,
+		img_imagepane p,
+		img_imagepane_assoc a,
+		mgi_relationship r
+	where i._Image_key = p._Image_key
+		and p._ImagePane_key = a._ImagePane_key
+		and a._MGIType_key = 11
+		and a._Object_key = r._Object_key_1
+		and r._Category_key in (%d, %d)''' % (MUTATION_INVOLVES,
+			EXPRESSES_COMPONENT)
 	]
 
 # order of fields (from the query results) to be written to the
