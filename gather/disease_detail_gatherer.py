@@ -16,6 +16,9 @@ OMIM_GENOTYPE = 1005		# VOC_AnnotType for 'OMIM/Genotype'
 OMIM_HUMAN_MARKER = 1006	# VOC_AnnotType for 'OMIM/Human Marker'
 DISEASE_MARKER = 1016		# VOC_AnnotType for 'OMIM/Marker (Derived)'
 
+MUTATION_INVOLVES = 1003	# MGI_Relationship_Category for m.i.
+EXPRESSES_COMPONENT = 1004	# MGI_Relationship_Category for e.c.
+
 MOUSE = 1			# MGI_Organism for 'mouse, laboratory'
 HUMAN = 2			# MGI_Organism for 'human'
 NOT_QUALIFIER = 1614157		# VOC_Term for 'not'
@@ -720,17 +723,18 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 	def buildDiseaseModelCache(self, termToMouseMarkers):
 		global DISEASE_MODEL_CACHE
 
-		cols, rows = self.results[5]
+		for query in [ 5, 8 ]:
+		    cols, rows = self.results[query]
 
-		termCol = Gatherer.columnNumber (cols, '_Term_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
-		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
-		seqNumCol = Gatherer.columnNumber (cols, 'sequenceNum')
-		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
+		    termCol = Gatherer.columnNumber(cols, '_Term_key')
+		    markerCol = Gatherer.columnNumber(cols, '_Marker_key')
+		    genotypeCol = Gatherer.columnNumber(cols, '_Genotype_key')
+		    qualifierCol = Gatherer.columnNumber(cols, '_Qualifier_key')
+		    refsCol = Gatherer.columnNumber(cols, '_Refs_key')
+		    seqNumCol = Gatherer.columnNumber(cols, 'sequenceNum')
+		    alleleCol = Gatherer.columnNumber(cols, '_Allele_key')
 
-		for row in rows:
+		    for row in rows:
 			termKey = row[termCol]
 			markerKey = row[markerCol]
 
@@ -741,13 +745,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			dm = getDiseaseModel (row[genotypeCol], termKey, isNot)
 			dm.addReferenceKey (row[refsCol]) 
 
-			# if we have this marker as a causative gene for this
-			# disease, associate the marker (based on the rollup
-			# rules)
-			#if termToMouseMarkers.has_key(termKey):
-			#	if markerKey in termToMouseMarkers[termKey]:
-			#		dm.addMarkerKey (row[markerCol])
-
 			# The rollup rules already screened out ROSA and
 			# recombinases, so add the marker key to the disease
 			# model (so we can pick up even the NOT models).
@@ -755,6 +752,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			dm.addMarkerKey (row[markerCol])
 
 			dm.setSequenceNum (row[seqNumCol])
+
+		    logger.debug('Handled %d rows for query %d' % (
+			    len(rows), query) )
 
 		logger.debug ('Cached data for %d disease models' % \
 			len(DISEASE_MODEL_CACHE))
@@ -1281,6 +1281,27 @@ cmds = [
 	from voc_annot
 	where _AnnotType_key in (%d, %d)''' % (OMIM_GENOTYPE,
 		OMIM_HUMAN_MARKER),
+
+	# 8. like query 5, but brings in disease models for markers associated
+	# with alleles via 'expresses component' and 'mutation involves'
+	# relationships
+	'''select distinct va._Term_key, r._Object_key_2 as _Marker_key,
+		gag._Genotype_key, va._Qualifier_key, ve._Refs_key,
+		gag.sequenceNum, gag._Allele_key
+	from gxd_allelegenotype gag,
+		voc_annot va,
+		all_allele a,
+		voc_evidence ve,
+		mgi_relationship r
+	where gag._Genotype_key = va._Object_key
+		and va._AnnotType_key = %d
+		and va._Annot_key = ve._Annot_key
+		and gag._Allele_key = a._Allele_key
+		and a.isWildType = 0
+		and a._Allele_key = r._Object_key_1
+		and r._Category_key in (%d, %d)
+	order by r._Object_key_2''' % (OMIM_GENOTYPE, 
+		EXPRESSES_COMPONENT, MUTATION_INVOLVES),	
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
