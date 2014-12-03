@@ -3,6 +3,7 @@
 # gathers data for the table supporting the disease detail page in the
 # front-end database
 
+import gc
 import Gatherer
 import logger
 import symbolsort
@@ -13,11 +14,14 @@ import ReferenceCitations
 
 OMIM_GENOTYPE = 1005		# VOC_AnnotType for 'OMIM/Genotype'
 OMIM_HUMAN_MARKER = 1006	# VOC_AnnotType for 'OMIM/Human Marker'
+DISEASE_MARKER = 1016		# VOC_AnnotType for 'OMIM/Marker (Derived)'
+
+MUTATION_INVOLVES = 1003	# MGI_Relationship_Category for m.i.
+EXPRESSES_COMPONENT = 1004	# MGI_Relationship_Category for e.c.
+
 MOUSE = 1			# MGI_Organism for 'mouse, laboratory'
 HUMAN = 2			# MGI_Organism for 'human'
 NOT_QUALIFIER = 1614157		# VOC_Term for 'not'
-DRIVER_NOTE = 1034		# MGI_NoteType for 'Driver'
-GT_ROSA = 37270			# MRK_Marker for 'Gt(ROSA)26Sor'
 
 MOUSE_AND_HUMAN = 'mouse and human'	# disease group types
 MOUSE_ONLY = 'mouse only'
@@ -47,27 +51,23 @@ MARKER_TO_DISEASE_MODELS = {}	# dict; marker key -> [ DiseaseModel objects ]
 
 TERM_TO_DISEASE_MODELS = {}	# dict; term key -> [ DiseaseModel objects ]
 
-DRIVER_ALLELES = None		# dict; allele key -> 1 if it has driver note
-
 ###--- Functions ---###
 
-def hasDriverNote (alleleKey):
-	# returns 1 if the allele has a driver note, 0 if not
-
-	if DRIVER_ALLELES.has_key(alleleKey):
-		return 1
-	return 0
-
 def compareRefs (a, b):
+	# compare two references for ordering by their sequence number
+
 	return cmp(ReferenceCitations.getSequenceNum(a),
 		ReferenceCitations.getSequenceNum(b) )
 
 def compareDiseaseModels (a, b):
-	# assumes a and b are both (disease model key, DiseaseModel object)
+	# assumes a and b are both (disease model key, DiseaseModel object);
+	# compares them for ordering by their sequence numbers
 
 	return cmp(a[1].getSequenceNum(), b[1].getSequenceNum())
 
 def getAllDiseaseModels():
+	# get all DiseaseModel objects in an unordered list
+
 	return DISEASE_MODEL_CACHE.values()
 
 def getAdditionalModels (termKey, markerKeys):
@@ -162,6 +162,9 @@ def getDiseaseModelsByMarker (markerKey, termKey):
 	return []
 
 def getDiseaseModel (genotypeKey, termKey, isNot = 0):
+	# get the DiseaseModel object for this trio of parameters -- a shared
+	# instance if we've seen this trio, or a new object if not
+
 	global DISEASE_MODEL_CACHE
 
 	key = (genotypeKey, termKey, isNot)
@@ -177,16 +180,23 @@ def getDiseaseModel (genotypeKey, termKey, isNot = 0):
 	return dm
 
 def term (termKey):
+	# get the term corresponding to the given 'termKey'
+
 	if TERM_CACHE.has_key(termKey):
 		return TERM_CACHE[termKey][0]
 	return None
 
 def primaryID (termKey):
+	# get the primary ID for the given 'termKey'
+
 	if TERM_CACHE.has_key(termKey):
 		return TERM_CACHE[termKey][1]
 	return None
 
 def markerKeys (desiredClassKey):
+	# get the marker keys for the markers that are part of the given
+	# homology class
+
 	global CLASS_KEY_TO_MARKERS
 
 	# if we've not yet built the cache, then build it using data from the
@@ -215,6 +225,8 @@ def markerKeys (desiredClassKey):
 	return [] 
 
 def nextDiseaseGroupKey():
+	# returns the next unassigned key for a disease group
+
 	global DISEASE_GROUP_COUNTER
 
 	if not DISEASE_GROUP_COUNTER:
@@ -223,6 +235,8 @@ def nextDiseaseGroupKey():
 	return DISEASE_GROUP_COUNTER.getNext()
 
 def nextDiseaseRowKey():
+	# returns the next unassigned key for a disease row
+
 	global DISEASE_ROW_COUNTER
 
 	if not DISEASE_ROW_COUNTER:
@@ -231,6 +245,8 @@ def nextDiseaseRowKey():
 	return DISEASE_ROW_COUNTER.getNext()
 
 def nextDiseaseModelKey():
+	# returns the next unassigned key for a disease model
+
 	global DISEASE_MODEL_COUNTER
 
 	if not DISEASE_MODEL_COUNTER:
@@ -239,26 +255,37 @@ def nextDiseaseModelKey():
 	return DISEASE_MODEL_COUNTER.getNext()
 
 def markerType (markerKey):
+	# returns the name of the marker type for the given marker key
+
 	if MARKER_DATA_CACHE.has_key(markerKey):
 		return MARKER_DATA_CACHE[markerKey][2]
 	return None
 
 def organism (markerKey):
+	# returns the common name for the organism of the given marker key
+
 	if MARKER_DATA_CACHE.has_key(markerKey):
 		return MARKER_DATA_CACHE[markerKey][0]
 	return None
 
 def symbol (markerKey):
+	# returns the symbol for the given marker key
+
 	if MARKER_DATA_CACHE.has_key(markerKey):
 		return MARKER_DATA_CACHE[markerKey][1]
 	return None
 
 def clusterKey (markerKey):
+	# returns the homology class key for the given marker key
+
 	if MARKER_DATA_CACHE.has_key(markerKey):
 		return MARKER_DATA_CACHE[markerKey][3]
 	return None
 
 def mouseMarkerKeys(classKey):
+	# returns a list of the mouse marker keys that are part of the given
+	# homology class
+
 	mouseKeys = []
 
 	for markerKey in markerKeys(classKey):
@@ -271,6 +298,9 @@ def mouseMarkerKeys(classKey):
 	return mouseKeys
 
 def humanMarkerKeys(classKey):
+	# returns a list of the human marker keys that are part of the given
+	# homology class
+
 	humanKeys = []
 
 	for markerKey in markerKeys(classKey):
@@ -283,13 +313,13 @@ def humanMarkerKeys(classKey):
 	return humanKeys
 
 def compareDiseaseRows (a, b):
-	# assumes 'a' and 'b' are DiseaseRow objects
+	# assumes 'a' and 'b' are DiseaseRow objects; used to order disease
+	# rows by the sort value defined in the DiseaseRow class
 
 	return symbolsort.nomenCompare (a.getSortValue(), b.getSortValue())
 
 def compareMarkers (a, b):
 	# assumes 'a' and 'b' are:  (marker key, is causative?)
-
 	# sort causative markers first, then non-causative
 	# sort by symbol within each of those categories
 
@@ -313,6 +343,11 @@ def compareMarkers (a, b):
 ###--- Classes ---###
 
 class Counter:
+	# Is: an ascending counter of integer values, used to assign unique
+	#	keys
+	# Has: the last integer value assigned
+	# Does: returns the next integer value
+
 	def __init__ (self, initialValue = 1):
 		self.lastValue = initialValue - 1
 		return
@@ -322,7 +357,16 @@ class Counter:
 		return self.lastValue
 
 class DiseaseRow:
+	# Is: one row of data for the disease detail page, corresponding to a
+	#	single HomoloGene class
+	# Has: a unique key, a HomoloGene class key, a set of mouse genes, a
+	#	set of human genes, a disease term key, and a flag to indicate
+	#	if the row is for NOT models (where the disease was expected
+	#	to be found, but was not)
+
 	def __init__ (self):
+		# constructor
+
 		self.diseaseRowKey = nextDiseaseRowKey()
 		self.classKey = None
 		self.mouseGenes = []
@@ -334,29 +378,47 @@ class DiseaseRow:
 		return
 
 	def __str__ (self):
+		# Returns: basic string representation for this DiseaseRow
+
 		return 'DiseaseRow [ DR key: %d, term key: %s, HG key: %s, mouse genes: %d, human genes: %d ]' % (self.diseaseRowKey, str(self.termKey), str(self.classKey), len(self.mouseGenes), len(self.humanGenes) )
 
 	def setTermKey (self, termKey):
+		# set the disease term key for this DiseaseRow
+
 		self.termKey = termKey
 		return
 
 	def getTermKey (self):
+		# Returns: the disease term key for this DiseaseRow
+
 		return self.termKey
 
 	def setClassKey (self, classKey):
+		# set the HomoloGene class key for this DiseaseRow
+
 		self.classKey = classKey
 		return
 
 	def setIsNot (self, isNot):
+		# flag this DiseaseRow as being for NOT annotations (1) or
+		# not (0)
+
 		self.isNot = isNot
 		return
 
 	def getIsNot (self):
+		# Returns: an integer indicating whether this row is for NOT
+		# annotations (1) or not (0)
+
 		return self.isNot
 
 	def addMouse (self, markerKey, isCausative = 0):
-		# first addition of a given marker key wins (a later addition
-		# of the same marker will not change the isCausative flag)
+		# add the given mouse 'markerKey' to the set of mouse markers
+		# for this DiseaseRow, and flag it as being causative (1) or
+		# not (0).
+		# Note: The first addition of a given marker key wins (a later
+		# addition of the same marker will not change the isCausative
+		# flag).
 
 		for (markerKey1, isCausative1) in self.mouseGenes:
 			if markerKey1 == markerKey:
@@ -366,8 +428,12 @@ class DiseaseRow:
 		return
 
 	def addHuman (self, markerKey, isCausative = 0):
-		# first addition of a given marker key wins (a later addition
-		# of the same marker will not change the isCausative flag)
+		# add the given human 'markerKey' to the set of human markers
+		# for this DiseaseRow, and flag it as being causative (1) or
+		# not (0).
+		# Note: The first addition of a given marker key wins (a later
+		# addition of the same marker will not change the isCausative
+		# flag).
 
 		for (markerKey1, isCausative1) in self.humanGenes:
 			if markerKey1 == markerKey:
@@ -377,13 +443,19 @@ class DiseaseRow:
 		return
 
 	def getKey (self):
+		# get the unique database key for this DiseaseRow object
+
 		return self.diseaseRowKey
 
 	def getClassKey (self):
+		# get the HomoloGene class key for this DiseaseRow object
+
 		return self.classKey
 
 	def getGroupType (self):
-		# identify what type of group this row should be part of
+		# identify what type of group this row should be part of.
+		# Returns: one of the global constants NON_GENES, MOUSE_ONLY,
+		# HUMAN_ONLY, MOUSE_AND_HUMAN, NOT_OBSERVED, or ADDITIONAL.
 
 		# a non-gene should be alone in the mouse category, with no
 		# human markers
@@ -423,6 +495,9 @@ class DiseaseRow:
 		return ADDITIONAL
 
 	def getMouseGenes (self):
+		# Returns: the list of mouse marker keys for this DiseaseRow
+		# object, sorted by causality and nomenclature
+
 		if not self.mouseSorted:
 			self.mouseGenes.sort(compareMarkers)
 			self.mouseSorted = True
@@ -430,6 +505,9 @@ class DiseaseRow:
 		return self.mouseGenes
 
 	def getHumanGenes (self):
+		# Returns: the list of human marker keys for this DiseaseRow
+		# object, sorted by causality and nomenclature
+
 		if not self.humanSorted:
 			self.humanGenes.sort(compareMarkers)
 			self.humanSorted = True
@@ -437,7 +515,9 @@ class DiseaseRow:
 		return self.humanGenes
 
 	def getSortValue (self):
-		# We'll sort the row by the first mouse symbol, if one
+		# Returns: a string value to use in sorting this DiseaseRow in
+		# comparison with other DiseaseRow objects.
+		# Note: We'll sort the row by the first mouse symbol, if one
 		# exists and the first human symbol if not.
 
 		sortedGenes = self.getMouseGenes()
@@ -589,8 +669,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		return outColumns, outRows
 
-	def collectTermMarkerAssociations (self, queryNumber, organism,
-			checkGenotype = False):
+	def collectTermMarkerAssociations (self, queryNumber, organism):
 
 		# collect the term/marker associations from the specified
 		# query number
@@ -601,21 +680,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
 
-		if checkGenotype:
-			genotypeCol = Gatherer.columnNumber (cols,
-				'_Genotype_key')
-
 		for row in rows:
 			termKey = row[termCol]
 			markerKey = row[markerCol]
-
-			if checkGenotype:
-				# skip complex, not-conditional genotypes, as
-				# we can't identify which marker is tied to
-				# the disease.
-				if GenotypeClassifier.getClass(
-					row[genotypeCol]) == 'cx':
-					continue
 
 			if diseaseToMarkers.has_key(termKey):
 				if markerKey not in diseaseToMarkers[termKey]:
@@ -653,48 +720,41 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			len(MARKER_DATA_CACHE)) 
 		return
 
-	def buildDiseaseModelCache(self):
+	def buildDiseaseModelCache(self, termToMouseMarkers):
 		global DISEASE_MODEL_CACHE
 
-		cols, rows = self.results[5]
+		for query in [ 5, 8 ]:
+		    cols, rows = self.results[query]
 
-		termCol = Gatherer.columnNumber (cols, '_Term_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
-		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
-		seqNumCol = Gatherer.columnNumber (cols, 'sequenceNum')
-		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
+		    termCol = Gatherer.columnNumber(cols, '_Term_key')
+		    markerCol = Gatherer.columnNumber(cols, '_Marker_key')
+		    genotypeCol = Gatherer.columnNumber(cols, '_Genotype_key')
+		    qualifierCol = Gatherer.columnNumber(cols, '_Qualifier_key')
+		    refsCol = Gatherer.columnNumber(cols, '_Refs_key')
+		    seqNumCol = Gatherer.columnNumber(cols, 'sequenceNum')
+		    alleleCol = Gatherer.columnNumber(cols, '_Allele_key')
 
-		for row in rows:
+		    for row in rows:
+			termKey = row[termCol]
+			markerKey = row[markerCol]
+
 			isNot = 0
 			if row[qualifierCol] == NOT_QUALIFIER:
 				isNot = 1
 
-			dm = getDiseaseModel (row[genotypeCol], row[termCol],
-				isNot)
+			dm = getDiseaseModel (row[genotypeCol], termKey, isNot)
 			dm.addReferenceKey (row[refsCol]) 
 
-			# We want to make models for Gt(ROSA), so we can have
-			# them appear in the 'additional models' section of
-			# the 'all models' page for a disease, but we do not
-			# want them tied to a marker for the standard 'disease
-			# detail' page.
+			# The rollup rules already screened out ROSA and
+			# recombinases, so add the marker key to the disease
+			# model (so we can pick up even the NOT models).
 
-			if row[markerCol] != GT_ROSA:
-
-				# Likewise, we need disease models for alleles
-				# with driver notes, but those genotypes
-				# should only be for the 'additional models'
-				# section of the 'all models' page for a
-				# disease.  They should not participate in
-				# marker relationships for the 'disease
-				# detail' page.
-
-				if not hasDriverNote (row[alleleCol]):
-					dm.addMarkerKey (row[markerCol])
+			dm.addMarkerKey (row[markerCol])
 
 			dm.setSequenceNum (row[seqNumCol])
+
+		    logger.debug('Handled %d rows for query %d' % (
+			    len(rows), query) )
 
 		logger.debug ('Cached data for %d disease models' % \
 			len(DISEASE_MODEL_CACHE))
@@ -952,23 +1012,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		return dr2mod, dmRows, dm2ref
 
-	def buildDriverNoteCache (self):
-		# build the cache of alleles with driver notes
-
-		global DRIVER_ALLELES
-
-		DRIVER_ALLELES = {}
-
-		cols, rows = self.results[8]
-		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
-
-		for row in rows:
-			DRIVER_ALLELES[row[alleleCol]] = 1
-		
-		logger.debug ('Cached %d alleles with driver notes' % \
-			len(DRIVER_ALLELES))
-		return 
-
 	def collateResults (self):
 		# main method for pulling the various results sets together
 
@@ -984,16 +1027,13 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		self.writeOneFile()
 		self.writeOneFile()
 
-		# step 1a - build driver note cache
-		self.buildDriverNoteCache()
-
 		# step 2 - gather term/human marker associations
 		termToHumanMarkers = self.collectTermMarkerAssociations(2,
 			'human')
 
 		# step 3 - gather term/mouse marker associations
 		termToMouseMarkers = self.collectTermMarkerAssociations(3,
-			'mouse', checkGenotype = True)
+			'mouse')
 
 		# step 4 - get a list of distinct disease term keys
 
@@ -1012,7 +1052,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		# step 6 - build DiseaseModel objects and cache them
 
-		self.buildDiseaseModelCache()
+		self.buildDiseaseModelCache(termToMouseMarkers)
 
 		#---------- now the interesting part ----------#
 
@@ -1146,40 +1186,24 @@ cmds = [
 	order by t._Term_key''',
 
 	# 2. all disease annotations to human markers
-	'''select vt._Term_key, mm._Marker_key, mo.commonName
-	from voc_annot va, voc_term vt, mrk_marker mm, mgi_organism mo
+	'''select va._Term_key, mm._Marker_key, mo.commonName
+	from voc_annot va, mrk_marker mm, mgi_organism mo
 	where va._AnnotType_key = %d
-		and va._Term_key = vt._Term_key
 		and va._Object_key = mm._Marker_key
 		and va._Qualifier_key != %d
 		and mm._Organism_key = mo._Organism_key''' % \
 			(OMIM_HUMAN_MARKER, NOT_QUALIFIER),
 
-	# 3. pull OMIM annotations up from genotypes to mouse markers,
-	# excluding annotations with NOT qualifiers,  alleles with driver
-	# notes, and wild-type alleles
-	'''select distinct va._Term_key, gag._Marker_key, mo.commonName,
-		gg._Genotype_key
-	from gxd_genotype gg,
-		gxd_allelegenotype gag,
-		voc_annot va,
-		all_allele a,
-		mrk_marker m,
-		mgi_organism mo
-	where gg._Genotype_key = gag._Genotype_key
-		and gg._Genotype_key = va._Object_key
-		and va._AnnotType_key = %d
-		and va._Qualifier_key != %d
-		and gag._Allele_key = a._Allele_key
-		and a.isWildType = 0
-		and a._Marker_key = m._Marker_key
-		and m._Organism_key = mo._Organism_key
-		and gag._Marker_key != %d
-		and not exists (select 1 from MGI_Note mn
-			where mn._NoteType_key = %d
-			and mn._Object_key = gag._Allele_key)
-	order by gag._Marker_key''' % \
-		(OMIM_GENOTYPE, NOT_QUALIFIER, GT_ROSA, DRIVER_NOTE),
+	# 3. pull in the pre-computed OMIM annotations, where we have rolled
+	# up genotype-level annotations to their respective markers.  We must
+	# exclude 'not' annotations for this query.
+	'''select distinct m._Marker_key, a._Term_key, mo.commonName
+	from voc_annot a, mrk_marker m, mgi_organism mo
+	where a._AnnotType_key = %d
+		and a._Qualifier_key != %d
+		and a._Object_key = m._Marker_key
+		and m._Organism_key = mo._Organism_key''' % (
+			DISEASE_MARKER, NOT_QUALIFIER),
 
 	# 4. all current and interim mouse and human markers' basic data,
 	
@@ -1258,18 +1282,26 @@ cmds = [
 	where _AnnotType_key in (%d, %d)''' % (OMIM_GENOTYPE,
 		OMIM_HUMAN_MARKER),
 
-	# 8. pull out allele keys that should be excluded from marker/disease
-	# associations because of a driver note on the allele (where those
-	# genotypes have a disease annotation.
-	'''select distinct gag._Allele_key
+	# 8. like query 5, but brings in disease models for markers associated
+	# with alleles via 'expresses component' and 'mutation involves'
+	# relationships
+	'''select distinct va._Term_key, r._Object_key_2 as _Marker_key,
+		gag._Genotype_key, va._Qualifier_key, ve._Refs_key,
+		gag.sequenceNum, gag._Allele_key
 	from gxd_allelegenotype gag,
-		mgi_note mn
-	where gag._Allele_key = mn._Object_key
-		and mn._NoteType_key = %d
-		and exists (select 1 from voc_annot va
-			where gag._Genotype_key = va._Object_key
-				and va._AnnotType_key = %d)''' % (
-					DRIVER_NOTE, OMIM_GENOTYPE),
+		voc_annot va,
+		all_allele a,
+		voc_evidence ve,
+		mgi_relationship r
+	where gag._Genotype_key = va._Object_key
+		and va._AnnotType_key = %d
+		and va._Annot_key = ve._Annot_key
+		and gag._Allele_key = a._Allele_key
+		and a.isWildType = 0
+		and a._Allele_key = r._Object_key_1
+		and r._Category_key in (%d, %d)
+	order by r._Object_key_2''' % (OMIM_GENOTYPE, 
+		EXPRESSES_COMPONENT, MUTATION_INVOLVES),	
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into

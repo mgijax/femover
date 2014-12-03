@@ -932,14 +932,14 @@ cmds = [
 		gxd_strength st,
 		gxd_isresultstructure rs,
 		gxd_pattern p,
-		acc_accession a,
-		mgi_emaps_mapping e
+		acc_accession a
 	where s._Specimen_key = r._Specimen_key
 		and r._Strength_key = st._Strength_key
 		and r._Pattern_key = p._Pattern_key
 		and rs._Structure_key = a._Object_key
 		and a._MGIType_key = 38
-		and a.accID = e.accID
+		and exists (select 1 from mgi_emaps_mapping e
+			where a.accID = e.accID)
 		and r._Result_key = rs._Result_key''', 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
@@ -964,14 +964,14 @@ cmds = [
 		gxd_gelband b,
 		gxd_strength st,
 		gxd_gellanestructure gs,
-		acc_accession a,
-		mgi_emaps_mapping e
+		acc_accession a
 	where g._GelControl_key = 1
 		and g._GelLane_key = b._GelLane_key
 		and b._Strength_key = st._Strength_key
 		and gs._Structure_key = a._Object_key
 		and a._MGIType_key = 38
-		and a.accID = e.accID
+		and exists (select 1 from mgi_emaps_mapping e
+			where a.accID = e.accID)
 		and g._GelLane_key = gs._GelLane_key''',
 
 	# 8. allele pairs for genotypes cited in GXD data

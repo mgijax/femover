@@ -187,7 +187,7 @@ IMSR = [ 'imsr',
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
 		'marker_orthology', 'marker_location', 'marker_counts',
-		'marker_note', 'marker_sequence_num', 'marker_disease',
+		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
@@ -723,6 +723,8 @@ def checkForFinishedConversion():
 	while (i >= 0):
 		(table, path, id) = CONVERT_IDS[i]
 
+		logger.debug('convert: %s, %s, %s' % (table, path, CONVERT_DISPATCHER.getStatus(id)))
+
 		# if a file conversion operation finished, then remove it from
 		# the list of unfinished processes, schedule the file to be
 		# loaded
@@ -737,6 +739,7 @@ def checkForFinishedConversion():
 			scheduleLoad(table, path)
 
 		i = i - 1
+		logger.debug('convert: finished loop')
 
 	# if the gathering stage finished and there are no more unfinished
 	# conversions, then the conversion stage has finished -- report it

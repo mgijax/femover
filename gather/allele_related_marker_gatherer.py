@@ -25,6 +25,7 @@ import symbolsort
 ###--- Globals ---###
 
 mutationInvolvesKey = 1003	# _Category_key for 'mutation involves'
+expressedComponentKey = 1004	# _Category_key for 'expressed component'
 
 maxRowCount = 100000	# max number of relationship rows to process in memory
 
@@ -44,7 +45,10 @@ allAlleles = 0		# count of all alleles which are organizers
 teasers = None		# dictionary of allele keys, referring to a list of
 			# marker keys for its teaser markers
 
-# generator for mi_key values, based on relationship key & reversed flag
+mutationInvolvesCount = 0	# count of 'mutation involves' relationships
+expressedComponentCount = 0	# count of 'expressed component' relationships
+
+# generator for arm_key values, based on relationship key & reversed flag
 
 armGenerator = KeyGenerator.KeyGenerator('allele_related_marker')
 
@@ -65,9 +69,10 @@ def initialize():
 
 	cmd2 = '''select max(r._Object_key_1)
 		from mgi_relationship r, mrk_marker m
-		where r._Category_key = %d
+		where r._Category_key in (%d, %d)
 		and r._Object_key_2 = m._Marker_key
-		and m._Marker_Status_key in (1,3)''' % mutationInvolvesKey
+		and m._Marker_Status_key in (1,3)''' % (mutationInvolvesKey,
+			expressedComponentKey)
 
 	(cols, rows) = dbAgnostic.execute(cmd2)
 	maxAlleleKey = rows[0][0]
@@ -78,10 +83,11 @@ def initialize():
 
 	cmd3 = '''select r._Object_key_1, count(1) as ct
 		from mgi_relationship r, mrk_marker m
-		where r._Category_key = %d
+		where r._Category_key in (%d, %d)
 		and r._Object_key_2 = m._Marker_key
 		and m._Marker_Status_key in (1,3)
-		group by r._Object_key_1''' % mutationInvolvesKey
+		group by r._Object_key_1''' % (mutationInvolvesKey,
+			expressedComponentKey)
 
 	(cols, rows) = dbAgnostic.execute(cmd3)
 	keyCol = dbAgnostic.columnNumber (cols, '_Object_key_1')
@@ -171,7 +177,8 @@ def getAlleleRange(previousMax = 0):
 
 def getTeaserMarkers():
 	# get a dictionary where each allele key refers to a list of its
-	# teaser markers (up to three)
+	# teaser markers (up to three).  (Teaser markers are for 'mutation
+	# involves' relationships, not 'expressed component'.)
 	# Returns: { allele key : [ teaser marker 1, ... teaser marker 3 ] }
 
 	# to keep memory requirements down, we will go through the set of
@@ -183,8 +190,8 @@ def getTeaserMarkers():
 	alleleKeys = rowsPerAllele.keys()
 	alleleKeys.sort()
 
-	logger.debug('Need to find teasers for %d alleles from %d to %d' % (
-		len(alleleKeys), alleleKeys[0], alleleKeys[-1]))
+	logger.debug('Need to find M.I. teasers for %d alleles from %d to %d' \
+		% (len(alleleKeys), alleleKeys[0], alleleKeys[-1]))
 
 	# let's create our groups of alleles, one group for each execution of
 	# the query
@@ -279,6 +286,12 @@ def getTeaserMarkers():
 		for allele in group:
 			markerList = []
 
+			# if the allele had no mutation-involves relationships
+			# (only expressed-component), then skip it
+
+			if not relatedMarkers.has_key(allele):
+				continue
+
 			for relatedMarker in relatedMarkers[allele].keys():
 			    markerList.append ( (
 				MarkerUtils.getChromosomeSeqNum(relatedMarker),
@@ -302,7 +315,8 @@ def getTeaserMarkers():
 	for key in teasers.keys():
 		ct = ct + len(teasers[key])
 
-	logger.debug('Returning %d teasers for %d alleles' % (ct,len(teasers)))
+	logger.debug('Returning %d M.I. teasers for %d alleles' % (ct,
+		len(teasers)))
 	return teasers
 
 def getRelationshipRows(startAllele, endAllele):
@@ -312,22 +326,23 @@ def getRelationshipRows(startAllele, endAllele):
 	cmd = '''select r._Relationship_key,
 			r._Object_key_1 as allele_key,
 			r._Object_key_2 as marker_key,
+			r._Category_key,
 			r._Refs_key,
 			r._RelationshipTerm_key,
 			r._Qualifier_key,
 			r._Evidence_key
 		from mgi_relationship r, mrk_marker m
-		where r._Category_key = %d
+		where r._Category_key in (%d, %d)
 			and r._Object_key_1 >= %d
 			and r._Object_key_1 <= %d
 			and r._Object_key_2 = m._Marker_key
 			and m._Marker_Status_key in (1,3)
 		order by r._Object_key_1''' % (mutationInvolvesKey,
-			startAllele, endAllele)
+			expressedComponentKey, startAllele, endAllele)
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 
-	logger.debug ('Got %d interactions for alleles %d-%d' % (
+	logger.debug ('Got %d relationships for alleles %d-%d' % (
 		len(rows), startAllele, endAllele))
 	return cols, rows
 
@@ -346,13 +361,14 @@ def getPropertyRows(startAllele, endAllele):
 			mgi_relationship r,
 			mrk_marker m
 		where p._Relationship_key = r._Relationship_key
-			and r._Category_key = %d
+			and r._Category_key in (%d, %d)
 			and r._Object_key_1 >= %d
 			and r._Object_key_1 <= %d
 			and r._Object_key_2 = m._Marker_key
 			and m._Marker_Status_key in (1,3)
 		order by p._Relationship_key, p.sequenceNum''' % (
-			mutationInvolvesKey, startAllele, endAllele)
+			mutationInvolvesKey, expressedComponentKey,
+			startAllele, endAllele)
 
 	(cols1, rows1) = dbAgnostic.execute(cmd1)
 
@@ -372,7 +388,7 @@ def getPropertyRows(startAllele, endAllele):
 			mgi_notechunk c,
 			mrk_marker m
 		where r._Relationship_key = n._Object_key
-			and r._Category_key = %d
+			and r._Category_key in (%d, %d)
 			and t._NoteType_key = n._NoteType_key
 			and t._MGIType_key = 40
 			and n._Note_key = c._Note_key
@@ -381,7 +397,8 @@ def getPropertyRows(startAllele, endAllele):
 			and r._Object_key_2 = m._Marker_key
 			and m._Marker_Status_key in (1,3)
 		order by r._Relationship_key, c._Note_key, c.sequenceNum''' % (
-			mutationInvolvesKey, startAllele, endAllele)
+			mutationInvolvesKey, expressedComponentKey,
+			startAllele, endAllele)
 
 	(cols2, rows2) = dbAgnostic.execute(cmd2)
 
@@ -448,9 +465,10 @@ def expandRelationshipRows(iCols, iRows):
 	# produce the interaction rows for the data file, given the 'iCols'
 	# and 'iRows' as retrieved from getRelationshipRows(). 
 
-	global relationshipRowCount
+	global relationshipRowCount, expressedComponentCount
+	global mutationInvolvesCount
 
-	cols = [ 'mi_key', 'marker_key', 'interacting_marker_key',
+	cols = [ 'arm_key', 'marker_key', 'interacting_marker_key',
 		'interacting_marker_symbol', 'interacting_marker_id',
 		'relationship_category', 'relationship_term',
 		'qualifier', 'evidence_code', 'reference_key',
@@ -464,8 +482,7 @@ def expandRelationshipRows(iCols, iRows):
 	termCol = dbAgnostic.columnNumber(iCols, '_RelationshipTerm_key')
 	qualifierCol = dbAgnostic.columnNumber(iCols, '_Qualifier_key')
 	evidenceCol = dbAgnostic.columnNumber(iCols, '_Evidence_key')
-
-	category = categoryName[mutationInvolvesKey]
+	categoryCol = dbAgnostic.columnNumber(iCols, '_Category_key')
 
 	sortRows = []
 	teased = {}	# only flag each teaser marker once
@@ -478,10 +495,17 @@ def expandRelationshipRows(iCols, iRows):
 		term = VocabUtils.getSynonym(iRow[termCol],
 			'related organizer')
 
-		# flag markers which are teasers for the allele
+		categoryKey = iRow[categoryCol]
+		category = categoryName[categoryKey]
+
+		# flag markers which are teasers for the allele (only for
+		# 'mutation involves' relationships)
 
 		inTeaser = 0
-		if teasers.has_key(alleleKey):
+		if categoryKey == mutationInvolvesKey:
+		    mutationInvolvesCount = 1 + mutationInvolvesCount
+
+		    if teasers.has_key(alleleKey):
 			if markerKey in teasers[alleleKey]:
 
 				# This marker should be flagged as a teaser
@@ -495,6 +519,9 @@ def expandRelationshipRows(iCols, iRows):
 				elif markerKey not in teased[alleleKey]:
 					inTeaser = 1
 					teased[alleleKey].append(markerKey)
+
+		elif categoryKey == expressedComponentKey:
+		    expressedComponentCount = 1 + expressedComponentCount
 
 		row = [
 			armGenerator.getKey( iRow[relationshipCol] ),
@@ -513,9 +540,6 @@ def expandRelationshipRows(iCols, iRows):
 			]
 
 		rows.append(row)
-
-		# note that we use intern() here to share a single instance of
-		# the string, keeping memory requirements down
 
 		sortRow = [
 			alleleKey,
@@ -633,6 +657,13 @@ def main():
 
 	relationshipFile.close()
 	propertyFile.close()
+
+	# final debugging output
+
+	logger.debug('Found %d "mutation involves" rows' % \
+		mutationInvolvesCount)
+	logger.debug('Found %d "expressed component" rows' % \
+		expressedComponentCount)
 
 	# write the info out so that femover knows which output file goes with
 	# which database table
