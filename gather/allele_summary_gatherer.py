@@ -15,25 +15,182 @@ OMIM_ANNOTTYPE_KEY=1005
 NORMAL_PHENOTYPE="no abnormal phenotype observed"
 NOT_ANALYZED="not analyzed"
 
+NO_PHENOTYPIC_ANALYSIS = 293594		# key for 'no phenotypic analysis'
+EXPRESSES_COMPONENT = 1004		# category key for EC relationships
+ALLELE_SUBTYPE = 1014			# annot type key for allele subtypes
+RECOMBINASE = 11025588			# term key for recombinase subtype
+
+# name of (allele key, genotype key) temp table
+TEMP_TABLE = 'tmp_allele_genotype'
+
 ###---- Functions ---###
+def getCount(table, whereClause=''):
+	if whereClause:
+		where = ' where %s' % whereClause
+	else:
+		where = ''
+
+	cols, rows = dbAgnostic.execute('select count(1) from %s%s' % (
+		table, where))
+	return rows[0][0]
+
 def createTempTables():
+	# This function creates a temp table (named by TEMP_TABLE) which maps
+	# from an allele key to the genotype keys for which headers should be
+	# displayed on the allele summary page.  Currently, this set of
+	# genotypes should include:
+	#    1. naturally simple, one-marker genotypes (one allele pair)
+	#    2. conditional genotypes which leave only one marker when you
+	#	remove the recombinase alleles which do not have expressed
+	#	component relationships.  (also remove wild-type alleles)
+
+	# temp tables used in this function
+	gpc = 'genotype_pair_counts'
+	gam = 'genotype_allele_marker'
+	gmc = 'genotype_marker_counts'
+
+	# 1. build temp table gpc, mapping from a genotype key to its count
+	# of allele pairs.  Includes only genotypes with OMIM/MP annotations
+	# and to terms other than 'no phenotypic analysis'.
+
+	q1 = '''select p._Genotype_key, count(1) as pair_count
+		into temp table %s
+		from gxd_allelepair p
+		where exists (select 1 from voc_annot v
+			where v._AnnotType_key in (%d,%d)
+			and v._Term_key != %d
+			and v._Object_key = p._Genotype_key)
+		group by p._Genotype_key''' % (gpc, MP_ANNOTTYPE_KEY,
+			OMIM_ANNOTTYPE_KEY, NO_PHENOTYPIC_ANALYSIS)
+	dbAgnostic.execute(q1)
+
+	q1index = 'create index q1 on %s(_Genotype_key)' % gpc
+	dbAgnostic.execute(q1index)
+
+	postQ1 = getCount(gpc)
+	logger.debug('Put %d allele pair counts in %s' % (postQ1, gpc))
+
+	# 2. collect one-marker genotypes into TEMP_TABLE
+
+	q2 = '''select distinct gpc._Genotype_key, gag._Allele_key
+		into temp table %s
+		from %s gpc,
+			gxd_allelegenotype gag
+		where gpc._Genotype_key = gag._Genotype_key
+			and gpc.pair_count < 2''' % (TEMP_TABLE, gpc)
+	dbAgnostic.execute(q2)
+
+	q2index1 = 'create index q2a on %s(_Genotype_key)' % TEMP_TABLE
+	q2index2 = 'create index q2b on %s(_Allele_key)' % TEMP_TABLE
+	dbAgnostic.execute(q2index1)
+	dbAgnostic.execute(q2index2)
+
+	postQ2 = getCount(TEMP_TABLE)
+	logger.debug('Added %d one-marker genotypes to %s' % (
+		postQ2, TEMP_TABLE))
+
+	# 3. We now need to look at genotypes that weren't added to TEMP_TABLE
+	# already, to see if we can narrow down some to a single marker by
+	# removing consideration of wild-type alleles and recombinase alleles
+	# which do not have expressed component relationships.
+
+	q3 = '''select distinct gag._Genotype_key, 
+			gag._Allele_key, 
+			gag._Marker_key,
+			gg.isConditional,
+			0 as hasEC,
+			0 as isRecombinase
+		into temp table %s
+		from gxd_allelegenotype gag,
+			all_allele aa,
+			gxd_genotype gg,
+			%s gpc
+		where gag._Genotype_key = gpc._Genotype_key
+			and gag._Genotype_key = gg._Genotype_key
+			and gag._Allele_key = aa._Allele_key
+			and aa.isWildType = 0
+			and gpc.pair_count > 1''' % (gam, gpc)
+	dbAgnostic.execute(q3)
+	q3index1 = 'create index q3a on %s(_Genotype_key)' % gam
+	q3index2 = 'create index q3b on %s(_Allele_key)' % gam
+	q3index3 = 'create index q3c on %s(_Marker_key)' % gam
+
+	for q3i in [ q3index1, q3index2, q3index3 ]:
+		dbAgnostic.execute(q3i)
+
+	postQ3 = getCount(gam)
+	logger.debug('Added %d rows to %s' % (postQ3, gam))
+
+	q4 = '''update %s
+		set hasEC = 1
+		where _Allele_key in (select _Object_key_1
+			from mgi_relationship
+			where _Category_key = %d)''' % (
+				gam, EXPRESSES_COMPONENT)
+	dbAgnostic.execute(q4)
+	logger.debug('Identified %d rows with EC relationships' % \
+		getCount(gam, 'hasEC = 1'))
+
+	q5 = '''update %s
+		set isRecombinase = 1
+		where _Allele_key in (select _Object_key
+			from voc_annot
+			where _AnnotType_key = %d
+				and _Term_key = %d)''' % (
+					gam, ALLELE_SUBTYPE, RECOMBINASE)
+	dbAgnostic.execute(q5)
+	logger.debug('Identified %d rows with recombinase alleles' % \
+		getCount(gam, 'isRecombinase = 1'))
+
+	q6 = '''delete from %s
+		where isRecombinase = 1
+			and hasEC = 0''' % gam
+	dbAgnostic.execute(q6)
+
+	postQ6 = getCount(gam)
+	logger.debug('Removed %d rows from %s' % (postQ3 - postQ6, gam))
+
+	q7 = '''select _Genotype_key,
+			count(distinct _Marker_key) as marker_count
+		into temp table %s
+		from %s
+		group by _Genotype_key''' % (gmc,gam)
+	dbAgnostic.execute(q7)
+
+	logger.debug('Added %d rows to %s' % (getCount(gmc), gmc))
+
+	q8 = '''insert into %s
+		select distinct gmc._Genotype_key, gam._Allele_key
+		from %s gmc,
+			%s gam
+		where gmc._Genotype_key = gam._Genotype_key
+			and gmc.marker_count = 1''' % (TEMP_TABLE, gmc, gam)
+	dbAgnostic.execute(q8)
+
+	postQ8 = getCount(TEMP_TABLE)
+	logger.debug('Added %d simplified genotypes to %s' % (
+		postQ8 - postQ2, TEMP_TABLE))
+
+
+
 	# select allele_key->genotype_key mappings where allelepairnum<2 OR genotype is conditional
-        tempTable1="""
-		select gag._allele_key,gag._genotype_key
-		into temp table tmp_allele_genotype
-                from gxd_AlleleGenotype gag,
-		gxd_genotype gg,
-		(select _genotype_key,max(sequencenum) allelepairnum
-		   from gxd_allelepair gap group by _genotype_key) gap1
-                where gag._genotype_key=gap1._genotype_key
-			and gg._genotype_key=gag._genotype_key
-			and (gap1.allelepairnum<2 or gg.isconditional=1)
-        """
+#        tempTable1="""
+#		select gag._allele_key,gag._genotype_key
+#		into temp table %s
+#                from gxd_AlleleGenotype gag,
+#		gxd_genotype gg,
+#		(select _genotype_key,max(sequencenum) allelepairnum
+#		   from gxd_allelepair gap group by _genotype_key) gap1
+#                where gag._genotype_key=gap1._genotype_key
+#			and gg._genotype_key=gag._genotype_key
+#			and (gap1.allelepairnum<2 or gg.isconditional=1)
+#        """ % TEMP_TABLE
+
         tempIdx1="""
-                create index idx_snp_mrk_key on tmp_allele_genotype (_genotype_key)
-        """
-        logger.debug("creating temp table for alleles to simple genotypes")
-        dbAgnostic.execute(tempTable1)
+                create index idx_snp_mrk_key on %s (_genotype_key)
+        """ % TEMP_TABLE
+#        logger.debug("creating temp table for alleles to simple genotypes")
+#        dbAgnostic.execute(tempTable1)
         logger.debug("indexing temp table for alleles to simple genotypes")
         dbAgnostic.execute(tempIdx1)
         logger.debug("done creating temp tables")
@@ -160,7 +317,7 @@ cmds = [
 		vah.isNormal,
 		ms.synonym as header,
 		vah._term_key
-	from tmp_allele_genotype tag,
+	from %s tag,
 		VOC_AnnotHeader vah,
 		VOC_Term vt,
 		MGI_Synonym ms,
@@ -172,14 +329,14 @@ cmds = [
 		AND ms._SynonymType_key = mst._SynonymType_key
 		AND mst._MGIType_key = 13 
 		AND mst.synonymType = 'Synonym Type 2'
-	'''%MP_ANNOTTYPE_KEY,
+	'''% (TEMP_TABLE, MP_ANNOTTYPE_KEY),
 	# 1. get all diseases to allele_keys
 	'''
 	select tag._allele_key,
 		vt.term,
 		aa.accID omimId,
 		vt._term_key
-	from tmp_allele_genotype tag,
+	from %s tag,
 		VOC_Annot va,
 		VOC_Term vt,
 		ACC_Accession aa,
@@ -193,12 +350,12 @@ cmds = [
 		AND aa._MGIType_key = 13 
 		AND aa.preferred = 1
 		AND aa.private = 0
-	'''%OMIM_ANNOTTYPE_KEY,
+	'''% (TEMP_TABLE, OMIM_ANNOTTYPE_KEY),
 	# 2. allele summary genotypes
 	'''
 	select _allele_key,_genotype_key
-	from tmp_allele_genotype tag
-	''',
+	from %s tag
+	''' % TEMP_TABLE,
 	# 3. all alleles with an abnormal phenotype in a system
 	'''
 	select a._allele_key
