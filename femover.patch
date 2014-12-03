@@ -18,31 +18,6 @@ index ea16f4f..f4f3559 100755
  
  # Purpose: to make any bcp file tweaks, in preparation for bulk load into
  #	Postgres:
-diff --git a/femover.patch b/femover.patch
-index 9839469..e69de29 100644
---- a/femover.patch
-+++ b/femover.patch
-@@ -1,20 +0,0 @@
--diff --git a/control/mysqlConverter.sh b/control/mysqlConverter.sh
--index 4f1a3f7..3681976 100755
----- a/control/mysqlConverter.sh
--+++ b/control/mysqlConverter.sh
--@@ -1,4 +1,4 @@
---#!/usr/bin/sh
--+#!/bin/sh
-- 
-- # Purpose: currently a no-op; in the future, if processing of text files is
-- #	needed before loading them into MySQL, this is where it would go
--diff --git a/control/postgresConverter.sh b/control/postgresConverter.sh
--index ea16f4f..f4f3559 100755
----- a/control/postgresConverter.sh
--+++ b/control/postgresConverter.sh
--@@ -1,4 +1,4 @@
---#!/usr/bin/sh
--+#!/bin/sh
-- 
-- # Purpose: to make any bcp file tweaks, in preparation for bulk load into
-- #	Postgres:
 diff --git a/schema/marker_link.py b/schema/marker_link.py
 index ce85f32..a123313 100755
 --- a/schema/marker_link.py
