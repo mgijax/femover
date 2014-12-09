@@ -1,3 +1,8 @@
+TAG: femover-5-2-1-3
+DATE: 12/9/14
+STAFF: jsb
+CHANGES: fixed bug re: expressed_component alleles in marker_counts_gatherer
+
 TAG: femover-5-2-1-1
 DATE: 12/3/14
 STAFF: oblod
