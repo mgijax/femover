@@ -723,8 +723,6 @@ def checkForFinishedConversion():
 	while (i >= 0):
 		(table, path, id) = CONVERT_IDS[i]
 
-		logger.debug('convert: %s, %s, %s' % (table, path, CONVERT_DISPATCHER.getStatus(id)))
-
 		# if a file conversion operation finished, then remove it from
 		# the list of unfinished processes, schedule the file to be
 		# loaded
@@ -739,7 +737,6 @@ def checkForFinishedConversion():
 			scheduleLoad(table, path)
 
 		i = i - 1
-		logger.debug('convert: finished loop')
 
 	# if the gathering stage finished and there are no more unfinished
 	# conversions, then the conversion stage has finished -- report it
