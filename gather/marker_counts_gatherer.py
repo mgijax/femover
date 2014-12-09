@@ -459,7 +459,7 @@ cmds = [
 			voc_annot va,
 			voc_term vt
 		where a._Allele_key = gag._Allele_key
-			and c.name = 'mutation_involves'
+			and (c.name = 'mutation_involves' or c.name = 'expresses_component')
 			and c._Category_key = r._Category_key
 			and a._Allele_key = r._Object_key_1
 			and gag._Genotype_key = va._Object_key
