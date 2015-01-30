@@ -1697,7 +1697,7 @@ definition=An additional copy of a <A HREF="!FEWI_URL!glossary/dna">DNA</A> segm
 
 [ 
 key=e_coli 
-displayName=<I>E. coli</I> 
+displayName=E. coli
 definition=Common bacterium that geneticists have studied intensively because of its small \ 
 <A HREF="!FEWI_URL!glossary/genome">genome</A> size, normal lack of pathogenicity, \
 and ease of growth in the laboratory. 
