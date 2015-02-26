@@ -1190,6 +1190,7 @@ cmds = [
 	from voc_annot va, mrk_marker mm, mgi_organism mo
 	where va._AnnotType_key = %d
 		and va._Object_key = mm._Marker_key
+		and mm._Marker_Status_key in (1,3)
 		and va._Qualifier_key != %d
 		and mm._Organism_key = mo._Organism_key''' % \
 			(OMIM_HUMAN_MARKER, NOT_QUALIFIER),
@@ -1202,6 +1203,7 @@ cmds = [
 	where a._AnnotType_key = %d
 		and a._Qualifier_key != %d
 		and a._Object_key = m._Marker_key
+		and m._Marker_Status_key in (1,3)
 		and m._Organism_key = mo._Organism_key''' % (
 			DISEASE_MARKER, NOT_QUALIFIER),
 
