@@ -1,0 +1,9 @@
+Test File for ZFIN orthology - links to Expression (jlewis)								
+Mouse Symbol	MGI Marker ID	ZFIN symbol	non-mouse EG ID	Test Notes				
+Bet1	MGI:1343104	bet1	415135	1:1 (same nomen)				
+Cldn7	MGI:1859285	cldn7b	60635	1:1 (diff nomen)				
+Ppard	MGI:101884	pparda	30750	1:n				
+Ppard	MGI:101884	ppardb	30754	1:n				
+Nme2	MGI:97356	nme2b.1	30084	Different from H-G 				
+Ccnb1	MGI:88302	ccnb1	58025	Different from H-G 				
+Bodq1	MGI:3639904	ift81	432390	Dummy data - marker with no Expression ribbon prior to Zfin link				

@@ -5,6 +5,8 @@
 import config
 import Gatherer
 import logger
+import os
+import MarkerUtils
 
 ###--- Constants ---###
 
@@ -21,6 +23,9 @@ LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
 # organism 
 MOUSE = 1			
 HUMAN = 2
+ZEBRAFISH = 84
+CHICKEN = 63
+XENBASE = 95
 
 # MGI Type
 MARKER = 2			
@@ -28,14 +33,16 @@ MARKER = 2
 # marker cluster type (vocab term)
 HOMOLOGY_CLUSTER = 9272150	
 
+# marker cluster source (vocab term)
+ZFIN_SOURCE = 13575996
+GEISHA_SOURCE = 13575998
+XENBASE_SOURCE = 13611349
+
 # link group name
 HOMOLOGY_LINK_GROUP = 'homology gene links'	
-GXD_CHICKEN_EXPRESSION_LINK_GROUP = 'gxd chicken expression links'
-GXD_ZFIN_EXPRESSION_LINK_GROUP = 'gxd zfin expression links'
-
-# note type
-EXPRESSION_LINK_CHICKEN = 1043
-EXPRESSION_LINK_ZFIN = 1044
+ZFIN_EXPRESSION_LINK_GROUP = 'zfin expression links'
+GEISHA_EXPRESSION_LINK_GROUP = 'geisha expression links'
+XENBASE_EXPRESSION_LINK_GROUP = 'xenbase expression links'
 
 # markup?
 NO_MARKUPS = 0
@@ -47,6 +54,16 @@ USE_NEW_WINDOW = 1
 
 VISTA_POINT = 'VISTA-Point'
 GENE_TREE = 'Gene Tree'
+
+# URL to expression data at zfin; substitute in an NCBI ID for a Zfin marker
+zfin_url = '''http://zfin.org/cgi-bin/webdriver?MIval=aa-xpatselect.apg&query_results=exist&START=0&searchtype=equals&gene_name=%s'''
+
+# URL to expression data at geisha; substitute in an NCBI ID for a chicken
+# marker
+geisha_url = 'http://geisha.arizona.edu/geisha/search.jsp?search=NCBI+ID&text=%s'
+
+# URL to express data at xenbase; substiture in an ID
+xenbase_url = 'http://xenbase.org/gene/expression.do?method=displayGenePageExpression&entrezId=%s&tabId=1'
 
 ###--- Functions ---###
 
@@ -312,18 +329,12 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 			seqNum = seqNum + 1
 
 			vistaPointUrl = config.VISTA_POINT_URL
-			vistaPointUrl = vistaPointUrl.replace (
-				'<version>', version)
-			vistaPointUrl = vistaPointUrl.replace (
-				'<chromosome>', chromosome)
-			vistaPointUrl = vistaPointUrl.replace (
-				'<startCoordinate>', startCoord)
-			vistaPointUrl = vistaPointUrl.replace (
-				'<endCoordinate>', endCoord)
+			vistaPointUrl = vistaPointUrl.replace ( '<version>', version)
+			vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
+			vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
+			vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
 
-			links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
-				seqNum, None, VISTA_POINT, vistaPointUrl,
-				NO_MARKUPS, NO_NEW_WINDOW ] ) 
+			links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
 
 		logger.debug ('Stored %d mouse homology links' % seqNum)
 		return links
@@ -370,82 +381,35 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 
 			fullUrl = ldbUrl.replace ('@@@@', accID)
 
-			links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
-				seqNum, accID,
-				getDisplayText(ldbKey, ldbName, accID),
-				fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+			links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, accID, getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
 
 		logger.debug ('Stored %d other homology links' % seqNum)
 		return links
 
-	def getGxdChickenExpressionLinks (self):
-		# returns a list with one row for each link for links to
-		# homologous chicken markers, if they have expression
-		# Each row includes:
-		#	[ 'marker_key', 'link_group', 'sequence_num',
-		#	'associated_id', 'display_text', 'url', 'has_markups',
-		#	'use_new_window' ]
+	def getOrganismRows(self, resultIndex, markerKeyColumn, organismSymbolColumn, organismIdColumn, organismUrl, linkGroup):
+		cols, rows = self.results[resultIndex]
 
-		links = []
-
-		cols, rows = self.results[4]
-
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		chickSymbolCol = Gatherer.columnNumber (cols, 'chickSymbol')
-		urlCol = Gatherer.columnNumber (cols, 'note')
-
+		markerKeyCol = Gatherer.columnNumber (cols, markerKeyColumn)
+		symbolCol = Gatherer.columnNumber (cols, organismSymbolColumn)
+		idCol = Gatherer.columnNumber (cols, organismIdColumn)
+		
 		seqNum = 0
+		hasMarkups = 0
+		useNewWindow = 1
 
-		logger.debug ('Found %d chicken expression links' % len(rows))
+		out = []
 
 		for row in rows:
-
 			markerKey = row[markerKeyCol]
-			chickSymbol = row[chickSymbolCol]
-			url = row[urlCol]
+			organismSymbol = row[symbolCol]
+			organismID = row[idCol]
+
 			seqNum = seqNum + 1
 
-			links.append ( [ markerKey, GXD_CHICKEN_EXPRESSION_LINK_GROUP,
-				seqNum, ' ', chickSymbol,
-				url, NO_MARKUPS, NO_NEW_WINDOW ] )
+			out.append( [ markerKey, linkGroup, seqNum, organismID, organismSymbol, organismUrl % organismID, hasMarkups, useNewWindow ] )
 
-		logger.debug ('Stored %d chicken expression links' % seqNum)
-		return links
-
-	def getGxdZfinExpressionLinks (self):
-		# returns a list with one row for each link for links to
-		# homologous zfin markers, if they have expression
-		# Each row includes:
-		#	[ 'marker_key', 'link_group', 'sequence_num',
-		#	'associated_id', 'display_text', 'url', 'has_markups',
-		#	'use_new_window' ]
-
-		links = []
-
-		cols, rows = self.results[5]
-
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		zfinSymbolCol = Gatherer.columnNumber (cols, 'zfinSymbol')
-		urlCol = Gatherer.columnNumber (cols, 'note')
-
-		seqNum = 0
-
-		logger.debug ('Found %d chicken expression links' % len(rows))
-
-		for row in rows:
-
-			markerKey = row[markerKeyCol]
-			zfinSymbol = row[zfinSymbolCol]
-			url = row[urlCol]
-			seqNum = seqNum + 1
-
-			links.append ( [ markerKey, GXD_ZFIN_EXPRESSION_LINK_GROUP,
-				seqNum, ' ', zfinSymbol,
-				url, NO_MARKUPS, NO_NEW_WINDOW ] )
-
-		logger.debug ('Stored %d zfin expression links' % seqNum)
-		return links
-
+		logger.debug('Returning %d rows for expression links' % len(out))
+		return out
 
 	def collateResults (self):
 		self.finalColumns = [ 'marker_key', 'link_group',
@@ -455,8 +419,9 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 		self.finalResults = self.getHumanHomologyRows() + \
 				    self.getMouseHomologyRows() + \
 				    self.getOtherHomologyRows() + \
-				    self.getGxdChickenExpressionLinks() + \
-				    self.getGxdZfinExpressionLinks()
+				    self.getOrganismRows(4, 'mouse_marker_key', 'zfin_symbol', 'zfin_entrezgene_id', zfin_url, ZFIN_EXPRESSION_LINK_GROUP) + \
+				    self.getOrganismRows(5, 'mouse_marker_key', 'geisha_symbol', 'geisha_entrezgene_id', geisha_url, GEISHA_EXPRESSION_LINK_GROUP) + \
+				    self.getOrganismRows(6, 'mouse_marker_key', 'xenbase_symbol', 'xenbase_entrezgene_id', xenbase_url, XENBASE_EXPRESSION_LINK_GROUP)
 
 		logger.debug ('Found %d total links' % \
 			len(self.finalResults))
@@ -478,7 +443,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 #	a. EntrezGene (EntrezGene ID)
 
 cmds = [
-	# 0. human markers' IDs (for markers in a homology cluster)
+	# 0. human markers' IDs
 	'''select a._LogicalDB_key,
 		m._Marker_key,
 		a.accID
@@ -488,15 +453,10 @@ cmds = [
 		and a._MGIType_key = %d
 		and a._LogicalDB_key in (%d, %d, %d)
 		and a.private = 0
-		and a.preferred = 1
---		and exists (select 1 from MRK_Cluster mc,
---				MRK_ClusterMember mcm
---			where mcm._Marker_key = m._Marker_key
---			and mcm._Cluster_key = mc._Cluster_key
---			and mc._ClusterType_key = %d)''' % (
-		HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM, HOMOLOGY_CLUSTER),
+		and a.preferred = 1''' % (
+			HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
 
-	# 1. mouse markers' IDs (for markers in a homology cluster)
+	# 1. mouse markers' IDs
 	'''select a._LogicalDB_key,
 		m._Marker_key,
 		a.accID
@@ -506,16 +466,10 @@ cmds = [
 		and a._MGIType_key = %d
 		and a._LogicalDB_key in (%d, %d, %d)
 		and a.private = 0
-		and a.preferred = 1
---		and exists (select 1 from MRK_Cluster mc,
---				MRK_ClusterMember mcm
---			where mcm._Marker_key = m._Marker_key
---			and mcm._Cluster_key = mc._Cluster_key
---			and mc._ClusterType_key = %d)''' % (
-		MOUSE, MARKER, MGI, ENTREZ_GENE, ENSEMBL_GENE_MODEL,
-		HOMOLOGY_CLUSTER),
+		and a.preferred = 1''' % (
+			MOUSE, MARKER, MGI, ENTREZ_GENE, ENSEMBL_GENE_MODEL),
 
-	# 2. mouse markers' coordinates (for markers in a homology cluster)
+	# 2. mouse markers' coordinates
 	'''select mlc._Marker_key,
 		mlc.sequenceNum,
 		mlc.genomicChromosome,
@@ -527,16 +481,9 @@ cmds = [
 	where mlc._Organism_key = %d
 		and mlc.genomicChromosome is not null
 		and mlc.startCoordinate is not null
-		and mlc.endCoordinate is not null
---		and exists (select 1 from MRK_Cluster mc,
---				MRK_ClusterMember mcm
---			where mcm._Marker_key = mlc._Marker_key
---			and mcm._Cluster_key = mc._Cluster_key
---			and mc._ClusterType_key = %d)
-	order by mlc._Marker_key, mlc.sequenceNum
-	''' % (MOUSE, HOMOLOGY_CLUSTER),
+		and mlc.endCoordinate is not null''' % MOUSE, 
 
-	# 3. other species' markers (for markers in a homology cluster)
+	# 3. other species' markers
 	'''select a._LogicalDB_key,
 		m._Marker_key,
 		a.accID
@@ -547,51 +494,79 @@ cmds = [
 		and a._MGIType_key = %d
 		and a._LogicalDB_key = %d
 		and a.private = 0
-		and a.preferred = 1
---		and exists (select 1 from MRK_Cluster mc,
---				MRK_ClusterMember mcm
---			where mcm._Marker_key = mlc._Marker_key
---			and mcm._Cluster_key = mc._Cluster_key
---			and mc._ClusterType_key = %d)''' % (
-		HUMAN, MOUSE, MARKER, ENTREZ_GENE, HOMOLOGY_CLUSTER),
+		and a.preferred = 1''' % (
+			HUMAN, MOUSE, MARKER, ENTREZ_GENE),
 
-	# 4. GXD Marker Detail external links to chicken orthologs
-	'''select mmrk._Marker_key, mnc.note, 
-		cmrk.symbol as chickSymbol
-	from MGI_Note mn, MGI_NoteChunk mnc, MRK_Marker cmrk, MRK_Marker mmrk,
-		MRK_ClusterMember mcm, MRK_ClusterMember mmcm, MRK_Cluster mc
-	where mn._MGIType_key = 2
-  		and mn._Notetype_key = %d
-  		and mn._Note_key = mnc._Note_key
-  		and mn._Object_key = cmrk._Marker_key 
-  		and mn._Object_key = mcm._Marker_key 
-  		and mcm._Cluster_key = mc._Cluster_key
-  		and mc._ClusterType_key = %d
-  		and mmcm._Cluster_key = mc._Cluster_key 
-  		and mmcm._Marker_key = mmrk._Marker_key
-  		and mmrk._Organism_key = 1
-	order by cmrk.symbol
-	''' % (EXPRESSION_LINK_CHICKEN, HOMOLOGY_CLUSTER),
+	# 4. data for ZFIN expression links (via homology)
+	'''select distinct m._Marker_key as mouse_marker_key,
+		zm.symbol as zfin_symbol,
+		za.accID as zfin_entrezgene_id
+	from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
+		mrk_clustermember zcm, mrk_marker zm, acc_accession za
+	where m._Marker_Status_key in (1,3)
+		and m._Organism_key = %d
+		and m._Marker_key = mcm._Marker_key
+		and mcm._Cluster_key = mc._Cluster_key
+		and mc._ClusterType_key = %d
+		and mc._ClusterSource_key = %d
+		and mc._Cluster_key = zcm._Cluster_key
+		and zcm._Marker_key = zm._Marker_key
+		and zm._Organism_key = %d
+		and zcm._Marker_key = za._Object_key
+		and za._MGIType_key = %d
+		and za._LogicalDB_key = %d
+		and za.private = 0
+		and za.preferred = 1
+	order by m._Marker_key, zm.symbol''' % (MOUSE, HOMOLOGY_CLUSTER,
+			ZFIN_SOURCE, ZEBRAFISH, MARKER, ENTREZ_GENE),
 
-	# 5. GXD Marker Detail external links to zfin orthologs
-	'''select mmrk._Marker_key, mnc.note, 
-		zmrk.symbol as zfinSymbol
-	from MGI_Note mn, MGI_NoteChunk mnc, MRK_Marker zmrk, MRK_Marker mmrk,
-		MRK_ClusterMember mcm, MRK_ClusterMember mmcm, MRK_Cluster mc
-	where mn._MGIType_key = 2
-  		and mn._Notetype_key = %d
-  		and mn._Note_key = mnc._Note_key
-  		and mn._Object_key = zmrk._Marker_key 
-  		and mn._Object_key = mcm._Marker_key 
-  		and mcm._Cluster_key = mc._Cluster_key
-  		and mc._ClusterType_key = %d
-  		and mmcm._Cluster_key = mc._Cluster_key 
-  		and mmcm._Marker_key = mmrk._Marker_key
-  		and mmrk._Organism_key = 1
-	order by zmrk.symbol
-	''' % (EXPRESSION_LINK_ZFIN, HOMOLOGY_CLUSTER),
-
+	# 5. data for chicken expression links (via homology)
+	'''select distinct m._Marker_key as mouse_marker_key,
+		zm.symbol as geisha_symbol,
+		za.accID as geisha_entrezgene_id
+	from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
+		mrk_clustermember zcm, mrk_marker zm, acc_accession za
+	where m._Marker_Status_key in (1,3)
+		and m._Organism_key = %d
+		and m._Marker_key = mcm._Marker_key
+		and mcm._Cluster_key = mc._Cluster_key
+		and mc._ClusterType_key = %d
+		and mc._ClusterSource_key = %d
+		and mc._Cluster_key = zcm._Cluster_key
+		and zcm._Marker_key = zm._Marker_key
+		and zm._Organism_key = %d
+		and zcm._Marker_key = za._Object_key
+		and za._MGIType_key = %d
+		and za._LogicalDB_key = %d
+		and za.private = 0
+		and za.preferred = 1
+	order by m._Marker_key, zm.symbol''' % (MOUSE, HOMOLOGY_CLUSTER,
+			GEISHA_SOURCE, CHICKEN, MARKER, ENTREZ_GENE),
+	
+	# 6. data for xenbase expression links (via homology)
+	'''select distinct m._Marker_key as mouse_marker_key,
+		zm.symbol as xenbase_symbol,
+		za.accID as xenbase_entrezgene_id
+	from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
+		mrk_clustermember zcm, mrk_marker zm, acc_accession za
+	where m._Marker_Status_key in (1,3)
+		and m._Organism_key = %d
+		and m._Marker_key = mcm._Marker_key
+		and mcm._Cluster_key = mc._Cluster_key
+		and mc._ClusterType_key = %d
+		and mc._ClusterSource_key = %d
+		and mc._Cluster_key = zcm._Cluster_key
+		and zcm._Marker_key = zm._Marker_key
+		and zm._Organism_key = %d
+		and zcm._Marker_key = za._Object_key
+		and za._MGIType_key = %d
+		and za._LogicalDB_key = %d
+		and za.private = 0
+		and za.preferred = 1
+	order by m._Marker_key, zm.symbol''' % (MOUSE, HOMOLOGY_CLUSTER,
+			XENBASE_SOURCE, XENBASE, MARKER, ENTREZ_GENE),
 	]
+
 
 # order of fields (from the query results) to be written to the
 # output file

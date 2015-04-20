@@ -19,6 +19,7 @@ import symbolsort
 import ReferenceCitations
 import types
 import VocabSorter
+import GXDUtils
 
 ###--- Globals ---###
 
@@ -375,18 +376,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			len(extras))
 		return extras
 
-	def sortSystems(self):
-		cols, rows = self.results[9]
-
-		self.systemSequenceNum = {}
-		i = 0
-
-		for row in rows:
-			i = i + 1
-			self.systemSequenceNum[row[0]] = i
-		logger.debug ('Sorted %d systems' % i)
-		return
-
 	def sortGenotypeData(self):
 		cols, rows = self.results[8]
 
@@ -457,18 +446,18 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		wildtype = {}
 
-		# query 10 - genotypes that are always wild-type
+		# query 9 - genotypes that are always wild-type
 
-		cols, rows = self.results[10]
+		cols, rows = self.results[9]
 
 		for row in rows:
 			wildtype[row[0]] = 1
 
 		logger.debug ('Found %d wild-type genotypes' % len(rows))
 
-		# query 11 - genotype/assay pairs that are wild-type together
+		# query 10 - genotype/assay pairs that are wild-type together
 
-		cols, rows = self.results[11]
+		cols, rows = self.results[10]
 
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
@@ -500,7 +489,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# definitions for expression_result_summary table data
 
 		ersCols = [ 'result_key', '_Assay_key', 'assayType',
-			'assayID', '_Marker_key', 'symbol', 'system', 'stage',
+			'assayID', '_Marker_key', 'symbol', 'stage',
 			'age', 'ageAbbreviation', 'age_min', 'age_max',
 			'structure', 'printname', 'structureKey',
 			'detectionLevel', 'isExpressed', '_Refs_key',
@@ -516,6 +505,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ertiRows = []
 
 		ageMinMax = {}		# result key -> (age min, age max)
+
+		# definitions for expression_result_anatomical_systems
+		# table data
+
+		erasCols =  [ 'result_key', 'anatomical_structure' ]
+		erasRows = []
 
 		# now, we need to walk through our assays to populate the list
 		# of data for each table
@@ -581,14 +576,15 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			newKey = newKey + 1
 
+			stage = ADMapper.getStageByKey(emapsKey)
+
 			outRow = [ newKey,
 			    assayKey,
 			    assayType,
 			    assayIDs[assayKey],
 			    markerKey,
 			    symbols[markerKey],
-			    ADVocab.getSystem(structureKey),
-			    ADMapper.getStageByKey(emapsKey),
+			    stage,
 			    age,
 			    abbreviate(age),
 			    ageMin,
@@ -615,6 +611,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    paneRow = [ newKey, paneKey, len(ertiRows) + 1 ]
 			    ertiRows.append (paneRow)
 
+			# include anatomical structures for the result -- used
+			# for filtering in the fewi
+
+			emapaKey = GXDUtils.getEmapaKey(emapsKey)
+			for structure in GXDUtils.getEmapaHighLevelTerms(emapaKey, stage):
+				erasRows.append ( [ newKey, structure ] )
+
 		logger.debug ('Got %d GXD result summary rows' % len(ersRows))
 		logger.debug ('Got %d GXD result/pane rows' % len(ertiRows))
 
@@ -634,6 +637,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		
 		self.output.append( (mtCols,mtRows) )
 
+		self.output.append( (erasCols, erasRows) )
+		logger.debug('Got %d high-level EMAPA terms for %d results' \
+			% (len(erasRows), len(ersRows)) )
 		return
 
 	def processMarkerTissueCounts(self,markerTissueCounts):
@@ -682,11 +688,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			return 2
 		return 3
 
-	def getSystemSequenceNum (self, system):
-		if self.systemSequenceNum.has_key(system):
-			return self.systemSequenceNum[system]
-		return len(self.systemSequenceNum) + 1
-
 	def getGenotypeSequenceNum (self, genotypeKey):
 		if self.byGenotype.has_key(genotypeKey):
 			return self.byGenotype[genotypeKey]
@@ -696,11 +697,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# build and return the rows (and columns) for the
 		# expression_result_sequence_num table
 
-		self.sortSystems()
 		self.sortGenotypeData()
 
 		cols = [ 'result_key', 'by_assay_type', 'by_gene_symbol',
-			'by_anatomical_system', 'by_age', 'by_strucure',
+			'by_age', 'by_strucure',
 			'by_expressed', 'by_mutant_alleles', 'by_reference' ]
 		rows = []
 
@@ -718,7 +718,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		byAssayType = []
 		bySymbol = []
-		bySystem = []
 		byAge = []
 		byStructure = []
 		byExpressed = []
@@ -732,7 +731,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		assayKeyCol = Gatherer.columnNumber (ersCols, '_Assay_key')
 		assayTypeCol = Gatherer.columnNumber (ersCols, 'assayType')
 		symbolCol = Gatherer.columnNumber (ersCols, 'symbol')
-		systemCol = Gatherer.columnNumber (ersCols, 'system')
 		stageCol = Gatherer.columnNumber (ersCols, 'stage')
 		expressedCol = Gatherer.columnNumber (ersCols, 'isExpressed')
 		refsKeyCol = Gatherer.columnNumber (ersCols, '_Refs_key')
@@ -767,7 +765,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    symbol = self.getSymbolSequenceNum (row[symbolCol])
 		    assay = VocabSorter.getAssayTypeSequenceNum (
 			row[assayTypeCol])
-		    system = self.getSystemSequenceNum(row[systemCol])
 		    mutants = self.getGenotypeSequenceNum (row[genotypeKeyCol])
 		    refs = ReferenceCitations.getSequenceNum (row[refsKeyCol])
 
@@ -777,8 +774,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    structure, stage, expressed, resultKey) )
 		    bySymbol.append ( (symbol, assay, ageMin, ageMax,
 			    structure, stage, expressed, resultKey) )
-		    bySystem.append ( (system, structure, stage, ageMin,
-			    ageMax, expressed, symbol, resultKey) )
 		    byAge.append ( (ageMin, ageMax, structure, stage, 
 			    expressed, symbol, assay, resultKey) )
 		    byStructure.append ( (structure, stage, ageMin, ageMax,
@@ -796,7 +791,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		# sort the individual ordering lists
 
-		for orderingList in [ byAssayType, bySymbol, bySystem, byAge,
+		for orderingList in [ byAssayType, bySymbol, byAge,
 			byStructure, byExpressed, byMutants, byReference]:
 				orderingList.sort()
 
@@ -809,7 +804,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for key in resultKeys:
 			output[key] = [ key ]
 
-		for orderingList in [ byAssayType, bySymbol, bySystem, byAge,
+		for orderingList in [ byAssayType, bySymbol, byAge,
 			byStructure, byExpressed, byMutants, byReference ]:
 				i = 0
 
@@ -987,14 +982,7 @@ cmds = [
 			where g._Genotype_key = gap._Genotype_key)
 	order by gap.sequenceNum''',
 
-	# 9. ordered list of systems
-	'''select distinct t.term
-	from gxd_structure s,
-		voc_term t
-	where s._System_key = t._Term_key
-	order by t.term''',
-
-	# 10. genotypes with no allele pairs (treat expression assays for
+	# 9. genotypes with no allele pairs (treat expression assays for
 	# these as wild type)
 	'''select g._Genotype_key
 	from gxd_genotype g
@@ -1002,7 +990,7 @@ cmds = [
 		and not exists (select 1 from gxd_allelepair p
 			where g._Genotype_key = p._Genotype_key)''',
 
-	# 11. also treat expression assays for these genotypes as wild type;
+	# 10. also treat expression assays for these genotypes as wild type;
 	# these have:
 	#	a. assay type = In situ reporter (knock in) (key 9)
 	#	b. only one allele pair
@@ -1036,7 +1024,7 @@ cmds = [
 files = [
 	('expression_result_summary',
 		[ 'result_key', '_Assay_key', 'assayType', 'assayID',
-		'_Marker_key', 'symbol', 'system', 'stage', 'age',
+		'_Marker_key', 'symbol', 'stage', 'age',
 		'ageAbbreviation', 'age_min', 'age_max',
 		'structure', 'printname', 'structureKey', 'detectionLevel',
 		'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
@@ -1050,7 +1038,7 @@ files = [
 
 	('expression_result_sequence_num',
 		[ 'result_key', 'by_assay_type', 'by_gene_symbol',
-		'by_anatomical_system', 'by_age', 'by_strucure',
+		'by_age', 'by_strucure',
 		'by_expressed', 'by_mutant_alleles', 'by_reference' ],
 		'expression_result_sequence_num'),
 
@@ -1058,6 +1046,10 @@ files = [
 	       	[Gatherer.AUTO, '_Marker_key', '_Structure_key', 'printName',
 		'allCount', 'detectedCount', 'notDetectedCount', 'sequenceNum'],
 		'marker_tissue_expression_counts'),
+
+	('expression_result_anatomical_systems',
+		[ Gatherer.AUTO, 'result_key', 'anatomical_structure' ],
+		'expression_result_anatomical_systems'),
 	]
 
 # global instance of a ExpressionResultSummaryGatherer

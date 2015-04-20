@@ -9,6 +9,11 @@ import utils
 import logger
 import GOGraphs
 
+HOMOLOGENE = 9272151
+HGNC = 13437099
+HYBRID = 13764519
+HOMOLOGY = 9272150
+
 ###--- Globals ---###
 
 # which organisms should be given priority when ordering
@@ -68,7 +73,8 @@ class Cluster:
 		clusterType, 
 		source, 
 		version, 
-		date
+		date,
+		secondarySource = None
 		):
 
 		self.key = clusterKey
@@ -77,6 +83,7 @@ class Cluster:
 		self.source = source
 		self.version = version
 		self.date = date 
+		self.secondarySource = secondarySource
 		self.organisms = {}	# organism -> [ marker key 1, ... ]
 		self.markers = {}	# marker key -> [ symbol, organism,
 					#    qualifier, refsKey, markerKey ]
@@ -98,6 +105,9 @@ class Cluster:
 			self.organisms[organism] = []
 		self.organisms[organism].append (markerKey)
 		return 
+
+	def getSecondarySource(self):
+		return self.secondarySource
 
 	def getClusterData (self):
 		return (self.key, self.accID, self.clusterType, self.source,
@@ -145,6 +155,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 		organismPos = Gatherer.columnNumber (cols, 'organism')
 		qualifierPos = Gatherer.columnNumber (cols, 'qualifier')
 		refsPos = Gatherer.columnNumber (cols, '_Refs_key')
+		secSourcePos = Gatherer.columnNumber (cols, 'secondary_source')
 
 		clusters = {}	# cluster key -> Cluster object
 
@@ -164,11 +175,22 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 				accID = row[idPos]
 				version = row[versionPos]
 				date = row[datePos]
+				secondarySource = row[secSourcePos]
+
+				# custom tweaks for secondary source
+				if secondarySource == 'both':
+					secondarySource = 'HomoloGene and HGNC'
+				elif secondarySource == 'none':
+					secondarySource = ''
+				elif secondarySource == 'HG':
+					secondarySource = 'HomoloGene'
+
 				if date:
 					date = str(date)[:10]
 
 				cluster = Cluster (clusterKey, accID,
-					clusterType, source, version, date)
+					clusterType, source, version, date,
+					secondarySource)
 
 				clusters[clusterKey] = cluster
 			else:
@@ -194,7 +216,8 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 		# our result sets.
 
 		hcCols = [ 'clusterKey', 'clusterID', 'version',
-			'cluster_date', 'source', 'hasComparativeGOGraph' ]
+			'cluster_date', 'source', 'secondary_source', 
+			'hasComparativeGOGraph' ]
 		hcRows = []
 
 		hcoCols = [ 'clusterOrganismKey', 'clusterKey', 'organism',
@@ -218,6 +241,8 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('%d clusters' % len(clusterKeys))
 
+		secondarySource = None
+
 		for clusterKey in clusterKeys:
 			cluster = clusters[clusterKey]
 
@@ -227,6 +252,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 				cluster.getClusterData()
 
 			hcRows.append ( [key, accID, version, date, source,
+				cluster.getSecondarySource(),
 				GOGraphs.hasComparativeGOGraph(accID) ] )
 			coSeqNum = 0
 			hcotmSeqNum = 0
@@ -284,14 +310,22 @@ cmds = [
 		mcm.sequenceNum,
 		mo.commonName as organism,
 		null as qualifier,
-		null as _Refs_key
-	from mrk_cluster mc, mrk_clustermember mcm, mrk_marker mm,
-		voc_term src, voc_term typ, mgi_organism mo
-	where mc._Cluster_key = mcm._Cluster_key
-		and mcm._Marker_key = mm._Marker_key
-		and mc._ClusterType_key = typ._Term_key
-		and mm._Organism_key = mo._Organism_key
-		and mc._ClusterSource_key = src._Term_key''',
+		null as _Refs_key,
+		p.value as secondary_source
+	from mrk_cluster mc
+	inner join mrk_clustermember mcm on (mc._Cluster_key = mcm._Cluster_key)
+	inner join mrk_marker mm on (mcm._Marker_key = mm._Marker_key)
+	inner join voc_term typ on (mc._ClusterType_key = typ._Term_key)
+	inner join mgi_organism mo on (mm._Organism_key = mo._Organism_key)
+	inner join voc_term src on (mc._ClusterSource_key = src._Term_key)
+	left outer join mgi_property p on (mc._Cluster_key = p._Object_key)
+	left outer join mgi_propertytype pt on (
+		p._PropertyType_key = pt._PropertyType_key
+		and pt.propertyType = 'HGNC/HG Hybrid Homology'
+		)
+	where mc._ClusterSource_key in (%d, %d, %d)
+		and mc._ClusterType_key = %d''' % (
+			HOMOLOGENE, HGNC, HYBRID, HOMOLOGY),
 	]
 
 # data about files to be written; for each:  (filename prefix, list of field
@@ -299,7 +333,8 @@ cmds = [
 files = [
 	('homology_cluster',
 		[ 'clusterKey', 'clusterID', 'version', 'cluster_date',
-			'source', 'hasComparativeGOGraph', ],
+			'source', 'secondary_source',
+			'hasComparativeGOGraph', ],
 		'homology_cluster'),
 
 	('homology_cluster_organism',

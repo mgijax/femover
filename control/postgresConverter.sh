@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 
 # Purpose: to make any bcp file tweaks, in preparation for bulk load into
 #	Postgres:
@@ -21,11 +21,10 @@
 #sed 's/#=#\\$//g' | \
 #sed 's/&=&/	/g' > $1.new
 
-cat "$1" | $MGI_PYTHONLIB/postgresTextCleaner.py > "$1".new
+#cat "$1" | $MGI_PYTHONLIB/postgresTextCleaner.py > "$1".new
 
 # replace the original file
-rm "$1"
-mv "$1".new "$1"
+#cp "$1" "$1".newmod
 
 # report back the file to be loaded
 echo "$1"

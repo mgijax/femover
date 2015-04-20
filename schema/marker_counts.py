@@ -13,6 +13,7 @@ tableName = 'marker_counts'
 createStatement = '''CREATE TABLE %s  ( 
 	marker_key				int	NOT NULL,
 	reference_count				int	NULL,
+	disease_relevant_reference_count	int	NULL,
 	sequence_count				int	NULL,
 	sequence_refseq_count			int	NULL,
 	sequence_uniprot_count			int	NULL,
@@ -52,6 +53,7 @@ comments = {
 	Table.COLUMN : {
 		'marker_key' : 'identifies the marker',
 		'reference_count' : 'count of related references',
+		'disease_relevant_reference_count' : 'count of related references which are related to disease annotations',
 		'sequence_count' : 'count of related sequences',
 		'sequence_refseq_count' : 'count of RefSeq sequences',
 		'sequence_uniprot_count' : 'count of UniProt sequences',

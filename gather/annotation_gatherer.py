@@ -3,6 +3,7 @@
 # gathers data for the 'annotation_*' and '*_to_annotation' tables in the
 # front-end database
 
+import dbAgnostic
 import Gatherer
 import VocabSorter
 import logger
@@ -12,6 +13,7 @@ import symbolsort
 import AlleleAndGenotypeSorter
 import AnnotationKeyGenerator
 import gc
+import utils
 
 ###--- Constants ---###
 
@@ -24,6 +26,12 @@ MP_GENOTYPE = 1002	# VOC_AnnotType : MP/Genotype
 GT_ROSA = 37270		# marker Gt(ROSA)26Sor
 DRIVER_NOTE = 1034	# MGI_NoteType Driver
 NOT_QUALIFIER = 1614157	# VOC_Term NOT
+
+BUDDING_YEAST_LDB = 114		# logical database key for budding yeast
+BUDDING_YEAST = 'budding yeast'	# organism name for budding yeast
+FISSION_YEAST_LDB = 115		# logical database key for fission yeast
+FISSION_YEAST = 'fission yeast'	# organism name for fission yeast
+CHEBI_LDB = 127			# logical database key for ChEBI
 
 ###--- Globals ---###
 
@@ -111,6 +119,121 @@ def compareMarkers (a, b):
 	return cmp(aKey, bKey) 
 
 ###--- Classes ---###
+
+class OrganismFinder:
+	# Is: a mapping from an inferred-from ID to its organism
+	# Has: see Is
+	# Does: maps from each inferred-from ID to its organism, when we can
+	#	track it down
+
+	def __init__ (self):
+		self.idCache = {}	# maps from ID -> organism key
+		self.organismCache = {}	# maps from organism key -> name
+
+		# has this object been initialized?
+		self.initialized = False
+
+		# base query for object lookups; fill in organism key field,
+		# extra table(s), and extra where clause(s)
+		self.baseQuery = '''select distinct aa.accID, %s
+			from voc_evidence ve,
+				acc_accession aa,
+				voc_annot va,
+				acc_accession bb,
+				%s
+			where ve._AnnotEvidence_key = aa._Object_key
+				and aa._MGIType_key = 25
+				and ve._Annot_key = va._Annot_key
+				and va._AnnotType_key not in (%s, %s)
+				and aa.accID = bb.accID
+				and aa._LogicalDB_key != %d
+				and %s
+		''' % ('%s', '%s', OMIM_MARKER, MP_MARKER, CHEBI_LDB, '%s')
+
+		return
+
+	def cacheGeneric(self, cmd, objectType):
+		(cols, rows) = dbAgnostic.execute(cmd)
+
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+		organismCol = dbAgnostic.columnNumber (cols, '_Organism_key')
+
+		for row in rows:
+			self.idCache[row[idCol]] = row[organismCol]
+		logger.debug('Cached organisms for %d %s IDs' % (
+			len(rows), objectType))
+		return
+
+	def cacheMarkers(self):
+		cmd = self.baseQuery % ('m._Organism_key',
+			'mrk_marker m',
+			'bb._MGIType_key = 2 ' + \
+				'and bb._Object_key = m._Marker_key')
+		self.cacheGeneric(cmd, 'marker')
+		return
+
+	def cacheAlleles(self):
+		cmd = self.baseQuery % ('m._Organism_key',
+			'all_allele a, mrk_marker m',
+			'bb._MGIType_key = 11 ' + \
+				'and bb._Object_key = a._Allele_key ' + \
+				'and a._Marker_key = m._Marker_key')
+		self.cacheGeneric(cmd, 'allele')
+		return
+
+	def cacheSequences(self):
+		cmd = self.baseQuery % ('s._Organism_key',
+			'seq_sequence s',
+			'bb._MGIType_key = 19 ' + \
+				'and bb._Object_key = s._Sequence_key')
+		self.cacheGeneric(cmd, 'sequence')
+		return
+
+	def cacheYeast(self):
+		cmd = '''select distinct accID from acc_accession
+			where _MGIType_key = 25 and _LogicalDB_key = %d'''
+
+		for (name, ldb) in [ (BUDDING_YEAST, BUDDING_YEAST_LDB),
+					(FISSION_YEAST, FISSION_YEAST_LDB) ]:
+			(cols, rows) = dbAgnostic.execute(cmd % ldb)
+
+			idCol = dbAgnostic.columnNumber (cols, 'accID')
+
+			for row in rows:
+				self.idCache[row[idCol]] = name
+
+			self.organismCache[name] = name
+
+			logger.debug('Cached organisms for %d %s IDs' % (
+				len(rows), name) )
+		return
+
+
+	def cacheOrganisms(self):
+		cmd = 'select _Organism_key, commonName from MGI_Organism'
+		(cols, rows) = dbAgnostic.execute(cmd)
+
+		keyCol = dbAgnostic.columnNumber (cols, '_Organism_key')
+		nameCol = dbAgnostic.columnNumber (cols, 'commonName')
+
+		for row in rows:
+			self.organismCache[row[keyCol]] = \
+				utils.cleanupOrganism(row[nameCol])
+		logger.debug('Cached %d organisms' % len(self.organismCache))
+		return
+
+	def getOrganism(self, accID):
+		if not self.initialized:
+			self.cacheYeast()
+			self.cacheSequences()
+			self.cacheAlleles()
+			self.cacheMarkers()
+			self.cacheOrganisms()
+			self.initialized = True
+
+		if self.idCache.has_key(accID):
+			return self.organismCache[self.idCache[accID]]
+		return None
 
 class AnnotationGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for most of the marker_go_* tables
@@ -367,9 +490,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			# unique (annotation key, evidence term key,
 			# inferred from) tuple
 
-#			newAnnotKey = getNewAnnotationKey (annotKey,
-#				evidence, row[inferredCol])
-
 			newAnnotKey = getNewAnnotationKey (annotKey,
 				evidenceTermKey = evidence,
 				inferredFrom = row[inferredCol])
@@ -493,7 +613,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			done[annotationKey] = 1
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, None, 'Marker',
+				row[termCol], termID, None, None, 'Marker',
 				annotType, 0, 0 ]
 			aRows.append (aRow)
 
@@ -567,7 +687,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			annotType = 'Protein Ontology/Marker'
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, None, 'Marker',
+				row[termCol], termID, None, None, 'Marker',
 				annotType, 0, 0 ]
 			aRows.append (aRow)
 
@@ -663,7 +783,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			done[annotationKey] = 1
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, None, 'Marker',
+				row[termCol], termID, None, None, 'Marker',
 				annotType, 0, 0 ]
 			aRows.append (aRow)
 
@@ -768,13 +888,15 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		# annotation table columns and rows
 		aCols = [ 'annotation_key', 'dag_name', 'qualifier',
 			'vocab_name', 'term', 'term_id', 'evidence_code',
+			'evidence_term',
 			'object_type', 'annotation_type', 'reference_count',
 			'inferred_id_count' ]
 		aRows = []
 
 		# annotation_inferred_from_id columns and rows
 		iCols = [ 'unique_key', 'annotation_key', 'logical_db',
-			'acc_id', 'preferred', 'private', 'sequence_num' ]
+			'acc_id', 'organism', 'preferred', 'private',
+			'sequence_num' ]
 		iRows = []
 
 		# annotation_reference columns and rows
@@ -797,6 +919,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			'by_term_alpha', 'by_vocab', 'by_annotation_type',
 			'by_vocab_dag_term', 'by_marker_dag_term' ]
 		sRows = []
+
+		finder = OrganismFinder()
 
 		# object/dag/term sorting to be done later; just collect the
 		# needed data for now.  We need to put this in an instance
@@ -896,6 +1020,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			    refCount = 0	# number of references
 			    idCount = 0		# number of inferred-from IDs
 			    evidenceCode = None	# default to no evidence code
+			    evidenceTerm = None	# default to no evidence code
 
 			    if done.has_key(annotationKey):
 				    continue
@@ -906,6 +1031,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				evidenceCode = Gatherer.resolve (
 				    annotationEvidence[annotationKey],
 				    'VOC_Term', '_Term_key', 'abbreviation')
+				evidenceTerm = Gatherer.resolve (
+				    annotationEvidence[annotationKey],
+				    'VOC_Term', '_Term_key', 'term')
 
 			    # reference records
 			    if annotationRefs.has_key(annotationKey):
@@ -921,15 +1049,16 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				ids = inferredFromIDs[annotationKey]
 				for (id, ldb, preferred) in ids:
 				    iRows.append ( (len(iRows),
-					annotationKey, ldb, id, preferred,
-					0, len(iRows) ) )
+					annotationKey, ldb, id,
+					finder.getOrganism(id),
+					preferred, 0, len(iRows) ) )
 				idCount = len(inferredFromIDs[annotationKey])
 
 			    # populate annotation table
 
 			    baseRow = [ annotationKey, dagName, qualifier,
-				vocab, term, termID, evidenceCode, objectType,
-				annotType, refCount, idCount ]
+				vocab, term, termID, evidenceCode, evidenceTerm,
+				objectType, annotType, refCount, idCount ]
 
 			    aRows.append (baseRow)
 
@@ -1251,14 +1380,14 @@ cmds = [
 files = [
 	('annotation',
 		[ 'annotation_key', 'dag_name', 'qualifier', 'vocab_name',
-			'term', 'term_id', 'evidence_code', 'object_type',
-			'annotation_type', 'reference_count',
+			'term', 'term_id', 'evidence_code', 'evidence_term',
+			'object_type', 'annotation_type', 'reference_count',
 			'inferred_id_count' ],
 		'annotation'),
 
 	('annotation_inferred_from_id',
 		[ 'unique_key', 'annotation_key', 'logical_db', 'acc_id',
-			'preferred', 'private', 'sequence_num' ],
+			'organism', 'preferred', 'private', 'sequence_num' ],
 		'annotation_inferred_from_id'),
 
 	('annotation_reference',

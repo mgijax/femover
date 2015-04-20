@@ -529,15 +529,16 @@ def getTermSequenceNumRows(outputColumns):
 
 def getTermRows(outputColumns):
 	# get rows for the term table.
-	# columns:  term key, term, accID, vocab, display vocab, definition,
-	#	sequence num, is root, is leaf, is obsolete
+	# columns:  term key, term, accID, vocab, display vocab, abbreviation,
+	#	definition, sequence num, is root, is leaf, is obsolete
 
 	_loadConstants()
 	_loadTermData()
 	_loadIDs()
 	_loadDescendentCounts()
 
-	myCols = [ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 'def',
+	myCols = [ 'termKey', 'term', 'accID', 'vocab', 'displayVocab',
+		'abbreviation', 'def',
 		'sequenceNum', 'isRoot', 'isLeaf', 'isObsolete' ]
 
 	rows = []
@@ -558,6 +559,7 @@ def getTermRows(outputColumns):
 		row.append (AD_VOCAB_NAME)
 		row.append (AD_VOCAB_NAME)
 
+		row.append (term[STRUCTURE])
 		row.append (term[PRINTNAME])
 		row.append (AD_TERM_KEY_OFFSET + term[SORT])
 

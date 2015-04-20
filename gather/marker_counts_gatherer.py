@@ -15,6 +15,7 @@ import config
 import MarkerUtils
 import GOFilter
 import GenotypeClassifier
+import ReferenceUtils
 from IMSRData import IMSRDatabase
 
 ###--- Globals ---###
@@ -33,6 +34,7 @@ EXPRESSES_COMPONENT = 1004
 PHENOTYPE_IMAGE = 6481782	# VOC_Term for phenotype image class
 
 ReferenceCount = 'referenceCount'
+DiseaseRelevantReferenceCount = 'diseaseRelevantReferenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
 GOCount = 'goTermCount'
@@ -193,6 +195,18 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			if mrk in mouseIds:
 				mouseId = mouseIds[mrk]
 				d[mrk][ImsrCount] = (mouseId in imsrMrkCounts) and imsrMrkCounts[mouseId] or 0
+
+		# include the count of disease-related references for each
+		# marker
+
+		mrks = ReferenceUtils.getMarkersWithDiseaseRelevantReferences()
+
+		for m in mrks:
+			refs = ReferenceUtils.getDiseaseRelevantReferences(m)
+			d[m][DiseaseRelevantReferenceCount] = \
+				len(refs)
+
+		counts.append(DiseaseRelevantReferenceCount)
 
 		# compile the list of collated counts in self.finalResults
 		self.finalResults = []
@@ -499,8 +513,8 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Marker_key', ReferenceCount, SequenceCount,
-	SequenceRefSeqCount, SequenceUniprotCount, AlleleCount,
+fieldOrder = [ '_Marker_key', ReferenceCount, DiseaseRelevantReferenceCount,
+	SequenceCount, SequenceRefSeqCount, SequenceUniprotCount, AlleleCount,
 	GOCount, GxdAssayCount, GxdResultCount, GxdLiteratureCount,
 	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
 	MappingCount, CdnaSourceCount, MicroarrayCount,

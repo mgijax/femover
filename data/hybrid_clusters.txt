@@ -1,0 +1,58 @@
+Hybrid Cluster #	Mouse symbol	Mouse marker ID	Human symbol	Human EG ID	"Source (both, HG, HGNC, none)"	"Conflict (none, conflict, reject)"	Rule #	Test Case
+1	Pax6	MGI:97490			both	none	1	M/H same for both sources; 1:1
+1			PAX6	5080	both	none	 	
+2	C4a	MGI:98320			both	none	1	M/H same for both sources; n:m
+2	C4b	MGI:88228			both	none	 	 
+2			C4A	720	both	none	 	 
+2			C4B	721	both	none	 	 
+3	Selm	MGI:2149786			HG	none	2	M/H for only 1 source (HG) - neither gene exists in HGNC; 1:1
+3			SELM	140606	HG	none	 	 
+4	Smn1	MGI:109257			HG	conflict	3	M/H for only 1 source; 1:n.  HGNC clusters both of these human genes as singletons.  No rejects in this case.
+4			SMN1	6606	HG	conflict		
+4			SMN2	6607	HG	conflict		
+5	Sln	MGI:1913652			HGNC	none	2	M/H for only 1 source (HGNC); 1:1.  Mouse Sln is not a part of a HomoloGene cluster.
+5			SLN	6588	HGNC	none		
+6	Mug1	MGI:99837			HG 	none	2	Mouse for only 1 source (HG); multiple.  Genes not in HGNC clusters.
+6	Mug2	MGI:99836			HG	none		
+7			PGA3	643834	HG 	none	3b	Human for both sources; keep HG; multiple.  HGNC has these 3 genes each as singletons.
+7			PGA4	643847	HG	none		
+7			PGA5	5222	HG	none		
+8			CASP10	843	HG	none	3b	Human for both sources; mark source as HG per 3b; both sources agree - no conflict.
+9	Hamp	MGI:1933533			HGNC	conflict	3	HG has HAMP in a singleton and the mouse genes Hamp and Hamp2 in a cluster.  Use the HGNC cluster and reject Hamp2.
+9			HAMP	57817	HGNC	conflict	 	
+10	Hamp2	MGI:2153530 			none	reject	3	"Creating a singleton cluster for the rejected mouse gene.  Indicating ""none"" as a source per Sue (diff than wiki)."
+11	Acan	MGI:99602 			HGNC	conflict	3	Acan and ACAN are in separate clusters in HomoloGene.
+11			ACAN	176	HGNC	conflict	 	
+12	Bmi1	MGI:88174 			HGNC	conflict	4	HG cluster includes add'l human gene; that gene is rejected.
+12			BMI1	648	HGNC	conflict	 	
+13			COMMD3-BMI1	100532731	HGNC	conflict	4	Singleton cluster from HGNC.  In conflict because it differs with the HG clusters.
+14	Oas1a	MGI:2180860			HGNC	conflict	4	no rejects; using HGNC cluster adds more mouse genes to the cluster
+14	Oas1b	MGI:97430			HGNC	conflict	 	
+14	Oas1c	MGI:2149633 			HGNC	conflict		
+14	Oas1d	MGI:2140770 			HGNC	conflict		
+14	Oas1e	MGI:2180856 			HGNC	conflict		
+14	Oas1f	MGI:2180855			HGNC	conflict		
+14	Oas1g	MGI:97429			HGNC	conflict		
+14	Oas1h	MGI:2180853			HGNC	conflict		
+14			OAS1	4938	HGNC	conflict		
+15	Myl12a	MGI:1914518 			HGNC	conflict	4	"no rejects; HomoloGene clusters MYL12A, Myl12b and MYL12B, Myl12a -- using HGNC clusters the 12A and 12B genes together."
+15			MYL12A	10627	HGNC	conflict		
+16	Myl12b	MGI:107494	 	 	HGNC	conflict		
+16			MYL12B	609211	HGNC	conflict		
+17	Ccdc39	MGI:1289263			both	none	1	"Ciliary Dyskinesia, Primary, 14, CILD14; 613807"
+17			CCDC39	339829	both	none		
+18	Apoa1	MGI:88049			HG	conflict	3	"Amyloidosis, Familial Visceral; 105200"
+18			APOA1	335	HG	conflict		
+19	Fga	MGI:1316726			both	none	1	"Amyloidosis, Familial Visceral; 105200"
+19			FGA	2243	both	none		
+20	Lyz1	MGI:96902 			HGNC	conflict	4	"Amyloidosis, Familial Visceral; 105200"
+20	Lyz2	MGI:96897			HGNC	conflict		
+20	9530003J23Rik	MGI:1924647			HGNC	conflict		
+20			LYZ	4069	HGNC	conflict		
+21	Gyk	MGI:106594 			HGNC	conflict	4	Glycerol Kinase Deficiency; 307030
+21			GK 	2710	HGNC	conflict		
+22	Gykl1	MGI:891990			none	reject		
+23	Lrrc51	MGI:1916608 			HGNC	conflict	4	"Deafness, Autosomal Recessive 63; DFNB63; 611451"
+23			LRTOMT	220074	HGNC	conflict		
+24	Tomt	MGI:3769724			none	reject		
+25	b2b2025Clo	MGI:5491159 			none	none		double orphan -- ?????  This is for Ciliary Dyskinesia; 613807

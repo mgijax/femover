@@ -13,6 +13,11 @@ import gc
 
 ###--- Globals ---###
 
+HOMOLOGENE = 9272151
+HYBRID = 13764519
+HGNC = 13437099
+HOMOLOGY = 9272150
+
 # We now process a single vocabulary at a time, so we need to keep track of
 # which vocab is currently cached in memory.
 currentVocabKey = None
@@ -200,11 +205,13 @@ def _extraOmimQueries(vocabKey):
   			and h._Organism_key = 2
   			and h._Marker_key = hcm._Marker_key
   			and hcm._Cluster_key = mc._Cluster_key
-  			and mc._ClusterType_key = 9272150
+  			and mc._ClusterType_key = %d
+			and mc._ClusterSource_key in (%d)
   			and mc._Cluster_key = mcm._Cluster_key
   			and mcm._Marker_key = m._Marker_key
   			and m._Organism_key = 1
-  			and m._Marker_Status_key in (1,3)''',		
+  			and m._Marker_Status_key in (1,3)''' % (HOMOLOGY,
+				HYBRID),
 		]
 	return cmds 
 

@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	primary_id	varchar(30)	null,
 	vocab_name	varchar(255)	not null,
 	display_vocab_name varchar(255)	not null,
+	abbreviation	varchar(255)	null,
 	definition	varchar(2048)	null,
 	sequence_num	int		null,
 	is_root		int		not null,

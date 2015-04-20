@@ -10,6 +10,8 @@ import dbAgnostic
 import zlib
 import gc
 
+from string import maketrans
+
 ###--- Globals ---###
 
 AUTO = 'OutputFile.AUTO'
@@ -24,6 +26,7 @@ LIST_MODE = 'list'	    # default - each row is a list
 STRING_MODE = 'string'	    # each row is a list encoded as a string
 COMPRESS_MODE = 'compress'  # each row is a list encoded as a string, then
 			    # ...compressed using zlib
+CONTROL_CHARS = ''.join(map(chr, range(0,9) + range(11,13) + range(14,32) + range(127,160)))
 
 ###--- Classes ---###
 
@@ -165,12 +168,21 @@ class OutputFile:
 					else:
 						out.append (str(value))
 
-			os.write (self.fd, '&=&'.join(out) + '#=#\n')
+			cleanedout = [clean(col) for col in out]
+			os.write (self.fd, '\t'.join(cleanedout) + '\n')
 
 		self.rowCount = self.rowCount + len(rows)
 		return
 
 ###--- Functions ---###
+
+def clean(string):
+   string = string.translate(maketrans('', ''), CONTROL_CHARS)
+   string = string.replace("\r", " ")
+   string = string.replace("\\", "\\\\")
+   string = string.replace("\t", "\\\t")
+   string = string.replace("\n", "\\\n")
+   return string
 
 def createAndWrite (filePrefix, fieldOrder, columns, rows):
 	# create a file for filePrefix, write out the data, close it, and

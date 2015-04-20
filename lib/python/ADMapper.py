@@ -6,6 +6,7 @@
 import dbAgnostic
 import logger
 import types
+import gc
 
 ###--- Constants ---###
 
@@ -37,7 +38,6 @@ EMAPS_KEY_TO_TERM = {}
 
 # number of sets filtered so far
 FILTERED_SET = 0
-
 
 ###--- Private Functions ---###
 
@@ -318,3 +318,25 @@ def filterRows (rows, structureKeyIndex, name = ''):
 		len(rows), len(subset)) )
 
 	return subset
+
+def unload():
+	# clear the global caches and restore this module to an unitialized
+	# state (to save memory)
+
+	global INITIALIZED, AD_ID_TO_KEY, EMAPS_KEY_TO_ID, EMAPS_ID_TO_KEY
+	global AD_KEY_TO_EMAPS_KEY, OTHER_ID_TO_EMAPS_KEY, EMAPS_KEY_TO_TERM
+	global FILTERED_SET
+
+	INITIALIZED = False
+	AD_ID_TO_KEY = {}
+	EMAPS_KEY_TO_ID = {}
+	EMAPS_ID_TO_KEY = {}
+	AD_KEY_TO_EMAPS_KEY = {}
+	OTHER_ID_TO_EMAPS_KEY = {}
+	OTHER_ID_TO_EMAPS_KEY = {}
+	FILTERED_SET = 0
+
+	gc.collect()
+	logger.debug('Cleared ADMapper caches')
+	return
+

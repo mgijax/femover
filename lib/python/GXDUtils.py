@@ -43,7 +43,7 @@ def abbreviateAge (
                         break
         return s
 
-###--- functions dealing with EMAPA/EMAPS ---###
+###--- functions dealing with EMAPA/EMAPS mapping ---###
 
 EMAPS_TO_EMAPA = None	# dictionary mapping EMAPS key to EMAPA key
 EMAPA_STAGE_RANGE = None	# dictionary mapping EMAPA key -> range string
@@ -167,3 +167,116 @@ def getEmapaStartStage (emapaKey):
 		return EMAPA_START_STAGE[emapaKey]
 	return None
 
+###--- functions dealing with identifying high-level ---###
+###--- EMAPA terms for each lower-level EMAPA term   ---###
+
+# maps from each EMAPA term key to a list of its high-level term keys, as
+# { term key : [ high level term key, ... ]
+TERM_TO_HIGH_LEVEL = None
+
+# maps from each EMAPA high level term key to its start stage
+# { term key : int start stage }
+START_STAGE = {}
+
+# maps from each EMAPA high level term key to its end stage
+# { term key : int end stage }
+END_STAGE = {}
+
+def _getHighLevelTermKeys():
+	# retrieves a list of term keys for high-level EMAPA terms, including
+	# the children of "mouse" (except organ system) plus the children of
+	# "organ system".  also populates globals START_STAGE and END_STAGE.
+
+	# SQL command to retrieve the data set specified in comment above
+	cmd = '''select distinct ct._Term_key, startStage, endStage
+		from voc_vocab v, voc_term pt,
+			dag_node pn, dag_edge e, dag_node cn,
+			voc_term ct, dag_dag dd, voc_term_emapa a
+		where v.name = 'EMAPA'
+			and ct._Term_key = a._Term_key
+			and v._Vocab_key = pt._Vocab_key
+			and pt.term in ('mouse', 'organ system')
+			and pt._Term_Key = pn._Object_key
+			and pn._Node_key = e._Parent_key
+			and e._Child_key = cn._Node_key
+			and cn._Object_key = ct._Term_key
+			and e._DAG_key = dd._DAG_key
+			and ct.term not in ('mouse', 'organ system')
+			and dd.name = 'EMAPA' '''
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+	termCol = dbAgnostic.columnNumber (cols, '_Term_key')
+	startCol = dbAgnostic.columnNumber (cols, 'startStage')
+	endCol = dbAgnostic.columnNumber (cols, 'endStage')
+	
+	terms = []
+	for row in rows:
+		terms.append(row[termCol])
+		START_STAGE[row[termCol]] = row[startCol]
+		END_STAGE[row[termCol]] = row[endCol]
+
+	logger.debug('Got %d high level EMAPA terms' % len(terms))
+	return terms
+
+def _cacheHighLevelMapping():
+	# build a cache that maps from each EMAPA term key to its associated
+	# high-level term keys
+
+	global TERM_TO_HIGH_LEVEL
+
+	TERM_TO_HIGH_LEVEL = {}
+	highLevelTerms = _getHighLevelTermKeys()
+
+	# initially fill in the high-level terms themselves
+
+	for termKey in highLevelTerms:
+		TERM_TO_HIGH_LEVEL[termKey] = [ termKey ]
+
+	# note the high-level ancestors for each descendent term
+
+	cmd = '''select distinct c._AncestorObject_key,
+			c._DescendentObject_key
+		from dag_closure c, dag_dag d
+		where c._DAG_key = d._DAG_key
+			and d.name = 'EMAPA'
+			and c._AncestorObject_key in (%s)''' % (
+				','.join(map(str, highLevelTerms)) )
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+	ancestorCol = dbAgnostic.columnNumber (cols, '_AncestorObject_key')
+	descendentCol = dbAgnostic.columnNumber (cols, '_DescendentObject_key')
+
+	for row in rows:
+		descendent = row[descendentCol]
+		ancestor = row[ancestorCol]
+
+		if TERM_TO_HIGH_LEVEL.has_key(descendent):
+			TERM_TO_HIGH_LEVEL[descendent].append(ancestor)
+		else:
+			TERM_TO_HIGH_LEVEL[descendent] = [ ancestor ]
+
+	logger.debug('Cached %d ancestors for %d EMAPA terms' % (
+		len(rows), len(TERM_TO_HIGH_LEVEL)) )
+	return
+
+def getEmapaHighLevelTerms(emapaKey, stage):
+	# return a list of high level terms (not keys) for the term with the
+	# given EMAPA key
+
+	if TERM_TO_HIGH_LEVEL == None:
+		_cacheHighLevelMapping()
+
+	if not TERM_TO_HIGH_LEVEL.has_key(emapaKey):
+		return []
+
+	terms = []
+	for ancestorKey in TERM_TO_HIGH_LEVEL[emapaKey]:
+		# We only want to include this high level term if the result's
+		# stage is within the term's stage range.
+
+		startStage = START_STAGE[ancestorKey]
+		endStage = END_STAGE[ancestorKey]
+
+		if startStage <= stage <= endStage: 
+			terms.append(getEmapaTerm(ancestorKey))
+	return terms

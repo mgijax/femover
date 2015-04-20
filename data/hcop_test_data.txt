@@ -1,0 +1,8 @@
+Test data file for US 12 - Add link to Marker Detail page (jlewis 12/19/14)				
+Marker Symbol	MGI Marker ID	Human Symbol	NCBI ID	Test Notes
+Kit	MGI:96677	KIT	3815	Test of 1:1
+C4a	MGI:98320	C4A	720	Test of n:m
+C4a	MGI:98320	C4B	721	Test of n:m
+C4b	MGI:88228	C4A	720	Test of n:m
+C4b	MGI:88228	C4B	721	Test of n:m
+Acan	MGI:99602	ACAN	176	Case where no human homolog in H-Gene

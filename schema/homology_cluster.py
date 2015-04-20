@@ -15,10 +15,11 @@ tableName = 'homology_cluster'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	cluster_key	int		not null,
-	primary_id	varchar(30)	not null,
+	primary_id	varchar(30)	null,
 	version		varchar(255)	null,
 	cluster_date	varchar(12)	null,
 	source		varchar(255)	not null,
+	secondary_source varchar(30)	null,
 	has_comparative_go_graph	int	not null,
 	PRIMARY KEY(cluster_key))''' % tableName
 
@@ -45,6 +46,7 @@ comments = {
 		'version' : 'data version number for this cluster',
 		'cluster_date' : 'date for this cluster',
 		'source' : 'source for this cluster - what group compiled the data',
+		'secondary_source' : 'contains additional source info, especially for derived/hybrid clusters',
 		'has_comparative_go_graph' : '1 if this cluster has a comparative GO graph available, 0 if not',
 		},
 	Table.INDEX : {

@@ -166,13 +166,14 @@ DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
 	'disease', 'marker_to_genotype',
 	]
-HDPORTAL = [ 'hdp_annotation' ]
+HDPORTAL = [ 'hdp_annotation', 'hdp_marker_to_reference' ]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
 		'expression_index_counts', 'expression_assay',
 		'marker_to_expression_assay', 'expression_assay_sequence_num',
-		'expression_result_summary',
-		'expression_specimen','expression_gellane',
+		'expression_result_summary', 'antibody_to_reference',
+		'expression_specimen','expression_gellane', 'antibody',
+		'antigen', 'marker_to_antibody',
 	]
 GLOSSARY = [ 'glossary',
 	]
@@ -1334,6 +1335,8 @@ def main():
 
 	logger.info ('Beginning %s script' % sys.argv[0])
 	gatherers = shuffle(processCommandLine())
+	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
+	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
 	dbInfoTable.dropTable()
 	if FULL_BUILD:
 		dropTables(gatherers)
@@ -1341,27 +1344,19 @@ def main():
 	dbInfoTable.createTable()
 	dbInfoTable.grantSelect()
 	dbInfoTable.setInfo ('status', 'starting')
-	dbInfoTable.setInfo ('source', '%s:%s:%s' % (config.SOURCE_TYPE,
-		config.SOURCE_HOST, config.SOURCE_DATABASE))
-	dbInfoTable.setInfo ('target', '%s:%s:%s' % (config.TARGET_TYPE,
-		config.TARGET_HOST, config.TARGET_DATABASE))
-	dbInfoTable.setInfo ('log directory', config.LOG_DIR)
-
-	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE,
-		config.SOURCE_HOST, config.SOURCE_DATABASE))
-	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE,
-		config.TARGET_HOST, config.TARGET_DATABASE))
+	dbInfoTable.setInfo ('source', '%s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
+	dbInfoTable.setInfo ('target', '%s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
+	dbInfoTable.setInfo ('log directory', config.LOG_DIR) 
+	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
+	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
 	logger.info ('log directory: %s' % config.LOG_DIR)
 
 	if FULL_BUILD:
 		dbInfoTable.setInfo ('build type', 'full build')
 	else:
-		dbInfoTable.setInfo ('build type',
-			'partial build, options: %s' % \
-			', '.join (sys.argv[1:]))
+		dbInfoTable.setInfo ('build type', 'partial build, options: %s' % ', '.join (sys.argv[1:]))
 
-	dbInfoTable.setInfo ('build started', time.strftime (
-		'%m/%d/%Y %H:%M:%S', time.localtime(START_TIME)) )
+	dbInfoTable.setInfo ('build started', time.strftime ( '%m/%d/%Y %H:%M:%S', time.localtime(START_TIME)) )
 
 	scheduleGatherers(gatherers)
 	dbInfoTable.setInfo ('status', 'gathering data')

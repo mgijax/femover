@@ -13,7 +13,8 @@ import MarkerSnpAssociations
 import ADMapper
 import InteractionUtils
 import MarkerUtils
-import GroupedList
+import OutputFile
+import gc
 
 ###--- Constants ---###
 
@@ -116,6 +117,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 				resultCounts[markerKey][stage] = resultCount \
 					+ resultCounts[markerKey][stage]
 
+		# free up memory for result set, once we've walked through it
+		self.results[resultIndex] = (cols, [])
+		del rows
+		gc.collect()
+
 		# At this point, we have collected our counts of expression
 		# results by marker and Theiler stage.  Time to assemble rows
 		# from those data.
@@ -133,6 +139,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 					self.seqNum() ]
 				self.finalResults.append (newRow)
 		self.report()
+		self.writeSoFar()
 		return
 
 	def collateByAssayType (self, resultIndex, setType):
@@ -170,6 +177,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 				resultCounts[markerKey][assayType] = count \
 					+ resultCounts[markerKey][assayType]
 
+		# free up memory for result set, once we've walked through it
+		self.results[resultIndex] = (cols, [])
+		del rows
+		gc.collect()
+
 		# At this point, we have collected our counts of expression
 		# results by marker and Theiler stage.  Time to assemble rows
 		# from those data.
@@ -187,6 +199,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 					self.seqNum() ]
 				self.finalResults.append (newRow)
 		self.report()
+		self.writeSoFar()
 		return
 
 	def collateResultsByAssayType (self, resultIndex):
@@ -235,6 +248,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			else:
 				byMarker[key][other] = ct
 
+		# free up memory for result set, once we've walked through it
+		self.results[resultIndex] = (columns, [])
+		del rows
+		gc.collect()
+
 		# combine genomic, cDNA, primer pair, other into nucleic
 
 		for key in byMarker.keys():
@@ -256,6 +274,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 						self.seqNum() ]
 					self.finalResults.append (newRow)
 		self.report()
+		self.writeSoFar()
 		return
 
 	def collatePolymorphisms (self, resultIndex):
@@ -281,6 +300,9 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			snp = 'SNPs'		# not counted in 'all'
 
 		multiSnp = '%s including multiple locations' % snp
+
+		MarkerSnpAssociations.unload()
+		gc.collect()
 
 		# first populate SNP counts for markers with SNPs
 
@@ -313,6 +335,11 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			else:
 				byMarker[key][rflp] = byMarker[key][rflp] + ct
 
+		# free up memory for result set, once we've walked through it
+		self.results[resultIndex] = (columns, [])
+		del rows
+		gc.collect()
+
 		# if we had both PCR and RFLP then we need a count for the sum
 
 		for key in byMarker.keys():
@@ -332,6 +359,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 						self.seqNum() ]
 					self.finalResults.append (newRow)
 		self.report()
+		self.writeSoFar()
 		return
 
 	def collateMarkerInteractions (self):
@@ -346,6 +374,10 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		logger.debug('Added %d rows for Interactions' % \
 			len(counts))
+		self.writeSoFar()
+
+		del counts
+		gc.collect()
 		return
 
 	def collateAlleleCounts (self):
@@ -377,7 +409,50 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 					self.finalResults.append (row)
 
+		del counts
+		del countSets
+		del orderedSets
+		del markerKeys
+		gc.collect()
+
 		logger.debug('Added %d rows for Alleles' % i) 
+		self.writeSoFar() 
+		return
+
+	def writeSoFar (self):
+		if self.finalResults:
+			self.outFile.writeToFile (fieldOrder,
+				self.finalColumns, self.finalResults)
+
+			logger.debug('Wrote %d rows to output file' % \
+				len(self.finalResults))
+
+			self.finalResults = []
+			gc.collect()
+		else:
+			logger.debug('Nothing to write')
+		return
+
+	def go (self):
+		# override the go() method, so we can customize how we deal
+		# with the output data file
+
+		self.preprocessCommands()
+		logger.info('Pre-processed queries')
+
+		self.results = Gatherer.executeQueries (self.cmds)
+		logger.info('Finished queries of source %s db' % \
+			Gatherer.SOURCE_DB)
+
+		self.outFile = OutputFile.OutputFile('marker_count_sets')
+		logger.info('Created output file: %s' % self.outFile.getPath())
+
+		self.collateResults()
+		self.postprocessResults()
+		self.writeSoFar()
+		self.outFile.close()
+
+		print '%s %s' % (self.outFile.getPath(), 'marker_count_sets') 
 		return
 
 	def collateResults (self):
@@ -401,6 +476,9 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateResultsByTheilerStage(0)
 		self.collateAssaysByAssayType(1)
 		self.collateResultsByAssayType(2)
+
+		ADMapper.unload()		# free unneeded memory
+
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
 		self.collateMarkerInteractions()

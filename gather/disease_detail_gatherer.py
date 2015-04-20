@@ -1208,22 +1208,38 @@ cmds = [
 			DISEASE_MARKER, NOT_QUALIFIER),
 
 	# 4. all current and interim mouse and human markers' basic data,
+	# using the MGI-computed set of hybrid data from HGNC and HomoloGene
 	
-	'''select distinct m._Marker_key,
-		m.symbol,
-		o.commonName, 
-		t.name, 
-		mcm._Cluster_key
-	from mrk_marker m
-	inner join mgi_organism o on (m._Organism_key = o._Organism_key)
-	inner join mrk_types t on (m._Marker_Type_key = t._Marker_Type_key)
-	left outer join mrk_clustermember mcm on (
-		m._Marker_key = mcm._Marker_key)
-	left outer join mrk_cluster mc on (mcm._Cluster_key = mc._Cluster_key)
-	left outer join voc_term vt on (mc._ClusterSource_key = vt._Term_key
-		and vt.term = 'HomoloGene')
-	where m._Marker_Status_key in (1,3)
-	and m._Organism_key in (1,2)''', 
+	'''with hg_clusters as (
+		select mcm._Marker_key, mcm._Cluster_key
+		from mrk_clustermember mcm,
+			mrk_cluster mc,
+			voc_term t,
+			voc_term s,
+			mrk_marker m
+		where mcm._Cluster_key = mc._Cluster_key
+			and mc._ClusterSource_key = s._Term_key
+			and s.term = 'HomoloGene and HGNC'
+			and mc._ClusterType_key = t._Term_key
+			and t.term = 'homology'
+			and mcm._Marker_key = m._Marker_key
+			and m._Marker_Status_key in (1,3)
+			and m._Organism_key in (1,2)
+		)
+		select distinct m._Marker_key,
+			m.symbol,
+			o.commonName,
+			t.name, 
+			hg._Cluster_key
+		from mrk_marker m
+		inner join mgi_organism o on (
+			m._Organism_key = o._Organism_key)
+		inner join mrk_types t on (
+			m._Marker_Type_key = t._Marker_Type_key)
+		left outer join hg_clusters hg on (
+			m._Marker_key = hg._Marker_key)
+		where m._Marker_Status_key in (1,3)
+		and m._Organism_key in (1,2)''',	
 
 	# do we bring in all the human and mouse markers for the homology
 	# cluster (query 4) and only flag those with actual annotations

@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	term			varchar(255)	null,
 	term_id			varchar(40)	null,
 	evidence_code		varchar(5)	null,
+	evidence_term		varchar(255)	null,
 	object_type		varchar(80)	null,
 	annotation_type		varchar(255)	null,
 	reference_count		int		not null,

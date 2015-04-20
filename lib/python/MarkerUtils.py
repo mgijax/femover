@@ -5,7 +5,7 @@
 import dbAgnostic
 import logger
 import gc
-import GroupedList
+import Lookup
 
 ###--- globals ---###
 
@@ -18,6 +18,12 @@ symbolCache = {}
 
 # marker key -> primary ID cache
 idCache = {}
+
+# primary ID -> marker key cache
+keyCache = {}
+
+# acc ID -> marker key cache (for non-mouse markers)
+nonMouseEGCache = None
 
 # cache of rows for traditional allele-to-marker relationships.  Each row is:
 #	[ allele key, marker key, count type, count type sequence num ]
@@ -36,6 +42,12 @@ TRADITIONAL = 'traditional'
 MUTATION_INVOLVES = 'mutation_involves'
 EXPRESSES_COMPONENT = 'expresses_component'
 UNIFIED = 'unified'
+
+# mapping from marker type key to marker type name
+markerTypeLookup = Lookup.Lookup('MRK_Types', '_Marker_Type_key', 'name')
+
+# marker key -> marker type key
+markerTypeCache = {}
 
 ###--- private functions ---###
 
@@ -125,6 +137,65 @@ def _populateIDCache():
 
 	logger.debug ('Cached %d marker IDs' % len(idCache))
 	return
+
+def _populateNonMouseEGCache():
+	global nonMouseEGCache
+
+	if nonMouseEGCache != None:
+		return
+
+	nonMouseEGCache = {}
+
+	cmd = '''select m._Marker_key, a.accID
+		from mrk_marker m, acc_accession a
+		where m._Organism_key != 1
+			and m._Marker_Status_key in (1,3)
+			and m._Marker_key = a._Object_key
+			and a._MGIType_key = 2
+			and a._LogicalDB_key = 55
+			and a.private = 0'''
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+
+	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+	idCol = dbAgnostic.columnNumber (cols, 'accID')
+
+	for row in rows:
+		nonMouseEGCache[row[idCol]] = row[keyCol]
+
+	del cols
+	del rows
+	gc.collect()
+
+	logger.debug ('Cached %d non-mouse marker IDs' % len(nonMouseEGCache))
+	return
+
+def _populateMarkerTypeCache():
+	# caches types for human, mouse, rat markers
+	global markerTypeCache
+
+	if len(markerTypeCache) > 0:
+		return
+
+	cmd1 = '''select _Marker_key, _Marker_Type_key
+		from mrk_marker
+		where _Organism_key in (1, 2, 40)
+			and _Marker_Status_key in (1,3)'''
+
+	(cols, rows) = dbAgnostic.execute(cmd1)
+
+	markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+	typeCol = dbAgnostic.columnNumber (cols, '_Marker_Type_key')
+	
+	for row in rows:
+		markerTypeCache[row[markerCol]] = row[typeCol]
+
+	del cols
+	del rows
+	gc.collect()
+
+	logger.debug('Cached %d marker types' % len(markerTypeCache))
+	return 
 
 def _populateMarkerAlleleCache():
 	global amRows
@@ -226,6 +297,18 @@ def _populateExpressesComponentCache():
 	ecRows = _getRelationships(EXPRESSES_COMPONENT)
 	return
 
+def _toHex(key):
+	# convert integer 'key' to its hex equivalent as a string, but without
+	# the '0x' prefix
+
+	return hex(key)[2:]
+
+def _bundle(alleleKey, markerKey):
+	# bundle allele key and marker key into a unique string for use as a
+	# dictionary key.  keys are converted to hex to save space.
+
+	return _toHex(alleleKey) + ',' + _toHex(markerKey)
+
 def _getMarkerAllelePairs(whichSet):
 	# get a list of rows for allele/marker relationships, where each row is:
 	#	[ allele key, marker key, count type, count type seq num ]
@@ -247,14 +330,21 @@ def _getMarkerAllelePairs(whichSet):
 		return ecRows
 
 	unifiedList = []
-	pairs = GroupedList.GroupedList()
+
+	# We previously used a GroupedList here to save on memory, but this
+	# may have been a premature optimization.  We were losing big on
+	# performance, solely to save 15-20Mb.  I'm switching back to a 
+	# dictionary for now.  If memory constrains require, we can switch
+	# back to a GroupedList in the future.
+
+	pairs = {}
 
 	for myList in [ amRows, miRows, ecRows ]:
 		for row in myList:
-			pair = (row[0], row[1])		# allele + marker keys
-			if not pairs.contains(pair):
+			pair = _bundle(row[0], row[1])	# allele + marker keys
+			if not pairs.has_key(pair):
 				unifiedList.append(row)
-				pairs.add(pair)
+				pairs[pair] = 1
 
 	logger.debug('Calculated set of %d distinct allele/marker pairs' % \
 		len(unifiedList))
@@ -320,6 +410,39 @@ def getPrimaryID (markerKey):
 		return idCache[markerKey]
 	return None
 
+def getMarkerKey (primaryID):
+	# return the marker key for the marker with the given primary MGI ID,
+	# or None if there is not one
+
+	global keyCache
+
+	if len(keyCache) == 0:
+		if len(idCache) == 0:
+			_populateIDCache()
+
+		keyCache = {}
+		for key in idCache.keys():
+			keyCache[idCache[key]] = key
+
+	primaryID = primaryID.strip()
+	if keyCache.has_key(primaryID):
+		return keyCache[primaryID]
+	return None
+
+def getNonMouseEGMarkerKey (accID):
+	# return the marker key for the non-mouse marker with the given ID,
+	# or None if there is not one
+
+	global nonMouseEGCache
+
+	if not nonMouseEGCache:
+		_populateNonMouseEGCache()
+
+	accID = accID.strip()
+	if nonMouseEGCache.has_key(accID):
+		return nonMouseEGCache[accID]
+	return None
+
 ###--- functions dealing with nomenclature ---###
 
 def getSymbol (markerKey):
@@ -331,6 +454,17 @@ def getSymbol (markerKey):
 
 	if symbolCache.has_key(markerKey):
 		return symbolCache[markerKey]
+	return None
+
+def getMarkerType (markerKey):
+	# return marker type for the given marker key, or None if the key is
+	# not for a mouse marker
+
+	if len(markerTypeCache) == 0:
+		_populateMarkerTypeCache()
+	
+	if markerTypeCache.has_key(markerKey):
+		return markerTypeLookup.get(markerTypeCache[markerKey])
 	return None
 
 ###--- functions dealing with allele counts ---###

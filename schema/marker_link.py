@@ -47,7 +47,7 @@ comments = {
 		'associated_id' : 'the accession ID associated with this link, if any',
 		'display_text' : 'of text which should be displayed as the clickable text of the link',
 		'url' : 'URL that the link should go to (not parameterized for IDs -- any IDs, coordinates, etc. should already be plugged in)',
-		'has_markups' : 'are there any MGI-specific markups in the ‘url’ field such that fewi should run the URL through the NotesTagConverter?  (0/1)  This allows us to point MGI links to various developer, production, or public instances, etc.',
+		'has_markups' : 'are there any MGI-specific markups in the url field such that fewi should run the URL through the NotesTagConverter?  (0/1)  This allows us to point MGI links to various developer, production, or public instances, etc.',
 		'use_new_window' : 'should this link open a new window/tab when clicked? (0/1)',
 		},
 	Table.INDEX : {

@@ -332,12 +332,14 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			'sequenceNum')
 		isObsoleteCol = Gatherer.columnNumber (self.results[4][0],
 			'isObsolete')
+		abbrevCol = Gatherer.columnNumber (self.results[4][0],
+			'abbreviation')
 
 		terms = {}		# terms[term key] = term
 
 		columns = [ 'termKey', 'term', 'accID', 'vocab',
-			'displayVocab', 'def', 'sequenceNum', 'isRoot',
-			'isLeaf', 'isObsolete' ]
+			'displayVocab', 'abbreviation', 'def', 'sequenceNum',
+			'isRoot', 'isLeaf', 'isObsolete' ]
 
 		# produce a sorted list of terms, for those vocabularies
 		# without a pre-assigned set of sequence numbers
@@ -387,6 +389,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 				row.append (goOntologies[key])
 			else:
 				row.append (vocabName)
+
+			row.append(r[abbrevCol])
 
 			if defs.has_key (key):
 				row.append (defs[key])
@@ -1128,7 +1132,8 @@ cmds = [
 		order by x.sequenceNum''',
 
 	# query 4 - terms
-	'''select _Term_key, _Vocab_key, term, sequenceNum, isObsolete
+	'''select _Term_key, _Vocab_key, term, sequenceNum, isObsolete,
+			abbreviation
 		from voc_term
 		where _Vocab_key = %d''',
 
@@ -1191,7 +1196,8 @@ files = [
 		'vocabulary'),
 
 	('term',
-		[ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 'def',
+		[ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 
+			'abbreviation', 'def',
 			'sequenceNum', 'isRoot', 'isLeaf', 'isObsolete' ],
 		'term'),
 

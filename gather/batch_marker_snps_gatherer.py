@@ -1,64 +1,100 @@
 #!/usr/local/bin/python
 # 
-# gathers data for the 'batch_marker_snps' table in the front-end database
+# gathers data for the 'batch_marker_snps' table in the front-end database.
+# Revised in March 2015 to customize and reduce memory footprint.
 
 import Gatherer
 import config
 import MarkerSnpAssociations
+import OutputFile
+import dbAgnostic
+import logger
+import gc
 
-###--- Classes ---###
+###--- Globals ---###
 
-class BatchMarkerSnpsGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the batch_marker_snps table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for a tiny subset of SNP data
-	#	that we need for batch query results that include SNPs,
-	#	collates results, writes tab-delimited text file
+cacheSize = 50000	# rough number of output rows to cache in memory
 
-	def postprocessResults(self):
-		columns=['_Marker_key','accid']
-		rows=[]
-		mrkCol=Gatherer.columnNumber(self.finalColumns,'_Marker_key')
-		chrCol=Gatherer.columnNumber(self.finalColumns,'chromosome')
+outFile = OutputFile.OutputFile('batch_marker_snps')	# output data file
 
-		for row in self.finalResults:
-			snps=MarkerSnpAssociations.getSnpIDs(row[mrkCol],row[chrCol])
-			for snp in snps:
-				rows.append([row[mrkCol],snp])
-			#del snps
+###--- Functions ---###
 
-		self.finalColumns = columns
-		self.finalResults = rows
-		return
+def getChromosomes():
+	# retrieve the ordered list of mouse chromosomes
 
-###--- globals ---###
+	cmd0 = '''select chromosome
+		from mrk_chromosome
+		where _Organism_key = 1
+		order by chromosome'''
+	(cols, rows) = dbAgnostic.execute(cmd0)
 
-# note there should be no associated SNPs for QTL markers
-# also omit subtype heritable phenotypic marker (term_key=6238170)
-cmds = [ '''select distinct _Marker_key, chromosome
-	from mrk_marker m
-	where _Organism_key = 1
-		and _Marker_Type_key != 6
-		and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=m._marker_key and mcv._mcvterm_key=6238170)
-		and _Marker_Status_key in (1,3)
-	order by chromosome''',
-	]
+	chromosomes = []	# list of mouse chromosomes
+	for row in rows:
+		chromosomes.append(row[0])
+	logger.debug('Got %d mouse chromosomes' % len(chromosomes))
+	return chromosomes
 
-# order of fields (from the query results) to be written to the
-# output file
-fieldOrder = [
-	Gatherer.AUTO, '_Marker_key', 'accid'
-	]
+def getMarkers(chromosome):
+	# get the markers for the given chromosome
 
-# prefix for the filename of the output file
-filenamePrefix = 'batch_marker_snps'
+	markers = []
 
-# global instance of a BatchMarkerSnpsGatherer
-gatherer = BatchMarkerSnpsGatherer (filenamePrefix, fieldOrder, cmds)
+	cmd1 = '''select distinct m._Marker_key
+		from mrk_marker m
+		where m._Organism_key = 1
+			and m._Marker_Type_key != 6
+			and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=m._marker_key and mcv._mcvterm_key=6238170)
+			and m._Marker_Status_key in (1,3)
+			and m.chromosome = '%s'
+		order by m._Marker_key''' % chromosome
+	(cols, rows) = dbAgnostic.execute(cmd1)
 
-###--- main program ---###
+	for row in rows:
+		markers.append(row[0])
 
-# if invoked as a script, use the standard main() program for gatherers and
-# pass in our particular gatherer
+	del rows
+	gc.collect()
+
+	logger.debug('Got %d markers on chromosome %s' % (len(markers),
+		chromosome)) 
+	return markers
+
+def main():
+	chromosomes = getChromosomes()
+
+	outCols = [ Gatherer.AUTO, '_Marker_key', 'snpID' ]
+	cols = [ '_Marker_key', 'snpID' ]
+	rows = []
+
+	# We walk through the markers of each chromosome, collecting the SNP
+	# IDs for each marker, writing them out periodically to save space.
+
+	for chrom in chromosomes:
+		markers = getMarkers(chrom)
+
+		for markerKey in markers:
+			snps = MarkerSnpAssociations.getSnpIDs(markerKey, chrom)
+			for snpID in snps:
+				rows.append( (markerKey, snpID) )
+
+			# Our cache size is approximate, so we check it only
+			# after each marker, as this is close enough.
+
+			if len(rows) >= cacheSize:
+				outFile.writeToFile(outCols, cols, rows)
+				rows = []
+				gc.collect()
+
+	# If any unwritten rows, we need to write them out.
+
+	if rows:
+		outFile.writeToFile(outCols, cols, rows)
+		rows = []
+		gc.collect() 
+
+	outFile.close()
+	print '%s %s' % (outFile.getPath(), 'batch_marker_snps')
+	return
+
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+	main()

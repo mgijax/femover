@@ -822,39 +822,41 @@ class AccessionGatherer:
 	    logger.debug ('Wrote antibody IDs to file')
 	    return
 
-	def fillAntigens (self, accessionFile):
-	    cmd = '''select g._Antigen_key, a.accID, a._LogicalDB_key,
-	    			a._MGIType_key, g.antigenName
-	    		from gxd_antigen g, acc_accession a
-			where g._Antigen_key = a._Object_key
-				and a.private = 0
-				and a._MGIType_key = 7'''
-
-	    cols, rows = dbAgnostic.execute(cmd)
-
-	    keyCol = dbAgnostic.columnNumber (cols, '_Antigen_key')
-	    idCol = dbAgnostic.columnNumber (cols, 'accID')
-	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
-	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-	    nameCol = dbAgnostic.columnNumber (cols, 'antigenName')
-
-	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
-			'displayID', 'sequenceNum', 'description',
-			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
-	    outputRows = []
-
-	    for row in rows:
-		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
-			sequenceNum(row[idCol]), row[nameCol],
-			row[logicalDbCol], displayTypeNum('Antigen'),
-			row[mgiTypeCol] ] )
-
-	    logger.debug ('Found %d antigen IDs' % len(rows))
-
-	    accessionFile.writeToFile (outputCols, outputCols[1:],
-		outputRows)
-	    logger.debug ('Wrote antigen IDs to file')
-	    return
+# commented out per US133, Miscellaneous project, Spring 2015.  New antibody
+# detail page has antigen information, so the antigen page no longer exists.
+#	def fillAntigens (self, accessionFile):
+#	    cmd = '''select g._Antigen_key, a.accID, a._LogicalDB_key,
+#	    			a._MGIType_key, g.antigenName
+#	    		from gxd_antigen g, acc_accession a
+#			where g._Antigen_key = a._Object_key
+#				and a.private = 0
+#				and a._MGIType_key = 7'''
+#
+#	    cols, rows = dbAgnostic.execute(cmd)
+#
+#	    keyCol = dbAgnostic.columnNumber (cols, '_Antigen_key')
+#	    idCol = dbAgnostic.columnNumber (cols, 'accID')
+#	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
+#	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+#	    nameCol = dbAgnostic.columnNumber (cols, 'antigenName')
+#
+#	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+#			'displayID', 'sequenceNum', 'description',
+#			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+#	    outputRows = []
+#
+#	    for row in rows:
+#		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
+#			sequenceNum(row[idCol]), row[nameCol],
+#			row[logicalDbCol], displayTypeNum('Antigen'),
+#			row[mgiTypeCol] ] )
+#
+#	    logger.debug ('Found %d antigen IDs' % len(rows))
+#
+#	    accessionFile.writeToFile (outputCols, outputCols[1:],
+#		outputRows)
+#	    logger.debug ('Wrote antigen IDs to file')
+#	    return
 
 	def fillAssays (self, accessionFile):
 	    cmd = '''select g._Assay_key, a.accID, a._LogicalDB_key,
@@ -1163,7 +1165,7 @@ class AccessionGatherer:
 		self.fillImages (accessionFile)
 		self.fillAssays (accessionFile)
 		self.fillAntibodies (accessionFile)
-		self.fillAntigens (accessionFile)
+		#self.fillAntigens (accessionFile)
 		self.fillTerms (accessionFile)
 		self.fillMapping (accessionFile)
 		#self.fillConsensusSnps (accessionFile)
