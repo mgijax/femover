@@ -7,6 +7,10 @@ import logger
 
 ###--- Globals ---###
 
+# database table name; if not None, must contain a _Refs_key field, which is
+# used to restrict the set of references we retrieve.  set by restrict().
+SOURCE_TABLE = None
+
 MINI = {}	# reference key -> mini citation
 SHORT = {}	# reference key -> short citation
 LONG = {}	# reference key -> long citation
@@ -26,6 +30,12 @@ def _getBooks():
 			publisher,
 			series_ed as edition
 		from bib_books'''
+
+	if SOURCE_TABLE:
+		bookCmd = bookCmd + ''' b
+			where exists (select 1 from %s c
+				where b._Refs_key = c._Refs_key)''' % \
+					SOURCE_TABLE
 
 	books = {}
 
@@ -73,6 +83,12 @@ def _getRefs():
 		from bib_refs r,
 			bib_citation_cache c
 		where r._Refs_key = c._Refs_key'''
+
+	if SOURCE_TABLE:
+		allCmd = allCmd + '''
+			and exists (select 1 from %s d
+				where d._Refs_key = r._Refs_key)''' % \
+					SOURCE_TABLE
 
 	columns, results = dbAgnostic.execute (allCmd)
 
@@ -377,3 +393,16 @@ def getSequenceNumByMini (refsKey):
 	if MINI_SEQ_NUM.has_key(refsKey):
 		return MINI_SEQ_NUM[refsKey]
 	return len(MINI_SEQ_NUM) + 1
+
+def restrict(tableName):
+	# if you'd like to restrict reference collection to only those cited
+	# in a certain table, call this first and specify the table name
+	# (to save memory and time)
+
+	global SOURCE_TABLE
+
+	SOURCE_TABLE = tableName
+	logger.debug('Restricted set of references to only those in %s' % \
+		SOURCE_TABLE)
+	return
+
