@@ -509,7 +509,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# definitions for expression_result_anatomical_systems
 		# table data
 
-		erasCols =  [ 'result_key', 'anatomical_structure' ]
+		erasCols =  [ 'result_key', 'emapa_id', 'anatomical_structure' ]
 		erasRows = []
 
 		# now, we need to walk through our assays to populate the list
@@ -615,8 +615,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			# for filtering in the fewi
 
 			emapaKey = GXDUtils.getEmapaKey(emapsKey)
-			for structure in GXDUtils.getEmapaHighLevelTerms(emapaKey, stage):
-				erasRows.append ( [ newKey, structure ] )
+			for (accID, structure) in GXDUtils.getEmapaHighLevelTerms(emapaKey, stage):
+				erasRows.append ([ newKey, accID, structure ])
 
 		logger.debug ('Got %d GXD result summary rows' % len(ersRows))
 		logger.debug ('Got %d GXD result/pane rows' % len(ertiRows))
@@ -1048,7 +1048,8 @@ files = [
 		'marker_tissue_expression_counts'),
 
 	('expression_result_anatomical_systems',
-		[ Gatherer.AUTO, 'result_key', 'anatomical_structure' ],
+		[ Gatherer.AUTO, 'result_key', 'emapa_id',
+		'anatomical_structure' ],
 		'expression_result_anatomical_systems'),
 	]
 

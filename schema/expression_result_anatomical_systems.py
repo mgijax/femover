@@ -17,6 +17,7 @@ tableName = 'expression_result_anatomical_systems'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int	not null,
 	result_key		int	not null,
+	emapa_id		text	not null,
 	anatomical_system	text	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

@@ -49,6 +49,41 @@ EMAPS_TO_EMAPA = None	# dictionary mapping EMAPS key to EMAPA key
 EMAPA_STAGE_RANGE = None	# dictionary mapping EMAPA key -> range string
 EMAPA_TERM = None		# dictionary mapping EMAPA key -> term
 EMAPA_START_STAGE = None	# dictionary mapping EMAPA key -> start stage
+EMAPA_ID = None			# dictionary mapping EMAPA key -> acc ID
+
+def getEmapaID (emapaKey):
+	# get the primary accession ID for the EMAPA term with the given key
+
+	global EMAPA_ID
+
+	if EMAPA_ID == None:
+		EMAPA_ID = {}
+
+		query = '''select a.accID,
+				t._Term_key
+			from acc_accession a,
+				voc_term t,
+				voc_vocab v
+			where a._MGIType_key = 13
+				and a._Object_key = t._Term_key
+				and t._Vocab_key = v._Vocab_key
+				and v.name = 'EMAPA'
+				and a.preferred = 1
+				and a.private = 0'''
+
+		(cols, rows) = dbAgnostic.execute(query)
+
+		emapaCol = dbAgnostic.columnNumber (cols, '_Term_key')
+		idCol = dbAgnostic.columnNumber (cols, 'accID')
+
+		for row in rows:
+			EMAPA_ID[row[emapaCol]] = row[idCol]
+
+		logger.debug('Cached %d EMAPA IDs' % len(EMAPA_ID))
+
+	if EMAPA_ID.has_key(emapaKey):
+		return EMAPA_ID[emapaKey]
+	return None
 
 def getEmapaKey (emapsKey):
 	# get the EMAPA key corresponding to the given EMAPS key
@@ -260,8 +295,9 @@ def _cacheHighLevelMapping():
 	return
 
 def getEmapaHighLevelTerms(emapaKey, stage):
-	# return a list of high level terms (not keys) for the term with the
-	# given EMAPA key
+	# return a list of high level terms and IDs for the term with the
+	# given EMAPA key.  Each item in the returned list is a tuple:
+	# (EMAPA ID, EMAPA term)
 
 	if TERM_TO_HIGH_LEVEL == None:
 		_cacheHighLevelMapping()
@@ -278,5 +314,6 @@ def getEmapaHighLevelTerms(emapaKey, stage):
 		endStage = END_STAGE[ancestorKey]
 
 		if startStage <= stage <= endStage: 
-			terms.append(getEmapaTerm(ancestorKey))
+			terms.append( (getEmapaID(ancestorKey), 
+				getEmapaTerm(ancestorKey)) )
 	return terms
