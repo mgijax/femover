@@ -21,6 +21,8 @@ import types
 import VocabSorter
 import GXDUtils
 
+ReferenceCitations.restrict('GXD_Assay')
+
 ###--- Globals ---###
 
 # list of strengths, in order of increasing strength
@@ -615,7 +617,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			# for filtering in the fewi
 
 			emapaKey = GXDUtils.getEmapaKey(emapsKey)
-			for (accID, structure) in GXDUtils.getEmapaHighLevelTerms(emapaKey, stage):
+			highLevelTerms = GXDUtils.getEmapaHighLevelTerms(
+				emapaKey, stage)
+
+			for (accID, structure) in highLevelTerms:
 				erasRows.append ([ newKey, accID, structure ])
 
 		logger.debug ('Got %d GXD result summary rows' % len(ersRows))

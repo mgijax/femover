@@ -247,8 +247,8 @@ def _getHighLevelTermKeys():
 	terms = []
 	for row in rows:
 		terms.append(row[termCol])
-		START_STAGE[row[termCol]] = row[startCol]
-		END_STAGE[row[termCol]] = row[endCol]
+		START_STAGE[row[termCol]] = int(row[startCol])
+		END_STAGE[row[termCol]] = int(row[endCol])
 
 	logger.debug('Got %d high level EMAPA terms' % len(terms))
 	return terms
@@ -305,6 +305,8 @@ def getEmapaHighLevelTerms(emapaKey, stage):
 	if not TERM_TO_HIGH_LEVEL.has_key(emapaKey):
 		return []
 
+	intStage = int(stage)
+
 	terms = []
 	for ancestorKey in TERM_TO_HIGH_LEVEL[emapaKey]:
 		# We only want to include this high level term if the result's
@@ -313,7 +315,7 @@ def getEmapaHighLevelTerms(emapaKey, stage):
 		startStage = START_STAGE[ancestorKey]
 		endStage = END_STAGE[ancestorKey]
 
-		if startStage <= stage <= endStage: 
+		if startStage <= intStage <= endStage: 
 			terms.append( (getEmapaID(ancestorKey), 
 				getEmapaTerm(ancestorKey)) )
 	return terms
