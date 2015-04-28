@@ -7,7 +7,6 @@ import tempfile
 import config
 import logger
 import dbAgnostic
-import zlib
 import gc
 
 from string import maketrans
@@ -20,43 +19,20 @@ Error = 'OutputFile.error'
 ColumnMismatch = 'Mismatching number of columns: (%d vs %d)'
 ClosedFile = 'File was already closed'
 
-# which mode do we use to interpret our output rows to be written?
-
-LIST_MODE = 'list'	    # default - each row is a list
-STRING_MODE = 'string'	    # each row is a list encoded as a string
-COMPRESS_MODE = 'compress'  # each row is a list encoded as a string, then
-			    # ...compressed using zlib
 CONTROL_CHARS = ''.join(map(chr, range(0,9) + range(11,13) + range(14,32) + range(127,160)))
 
-###--- Classes ---###
+# standard settings for cache size in CachingOutputFile:
 
-def packRow (mode, row):
-	# takes the given 'row' (a list of column values) and encodes it
-	# according to the needs of the given 'mode'
-
-	if mode == LIST_MODE:
-		return row
-
-	if mode == STRING_MODE:
-		return str(row)
-
-	if mode == COMPRESS_MODE:
-		return zlib.compress(str(row))
-
-	raise Error, 'Bad mode (%s) in packRow()' % mode
-
-def packRows (mode, rows):
-	if mode == LIST_MODE:
-		return rows
-
-	newRows = []
-	for row in rows:
-		newRows.append(packRow(mode, row))
-	return newRows
+SMALL_CACHE = 1000	# only keep 1,000 rows in memory
+MEDIUM_CACHE = 10000	# keep 10,000 rows in memory
+LARGE_CACHE = 50000	# keep 50,000 rows in memory
 
 ###--- Classes ---###
 
 class OutputFile:
+	# basic class for handling writing from a gatherer to a file in the
+	# file system
+
 	def __init__ (self, prefix):
 		filename = prefix + '.'
 
@@ -69,29 +45,9 @@ class OutputFile:
 		self.columnCount = 0
 		self.isOpen = True
 		self.autoKey = 1
-		self.mode = LIST_MODE
 
 		logger.debug ('Opened output file: %s' % self.path)
 		return
-
-	def setMode (self, mode):
-		if mode not in [ LIST_MODE, STRING_MODE, COMPRESS_MODE ]:
-			raise Error, 'Unrecognized mode: %s' % mode
-
-		self.mode = mode
-		return
-
-	def unpackRow (self, row):
-		if self.mode == LIST_MODE:
-			return row
-
-		if self.mode == STRING_MODE:
-			return eval(row)
-
-		if self.mode == COMPRESS_MODE:
-			return eval(zlib.decompress(row))
-
-		raise Error, 'Bad mode (%s) in unpackRow()' % self.mode
 
 	def close (self):
 		os.close(self.fd)
@@ -148,13 +104,6 @@ class OutputFile:
 		rowCount = self.rowCount
 
 		for row in rows:
-			if self.mode != LIST_MODE:
-				row = self.unpackRow(row)
-				rowCount = rowCount + 1
-
-				if rowCount % 50000 == 0:
-					gc.collect()
-
 			out = []
 
 			for col in columnNumbers:
@@ -172,6 +121,126 @@ class OutputFile:
 			os.write (self.fd, '\t'.join(cleanedout) + '\n')
 
 		self.rowCount = self.rowCount + len(rows)
+		return
+
+class CachingOutputFile:
+	# is a wrapper over an OutputFile, providing a limited-size memory
+	# cache and then flushing out to disk whenever that number of rows is
+	# reached
+
+	def __init__ (self,
+		tableName,	# string; table name used as prefix of output
+				# ...filename
+		inFieldOrder,	# list of strings; order of fieldnames to
+				# ...expect when rows received
+		outFieldOrder,	# list of strings; order of fieldnames in 
+				# ...which to write out fields to data file
+		cacheSize = MEDIUM_CACHE	# integer; nr of rows to cache
+		):
+		self.outputFile = OutputFile(tableName)
+		self.tableName = tableName
+		self.inFieldOrder = inFieldOrder
+		self.outFieldOrder = outFieldOrder
+		self.cacheSize = cacheSize
+		self.rowCache = []
+		self.rowCount = 0
+		self.cachedRowCount = 0
+		return
+
+	def __writeCache (self):
+		# write out the contents of the cache to the file
+
+		self.rowCount = self.rowCount + self.cachedRowCount
+		self.outputFile.writeToFile (self.outFieldOrder,
+			self.inFieldOrder, self.rowCache)
+		self.rowCache = []
+		self.cachedRowCount = 0
+		gc.collect()
+		return
+
+	def addRow (self, row):
+		# add a single row to the file, with fields in order specified
+		# by 'inFieldOrder' in constructor
+
+		self.rowCache.append(row)
+		self.cachedRowCount = self.cachedRowCount + 1
+		if self.cachedRowCount >= self.cacheSize:
+			self.__writeCache()
+		return
+
+	def addRows (self, rows):
+		# add multiple rows to the file, with fields in order
+		# specified by 'inFieldOrder' in constructor
+
+		for row in rows:
+			self.addRow(row)
+		return
+
+	def close (self):
+		if self.rowCache:
+			self.__writeCache()
+		self.outputFile.close()
+		return
+
+	def getTableName (self):
+		return self.tableName
+
+	def getPath (self):
+		return self.outputFile.getPath()
+
+	def getRowCount (self):
+		return self.rowCount + self.cachedRowCount
+
+	def getColumnCount (self):
+		return len(self.outFieldOrder)
+
+class CachingOutputFileFactory:
+	def __init__ (self):
+		self.outputFiles = {}
+		return
+
+	def createFile (self, prefix, inFieldOrder, outFieldOrder, cacheSize):
+		# create a new CachingOutputFile with the given parameters
+		# and return an integer identifier for it
+
+		f = CachingOutputFile(prefix, inFieldOrder, outFieldOrder,
+			cacheSize)
+		num = len(self.outputFiles) + 1
+		self.outputFiles[num] = f
+		return num
+
+	def addRow (self, num, row):
+		# add 'row' to the CachingOutputFile specified by 'num'
+
+		self.outputFiles[num].addRow(row)
+		return
+
+	def getRowCount (self, num):
+		# return the number of rows for the CachingOutputFile
+		# specified by 'num'
+
+		return self.outputFiles[num].getRowCount()
+
+	def addRows (self, num, rows):
+		# add multiple rows to the CachingOutputFile specified by 'num'
+
+		self.outputFiles[num].addRows(rows)
+		return
+
+	def closeAll (self):
+		# close all CachingOutputFiles managed by this factory
+
+		for num in self.outputFiles.keys():
+			self.outputFiles[num].close()
+		return
+
+	def reportAll (self):
+		# write to stdout the information we need to have the data
+		# files from this factory picked up and loaded into the db
+
+		for num in self.outputFiles.keys():
+			print '%s %s' % (self.outputFiles[num].getPath(),
+				self.outputFiles[num].getTableName())
 		return
 
 ###--- Functions ---###
