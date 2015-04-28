@@ -5,7 +5,10 @@
 
 . Configuration
 echo $PATH
-which psql
+
+# commented out, as this was causing process to hang when run in background
+# from command-line
+#which psql
 
 PGPASSWORD=$4
 export PGPASSWORD
