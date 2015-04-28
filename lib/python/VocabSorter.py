@@ -18,12 +18,19 @@ import symbolsort
 VOCAB_SORTER = None		# singleton instance to be shared
 VOCAB_SORTER_ALPHA = None
 
+VOCABS = ''
+
 ###--- PrivateFunctions ---###
 
-def __initialize():
-	global VOCAB_SORTER, VOCAB_SORTER_ALPHA
+def __initializeVS():
+	global VOCAB_SORTER
 	if not VOCAB_SORTER:
 		VOCAB_SORTER = VocabSorter()
+	return
+
+def __initializeVSA():
+	global VOCAB_SORTER_ALPHA
+	if not VOCAB_SORTER_ALPHA:
 		VOCAB_SORTER_ALPHA = VocabSorterAlpha()
 	return
 
@@ -205,6 +212,9 @@ class VocabSorter:
 				voc_vocab v
 			where t._Vocab_key = v._Vocab_key'''
 
+		if VOCABS:
+			cmd = '%s and v._Vocab_key in (%s)' % (cmd, VOCABS)
+
 		# retrieve terms from the database
 
 		(cols, rows) = dbAgnostic.execute (cmd)
@@ -271,6 +281,14 @@ class VocabSorter:
 				and d._DAG_key = e._DAG_key
 				and e._Parent_key = p._Node_key
 				and e._Child_key = c._Node_key'''
+
+		if VOCABS:
+			cmd = '''%s
+				and c._Object_key = t._Term_key
+				and t._Vocab_key in (%s)''' % (
+					cmd.replace('dag_node c',
+						'dag_node c, voc_term t'),
+					VOCABS) 
 
 		(cols, rows) = dbAgnostic.execute (cmd)
 		logger.debug ('Retrieved %d relationships from database' % \
@@ -438,6 +456,12 @@ class VocabSorter:
 				_DescendentObject_key
 			from dag_closure'''
 
+		if VOCABS:
+			cmd = '''%s c, voc_term t
+				where c._AncestorObject_key = t._Term_key
+					and t._Vocab_key in (%s)''' % (cmd,
+						VOCABS)
+
 		(cols, rows) = dbAgnostic.execute (cmd)
 		logger.debug ('Retrieved %d closure items from database' % \
 			len(rows))
@@ -482,6 +506,9 @@ class VocabSorterAlpha:
 				_Vocab_key as key
 			from voc_vocab'''
 
+		if VOCABS:
+			cmd1 = '%s where _Vocab_key in (%s)' % (cmd, VOCABS)
+
 		vocabSeqNum = _prepareOrderingDictionary (cmd1, _vocabNameCmp)
 
 		# get DAG names to be ordered
@@ -497,6 +524,9 @@ class VocabSorterAlpha:
 				_Term_key as key
 			from voc_term'''
 
+		if VOCABS:
+			cmd3 = '%s where _Vocab_key in (%s)' % (cmd3, VOCABS)
+
 		termSeqNum = _prepareOrderingDictionary (cmd3, _smartTermCmp)
 
 		logger.debug (
@@ -509,6 +539,9 @@ class VocabSorterAlpha:
 			from voc_term t
 			left outer join dag_node d on (
 				t._Term_key = d._Object_key)'''
+
+		if VOCABS:
+			cmd4 = '%s where _Vocab_key in (%s)' % (cmd4, VOCABS)
 
 		(cols, rows) = dbAgnostic.execute (cmd4)
 
@@ -570,16 +603,14 @@ class VocabSorterAlpha:
 ###--- Public Functions ---###
 
 def getTermKey (vocabName, term):
-	__initialize()
+	__initializeVS()
 	return VOCAB_SORTER.getTermKey (vocabName, term)
 
 def getSequenceNum (termKey):
-	__initialize()
+	__initializeVS()
 	return VOCAB_SORTER.sequenceNum (termKey)
 
 def getSequenceNumByID (accID):
-	__initialize()
-	
 	cmd = '''select _Object_key
 		from acc_accession
 		where lower(accid) = '%s'
@@ -591,19 +622,19 @@ def getSequenceNumByID (accID):
 	return getSequenceNum(rows[0][0])
 
 def isChildOf (childTerm, parentTerm):
-	__initialize()
+	__initializeVS()
 	return VOCAB_SORTER.isChildOf (childTerm, parentTerm)
 
 def isDescendentOf (descendentTerm, ancestorTerm):
-	__initialize()
+	__initializeVS()
 	return VOCAB_SORTER.isDescendentOf (descendentTerm, ancestorTerm)
 
 def getVocabTermSequenceNum (termKey):
-	__initialize()
+	__initializeVSA()
 	return VOCAB_SORTER_ALPHA.getVocabTermSequenceNum (termKey)
 
 def getVocabDagTermSequenceNum (termKey):
-	__initialize()
+	__initializeVSA()
 	return VOCAB_SORTER_ALPHA.getVocabDagTermSequenceNum (termKey)
 
 def getAssayTypeSequenceNum (assayType):
@@ -627,3 +658,21 @@ def getAssayTypeSequenceNum (assayType):
 		return 8
 	return 9
 
+def setVocabs (vocabKeys):
+	# call before any other functions to restrict the set of vocabularies
+	# pulled in by this module (to optimize for time and memory) for those
+	# gatherers which don't need them all
+
+	global VOCABS
+
+	if type(vocabKeys) == type([]):
+		VOCABS = ', '.join(map(str, vocabKeys))
+	elif type(vocabKeys) == type(1):
+		VOCABS = str(vocabKeys)
+	elif type(vocabKeys) == type(''):
+		VOCABS = vocabKeys
+	else:
+		raise 'error', 'unknown param in setVocabs: %s' % vocabKeys
+
+	logger.debug('Restricted VocabSorter to only vocabs: %s' % VOCABS)
+	return
