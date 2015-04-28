@@ -1,3 +1,8 @@
+TAG: femover-5-2-2-3
+DATE: 04/28/2015
+STAFF: jsb
+CHANGES: several performance optimizations for expression_result_summary_gatherer.py and associated libraries
+
 TAG: femover-5-2-2-2
 DATE: 04/28/2015
 STAFF: lnh
