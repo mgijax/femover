@@ -366,6 +366,13 @@ class MultiFileGatherer:
 					# rows), with one per output file, to
 					# be filled in by collateResults()
 		self.lastWritten = None	# number of last file written so far
+
+		# Some gatherers may want to manage their own file writes
+		# in the interests of saving memory.  In this case, they can
+		# set this flag to skip the default method of writing at the
+		# end.  Note that they also must handle writing out the
+		# file paths and table names to stdout themselves.
+		self.customWrites = False
 		return
 
 	def preprocessCommands (self):
@@ -424,6 +431,11 @@ class MultiFileGatherer:
 		logger.info ('Built %d result sets' % len(self.output))
 		self.postprocessResults()
 		logger.info ('Post-processed result sets')
+
+		# if the gatherer is managing its own writes, then we can just
+		# bail out now 
+		if self.customWrites:
+			return
 
 		if len(self.output) != len(self.files):
 			raise Error, 'Mismatch: %d files, %d output sets' % (
