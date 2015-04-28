@@ -125,6 +125,168 @@ def maxStrength (strength1, strength2):
 
 	return strength2
 
+###--- Related functions for sorting in getSequenceNumTable method ---###
+
+ASSAY = 0	# indices into tuples contained in the list we're sorting
+SYMBOL = 1
+AGE_MIN = 2
+AGE_MAX = 3
+STRUCTURE = 4
+STAGE = 5
+EXPRESSED = 6
+MUTANTS = 7
+REFS = 8
+RESULT_KEY = 9
+
+def _byStructureStage (a, b):
+	# re-usable function to compare tuples by structure then stage
+
+	x = cmp(a[STRUCTURE], b[STRUCTURE])
+	if x == 0:
+		x = cmp(a[STAGE], b[STAGE])
+	return x
+
+def _byAgeMinMax (a, b):
+	# re-usable function to compare tuples by age min then age max
+
+	x = cmp(a[AGE_MIN], b[AGE_MIN])
+	if x == 0:
+		x = cmp(a[AGE_MAX], b[AGE_MAX])
+	return x
+
+def byAssayType (a, b):
+	# comparison function to sort by assay type (plus 7 more levels),
+	# eg- (assay, symbol, ageMin, ageMax,
+	#	structure, stage, expressed, resultKey)
+
+	x = cmp(a[ASSAY], b[ASSAY])
+	if x == 0:
+		x = cmp(a[SYMBOL], b[SYMBOL])
+		if x == 0:
+			x = _byAgeMinMax(a, b)
+			if x == 0:
+				x = _byStructureStage(a, b)
+				if x == 0:
+					x = cmp(a[EXPRESSED], b[EXPRESSED])
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def bySymbol (a, b):
+	# comparison function to sort by symbol (plus 7 more levels),
+	# eg- (symbol, assay, ageMin, ageMax,
+	#	structure, stage, expressed, resultKey)
+
+	x = cmp(a[SYMBOL], b[SYMBOL])
+	if x == 0:
+		x = cmp(a[ASSAY], b[ASSAY])
+		if x == 0:
+			x = _byAgeMinMax(a, b)
+			if x == 0:
+				x = _byStructureStage(a, b)
+				if x == 0:
+					x = cmp(a[EXPRESSED], b[EXPRESSED])
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def byAge (a, b):
+	# comparison function to sort by age (plus 7 more levels),
+	# eg- (ageMin, ageMax, structure, stage, 
+	#	expressed, symbol, assay, resultKey)
+
+	x = _byAgeMinMax(a, b)
+	if x == 0:
+		x = _byStructureStage(a, b)
+		if x == 0:
+			x = cmp(a[EXPRESSED], b[EXPRESSED])
+			if x == 0:
+				x = cmp(a[SYMBOL], b[SYMBOL])
+				if x == 0:
+					x = cmp(a[ASSAY], b[ASSAY])
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def byStructure (a, b):
+	# comparison function to sort by age (plus 7 more levels),
+	# eg- (structure, stage, ageMin, ageMax,
+	#	expressed, symbol, assay, resultKey)
+
+	x = _byStructureStage(a, b)
+	if x == 0:
+		x = _byAgeMinMax(a, b)
+		if x == 0:
+			x = cmp(a[EXPRESSED], b[EXPRESSED])
+			if x == 0:
+				x = cmp(a[SYMBOL], b[SYMBOL])
+				if x == 0:
+					x = cmp(a[ASSAY], b[ASSAY])
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def byExpressed (a, b):
+	# comparison function to sort by whether expression was shown (plus 7)
+	# eg- expressed, symbol, assay, ageMin, 
+	#	ageMax, structure, stage, resultKey)
+
+	x = cmp(a[EXPRESSED], b[EXPRESSED])
+	if x == 0:
+		x = cmp(a[SYMBOL], b[SYMBOL])
+		if x == 0:
+			x = cmp(a[ASSAY], b[ASSAY])
+			if x == 0:
+				x = _byAgeMinMax(a, b)
+				if x == 0:
+					x = _byStructureStage(a, b)
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def byMutants (a, b):
+	# comparison function to sort by mutant alleles (plus 7 more levels),
+	# eg- (mutants, symbol, assay, ageMin,
+	#	ageMax, structure, stage, resultKey)
+
+	x = cmp(a[MUTANTS], b[MUTANTS])
+	if x == 0:
+		x = cmp(a[SYMBOL], b[SYMBOL])
+		if x == 0:
+			x = cmp(a[ASSAY], b[ASSAY])
+			if x == 0:
+				x = _byAgeMinMax(a, b)
+				if x == 0:
+					x = _byStructureStage(a, b)
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
+def byReference (a, b):
+	# comparison function to sort by reference (plus 7 more levels),
+	# eg- (refs, symbol, assay, ageMin, ageMax,
+	#	structure, stage, resultKey) )
+
+	x = cmp(a[REFS], b[REFS])
+	if x == 0:
+		x = cmp(a[SYMBOL], b[SYMBOL])
+		if x == 0:
+			x = cmp(a[ASSAY], b[ASSAY])
+			if x == 0:
+				x = _byAgeMinMax(a, b)
+				if x == 0:
+					x = _byStructureStage(a, b)
+					if x == 0:
+						x = cmp(a[RESULT_KEY],
+							b[RESULT_KEY])
+	return x
+
 ###--- Classes ---###
 
 class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
@@ -154,10 +316,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		else:
 			# ambiguous case
 			counts[0] += 1
-
-	# returns a dictionary like {structure_key=>[allCount,detectedCount,notDetectedCount]}
-	def getMarkerTissueCounts(self,marker_key):
-		return self.markerTissueCounts.setdefault(marker_key,{})
 
 	def getAssayIDs(self):
 		# handle query 0 : returns { assay key : MGI ID }
@@ -722,14 +880,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Got %d GXD result/pane rows' % \
 			FILES.getRowCount(ertiFile))
 
+		del assays
 		GXDUtils.unload()
-
-		self.getSequenceNumTable (sortCols, sortRows, ageMinMax)
-
-		# We don't need the sortRows anymore, so free up the memory.
-
-		del sortRows
-		gc.collect()
 
 		# process markerTissueCounts data
 
@@ -740,9 +892,21 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		self.processMarkerTissueCounts(mtCols,
 			self.markerTissueCounts)
 		
+		self.markerTissueCounts = {}	# free up memory...
+		gc.collect()
+
 		logger.debug('Got %d high-level EMAPA terms for %d results' \
 			% (FILES.getRowCount(erasFile),
 				FILES.getRowCount(ersFile)) )
+
+		# build the sequence number table using data from loop above
+
+		self.getSequenceNumTable (sortCols, sortRows, ageMinMax)
+
+		# We don't need the sortRows anymore, so free up the memory.
+
+		del sortRows
+		gc.collect()
 
 		# ensure that everything is written out to disk, then report
 		# which data files we produced and where they are
@@ -829,18 +993,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# computed sorts (as in 'cols'), and each of those needs to be
 		# pre-computed as a multi-level sort.
 
-		# Each of these ordering lists is used to pre-compute one of
-		# the sorts.  Each list will be populated by tuples containing
-		# the values to be considered in the sort for that item, and
-		# the tuple's last entry will be the result_key.
+		# In order to (dramatically) save memory, we will use a single
+		# list with rows corresponding to those in 'sortRows'.  We
+		# will sort the list one way, record the order, then move on
+		# to re-sort the list a different way.
 
-		byAssayType = []
-		bySymbol = []
-		byAge = []
-		byStructure = []
-		byExpressed = []
-		byMutants = []
-		byReference = []
+		rows = []	# the list we will use for re-sorting
 
 		# fill in sortable data for each of the ordering lists
 		# (right now we only do byStructure)
@@ -859,20 +1017,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('identified columns for sorts')
 
-		# Previously this section would compile 7 ordering lists,
-		# then sort them, then collate them.  This uses 7x the memory
-		# of doing the 3 steps for each in succession.
-
+		# Previously this section would compile 7 separate ordering
+		# lists, then sort them, then collate them.  This uses 7x the
+		# memory of doing the 3 steps for each in succession.
 
 		for row in sortRows:
 		    resultKey = row[resultKeyCol]
-
-		    # before getting the sequence number for the structure, we
-		    # need to convert from a term key for the structure to its
-		    # original structure key in mgd
-
-		    # The structure key in sortRows is already an emapsKey, so
-		    # we don't need to convert it.
 
 		    emapsKey = row[structureKeyCol]
 		    structure = VocabSorter.getSequenceNum(emapsKey)
@@ -891,34 +1041,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    mutants = self.getGenotypeSequenceNum (row[genotypeKeyCol])
 		    refs = ReferenceCitations.getSequenceNum (row[refsKeyCol])
 
-		    # add records to the various individual ordering lists
+		    # add record to the ordering list
 
-		    byAssayType.append ( (assay, symbol, ageMin, ageMax,
-			    structure, stage, expressed, resultKey) )
-		    bySymbol.append ( (symbol, assay, ageMin, ageMax,
-			    structure, stage, expressed, resultKey) )
-		    byAge.append ( (ageMin, ageMax, structure, stage, 
-			    expressed, symbol, assay, resultKey) )
-		    byStructure.append ( (structure, stage, ageMin, ageMax,
-			    expressed, symbol, assay, resultKey) )
-		    byExpressed.append ( (expressed, symbol, assay, ageMin,
-			    ageMax, structure, stage, resultKey) )
-		    byMutants.append ( (mutants, symbol, assay, ageMin,
-			    ageMax, structure, stage, resultKey) )
-		    byReference.append ( (refs, symbol, assay, ageMin, ageMax,
-			    structure, stage, resultKey) )
+		    rows.append ( (assay, symbol, ageMin, ageMax, structure,
+			    stage, expressed, mutants, refs, resultKey) )
 
 		    resultKeys.append (resultKey)
 
-		logger.debug ('compiled ordering lists')
-
-		# sort the individual ordering lists
-
-		for orderingList in [ byAssayType, bySymbol, byAge,
-			byStructure, byExpressed, byMutants, byReference]:
-				orderingList.sort()
-
-		logger.debug ('sorted ordering lists')
+		logger.debug ('compiled ordering list')
 
 		# produce the individual output row for each result key
 
@@ -927,35 +1057,43 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for key in resultKeys:
 			output[key] = [ key ]
 
-		for orderingList in [ byAssayType, bySymbol, byAge,
-			byStructure, byExpressed, byMutants, byReference ]:
-				i = 0
+		orders = [ ('assayType', byAssayType), ('symbol', bySymbol),
+			('age', byAge), ('structure', byStructure),
+			('expressed', byExpressed), ('mutants', byMutants),
+			('reference', byReference) ]
 
-				# remember which result keys were not seen for
-				# this orderingList so far
+		for (name, comparison) in orders:
+			rows.sort(comparison)
+			logger.debug('Sorted %d rows by %s' % (len(rows),
+				name) )
 
-				notDone = {}
-				for key in resultKeys:
-					notDone[key] = 1
+			i = 0
 
-				# order those we know about in 'orderingList'
+			# remember which result keys were not seen for
+			# the rows so far
 
-				for row in orderingList:
-					i = i + 1
-					output[row[-1]].append(i)
-					if notDone.has_key(row[-1]):
-						del notDone[row[-1]]
+			notDone = {}
+			for key in resultKeys:
+				notDone[key] = 1
 
-				# order those left over in 'notDone'
+			# order those we know about in 'orderingList'
 
-				keys = notDone.keys()
-				keys.sort()
+			for row in rows:
+				i = i + 1
+				output[row[-1]].append(i)
+				if notDone.has_key(row[-1]):
+					del notDone[row[-1]]
 
-				for key in keys:
-					i = i + 1
-					output[row[-1]].append(i)
+			# order those left over in 'notDone'
 
-		logger.debug ('collated ordering lists into dict')
+			keys = notDone.keys()
+			keys.sort()
+
+			for key in keys:
+				i = i + 1
+				output[row[-1]].append(i)
+
+			logger.debug ('Finished ordering by %s' % name)
 
 		# extract the individual rows and write them out
 
