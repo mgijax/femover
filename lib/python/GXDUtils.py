@@ -3,6 +3,7 @@
 
 import dbAgnostic
 import logger
+import gc
 
 ###--- functions dealing with ages ---###
 
@@ -319,3 +320,23 @@ def getEmapaHighLevelTerms(emapaKey, stage):
 			terms.append( (getEmapaID(ancestorKey), 
 				getEmapaTerm(ancestorKey)) )
 	return terms
+
+def unload():
+	# remove cached items from memory, allowing the space to be reclaimed
+	# and otherwise used
+
+	global EMAPS_TO_EMAPA, EMAPA_STAGE_RANGE, EMAPA_TERM, EMAPA_ID
+	global EMAPA_START_STAGE, TERM_TO_HIGH_LEVEL, START_STAGE, END_STAGE
+
+	EMAPS_TO_EMAPA = None
+	EMAPA_STAGE_RANGE = None
+	EMAPA_TERM = None
+	EMAPA_START_STAGE = None
+	EMAPA_ID = None	
+	TERM_TO_HIGH_LEVEL = None
+	START_STAGE = {}
+	END_STAGE = {}
+
+	gc.collect()
+	logger.debug('Reclaimed memory in GXDUtils')
+	return
