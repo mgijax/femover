@@ -13,15 +13,17 @@
 
 import Gatherer
 import logger
-import ADVocab
 import ADMapper
 import symbolsort
 import ReferenceCitations
 import types
 import VocabSorter
 import GXDUtils
+import OutputFile
+import gc
 
-ReferenceCitations.restrict('GXD_Assay')
+ReferenceCitations.restrict('GXD_Assay')    # only references tied to assays
+VocabSorter.setVocabs(91)		    # EMAPS
 
 ###--- Globals ---###
 
@@ -32,6 +34,15 @@ ORDERED_STRENGTHS = [ 'Not Applicable', 'Absent', 'Not Specified',
 	]
 POSITIVE_STRENGTHS = ['Trace','Weak','Present','Moderate','Strong','Very Strong']
 NEGATIVE_STRENGTHS = ['Absent']
+
+CACHE_SIZE = OutputFile.LARGE_CACHE
+
+# HERE:
+# -----
+# Already garbage collected after processing query results.  Now need to use
+# factory to instantiate writers for the 5 output files, then switch to using
+# them.
+FILES = OutputFile.CachingOutputFileFactory()
 
 ###--- Functions ---###
 
@@ -161,6 +172,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			ids[row[keyCol]] = row[idCol]
 
 		logger.debug ('Got %d assay IDs' % len(ids))
+
+		# reclaim memory once we have processed the results
+		self.results[0] = [ cols, [] ]
+		gc.collect()
+
 		return ids
 
 	def getJnumbers(self):
@@ -176,6 +192,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			jnum[row[keyCol]] = row[idCol]
 
 		logger.debug ('Got %d Jnum IDs' % len(jnum))
+
+		# reclaim memory once we have processed the results
+		self.results[1] = [ cols, [] ]
+		gc.collect()
+
 		return jnum
 
 	def getMarkerSymbols(self):
@@ -204,6 +225,12 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			self.symbolSequenceNum[sym] = i
 
 		logger.debug ('Sorted %d marker symbols' % i) 
+
+		# reclaim memory once we have processed the results
+		del allSymbols
+		self.results[2] = [ cols, [] ]
+		gc.collect()
+
 		return symbol
 
 	def getDisplayableImagePanes(self):
@@ -216,6 +243,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			panes[row[0]] = 1
 
 		logger.debug ('Got %d displayable image panes' % len(panes))
+
+		# reclaim memory once we have processed the results
+		self.results[3] = [ cols, [] ]
+		gc.collect()
+
 		return panes
 
 	def getPanesForInSituResults(self):
@@ -235,6 +267,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				panes[assay] = [ row[paneCol] ]
 
 		logger.debug ('Got panes for %d in situ assays' % len(panes))
+
+		# reclaim memory once we have processed the results
+		self.results[4] = [ cols, [] ]
+		gc.collect()
+
 		return panes
 
 	def getBasicAssayData(self):
@@ -259,6 +296,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				row[reporterCol], row[isGelCol] ] )
 
 		logger.debug ('Got basic data for %d assays' % len(assays))
+
+		# reclaim memory once we have processed the results
+		self.results[5] = [ cols, [] ]
+		gc.collect()
+
 		return assays
 
 	def getInSituExtraData(self):
@@ -293,6 +335,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Got extra data for %d in situ assays' % \
 			len(extras))
+
+		# reclaim memory once we have processed the results
+		self.results[6] = [ cols, [] ]
+		gc.collect()
+
 		return extras
 
 	def getGelExtraData(self):
@@ -376,6 +423,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Got extra data for %d gel assays' % \
 			len(extras))
+
+		# reclaim memory once we have processed the results
+		self.results[7] = [ cols, [] ]
+		gc.collect()
+
 		return extras
 
 	def sortGenotypeData(self):
@@ -437,6 +489,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			self.byGenotype[key] = i
 
 		logger.debug ('Sorted %d genotypes by allele pairs' % i)
+
+		# reclaim memory once we have processed the results
+		self.results[8] = [ cols, [] ]
+		gc.collect()
+
 		return
 
 	def getWildTypeAssays (self):
@@ -457,6 +514,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d wild-type genotypes' % len(rows))
 
+		# reclaim memory once we have processed the results
+		self.results[9] = [ cols, [] ]
+		gc.collect()
+
 		# query 10 - genotype/assay pairs that are wild-type together
 
 		cols, rows = self.results[10]
@@ -469,6 +530,10 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Found %d wild-type genotype/assay pairs' % \
 			len(rows))
+
+		# reclaim memory once we have processed the results
+		self.results[10] = [ cols, [] ]
+		gc.collect()
 
 		return wildtype
 
@@ -498,13 +563,26 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type',
 			'pattern','_Specimen_key'
 			]
-		ersRows = []
+
+		ersFile = FILES.createFile(files[0][0],
+			ersCols, files[0][1], CACHE_SIZE)
+
+		# excerpt of summary data that will be used for sorting
+
+		sortCols = [ 'result_key', '_Assay_key', 'assayType',
+			'symbol', 'stage', 'structureKey',
+			'isExpressed', '_Refs_key', '_Genotype_key',
+			]
+		sortRows = []
 
 		# definitions for expression_result_to_imagepane table data
 
 		ertiCols = [ 'result_key', '_ImagePane_key',
 			'sequence_num' ]
-		ertiRows = []
+
+		ertiCount = 0
+		ertiFile = FILES.createFile(files[1][0], ertiCols,
+			files[1][1], CACHE_SIZE)
 
 		ageMinMax = {}		# result key -> (age min, age max)
 
@@ -512,7 +590,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# table data
 
 		erasCols =  [ 'result_key', 'emapa_id', 'anatomical_structure' ]
-		erasRows = []
+		erasFile = FILES.createFile(files[4][0], erasCols,
+			files[4][1], CACHE_SIZE)
 
 		# now, we need to walk through our assays to populate the list
 		# of data for each table
@@ -605,13 +684,27 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    specimenKey
 			    ]
 
-			ersRows.append (outRow)
+			FILES.addRow(ersFile, outRow)
+
+			sortRow = [ newKey,
+			    assayKey,
+			    assayType,
+			    symbols[markerKey],
+			    stage,
+			    emapsKey,
+			    getIsExpressed(strength),
+			    refsKey,
+			    genotypeKey,
+			    ]
+
+			sortRows.append (sortRow)
 
 			ageMinMax[newKey] = (ageMin, ageMax)
 
 			for paneKey in panes:
-			    paneRow = [ newKey, paneKey, len(ertiRows) + 1 ]
-			    ertiRows.append (paneRow)
+			    ertiCount = ertiCount + 1
+			    paneRow = [ newKey, paneKey, ertiCount ]
+			    FILES.addRow(ertiFile, paneRow)
 
 			# include anatomical structures for the result -- used
 			# for filtering in the fewi
@@ -621,43 +714,61 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				emapaKey, stage)
 
 			for (accID, structure) in highLevelTerms:
-				erasRows.append ([ newKey, accID, structure ])
+				FILES.addRow(erasFile,
+					[ newKey, accID, structure ] )
 
-		logger.debug ('Got %d GXD result summary rows' % len(ersRows))
-		logger.debug ('Got %d GXD result/pane rows' % len(ertiRows))
+		logger.debug ('Got %d GXD result summary rows' % \
+			FILES.getRowCount(ersFile))
+		logger.debug ('Got %d GXD result/pane rows' % \
+			FILES.getRowCount(ertiFile))
 
-		self.output.append ( (ersCols, ersRows) )
-		self.output.append ( (ertiCols, ertiRows) )
+		GXDUtils.unload()
 
-		(cols, rows) = self.getSequenceNumTable (ersCols, ersRows,
-			ageMinMax)
+		self.getSequenceNumTable (sortCols, sortRows, ageMinMax)
 
-		self.output.append ( (cols, rows) )
-		
+		# We don't need the sortRows anymore, so free up the memory.
+
+		del sortRows
+		gc.collect()
+
 		# process markerTissueCounts data
+
 		mtCols = [ '_Marker_key', '_Structure_key',
                         'printName', 'allCount', 'detectedCount',
                         'notDetectedCount', 'sequenceNum' ]
-		mtRows = self.processMarkerTissueCounts(self.markerTissueCounts)
-		
-		self.output.append( (mtCols,mtRows) )
 
-		self.output.append( (erasCols, erasRows) )
+		self.processMarkerTissueCounts(mtCols,
+			self.markerTissueCounts)
+		
 		logger.debug('Got %d high-level EMAPA terms for %d results' \
-			% (len(erasRows), len(ersRows)) )
+			% (FILES.getRowCount(erasFile),
+				FILES.getRowCount(ersFile)) )
+
+		# ensure that everything is written out to disk, then report
+		# which data files we produced and where they are
+
+		FILES.closeAll()
+		FILES.reportAll()
 		return
 
-	def processMarkerTissueCounts(self,markerTissueCounts):
-		mtRows = []
+	def processMarkerTissueCounts(self, mtCols, markerTissueCounts):
+		mtFile = FILES.createFile (files[3][0], mtCols, files[3][1],
+			CACHE_SIZE)
+
 		for markerKey,structures in markerTissueCounts.items():
 			for emapsKey,counts in structures.items():
 				seqNum = VocabSorter.getSequenceNum(emapsKey)
 				printname = ADMapper.getEmapsTerm(emapsKey)
 				stage = ADMapper.getStageByKey(emapsKey)
 
-				mtRows.append([markerKey,emapsKey,"TS%s: %s"%(stage,printname),
-					counts[0],counts[1],counts[2],seqNum])
-		return mtRows
+				FILES.addRow(mtFile, [ markerKey, emapsKey,
+					"TS%s: %s" % (stage, printname),
+					counts[0], counts[1], counts[2],
+					seqNum ] )
+
+		logger.debug('Got %d marker/tissue counts' % \
+			FILES.getRowCount(mtFile))
+		return
 
 	def getSymbolSequenceNum (self, symbol):
 		if self.symbolSequenceNum.has_key(symbol):
@@ -698,7 +809,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			return self.byGenotype[genotypeKey]
 		return len(self.byGenotype) + 1
 
-	def getSequenceNumTable (self, ersCols, ersRows, ageMinMax):
+	def getSequenceNumTable (self, sortCols, sortRows, ageMinMax):
 		# build and return the rows (and columns) for the
 		# expression_result_sequence_num table
 
@@ -707,12 +818,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		cols = [ 'result_key', 'by_assay_type', 'by_gene_symbol',
 			'by_age', 'by_strucure',
 			'by_expressed', 'by_mutant_alleles', 'by_reference' ]
-		rows = []
+
+		ersnFile = FILES.createFile (files[2][0], cols, files[2][1],
+			CACHE_SIZE)
 
 		resultKeys = []		# all result_key values
 
 		# We need to generate one row for each incoming row from 
-		# 'ersRows'.  Each of these rows will have multiple pre-
+		# 'sortRows'.  Each of these rows will have multiple pre-
 		# computed sorts (as in 'cols'), and each of those needs to be
 		# pre-computed as a multi-level sort.
 
@@ -732,30 +845,35 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# fill in sortable data for each of the ordering lists
 		# (right now we only do byStructure)
 
-		resultKeyCol = Gatherer.columnNumber (ersCols, 'result_key')
-		assayKeyCol = Gatherer.columnNumber (ersCols, '_Assay_key')
-		assayTypeCol = Gatherer.columnNumber (ersCols, 'assayType')
-		symbolCol = Gatherer.columnNumber (ersCols, 'symbol')
-		stageCol = Gatherer.columnNumber (ersCols, 'stage')
-		expressedCol = Gatherer.columnNumber (ersCols, 'isExpressed')
-		refsKeyCol = Gatherer.columnNumber (ersCols, '_Refs_key')
-		structureKeyCol = Gatherer.columnNumber (ersCols,
+		resultKeyCol = Gatherer.columnNumber (sortCols, 'result_key')
+		assayKeyCol = Gatherer.columnNumber (sortCols, '_Assay_key')
+		assayTypeCol = Gatherer.columnNumber (sortCols, 'assayType')
+		symbolCol = Gatherer.columnNumber (sortCols, 'symbol')
+		stageCol = Gatherer.columnNumber (sortCols, 'stage')
+		expressedCol = Gatherer.columnNumber (sortCols, 'isExpressed')
+		refsKeyCol = Gatherer.columnNumber (sortCols, '_Refs_key')
+		structureKeyCol = Gatherer.columnNumber (sortCols,
 			'structureKey')
-		genotypeKeyCol = Gatherer.columnNumber (ersCols,
+		genotypeKeyCol = Gatherer.columnNumber (sortCols,
 			'_Genotype_key')
 
 		logger.debug ('identified columns for sorts')
 
-		for row in ersRows:
+		# Previously this section would compile 7 ordering lists,
+		# then sort them, then collate them.  This uses 7x the memory
+		# of doing the 3 steps for each in succession.
+
+
+		for row in sortRows:
 		    resultKey = row[resultKeyCol]
 
 		    # before getting the sequence number for the structure, we
 		    # need to convert from a term key for the structure to its
 		    # original structure key in mgd
 
-		    # The structure key in ersRows is already an emapsKey, so
+		    # The structure key in sortRows is already an emapsKey, so
 		    # we don't need to convert it.
-		    # emapsKey = ADMapper.getEmapsKey(row[structureKeyCol])
+
 		    emapsKey = row[structureKeyCol]
 		    structure = VocabSorter.getSequenceNum(emapsKey)
 		    stageVal = ADMapper.getStageByKey(emapsKey)
@@ -839,16 +957,17 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('collated ordering lists into dict')
 
-		# extract the individual rows and bundle them into 'rows'
+		# extract the individual rows and write them out
 
 		keys = output.keys()
 		keys.sort()
 
 		for key in keys:
-			rows.append (output[key])
+			FILES.addRow (ersnFile, output[key])
 
-		logger.debug ('produced %d ordering rows' % len(rows))
-		return cols, rows
+		logger.debug ('produced %d ordering rows' % \
+			FILES.getRowCount(ersnFile) )
+		return
 
 ###--- globals ---###
 
@@ -1060,6 +1179,7 @@ files = [
 
 # global instance of a ExpressionResultSummaryGatherer
 gatherer = ExpressionResultSummaryGatherer (files, cmds)
+gatherer.customWrites = True
 
 ###--- main program ---###
 
