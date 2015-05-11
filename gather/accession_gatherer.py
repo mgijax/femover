@@ -12,6 +12,8 @@
 #
 # History
 #
+# 04/29/2015	jsb
+#	selectively added garbage collection calls
 # 03/07/2013    lec
 #       TR11248/commented out fillConsensusSnps, fillSubSnps (SNP accessions)
 
@@ -21,6 +23,7 @@ import OutputFile
 import dbAgnostic
 import ReferenceCitations
 import utils
+import gc
 
 ###--- Globals ---###
 
@@ -181,6 +184,9 @@ class AccessionGatherer:
 			[ '_LogicalDB_key', 'name' ],
 			cols, rows)
 		print '%s %s' % (path, LDB_FILE)
+
+		del cols, rows
+		gc.collect()
 		return
 
 	def buildMGITypeFile (self):
@@ -198,6 +204,9 @@ class AccessionGatherer:
 			[ '_MGIType_key', 'name' ],
 			cols, rows) 
 		print '%s %s' % (path, OBJECT_TYPE_FILE)
+
+		del cols, rows
+		gc.collect()
 		return
 
 	def buildDisplayTypeFile (self):
@@ -266,6 +275,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote mouse marker IDs to file')
+
+		del cols, rows, outputCols, outputRows
+		gc.collect()
 		return
 
 	def fillNonMouseMarkers (self, accessionFile):
@@ -347,6 +359,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote non-marker IDs to file')
+
+		del cols, rows, outputCols, outputRows
+		gc.collect()
 		return
 
 	def fillHomologies (self, accessionFile):
@@ -427,6 +442,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote HomoloGene IDs to file')
+
+		del cols, rows, outputCols,outputRows
+		gc.collect()
 		return
 
 	def fillReferences (self, accessionFile):
@@ -470,6 +488,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote reference IDs to file')
+
+		del cols, rows, outputCols,outputRows
+		gc.collect()
 		return
 
 	def fillAlleles (self, accessionFile):
@@ -545,6 +566,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote %s to file' % idType)
+
+		del cols, rows, outputRows
+		gc.collect()
 	    return
 
 	def fillProbes (self, accessionFile):
@@ -608,6 +632,8 @@ class AccessionGatherer:
 
 	    	minKey = maxKey
 
+		del cols, rows, outputRows
+		gc.collect()
 	    return
 
 	def fillSequences (self, accessionFile):
@@ -725,6 +751,9 @@ class AccessionGatherer:
 			outputRows)
 		    logger.debug ('Wrote %s to file' % idType)
 
+		    del cols, rows, outputRows
+		    gc.collect()
+
 		    minKey = maxKey
 	    return
 
@@ -781,6 +810,9 @@ class AccessionGatherer:
 		accessionFile.writeToFile (outputCols, outputCols[1:],
 			outputRows)
 		logger.debug ('Wrote image IDs to file')
+
+		del cols, rows, outputRows, outputCols
+		gc.collect()
 		return
 
 	def fillAntibodies (self, accessionFile):
@@ -820,43 +852,10 @@ class AccessionGatherer:
 	    accessionFile.writeToFile (outputCols, outputCols[1:],
 		outputRows)
 	    logger.debug ('Wrote antibody IDs to file')
-	    return
 
-# commented out per US133, Miscellaneous project, Spring 2015.  New antibody
-# detail page has antigen information, so the antigen page no longer exists.
-#	def fillAntigens (self, accessionFile):
-#	    cmd = '''select g._Antigen_key, a.accID, a._LogicalDB_key,
-#	    			a._MGIType_key, g.antigenName
-#	    		from gxd_antigen g, acc_accession a
-#			where g._Antigen_key = a._Object_key
-#				and a.private = 0
-#				and a._MGIType_key = 7'''
-#
-#	    cols, rows = dbAgnostic.execute(cmd)
-#
-#	    keyCol = dbAgnostic.columnNumber (cols, '_Antigen_key')
-#	    idCol = dbAgnostic.columnNumber (cols, 'accID')
-#	    logicalDbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
-#	    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-#	    nameCol = dbAgnostic.columnNumber (cols, 'antigenName')
-#
-#	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
-#			'displayID', 'sequenceNum', 'description',
-#			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
-#	    outputRows = []
-#
-#	    for row in rows:
-#		    outputRows.append ( [ row[keyCol], row[idCol], row[idCol],
-#			sequenceNum(row[idCol]), row[nameCol],
-#			row[logicalDbCol], displayTypeNum('Antigen'),
-#			row[mgiTypeCol] ] )
-#
-#	    logger.debug ('Found %d antigen IDs' % len(rows))
-#
-#	    accessionFile.writeToFile (outputCols, outputCols[1:],
-#		outputRows)
-#	    logger.debug ('Wrote antigen IDs to file')
-#	    return
+	    del cols, rows, outputRows, outputCols
+	    gc.collect()
+	    return
 
 	def fillAssays (self, accessionFile):
 	    cmd = '''select g._Assay_key, a.accID, a._LogicalDB_key,
@@ -895,6 +894,9 @@ class AccessionGatherer:
 	    accessionFile.writeToFile (outputCols, outputCols[1:],
 		outputRows)
 	    logger.debug ('Wrote assay IDs to file')
+
+	    del cols, rows, outputCols, outputRows
+	    gc.collect()
 	    return
 
 	def fillTerms (self, accessionFile):
@@ -980,6 +982,9 @@ class AccessionGatherer:
 	    accessionFile.writeToFile (outputCols, outputCols[1:],
 		outputRows)
 	    logger.debug ('Wrote term IDs to file')
+
+	    del cols, rows, outputCols, outputRows
+	    gc.collect()
 	    return
 
 	def fillMapping (self, accessionFile):
@@ -1018,6 +1023,9 @@ class AccessionGatherer:
 	    accessionFile.writeToFile (outputCols, outputCols[1:],
 		outputRows)
 	    logger.debug ('Wrote mapping IDs to file')
+
+	    del cols, rows, outputCols, outputRows
+	    gc.collect()
 	    return
 
 	def fillConsensusSnps (self, accessionFile):
@@ -1165,7 +1173,6 @@ class AccessionGatherer:
 		self.fillImages (accessionFile)
 		self.fillAssays (accessionFile)
 		self.fillAntibodies (accessionFile)
-		#self.fillAntigens (accessionFile)
 		self.fillTerms (accessionFile)
 		self.fillMapping (accessionFile)
 		#self.fillConsensusSnps (accessionFile)
