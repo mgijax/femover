@@ -96,7 +96,10 @@ def executeQueries (cmds):
 	results = []
 	for cmd in cmds:
 		results.append (dbAgnostic.execute (cmd))
-		logger.debug ('Finished query %d' % i)
+		count = 0
+		if results[-1][1]:
+			count = len(results[-1][1])
+		logger.debug ('Finished query %d (%d results)' % (i, count))
 		i = i + 1
 	return results
 
