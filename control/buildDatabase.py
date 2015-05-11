@@ -32,6 +32,8 @@ import traceback
 import database_info
 import types
 import getopt
+import top
+import string
 
 if '.' not in sys.path:
 	sys.path.insert (0, '.')
@@ -143,6 +145,15 @@ CLUSTERED_INDEX_STATUS = NOTYET
 CLUSTER_STATUS = NOTYET
 COMMENT_STATUS = NOTYET
 OPTIMIZE_STATUS = NOTYET
+
+# list of profiling data from finished gatherers.  Each entry is a list with:
+#    0. gatherer name
+#    1. max memory used (float - bytes)
+#    2. average memory used (float - bytes)
+#    3. max processor percentage (float)
+#    4. average processor percentage (float)
+#    5. elapsed time (float - seconds)
+GATHER_PROFILES = []
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
@@ -642,7 +653,7 @@ def checkForFinishedGathering():
 	#	schedule execution of data loads as subprocesses
 	# Throws: nothing
 
-	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS
+	global GATHER_DISPATCHER, GATHER_STATUS, GATHER_IDS, GATHER_PROFILES
 
 	# walk backward through the list of unfinished gathering processes,
 	# so as we delete some the loop is not disturbed
@@ -659,6 +670,21 @@ def checkForFinishedGathering():
 
 			checkStderr (GATHER_DISPATCHER, id,
 				'Gathering failed for %s' % table)
+
+			# collect memory and processor usage information for
+			# the finished process
+
+			GATHER_PROFILES.append( [
+				table,
+				GATHER_DISPATCHER.getMaxMemory(id),
+				GATHER_DISPATCHER.getAverageMemory(id),
+				GATHER_DISPATCHER.getMaxProcessor(id),
+				GATHER_DISPATCHER.getAverageProcessor(id),
+				GATHER_DISPATCHER.getElapsedTime(id),
+				] )
+
+			# get the list of tables that need to be processed and
+			# loaded due to this gatherer's run
 
 			for line in GATHER_DISPATCHER.getStdout(id):
 				line = line.strip()
@@ -1325,6 +1351,68 @@ def getMgiDbInfo():
 	dbInfoTable.setInfo ('built from mgd public version', pubVersion)
 	return
 
+def formatTime (sec):
+	# Purpose: take a raw (float) number of seconds and convert it to a
+	#	more human-readable format (hh:mm:ss)
+	# Returns: string (hh:mm:ss)
+	# Assumes: sec is > 0
+	# Modifies: nothing
+	# Throws: nothing
+	if sec < 0.0:
+		return ''
+	base = int(round(sec))
+	hh = base / 3600
+	base = base % 3600
+	mm = base / 60
+	ss = base % 60
+	return '%s:%s:%s' % (string.zfill(hh,2), string.zfill(mm,2),
+		string.zfill(ss,2))
+
+def logProfilingData():
+	# Purpose: produce a file in the logs directory with profiling data
+	#	for the various gatherers
+	# Returns: nothing
+	# Assumes: we've collected the data in GATHER_PROFILES and we can
+	#	write to the log directory
+	# Modifies: adds a file to the log directory
+	# Throws: nothing
+
+	try:
+		fp = open(os.path.join(config.LOG_DIR,
+			'gatherer_profiles.txt'), 'w')
+
+		cols = [ 'Gatherer name', 'Max RAM', 'Max RAM (bytes)',
+			'Average RAM', 'Average RAM (bytes)',
+			'Max CPU %', 'Average CPU %', 
+			'Elapsed Time (hh:mm:ss.uuu)', 'Elapsed Time (sec)'
+			]
+
+		fp.write('\t'.join(cols))
+		fp.write('\n')
+
+		for (name, maxMem, avgMem, maxCpu, avgCpu, time) in \
+			GATHER_PROFILES:
+
+			cols = [
+				name,
+				top.displayMemory(maxMem),
+				int(maxMem),
+				top.displayMemory(avgMem),
+				'%0.3f' % avgMem,
+				'%0.1f' % maxCpu,
+				'%0.1f' % avgCpu,
+				formatTime(time),
+				'%0.3f' % time
+				]
+
+			fp.write('\t'.join(map(str,cols)))
+			fp.write('\n')
+
+		fp.close()
+	except:
+		logger.debug('Could not write gatherer_profilers.txt')
+	return
+
 def main():
 	# Purpose: main program (main logic of the script)
 	# Returns: nothing
@@ -1402,6 +1490,7 @@ def main():
 	if FAILED_COMMENTS:
 		for item in FAILED_COMMENTS:
 			logger.debug ('Failed comment: %s' % item)
+	logProfilingData()
 	return
 
 def hms (x):
