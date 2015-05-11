@@ -1,3 +1,10 @@
+TAG: femover-5-2-2-4
+DATE: 05/10/2015
+STAFF: jsb
+CHANGES: 
+1) added opportunistic garbage collection to accession_gatherer.py
+2) added reporting of CPU/memory usage of gatherers to log directory
+
 TAG: femover-5-2-2-3
 DATE: 04/28/2015
 STAFF: jsb
