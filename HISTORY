@@ -1,3 +1,11 @@
+TAG: femover-5-2-2-5
+DATE: 05/18/2015
+STAFF: jsb
+CHANGES:
+1) updated OutputFile to allow cache size to be set on-the-fly
+2) added a new CachingMultiFileGatherer class
+3) switched marker_id and expression_specimen gatherers over to use #2 due to big memory savings
+
 TAG: femover-5-2-2-4
 DATE: 05/10/2015
 STAFF: jsb
