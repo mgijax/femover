@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import gc
 
 ###--- Globals ---###
 
@@ -46,6 +47,13 @@ def ldbCompare (a, b):
 		return cmp(a[idCol], b[idCol])
 	return i
 
+markerIdKey = 0
+def nextKey():
+	global markerIdKey
+
+	markerIdKey = markerIdKey + 1
+	return markerIdKey
+
 markerIdKeys = {}	# (marker key, logical db, ID) -> marker ID key
 def getMarkerIdKey (markerKey, ldbKey, accID):
 	# the unique ID for this record for the marker ID table
@@ -54,12 +62,21 @@ def getMarkerIdKey (markerKey, ldbKey, accID):
 
 	key = (markerKey, ldbKey, accID)
 	if not markerIdKeys.has_key(key):
-		markerIdKeys[key] = len(markerIdKeys) + 1
+		markerIdKeys[key] = nextKey()
 	return markerIdKeys[key] 
+
+def resetMarkerIdKeys():
+	# can reset the cache of keys to save memory from chunk to chunk
+	global markerIdKeys
+
+	markerIdKeys = {}
+	return
 
 ###--- Classes ---###
 
-class MarkerIDGatherer (Gatherer.MultiFileGatherer):
+i = 0		# global sequence num
+
+class MarkerIDGatherer (Gatherer.CachingMultiFileGatherer):
 	# Is: a data gatherer for the markerID table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for marker IDs,
@@ -69,7 +86,14 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 		# slice and dice the query results to produce our set of
 		# final results
 
-		global ldbKeyCol, ldbNameCol, idCol
+		global ldbKeyCol, ldbNameCol, idCol, i
+
+		resetMarkerIdKeys()
+
+		# get file IDs for our two output files
+
+		idTable = self.getFileID('marker_id')
+		otherTable = self.getFileID('marker_id_other_marker')
 
 		# first, gather all the IDs by marker
 
@@ -127,12 +151,6 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 
 		# now compile our IDs into our set of final results
 
-		idResults = []
-		idColumns = [ 'markerIdKey', 'markerKey', 'logicalDB',
-			'accID', 'preferred', 'private',
-			'isForOtherDbSection', 'sequence_num' ]
-
-		i = 0
 		seenIdKeys = {}
 
 		for key in markerKeys:
@@ -155,7 +173,7 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 				else:
 					otherDB = 1
 
-				idResults.append ( [ markerIdKey,
+				self.addRow(idTable, [ markerIdKey,
 					key,
 					r[ldbNameCol],
 					r[idCol],
@@ -164,14 +182,9 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 					otherDB,
 					i
 					] )
-		self.output.append ( (idColumns, idResults) ) 
-		logger.debug ('Got %d marker ID rows' % len(idResults))
+		logger.debug ('Got %d marker ID rows' % i)
 
 		# handle query 1 -- shared gene model IDs
-
-		otherResults = []
-		otherColumns = [ 'markerIdKey', 'markerKey', 'symbol', 'accID'
-			]
 
 		cols, rows = self.results[1]
 
@@ -183,16 +196,18 @@ class MarkerIDGatherer (Gatherer.MultiFileGatherer):
 		symbolCol = Gatherer.columnNumber (cols, 'symbol')
 		markerIDCol = Gatherer.columnNumber (cols, 'markerID')
 
+		r = 0
 		for row in rows:
 			markerIdKey = getMarkerIdKey (row[baseMarkerKeyCol],
 				row[ldbCol], row[idCol])
 
-			otherResults.append ([ markerIdKey,
+			r = r + 1
+			self.addRow(otherTable, [ markerIdKey,
 				row[keyCol], row[symbolCol], row[markerIDCol]
 				] )
 
-		self.output.append ( (otherColumns, otherResults) )
-		logger.debug ('Got %d shared GM ID rows' % len(otherResults)) 
+		logger.debug ('Got %d shared GM ID rows' % r)
+		gc.collect()
 		return
 
 ###--- globals ---###
@@ -205,6 +220,8 @@ cmds = [
 	where a._MGIType_key = 2
 		and exists (select 1 from mrk_marker m
 			where a._Object_key = m._Marker_key)
+		and a._Object_key >= %d
+		and a._Object_key < %d
 		and a._LogicalDB_key = ldb._LogicalDB_key''',
 
 	# 1. some gene model IDs are shared by multiple markers; we need to
@@ -220,6 +237,8 @@ cmds = [
 		and a._Object_key != b._Object_key
 		and b._Object_key = m._Marker_key
 		and m._Marker_key = c._Object_key
+		and a._Object_key >= %d
+		and a._Object_key < %d
 		and exists (select 1 from mrk_marker m2
 			where m2._Marker_key = a._Object_key)
 		and c._MGIType_key = 2
@@ -239,25 +258,34 @@ cmds = [
 		and mm._Organism_key != 1
 		and mc._Cluster_key = aa._Object_key
 		and aa._MGIType_key = 39
+		and mm._Marker_key >= %d
+		and mm._Marker_key < %d
 		and aa._LogicalDB_key = ldb._LogicalDB_key''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 files = [ ('marker_id',
+		[ 'markerIdKey', 'markerKey', 'logicalDB',
+			'accID', 'preferred', 'private',
+			'isForOtherDbSection', 'sequence_num' ],
 		[ 'markerIdKey', 'markerKey', 'logicalDB', 'accID',
 			'preferred', 'private', 'isForOtherDbSection',
-			'sequence_num' ],
-		'marker_id'),
+			'sequence_num' ] ),
 
 	('marker_id_other_marker',
+		[ 'markerIdKey', 'markerKey', 'symbol', 'accID' ], 
 		[ Gatherer.AUTO, 'markerIdKey', 'markerKey', 'symbol',
-			'accID' ],
-		'marker_id_other_marker')
+			'accID' ] )
 	]
 
 # global instance of a markerIDGatherer
 gatherer = MarkerIDGatherer (files, cmds)
+gatherer.setupChunking (
+	'select min(_Marker_key) from MRK_Marker',
+	'select max(_Marker_key) from MRK_Marker',
+	10000
+	)
 
 ###--- main program ---###
 
