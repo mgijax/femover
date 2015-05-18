@@ -158,6 +158,12 @@ class CachingOutputFile:
 		gc.collect()
 		return
 
+	def setCacheSize (self,cacheSize):
+		# adjust the cache size to be that specified
+
+		self.cacheSize = cacheSize
+		return
+
 	def addRow (self, row):
 		# add a single row to the file, with fields in order specified
 		# by 'inFieldOrder' in constructor
@@ -208,6 +214,13 @@ class CachingOutputFileFactory:
 		num = len(self.outputFiles) + 1
 		self.outputFiles[num] = f
 		return num
+
+	def setCacheSize (self, num, cacheSize):
+		# adjust the cache size of the CachingOutputFile specified by
+		# the given 'num'
+
+		self.outputFiles[num].setCacheSize(cacheSize)
+		return
 
 	def addRow (self, num, row):
 		# add 'row' to the CachingOutputFile specified by 'num'
