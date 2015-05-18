@@ -12,30 +12,31 @@ import Gatherer
 import logger
 import ADMapper
 
+###--- Globals ---###
+
+uniqueSpecimenKeys = set()
+uniqueResultKeys = {}
+resultCount = 0
+imagepaneCount = 0
+
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
 CONDITIONAL_GENOTYPE_NOTE = "Conditional mutant."
 
-class SpecimenGatherer (Gatherer.MultiFileGatherer):
+class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 	# Is: a data gatherer for the expression_assay table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for assays,
 	#	collates results, writes tab-delimited text file
 
 	def collateResults(self):
+		global uniqueSpecimenKeys, uniqueResultKeys
+		global resultCount, imagepaneCount
 
 		# process specimens +  results 
-		specCols = [ 'specimen_key', 'assay_key', 'genotype_key','specimen_label','sex',
-			'age','fixation','embedding_method','hybridization','age_note','specimen_note',
-			'specimen_seq' ]
-                specRows = []
-
-		resultCols = [ 'specimen_result_key', 'specimen_key', 'structure',
-			'structure_mgd_key','level','pattern','note','specimen_result_seq' ]
-                resultRows = []
-
-		imagepaneCols = [ 'specimen_result_imagepane_key','specimen_result_key', 'imagepane_key', 'imagepane_seq']
-		imagepaneRows = []
+		specID = self.getFileID('assay_specimen')
+		resultID = self.getFileID('specimen_result')
+		imagepaneID = self.getFileID('specimen_result_to_imagepane')
 
 		(cols, rows) = self.results[0]
 
@@ -65,10 +66,6 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 		resultSeqCol = Gatherer.columnNumber (cols, 'result_seq')
 		imagepaneKeyCol = Gatherer.columnNumber (cols, '_imagepane_key')
 	
-		uniqueSpecimenKeys = set()
-		uniqueResultKeys = {}
-		resultCount = 0
-		imagepaneCount = 0
 		for row in rows:
 			assayKey = row[assayKeyCol]
 			specimenKey = row[specKeyCol]
@@ -129,7 +126,7 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
 				# make a new specimen row
-				specRows.append((specimenKey,assayKey,genotypeKey,specimenLabel,sex,
+				self.addRow(specID, (specimenKey,assayKey,genotypeKey,specimenLabel,sex,
 					age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
 
 			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
@@ -138,18 +135,12 @@ class SpecimenGatherer (Gatherer.MultiFileGatherer):
 				resultCount += 1
 				uniqueResultKeys[resultGenKey] = resultCount
 				# make a new specimen result row
-				resultRows.append((resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
+				self.addRow(resultID, (resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
 			if imagepaneKey:
 				imagepaneCount += 1
 				# make a new imagepane row
-				imagepaneRows.append((imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
+				self.addRow(imagepaneID, (imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
 	
-		#logger.debug("specimen rows = %s"%specRows)
-		#logger.debug("result rows = %s"%resultRows)
-
-		# Add all the column and row information to the output
-		self.output = [(specCols,specRows),(resultCols,resultRows),(imagepaneCols,imagepaneRows)]
-			
 		return
 
 	def postprocessResults(self):
@@ -196,29 +187,49 @@ cmds = [
 	    and gfm._fixation_key=gs._fixation_key
 	    and gem._embedding_key=gs._embedding_key
 	    and gg._genotype_key=gs._genotype_key
+	    and gs._Specimen_key >= %d
+	    and gs._Specimen_key < %d
 	''',
 	]
 
+# list of file definitions, each a 3-item tuple:
+#	1. table name
+#	2. list of fieldnames in order as sent to be written
+#	3. list of fieldnames in order as they should actually be written
 files = [
         ('assay_specimen',
-		[ 'specimen_key', 'assay_key', 'genotype_key','specimen_label','sex',
-			'age','fixation','embedding_method','hybridization','age_note','specimen_note',
-			'specimen_seq' ],
-                'assay_specimen'),
+		[ 'specimen_key', 'assay_key', 'genotype_key',
+			'specimen_label', 'sex', 'age', 'fixation',
+			'embedding_method', 'hybridization', 'age_note',
+			'specimen_note', 'specimen_seq' ],
+		[ 'specimen_key', 'assay_key', 'genotype_key',
+			'specimen_label', 'sex', 'age', 'fixation',
+			'embedding_method', 'hybridization', 'age_note', 
+			'specimen_note', 'specimen_seq' ] ),
 
         ('specimen_result',
+		[ 'specimen_result_key', 'specimen_key', 'structure',
+			'structure_mgd_key', 'level', 'pattern', 'note',
+			'specimen_result_seq' ],
                 [ 'specimen_result_key', 'specimen_key', 'structure',
-                'structure_mgd_key','level','pattern','note','specimen_result_seq' ],
-                'specimen_result'),
+			'structure_mgd_key', 'level', 'pattern', 'note',
+			'specimen_result_seq' ] ),
 
         ('specimen_result_to_imagepane',
-                [ 'specimen_result_imagepane_key','specimen_result_key', 'imagepane_key', 'imagepane_seq'],
-                'specimen_result_to_imagepane'),
+		[ 'specimen_result_imagepane_key', 'specimen_result_key',
+			'imagepane_key', 'imagepane_seq'],
+                [ 'specimen_result_imagepane_key', 'specimen_result_key',
+			'imagepane_key', 'imagepane_seq'] )
         ]
 
 
 # global instance of a SpecimenGatherer
 gatherer = SpecimenGatherer (files, cmds)
+gatherer.setupChunking (
+	'select min(_Specimen_key) from GXD_Specimen',
+	'select max(_Specimen_key) from GXD_Specimen',
+	10000
+	)
 
 ###--- main program ---###
 
