@@ -261,13 +261,24 @@ cmds = [
 		group by a._Marker_key''',
 
 	# 6. count of orthologs for each marker
-	'''select h1._Marker_key, count(distinct h2._Organism_key) as numOrtho
-		from mrk_homology_cache h1,
-			mrk_homology_cache h2
-		where h1._Class_key = h2._Class_key
-			and h1._Organism_key = 1
-			and h2._Organism_key != 1
-		group by h1._Marker_key''',
+	'''
+	select m._Marker_key, count(distinct m2._marker_key) as numOrtho
+    from MRK_Cluster mc 
+			join MRK_ClusterMember mcm on mcm._cluster_key = mc._cluster_key
+	    	join MRK_Marker m on m._marker_key = mcm._marker_key 
+	    	join MRK_ClusterMember mcm2 on (
+	    		mcm2._cluster_key = mcm._cluster_key
+	    		and mcm2._clustermember_key != mcm._clustermember_key
+	    	)
+	    	join MRK_Marker m2 on m2._marker_key = mcm2._marker_key
+			join VOC_Term clustertype on clustertype._term_key = mc._clustertype_key
+			join VOC_Term source on source._term_key = mc._clustersource_key
+    where clustertype.term = 'homology'
+            and source.term = 'HomoloGene'
+            and m._organism_key = 1
+            and m2._organism_key != 1
+            group by m._marker_key
+	''',
 
 	# 7. count of gene trap insertions for each marker (gene trap alleles
 	# which have at least one sequence with coordinates)
