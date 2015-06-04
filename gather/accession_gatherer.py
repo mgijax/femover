@@ -12,10 +12,19 @@
 #
 # History
 #
+# 06/03/2015	jsb
+#	added support for genotype IDs
 # 04/29/2015	jsb
 #	selectively added garbage collection calls
 # 03/07/2013    lec
 #       TR11248/commented out fillConsensusSnps, fillSubSnps (SNP accessions)
+
+# Note:  Next set of optimizations for memory should consider the addition of
+# chunking for:
+#    * seq IDs (1.7M rows), cell line IDs (897k rows), and
+#	    allele IDs (827k rows) for alleles (max 1.07Gb RAM)
+#    * mouse marker IDs (1.5M rows, 602Mb RAM)
+#    * reference IDs (763k rows, 763Mb RAM - includes citations).
 
 import Gatherer
 import logger
@@ -24,6 +33,7 @@ import dbAgnostic
 import ReferenceCitations
 import utils
 import gc
+import top
 
 ###--- Globals ---###
 
@@ -54,7 +64,21 @@ ORGANISM_ORDER = [
 	'western clawed frog','zebrafish',
 	]
 
+ME = top.getMyProcess()
+
 ###--- Functions ---###
+
+def logMemory():
+	# write out memory usage stats to the log file
+
+	ME.measure()
+	latestMem = ME.getLatestMemoryUsed()
+	maxMem = ME.getMaxMemoryUsed()
+
+	logger.debug('Memory used:  %s current, %s maximum' % (
+		top.displayMemory(latestMem),
+		top.displayMemory(maxMem) ) )
+	return
 
 def compareOrganisms (o1, o2):
 	if o1 in ORGANISM_ORDER:
@@ -68,74 +92,21 @@ def compareOrganisms (o1, o2):
 
 	return cmp(o1, o2)
 
-def splitID (accID):
-	# Purpose: split the given 'accID' into a string of letters and an
-	#	integer representing any digits contained
-	# Notes: This should decrease the memory requirements for the script,
-	#	by allowing digits to be represented in a 4-byte integer.
-	#	It is used solely by the sequenceNum() function to provide an
-	#	ordering of objects which have the same ID.  This compression
-	#	could allow two distinct IDs (eg- "a1b2c346" and "abc12346")
-	#	to share the same numbering, but the possibility of this
-	#	causing a display problem is remote enough that we will ignore
-	#	it for the sake of the memory savings.
-
-	myID = accID.lower()
-	letters = ''
-	digits = ''
-
-	for c in myID:
-		if 'a' <= c <= 'z':
-			letters = letters + c
-		elif '0' <= c <= '9':
-			digits = digits + c
-		# skip any other characters (period, underscore, etc.)
-	
-	# should have more than 4 digits to see any savings (in converting
-	# to a 4-byte integer)
-
-	if len(digits) > 4:
-		return letters, int(digits)
-	return myID, None
-
-# global variables for sequenceNum() function
-IDS = {}		# ID -> count of objects with that ID
-SPLIT_IDS = {}		# letters -> { integer number : count of objects }
-
-SPLIT_ID_COUNT = 0
-BASIC_ID_COUNT = 0
-
+SEQNUM = {}		# ID suffix -> count of objects with that ID suffix
 def sequenceNum (accID):
-	global IDS, SPLIT_IDS, BASIC_ID_COUNT, SPLIT_ID_COUNT
+	global SEQNUM
 
-	letters, digits = splitID(accID)
+	# final four characters of the ID will split our sequence numbers up
+	# into roughly 10,000 bins.  Should help prevent overflowing the max
+	# value for the sequence number.
+	suffix = accID[-4:]
 
-	# if we didn't split up the ID, just use the whole lowercase ID
-	if not digits:
-		if IDS.has_key (letters):
-			num = IDS[letters] + 1
-		else:
-			num = 1
-			BASIC_ID_COUNT = BASIC_ID_COUNT + 1
-		IDS[letters] = num
+	if SEQNUM.has_key(suffix):
+		SEQNUM[suffix] = SEQNUM[suffix] + 1
 	else:
-		# first time with this letter combination?  1
-		if not SPLIT_IDS.has_key(letters):
-			num = 1
-			SPLIT_IDS[letters] = { digits : num }
-			SPLIT_ID_COUNT = SPLIT_ID_COUNT + 1
+		SEQNUM[suffix] = 1
 
-		# first time with these digits for this letter combo?  1
-		elif not SPLIT_IDS[letters].has_key(digits):
-			num = 1
-			SPLIT_IDS[letters][digits] = num
-			SPLIT_ID_COUNT = SPLIT_ID_COUNT + 1
-
-		# already seen these letters and digits, so increment
-		else:
-			num = SPLIT_IDS[letters][digits] + 1
-			SPLIT_IDS[letters][digits] = num
-	return num
+	return SEQNUM[suffix]
 
 TYPES = {}
 def displayTypeNum (displayType):
@@ -1152,8 +1123,129 @@ class AccessionGatherer:
 	    	minKey = maxKey
 	    return
 
+	def buildGenotypeDescriptionCache(self):
+		# build a cache of description strings for genotypes (only
+		# includes genotypes with MP/OMIM annotations
+
+		cmd = '''select distinct g._Genotype_key, s.strain, m.symbol
+			from gxd_genotype g
+			inner join voc_annot a on (
+				g._Genotype_key = a._Object_key
+				and a._AnnotType_key in (1002, 1005) )
+			inner join prb_strain s on (
+				g._Strain_key = s._Strain_key)
+			left outer join gxd_allelegenotype gag on (
+				g._Genotype_key = gag._Genotype_key)
+			left outer join mrk_marker m on (
+				gag._Marker_key = m._Marker_key)
+			order by g._Genotype_key, m.symbol'''		
+
+		cols, rows = dbAgnostic.execute(cmd)
+		keyCol = dbAgnostic.columnNumber(cols, '_Genotype_key')
+		strainCol = dbAgnostic.columnNumber(cols, 'strain')
+		symbolCol = dbAgnostic.columnNumber(cols, 'symbol')
+
+		symbols = {}	# maps from genotype key -> list of symbols
+		strains = {}	# maps from genotype key -> strain
+
+		for row in rows:
+			genotypeKey = row[keyCol]
+			symbol = row[symbolCol]
+
+			if symbol != None:
+				if symbols.has_key(genotypeKey):
+					symbols[genotypeKey].append(symbol)
+				else:
+					symbols[genotypeKey] = [ symbol ]
+
+			if not strains.has_key(genotypeKey):
+				strains[genotypeKey] = row[strainCol]
+
+		cache = {}
+		for key in strains.keys():
+			strain = strains[key]
+
+			if strain != 'Not Specified':
+				bs = 'background strain %s' % strain
+			else:
+				bs = ''
+
+			if symbols.has_key(key):
+				genes = ', '.join(symbols[key])
+			else:
+				genes = ''
+
+			if genes and bs:
+				cache[key] = 'includes %s on %s' % (genes, bs)
+			elif genes:
+				cache[key] = 'includes %s' % genes
+			elif bs:
+				cache[key] = bs
+			else:
+				cache[key] = 'genotype'
+
+		logger.debug('Cached descriptions for %d genotypes' % \
+			len(cache))
+
+		del symbols, strains, rows, cols
+		gc.collect()
+
+		return cache
+
+	def fillGenotypes (self, accessionFile):
+	    # popuplate the accession file with genotype records
+
+	    descriptions = self.buildGenotypeDescriptionCache()
+
+	    mgitypeKey = 12
+	    logicaldbKey = 1
+	    displayType = displayTypeNum('Genotype')
+
+	    cmd = '''select distinct aa.accID,
+	    		a._Object_key as _Genotype_key
+		from voc_annot a,
+			acc_accession aa
+		where a._AnnotType_key in (1002, 1005)
+		and a._Object_key = aa._Object_key
+		and aa._MGIType_key = %d
+		and aa._LogicalDB_key = %d
+		and aa.preferred = 1'''	% (mgitypeKey, logicaldbKey)
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    idCol = dbAgnostic.columnNumber(cols, 'accID')
+	    keyCol = dbAgnostic.columnNumber(cols, '_Genotype_key')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
+			'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    accID = row[idCol]
+		    key = row[keyCol]
+		    if descriptions.has_key(key):
+			    description = descriptions[key]
+		    else:
+			    description = 'genotype'
+
+		    outputRows.append( [ key, accID, accID, sequenceNum(accID),
+			description, logicaldbKey, displayType, mgitypeKey] )
+
+	    logger.debug ('Found %d genotype IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:],
+		outputRows)
+	    logger.debug ('Wrote genotype IDs to file')
+
+	    del cols, rows, outputCols, outputRows
+	    gc.collect()
+	    return
+
 	def main (self):
 		global BASIC_ID_COUNT, SPLIT_ID_COUNT
+
+		logMemory()
 
 		# build the two small files
 
@@ -1163,18 +1255,45 @@ class AccessionGatherer:
 		# build the large file
 
 		accessionFile = OutputFile.OutputFile (ACCESSION_FILE)
+		self.fillGenotypes (accessionFile)
+		logMemory()
+
 		self.fillMouseMarkers (accessionFile)
+		logMemory()
+
 		self.fillNonMouseMarkers (accessionFile)
+		logMemory()
+
 		self.fillHomologies (accessionFile)
+		logMemory()
+
 		self.fillReferences (accessionFile)
+		logMemory()
+
 		self.fillAlleles (accessionFile)
+		logMemory()
+
 		self.fillProbes (accessionFile)
+		logMemory()
+
 		self.fillSequences (accessionFile)
+		logMemory()
+
 		self.fillImages (accessionFile)
+		logMemory()
+
 		self.fillAssays (accessionFile)
+		logMemory()
+
 		self.fillAntibodies (accessionFile)
+		logMemory()
+
 		self.fillTerms (accessionFile)
+		logMemory()
+
 		self.fillMapping (accessionFile)
+		logMemory()
+
 		#self.fillConsensusSnps (accessionFile)
 		#self.fillSubSnps (accessionFile)
 
@@ -1185,13 +1304,12 @@ class AccessionGatherer:
 			accessionFile.getPath()) )
 		print '%s %s' % (accessionFile.getPath(), ACCESSION_FILE)
 
-		logger.debug ('%d split IDs, %d not split' % (
-			SPLIT_ID_COUNT, BASIC_ID_COUNT))
-
 		# build the third small file, which was compiled while
 		# building the large file (so this one must go last)
 
 		self.buildDisplayTypeFile()
+		logMemory()
+
 		return
 
 ###--- main program ---###
