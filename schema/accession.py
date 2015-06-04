@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	object_key		int		not null,
 	search_id		varchar(30)	not null,
 	display_id		varchar(30)	not null,
-	sequence_num		smallint	not null,
+	sequence_num		int		not null,
 	description		varchar(315)	null,
 	logical_db_key		smallint	not null,
 	display_type_key	smallint	not null,
