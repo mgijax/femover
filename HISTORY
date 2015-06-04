@@ -1,3 +1,10 @@
+TAG: femover-5-2-2-8
+DATE: 06/04/2015
+STAFF: jsb
+CHANGES: 
+1) updated accession gatherer to pull in genotype IDs
+2) optimized calculation of sequence numbers in accession gatherer
+
 TAG: femover-5-2-2-6, femover-5-2-2-7
 DATE: 05/19/2015
 STAFF: kstone
