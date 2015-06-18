@@ -2412,7 +2412,7 @@ tree structure. An example in computing is a directory hierarchy where each dire
 <A HREF="!javaWI!WIFetch?page=glossaryTerm&key=mgi">MGI</A>, it refers to terms in a \
 <A HREF="!javaWI!WIFetch?page=glossaryTerm&key=controlled_vocabulary">controlled vocabulary</A> such as ones containing \
 <A HREF="!javaWI!WIFetch?page=glossaryTerm&key=gene_ontology">Gene Ontology (GO)</A> terms or to the \
-<a href="<!--#include file='include/fewi_url.html'-->vocab/gxd/anatomy/">Mouse Developmental Anatomy Browser</a>. 
+<a href="!FEWI_URL!/vocab/gxd/anatomy/">Mouse Developmental Anatomy Browser</a>. 
 ]
 
 [ 
