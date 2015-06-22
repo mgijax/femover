@@ -94,6 +94,7 @@
 import Gatherer
 import MPSorter
 import logger
+import dbAgnostic
 
 VOCAB = 13		# MGI Type for vocabulary terms
 CLUSTER = 39		# MGI Type for marker cluster
@@ -131,6 +132,42 @@ HYBRID_TO_SOURCE = {}
 CLUSTER_MAP = {}
 
 ###--- Functions ---###
+
+def initializeTempTables():
+	# initialize a few temp tables that need to appear before the rest of
+	# the SQL is executed.  Added for TR12059 as a workaround to improve
+	# performance on server falas.
+
+	cmds = [
+		# 0. cache the MP header synonym for each header term in
+		# a 'mp_synonyms' table
+		'''select distinct h._Term_key, ms.synonym
+		into temporary table mp_synonyms
+		from VOC_AnnotHeader h, MGI_Synonym ms
+		where h._Term_key = ms._Object_key
+			and ms._MGIType_key = %d
+			and ms._SynonymType_key = %d''' % (
+			VOCAB, MP_HEADER_SYNONYM_TYPE),
+
+		# 1. index only by term key
+		'create unique index tk1 on mp_synonyms(_Term_key)',
+
+		# 2. cache the MP header term IDs in a 'mp_term_ids' table
+		'''select distinct h._Term_key, aa.accID
+		into temporary table mp_term_ids
+		from VOC_AnnotHeader h, ACC_Accession aa
+		where h._Term_key = aa._Object_key
+			and aa._MGIType_key = %d
+			and aa.preferred = 1''' % VOCAB,
+
+		# 3. index only by term key
+		'create unique index id1 on mp_term_ids(_Term_key)',
+		]
+
+	for cmd in cmds:
+		dbAgnostic.execute(cmd)
+	logger.debug('Created initial temp tables')
+	return
 
 def initializeMarkerCache(results34):
 	# initialize the cache of marker symbols and organisms
@@ -1312,18 +1349,14 @@ cmds = [
 	from source_annotations s,
 		VOC_Annot a,
 		VOC_AnnotHeader h,
-		MGI_Synonym ms,
-		ACC_Accession aa
+		mp_synonyms ms,
+		mp_term_ids aa
 	where s._AnnotType_key = %s
 		and s._SourceAnnot_key = a._Annot_key
 		and a._Object_key = h._Object_key
 		and a._AnnotType_key = h._AnnotType_key
-		and h._Term_key = ms._Object_key
-		and ms._MGIType_key = %s
-		and ms._SynonymType_key = %s
-		and h._Term_key = aa._Object_key
-		and aa._MGIType_key = %s
-		and aa.preferred = 1
+		and h._Term_key = ms._Term_key
+		and h._Term_key = aa._Term_key
 	union
 	select distinct s._Marker_key,
 		a._AnnotType_key,
@@ -1343,7 +1376,7 @@ cmds = [
 		and aa._MGIType_key = %s
 		and aa.preferred = 1 
 		and a._Qualifier_key != %s
-	''' % (MP_MARKER, VOCAB, MP_HEADER_SYNONYM_TYPE, VOCAB,
+	''' % (MP_MARKER, 
 		OMIM_MARKER, VOCAB, DISEASE_SYNONYM_TYPE, VOCAB, NOT_QUALIFIER),
 
 	# sql (8)
@@ -1830,4 +1863,5 @@ gatherer = HDPAnnotationGatherer (files, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
+	initializeTempTables()
 	Gatherer.main (gatherer)
