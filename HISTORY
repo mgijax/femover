@@ -1,3 +1,8 @@
+TAG: femover-5-2-2-11
+DATE: 6/22/15
+STAFF: jsb
+CHANGES: moved some logic into temp table in hdp_annotation_gatherer for TR12059, speeding up runtime on server falas
+
 TAG: femover-5-2-2-10
 DATE: 6/18/15
 STAFF: lnh
