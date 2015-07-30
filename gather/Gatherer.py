@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 # 
-# base table gatherer for the Mover suite -- queries Sybase, MySQL, or
+# base table gatherer for the Mover suite -- queries, MySQL, or
 #	Postgres as a source database, and writes text files.
 
 import os
@@ -18,7 +18,7 @@ import top
 
 Error = 'Gatherer.error'	# exception raised by this module
 AUTO = OutputFile.AUTO		# special fieldname for auto-incremented field
-SOURCE_DB = config.SOURCE_TYPE	# either sybase, mysql, or postgres
+SOURCE_DB = config.SOURCE_TYPE	# either, mysql, or postgres
 
 # cache of terms already looked up
 resolveCache = {}		# resolveCache[table][keyField][key] = term

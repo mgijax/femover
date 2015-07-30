@@ -8,8 +8,8 @@ import Gatherer
 
 SequenceGeneModelGatherer = Gatherer.Gatherer
 	# Is: a data gatherer for the sequenceGeneModel table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for gene model sequences,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for gene model sequences,
 	#	collates results, writes tab-delimited text file
 
 ###--- globals ---###
@@ -24,7 +24,7 @@ cmds = [
 	where s._GMMarker_Type_key = m._Marker_Type_key''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'_Sequence_key', 'markerType', 'rawBiotype', 'exonCount',

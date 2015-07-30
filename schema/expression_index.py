@@ -16,12 +16,12 @@ tableName = 'expression_index'
 createStatement = '''CREATE TABLE %s  ( 
 	index_key		int		not null,
 	reference_key		int		not null,
-	jnum_id			varchar(30)	null,
+	jnum_id			text	null,
 	marker_key		int		not null,
-	marker_symbol		varchar(50)	null,
-	marker_name		varchar(255)	null,
-	marker_id		varchar(30)	null,
-	comments		varchar(255)	null,
+	marker_symbol		text	null,
+	marker_name		text	null,
+	marker_id		text	null,
+	comments		text	null,
 	PRIMARY KEY(index_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

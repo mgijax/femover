@@ -15,9 +15,9 @@ tableName = 'disease'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	disease_key	int		not null,
-	disease		varchar(255)	not null,
-	primary_id	varchar(40)	not null,
-	logical_db	varchar(255)	not null,
+	disease		text	not null,
+	primary_id	text	not null,
+	logical_db	text	not null,
 	PRIMARY KEY(disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

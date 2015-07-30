@@ -15,7 +15,7 @@ tableName = 'vocabulary'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	vocab_key	int		not null,
-	vocab_name	varchar(255)	not null,
+	vocab_name	text	not null,
 	term_count	int		not null,
 	is_simple	int		not null,
 	max_depth	int		not null,

@@ -149,7 +149,7 @@ cmds = [
 	'select _Refs_key, authors, authors2 from bib_refs',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	Gatherer.AUTO, 'referenceKey', 'author', 'sequenceNum', 'isLast',

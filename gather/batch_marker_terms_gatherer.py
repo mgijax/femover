@@ -278,12 +278,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
-# sybase uses a different syntax at the end of its 'case' statement, so we
-# need to account for that
-if config.SOURCE_TYPE in [ 'postgres', 'mysql' ]:
-	caseEnd = 'end as term_type'
-elif config.SOURCE_TYPE == 'sybase':
-	caseEnd = "end 'term_type'"
+caseEnd = 'end as term_type'
 
 cmds = [
 	# 0. nomenclature for current mouse markers, including symbol, name,

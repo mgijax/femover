@@ -51,8 +51,8 @@ tableName = 'database_info'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
-	name		varchar(40)	not null,
-	value		varchar(255)	null,
+	name		text	not null,
+	value		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

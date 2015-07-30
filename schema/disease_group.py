@@ -16,7 +16,7 @@ tableName = 'disease_group'
 createStatement = '''CREATE TABLE %s  ( 
 	disease_group_key	int		not null,
 	disease_key		int		not null,
-	group_type		varchar(50)	not null,
+	group_type		text	not null,
 	sequence_num		int		not null,
 	PRIMARY KEY(disease_group_key))''' % tableName
 

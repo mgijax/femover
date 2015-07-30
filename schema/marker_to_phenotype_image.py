@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	marker_key	int		not null,
 	image_key	int		not null,
 	reference_key	int		null,
-	qualifier	varchar(80)	null,
+	qualifier	text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

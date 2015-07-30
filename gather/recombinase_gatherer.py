@@ -63,7 +63,7 @@ def convert (s):
 class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 	# Is: a data gatherer for the recombinase tables
 	# Has: queries to execute against the source database
-	# Does: queries Sybase for primary data for recombinases,
+	# Does: queries for primary data for recombinases,
 	#	collates results, writes multiple tab-delimited text files
 
 	def findAlleleSystemPairs (self):

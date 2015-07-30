@@ -105,7 +105,7 @@ cmds = [
 	where m._Refs_key = c._Refs_key''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'_Refs_key', 'byDate', 'byAuthor', 'byTitle', 'byPrimaryID',

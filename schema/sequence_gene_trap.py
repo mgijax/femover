@@ -12,9 +12,9 @@ tableName = 'sequence_gene_trap'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	sequence_key		int		NOT NULL,
-	tag_method		varchar(40)	NOT NULL,
-	vector_end		varchar(40)	NOT NULL,
-	reverse_complement	varchar(40)	NOT NULL,
+	tag_method		text	NOT NULL,
+	vector_end		text	NOT NULL,
+	reverse_complement	text	NOT NULL,
 	good_hit_count		int		NULL,
 	point_coordinate	float		NULL,
 	PRIMARY KEY(sequence_key))''' % tableName

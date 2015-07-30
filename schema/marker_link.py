@@ -16,11 +16,11 @@ tableName = 'marker_link'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	link_group	varchar(30)	not null,
+	link_group	text	not null,
 	sequence_num	int		not null,
-	associated_id	varchar(30)	null,
-	display_text	varchar(255)	not null,
-	url		varchar(255)	not null,
+	associated_id	text	null,
+	display_text	text	not null,
+	url		text	not null,
 	has_markups	int		not null,
 	use_new_window	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName

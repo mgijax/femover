@@ -15,7 +15,7 @@ tableName = 'accession_display_type'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	display_type_key	smallint	not null,
-	display_type		varchar(255)	null,
+	display_type		text	null,
 	PRIMARY KEY(display_type_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -16,8 +16,8 @@ tableName = 'phenotable_term'
 createStatement = '''CREATE TABLE %s  ( 
 	phenotable_term_key		int		not null,
 	phenotable_system_key		int		not null,
-	term		varchar(255)	null,
-	term_id		varchar(255)	null,
+	term		text	null,
+	term_id		text	null,
 	indentation_depth			int	null,
 	term_seq			int	null,
 	term_key		int		not null,

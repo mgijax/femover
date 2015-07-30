@@ -17,9 +17,9 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int		not null,
 	marker_key	int		not null,
 	mgd_expt_key	int		not null,
-	jnum_id		varchar(40)	null,
+	jnum_id		text	null,
 	note		text		null,
-	note_type	varchar(40)	not null,
+	note_type	text	not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

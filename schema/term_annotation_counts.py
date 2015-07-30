@@ -16,7 +16,7 @@ tableName = 'term_annotation_counts'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key				int		not null,
 	term_key				int		not null,
-	annotated_object_type			varchar(80)	not null,
+	annotated_object_type			text	not null,
 	object_count_to_term			int		not null,
 	object_count_with_descendents		int		not null,
 	annot_count_to_term			int		not null,

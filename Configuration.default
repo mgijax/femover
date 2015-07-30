@@ -81,7 +81,7 @@ export GENE_TREE_URL
 #
 CHUNK_SIZE=100000	# for large tables, how many rows to do at once
 BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
-SOURCE_TYPE=postgres	# build from postgres, mysql, or sybase
+SOURCE_TYPE=postgres	# build from postgres, mysql
 TARGET_TYPE=postgres	# build into postgres or mysql
 
 export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE

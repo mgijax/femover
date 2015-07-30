@@ -76,9 +76,6 @@ if SOURCE_TYPE == 'postgres':
 elif SOURCE_TYPE == 'mysql':
 	prefix = 'MYSQL'
 	prefixPW = 'MYSQL'
-elif SOURCE_TYPE == 'sybase':
-	prefix = 'MGDEXP'
-	prefixPW = 'MGDEXP'
 else:
 	raise error, 'Unknown SOURCE_TYPE (%s)' % SOURCE_TYPE
 

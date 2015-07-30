@@ -16,7 +16,7 @@ tableName = 'allele_mutation'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	allele_key	int		not null,
-	mutation	varchar(255)	not null,
+	mutation	text	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -17,11 +17,11 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	term_key		int		not null,
 	sibling_term_key	int		not null,
-	sibling_term		varchar(255)	null,
-	sibling_primary_id	varchar(30)	null,
+	sibling_term		text	null,
+	sibling_primary_id	text	null,
 	sequence_num		int		null,
 	is_leaf			int		not null,
-	edge_label		varchar(255)	null,
+	edge_label		text	null,
 	path_number		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

@@ -16,9 +16,9 @@ tableName = 'marker_microarray'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	probeset_id	varchar(40)	not null,
-	platform	varchar(255)	null,
-	report_name	varchar(255)	null,
+	probeset_id	text	not null,
+	platform	text	null,
+	report_name	text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

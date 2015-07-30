@@ -16,9 +16,9 @@ tableName = 'marker_biotype_conflict'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int	not null,
 	marker_key	int	not null,
-	acc_id		varchar(30)	null,
-	logical_db	varchar(80)	null,
-	biotype		varchar(255)	null,
+	acc_id		text	null,
+	logical_db	text	null,
+	biotype		text	null,
 	sequence_num	int	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

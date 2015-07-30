@@ -22,7 +22,7 @@ cmds = ['''select a._Refs_key, a._Object_key, '' as qualifier
 		and exists (select 1 from seq_sequence s
 			where a._Object_key = s._Sequence_key)''']
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	Gatherer.AUTO, '_Object_key', '_Refs_key', 'qualifier'

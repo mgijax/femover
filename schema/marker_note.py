@@ -13,7 +13,7 @@ tableName = 'marker_note'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int	NOT NULL,
 	marker_key	int	NOT NULL,
-	note_type	varchar(255)	NOT NULL,
+	note_type	text	NOT NULL,
 	note		text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 

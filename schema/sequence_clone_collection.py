@@ -13,7 +13,7 @@ tableName = 'sequence_clone_collection'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		NOT NULL,
 	sequence_key	int		NOT NULL,
-	collection	varchar(255)	NULL,
+	collection	text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -13,9 +13,9 @@ tableName = 'marker_synonym'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int	NOT NULL,
 	marker_key	int	NOT NULL,
-	synonym		varchar(255)	NULL,
-	synonym_type	varchar(255)	NULL,
-	jnum_id		varchar(30)	NULL,
+	synonym		text	NULL,
+	synonym_type	text	NULL,
+	jnum_id		text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

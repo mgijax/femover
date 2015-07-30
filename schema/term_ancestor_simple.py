@@ -16,8 +16,8 @@ tableName = 'term_ancestor_simple'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	term_key		int		not null,
-	ancestor_term		varchar(255)	null,
-	ancestor_primary_id	varchar(30)	null,
+	ancestor_term		text	null,
+	ancestor_primary_id	text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

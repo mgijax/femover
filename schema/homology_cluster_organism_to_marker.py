@@ -19,7 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	cluster_organism_key	int		not null,
 	marker_key		int		not null,
 	reference_key		int		null,
-	qualifier		varchar(80)	null,
+	qualifier		text	null,
 	sequence_num		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

@@ -16,7 +16,7 @@ tableName = 'mp_system'
 createStatement = '''CREATE TABLE %s  ( 
 	mp_system_key		int		not null,
 	genotype_key		int		not null,
-	system		varchar(255)	null,
+	system		text	null,
 	system_seq			int	null,
 	PRIMARY KEY(mp_system_key))''' % tableName
 

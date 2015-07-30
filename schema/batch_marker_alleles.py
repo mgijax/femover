@@ -16,8 +16,8 @@ tableName = 'batch_marker_alleles'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	allele_symbol	varchar(60)	null,
-	allele_id	varchar(30)	null,
+	allele_symbol	text	null,
+	allele_id	text	null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

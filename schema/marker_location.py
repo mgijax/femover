@@ -14,16 +14,16 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		NOT NULL,
 	marker_key		int		NOT NULL,
 	sequence_num		int		NOT NULL,
-	chromosome		varchar(8)	NULL,
+	chromosome		text	NULL,
 	cm_offset		float		NULL,
-	cytogenetic_offset	varchar(20)	NULL,
+	cytogenetic_offset	text	NULL,
 	start_coordinate	float		NULL,
 	end_coordinate		float		NULL,
-	build_identifier	varchar(30)	NULL,
-	location_type		varchar(20)	NOT NULL,
-	map_units		varchar(50)	NULL,
-	provider		varchar(255)	NULL,
-	strand			varchar(1)	NULL,
+	build_identifier	text	NULL,
+	location_type		text	NOT NULL,
+	map_units		text	NULL,
+	provider		text	NULL,
+	strand			text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -21,8 +21,8 @@ journalTranslation = {'PLoS One': 'PLoS ONE',
 
 class ReferenceGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the reference table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for references,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for references,
 	#	collates results, writes tab-delimited text file
 
 	def collateResults (self):

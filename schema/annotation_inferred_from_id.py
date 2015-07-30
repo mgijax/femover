@@ -14,9 +14,9 @@ tableName = 'annotation_inferred_from_id'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		NOT NULL,
 	annotation_key		int		NOT NULL,
-	logical_db		varchar(80)	NULL,
-	acc_id			varchar(30)	NULL,
-	organism		varchar(50)	NULL,
+	logical_db		text	NULL,
+	acc_id			text	NULL,
+	organism		text	NULL,
 	preferred		int		NOT NULL,
 	private			int		NOT NULL,
 	sequence_num		int		NOT NULL,

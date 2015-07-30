@@ -16,7 +16,7 @@ tableName = 'expression_imagepane'
 createStatement = '''CREATE TABLE %s  ( 
 	imagepane_key	int		not null,
 	image_key	int		not null,
-	pane_label	varchar(255)	null,
+	pane_label	text	null,
 	x	int		not null,
 	y	int		not null,
 	width	int		not null,

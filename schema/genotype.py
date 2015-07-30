@@ -18,17 +18,17 @@ tableName = 'genotype'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	genotype_key		int		not null,
-	background_strain	varchar(255)	null,
-	primary_id		varchar(30)	null,
+	background_strain	text	null,
+	primary_id		text	null,
 	is_conditional		int		not null,
-	note			varchar(255)	null,
-	combination_1		varchar(1024)	null,
-	combination_2		varchar(1024)	null,
+	note			text	null,
+	combination_1		text	null,
+	combination_2		text	null,
 	has_image		int		not null,
 	has_phenotype_data	int		not null,
 	is_disease_model	int		not null,
-	genotype_type		varchar(2)	null,
-	cell_lines		varchar(255)	null,
+	genotype_type		text	null,
+	cell_lines		text	null,
 	exists_as		text		not null,
 	PRIMARY KEY(genotype_key))''' % tableName
 

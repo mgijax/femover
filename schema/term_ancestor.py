@@ -17,11 +17,11 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	term_key		int		not null,
 	ancestor_term_key	int		not null,
-	ancestor_term		varchar(255)	null,
-	ancestor_primary_id	varchar(30)	null,
+	ancestor_term		text	null,
+	ancestor_primary_id	text	null,
 	path_number		int		not null,
 	depth			int		not null,
-	edge_label		varchar(255)	null,
+	edge_label		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

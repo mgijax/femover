@@ -16,10 +16,10 @@ tableName = 'mp_term'
 createStatement = '''CREATE TABLE %s  ( 
 	mp_term_key		int		not null,
 	mp_system_key		int		not null,
-	term		varchar(255)	null,
+	term		text	null,
 	term_seq			int	null,
 	indentation_depth			int	null,
-	term_id			varchar(40)	null,
+	term_id			text	null,
 	PRIMARY KEY(mp_term_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

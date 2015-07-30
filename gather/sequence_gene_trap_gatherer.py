@@ -8,8 +8,8 @@ import Gatherer
 
 class SequenceGeneTrapGatherer (Gatherer.ChunkGatherer):
 	# Is: a data gatherer for the sequenceGeneTrap table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for gene trap sequences,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for gene trap sequences,
 	#	collates results, writes tab-delimited text file
 
 	def postprocessResults (self):
@@ -55,7 +55,7 @@ cmds = [
 			where s._Sequence_key = ss._Sequence_key)''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'_Sequence_key', 'tagMethod', 'vectorEnd', 'reverseComplement',

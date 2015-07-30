@@ -77,8 +77,8 @@ def getLocationDisplay (marker, organism):
 
 class MarkerGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the marker table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for markers, collates results,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for markers, collates results,
 	#	writes tab-delimited text file
 
 	def collateResults (self):
@@ -293,7 +293,7 @@ cmds = [
 	from mrk_marker''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
 	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',

@@ -16,7 +16,7 @@ tableName = 'homology_cluster_organism'
 createStatement = '''CREATE TABLE %s  ( 
 	cluster_organism_key	int		not null,
 	cluster_key		int		not null,
-	organism		varchar(50)	not null,
+	organism		text	not null,
 	sequence_num		int		not null,
 	PRIMARY KEY(cluster_organism_key))''' % tableName
 

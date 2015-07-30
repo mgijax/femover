@@ -7,10 +7,7 @@ import config
 
 ###--- Globals ---###
 
-if config.SOURCE_TYPE == 'sybase':
-	offset = 'offset'
-else:
-	offset = 'cmOffset'
+offset = 'cmOffset'
 
 NCBI_GENE_MODEL = 59
 ENSEMBL_GENE_MODEL = 60

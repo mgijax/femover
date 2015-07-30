@@ -8,8 +8,8 @@ import Gatherer
 
 ReferenceAbstractGatherer = Gatherer.Gatherer
 	# Is: a data gatherer for the referenceAbstract table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for reference abstracts,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for reference abstracts,
 	#	collates results, writes tab-delimited text file
 
 ###--- globals ---###

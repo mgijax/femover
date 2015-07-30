@@ -15,10 +15,7 @@ import config
 
 ###--- Globals ---###
 
-if config.SOURCE_TYPE == 'sybase':
-	offset = 'offset'
-else:
-	offset = 'cmOffset'
+offset = 'cmOffset'
 
 ###--- Classes ---###
 
@@ -295,7 +292,7 @@ cmds = [
 	''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'_Marker_key', SYMBOL, NAME, TYPE, SUBTYPE, ORGANISM, ID, LOCATION,

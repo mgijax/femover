@@ -15,8 +15,8 @@ tableName = 'batch_marker_terms'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
-	term			varchar(255)	not null,
-	term_type		varchar(80)	not null,
+	term			text	not null,
+	term_type		text	not null,
 	marker_key		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

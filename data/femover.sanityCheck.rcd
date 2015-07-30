@@ -8,9 +8,9 @@
 #
 # source database
 
-SOURCE_TYPE = sybase		# sybase, mysql, or postgres
-SOURCE_SERVER = DEV1_MGI	# Sybase server name or MySQL/Postgres host
-SOURCE_NAME = mgd_wi1		# name of the database
+SOURCE_TYPE = postgres		# mysql, or postgres
+SOURCE_SERVER = cardolan	# MySQL/Postgres host
+SOURCE_NAME = pub		# name of the database
 SOURCE_USER = mgd_public	# database username
 SOURCE_PASSWORD = mgdpub	# database username's password
 

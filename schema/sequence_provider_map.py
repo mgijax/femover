@@ -15,8 +15,8 @@ tableName = 'sequence_provider_map'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
-	logical_db		varchar(80)	not null,
-	provider_abbreviation	varchar(15)	not null,
+	logical_db		text	not null,
+	provider_abbreviation	text	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

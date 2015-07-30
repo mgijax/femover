@@ -18,10 +18,10 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int		not null,
 	imagepane_key	int		not null,
 	assay_key	int		not null,
-	assay_id	varchar(40)	null,
+	assay_id	text	null,
 	marker_key	int		not null,
-	marker_id	varchar(40)	null,
-	marker_symbol	varchar(50)	null,
+	marker_id	text	null,
+	marker_symbol	text	null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

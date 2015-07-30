@@ -10,11 +10,11 @@ tableName = 'probe'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	probe_key    	int	NOT NULL,
-	name          	varchar(40) NULL,
-	segment_type	varchar(255) NULL,
-	primary_id     	varchar(30) NULL,
-	logical_db	varchar(80) NULL,
-	clone_id	varchar(30) NULL,
+	name          	text NULL,
+	segment_type	text NULL,
+	primary_id     	text NULL,
+	logical_db	text NULL,
+	clone_id	text NULL,
 	PRIMARY KEY(probe_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

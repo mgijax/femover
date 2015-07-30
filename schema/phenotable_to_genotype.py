@@ -19,7 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	genotype_key		int		not null,
 	genotype_seq		int		not null,
 	split_sex		int		not null,
-        sex_display          varchar(255)    null,
+        sex_display          text    null,
         disease_only          int    not null,
 	PRIMARY KEY(phenotable_genotype_key))''' % tableName
 

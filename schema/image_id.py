@@ -13,8 +13,8 @@ tableName = 'image_id'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int	NOT NULL,
 	image_key	int	NOT NULL,
-	logical_db	varchar(80) NULL,
-	acc_id		varchar(30) NULL,
+	logical_db	text NULL,
+	acc_id		text NULL,
 	preferred	int	NOT NULL,
 	private		int	NOT NULL,
 	is_for_other_db_section	int	NOT NULL,

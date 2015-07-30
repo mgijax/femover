@@ -15,7 +15,7 @@ tableName = 'phenotable_center'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	center_key	int		not null,
-	name		varchar(255)	not null,
+	name		text	not null,
 	abbreviation	text		null,
 	sequence_num	int		not null,
 	PRIMARY KEY(center_key))''' % tableName

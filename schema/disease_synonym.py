@@ -16,7 +16,7 @@ tableName = 'disease_synonym'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	disease_key	int		not null,
-	synonym		varchar(255)	not null,
+	synonym		text	not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

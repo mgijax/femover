@@ -13,8 +13,8 @@ tableName = 'term_anatomy_extras'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	term_key		int		not null,
-	system			varchar(255)	null,
-	theiler_stage		varchar(5)	null,
+	system			text	null,
+	theiler_stage		text	null,
 	mgd_structure_key	int		not null,
 	edinburgh_key		int		null,
 	PRIMARY KEY(term_key))''' % tableName

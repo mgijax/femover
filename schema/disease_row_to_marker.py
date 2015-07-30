@@ -19,7 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	marker_key	int		not null,
 	sequence_num	int		not null,
 	is_causative	int		not null,
-	organism	varchar(50)	not null,
+	organism	text	not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

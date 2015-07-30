@@ -33,8 +33,8 @@ error = 'referenceCountsGatherer.error'
 
 class ReferenceCountsGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the referenceCounts table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for reference counts,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for reference counts,
 	#	collates results, writes tab-delimited text file
 
 	def collateResults (self):

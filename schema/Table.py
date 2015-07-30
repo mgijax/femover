@@ -6,7 +6,6 @@ import getopt
 import config
 import dbManager
 import Dispatcher
-import re
 ###--- Globals ---###
 
 # Usage statement for all Table scripts, when executed from the command-line
@@ -55,9 +54,6 @@ elif config.TARGET_TYPE == 'postgres':
 		config.TARGET_PASSWORD)
 else:
 	raise Error, 'Unknown value for config.TARGET_TYPE'
-
-# regex
-varchar_field_re = re.compile('varchar\(\d*\)')
 
 # types of comments allowed
 
@@ -249,10 +245,6 @@ class Table:
 		# Modifies: nothing
 		# Throws: nothing
 		# Notes: 'keys' is not implemented yet.
-
-		# replace all varchar fields with 'text' fields
-		if config.TARGET_TYPE == 'postgres':
-			createstatement = varchar_field_re.sub('text',createStatement)
 		self.name = name
 		self.createStatement = createStatement
 		self.indexes = indexes

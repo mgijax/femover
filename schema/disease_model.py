@@ -16,8 +16,8 @@ tableName = 'disease_model'
 createStatement = '''CREATE TABLE %s  ( 
 	disease_model_key	int		not null,
 	genotype_key		int		not null,
-	disease			varchar(255)	not null,
-	disease_id		varchar(40)	not null,
+	disease			text	not null,
+	disease_id		text	not null,
 	is_not_model		int		not null,
 	PRIMARY KEY(disease_model_key))''' % tableName
 

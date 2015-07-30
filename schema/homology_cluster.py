@@ -15,11 +15,11 @@ tableName = 'homology_cluster'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	cluster_key	int		not null,
-	primary_id	varchar(30)	null,
-	version		varchar(255)	null,
-	cluster_date	varchar(12)	null,
-	source		varchar(255)	not null,
-	secondary_source varchar(30)	null,
+	primary_id	text	null,
+	version		text	null,
+	cluster_date	text	null,
+	source		text	not null,
+	secondary_source text	null,
 	has_comparative_go_graph	int	not null,
 	PRIMARY KEY(cluster_key))''' % tableName
 

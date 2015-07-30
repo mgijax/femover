@@ -12,8 +12,8 @@ tableName = 'sequence_gene_model'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	sequence_key		int		NOT NULL,
-	marker_type		varchar(80)	NULL,
-	biotype			varchar(255)	NULL,
+	marker_type		text	NULL,
+	biotype			text	NULL,
 	exon_count		int		NULL,
 	transcript_count	int		NULL,
 	PRIMARY KEY(sequence_key))''' % tableName

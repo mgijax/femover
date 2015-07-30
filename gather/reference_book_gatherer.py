@@ -8,8 +8,8 @@ import Gatherer
 
 ReferenceBookGatherer = Gatherer.Gatherer
 	# Is: a data gatherer for the referenceBook table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for books,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for books,
 	#	collates results, writes tab-delimited text file
 
 ###--- globals ---###
@@ -20,7 +20,7 @@ cmds = [
 	from bib_books''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	'referenceKey', 'book_au', 'book_title', 'series_ed', 'place',

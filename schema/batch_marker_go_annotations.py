@@ -14,9 +14,9 @@ tableName = 'batch_marker_go_annotations'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	go_id		varchar(30)	null,
-	go_term		varchar(255)	null,
-	evidence_code	varchar(255)	null,
+	go_id		text	null,
+	go_term		text	null,
+	evidence_code	text	null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

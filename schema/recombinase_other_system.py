@@ -16,8 +16,8 @@ tableName = 'recombinase_other_system'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	allele_system_key	int		not null,
-	allele_id		varchar(30)	null,
-	other_system		varchar(255)	null,
+	allele_id		text	null,
+	other_system		text	null,
 	other_system_key	int		null,
 	PRIMARY KEY(unique_key))''' % tableName
 

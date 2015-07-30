@@ -13,8 +13,8 @@ tableName = 'allele_synonym'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	allele_key		int		not null,
-	synonym			varchar(255)	null,
-	synonym_type		varchar(255)	null,
+	synonym			text	null,
+	synonym_type		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	marker_key		int		not null,
 	structure_key		int		not null,
-	structure		varchar(128)	not null,
+	structure		text	not null,
 	all_result_count	int		not null,
 	detected_count		int		not null,
 	not_detected_count	int		not null,

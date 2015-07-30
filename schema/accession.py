@@ -16,10 +16,10 @@ tableName = 'accession'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	object_key		int		not null,
-	search_id		varchar(30)	not null,
-	display_id		varchar(30)	not null,
+	search_id		text	not null,
+	display_id		text	not null,
 	sequence_num		int		not null,
-	description		varchar(315)	null,
+	description		text	null,
 	logical_db_key		smallint	not null,
 	display_type_key	smallint	not null,
 	object_type_key		smallint	not null,

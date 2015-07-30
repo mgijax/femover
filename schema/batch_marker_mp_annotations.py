@@ -14,8 +14,8 @@ tableName = 'batch_marker_mp_annotations'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	mp_id		varchar(30)	null,
-	mp_term		varchar(255)	null,
+	mp_id		text	null,
+	mp_term		text	null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

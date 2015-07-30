@@ -15,9 +15,9 @@ tableName = 'actual_database'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	actualdb_key	int		not null,
-	logical_db	varchar(80)	null,
-	actual_db	varchar(80)	null,
-	url		varchar(255)	null,
+	logical_db	text	null,
+	actual_db	text	null,
+	url		text	null,
 	sequence_num	int		not null,
 	PRIMARY KEY(actualdb_key))''' % tableName
 

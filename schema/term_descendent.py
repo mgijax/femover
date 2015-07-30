@@ -17,8 +17,8 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	term_key		int		not null,
 	descendent_term_key	int		not null,
-	descendent_term		varchar(255)	null,
-	descendent_primary_id	varchar(30)	null,
+	descendent_term		text	null,
+	descendent_primary_id	text	null,
 	sequence_num		int		null,
 	PRIMARY KEY(unique_key))''' % tableName
 

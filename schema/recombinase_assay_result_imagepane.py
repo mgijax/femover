@@ -19,7 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	result_key		int		not null,
 	image_key		int		not null,
 	sequence_num		int		not null,
-	pane_label		varchar(255)	null,
+	pane_label		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

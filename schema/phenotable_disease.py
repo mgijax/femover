@@ -16,9 +16,9 @@ tableName = 'phenotable_disease'
 createStatement = '''CREATE TABLE %s  ( 
 	phenotable_disease_key		int		not null,
 	allele_key		int		not null,
-	disease		varchar(255)	null,
+	disease		text	null,
 	disease_seq			int	null,
-	omim_id		varchar(255)	null,
+	omim_id		text	null,
 	is_header			int	null,
 	PRIMARY KEY(phenotable_disease_key))''' % tableName
 

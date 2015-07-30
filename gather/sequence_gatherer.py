@@ -170,11 +170,7 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
-if config.SOURCE_TYPE == 'sybase':
-	# from Sybase, get: yyyy/mm/dd
-	sd = 'convert(varchar(10), s.sequence_date, 121)'
-	srd = 'convert(varchar(10), s.seqrecord_date, 121)'
-elif config.SOURCE_TYPE == 'mysql':
+if config.SOURCE_TYPE == 'mysql':
 	# from MySQL, get: yyyy-mm-dd
 	sd = "date_format(s.sequence_date, '%%Y-%%m-%%d')"
 	srd = "date_format(s.seqrecord_date, '%%Y-%%m-%%d')"

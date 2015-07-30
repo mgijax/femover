@@ -17,7 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	mp_annotation_key		int		not null,
 	mp_term_key		int		not null,
 	call		int		not null,
-	sex		varchar(80)	null,
+	sex		text	null,
 	annotation_seq			int	null,
 	PRIMARY KEY(mp_annotation_key))''' % tableName
 

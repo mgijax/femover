@@ -16,7 +16,7 @@ tableName = 'allele_summary_system'
 createStatement = '''CREATE TABLE %s  ( 
 	allele_system_key		int		not null,
 	allele_key		int		not null,
-	system		varchar(255)	null,
+	system		text	null,
 	PRIMARY KEY(allele_system_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

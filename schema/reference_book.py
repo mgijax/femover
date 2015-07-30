@@ -12,11 +12,11 @@ tableName = 'reference_book'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	reference_key	int NOT NULL,
-	editor    	varchar(160) NULL,
-	book_title  	varchar(200) NULL,
-	edition  	varchar(50) NULL,
-	place	  	varchar(50) NULL,
-	publisher  	varchar(50) NULL,
+	editor    	text NULL,
+	book_title  	text NULL,
+	edition  	text NULL,
+	place	  	text NULL,
+	publisher  	text NULL,
 	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

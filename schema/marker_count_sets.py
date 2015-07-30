@@ -13,8 +13,8 @@ tableName = 'marker_count_sets'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key	int		not null,
 	marker_key	int		not null,
-	set_type	varchar(40)	not null,
-	count_type	varchar(50)	not null,
+	set_type	text	not null,
+	count_type	text	not null,
 	count		int		not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName

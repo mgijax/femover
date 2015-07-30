@@ -17,8 +17,8 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	marker_id_key		int		not null,
 	marker_key		int		not null,
-	symbol			varchar(50)	null,
-	primary_id		varchar(30)	null,
+	symbol			text	null,
+	primary_id		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

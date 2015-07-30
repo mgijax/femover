@@ -17,7 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	annotation_key		int		not null,
 	reference_key		int		not null,
-	jnum_id			varchar(40)	null,
+	jnum_id			text	null,
 	sequence_num		int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 

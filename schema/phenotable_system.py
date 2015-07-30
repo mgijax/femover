@@ -16,7 +16,7 @@ tableName = 'phenotable_system'
 createStatement = '''CREATE TABLE %s  ( 
 	phenotable_system_key		int		not null,
 	allele_key		int		not null,
-	system		varchar(255)	null,
+	system		text	null,
 	system_seq			int	null,
 	PRIMARY KEY(phenotable_system_key))''' % tableName
 

@@ -15,7 +15,7 @@ createStatement = '''CREATE TABLE %s  (
 	probe_key	int		NOT NULL,
 	sequence_key	int 		NOT NULL,
 	reference_key	int		NOT NULL,
-	qualifier	varchar(80)	NULL,
+	qualifier	text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

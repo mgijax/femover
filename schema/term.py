@@ -15,12 +15,12 @@ tableName = 'term'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	term_key	int		not null,
-	term		varchar(255)	null,
-	primary_id	varchar(30)	null,
-	vocab_name	varchar(255)	not null,
-	display_vocab_name varchar(255)	not null,
-	abbreviation	varchar(255)	null,
-	definition	varchar(2048)	null,
+	term		text	null,
+	primary_id	text	null,
+	vocab_name	text	not null,
+	display_vocab_name text	not null,
+	abbreviation	text	null,
+	definition	text	null,
 	sequence_num	int		null,
 	is_root		int		not null,
 	is_leaf		int		not null,

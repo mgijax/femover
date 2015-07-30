@@ -15,7 +15,7 @@ tableName = 'accession_object_type'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	object_type_key		int		not null,
-	object_type		varchar(255)	null,
+	object_type		text	null,
 	PRIMARY KEY(object_type_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

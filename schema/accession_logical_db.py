@@ -15,7 +15,7 @@ tableName = 'accession_logical_db'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	logical_db_key		int		not null,
-	logical_db		varchar(255)	not null,
+	logical_db		text	not null,
 	PRIMARY KEY(logical_db_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

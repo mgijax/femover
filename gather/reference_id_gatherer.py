@@ -8,8 +8,8 @@ import Gatherer
 
 class ReferenceIDGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the referenceID table
-	# Has: queries to execute against Sybase
-	# Does: queries Sybase for primary data for reference IDs,
+	# Has: queries to execute against source db
+	# Does: queries for primary data for reference IDs,
 	#	collates results, writes tab-delimited text file
 
 	def postprocessResults (self):
@@ -39,7 +39,7 @@ cmds = [ '''select a._Object_key as referenceKey,
 	where a._MGIType_key = 1''',
 	]
 
-# order of fields (from the Sybase query results) to be written to the
+# order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
 	Gatherer.AUTO,

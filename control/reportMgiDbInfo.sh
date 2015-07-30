@@ -4,7 +4,7 @@ cd `dirname $0`; . Configuration
 
 usage()
 {
-    echo "Usage: reportMgiDbInfo.sh {postgres | mysql | sybase}"
+    echo "Usage: reportMgiDbInfo.sh {postgres | mysql}"
     echo "  Report data from the MGI_dbInfo table in the given source database"
 
     if [ "$1" != "" ]; then
@@ -26,8 +26,6 @@ if [ "$1" = "postgres" ]; then
 	SOURCE_TYPE=postgres
 elif [ "$1" = "mysql" ]; then
 	SOURCE_TYPE=mysql
-elif [ "$1" = "sybase" ]; then
-	SOURCE_TYPE=sybase
 else
 	usage "Invalid database type"
 fi

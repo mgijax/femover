@@ -16,9 +16,9 @@ tableName = 'expression_index_stages'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	index_key		int		not null,
-	assay_type		varchar(255)	null,
+	assay_type		text	null,
 	age			float		not null,
-	age_string		varchar(255)	null,
+	age_string		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

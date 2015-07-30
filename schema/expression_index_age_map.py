@@ -14,7 +14,7 @@ tableName = 'expression_index_age_map'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	age_string		varchar(255)	not null,
+	age_string		text	not null,
 	min_theiler_stage	int		not null,
 	max_theiler_stage	int		not null,
 	sequence_num		int		not null,
