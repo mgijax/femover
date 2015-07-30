@@ -1,3 +1,9 @@
+TAG: femover-6-0-0-1
+DATE: 7/30/15
+STAFF: jsb
+1) Removed Sybase code and comments
+2) Changed all varchar fields to text
+
 TAG: femover-5-2-2-11
 DATE: 6/22/15
 STAFF: jsb
