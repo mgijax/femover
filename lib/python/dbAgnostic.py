@@ -31,7 +31,7 @@ elif SOURCE_DB == 'mysql':
 else:
 	raise Error, 'Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB
 
-class DbInitError(Error):
+class DbInitError(Exception):
 	"""
 	Database Initialization error
 	"""
