@@ -12,38 +12,20 @@ class MarkerToAlleleGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for marker/allele
 	#	relationships, collates results, writes tab-delimited text
 	#	file
-
-	def postprocessResults (self):
-		self.convertFinalResultsToList()
-
-		qCol = Gatherer.columnNumber (self.finalColumns,
-			'_Qualifier_key')
-
-		for r in self.finalResults:
-			self.addColumn ('qualifier', Gatherer.resolve (
-				r[qCol]), r, self.finalColumns)
-		return
+	pass
 
 ###--- globals ---###
 
 cmds = [
-	# we only want alleles that are actually in the allele table...
-	'''select m._Marker_key,
-		m._Allele_key,
-		m._Refs_key,
-		m._Qualifier_key
-	from all_marker_assoc m, voc_term t
-	where m._Status_key = t._Term_key
-		and t.term != 'deleted'
-		and exists (select 1 from all_allele a
-			where a._Allele_key = m._Allele_key)''',
+	'''select a._Marker_key,
+		a._Allele_key
+	from all_allele a''',
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Marker_key', '_Allele_key', '_Refs_key',
-	'qualifier'
+	Gatherer.AUTO, '_Marker_key', '_Allele_key'
 	]
 
 # prefix for the filename of the output file

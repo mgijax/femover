@@ -200,8 +200,7 @@ cmds = [
 		(case when m.chromosome is null then 'ZZZ'
 			else m.chromosome end) as chromosome
 	from all_allele a left outer join
-		all_marker_assoc ma on a._allele_key=ma._allele_key left join
-		mrk_marker m on m._marker_key=ma._marker_key	
+		mrk_marker m on m._marker_key=a._marker_key	
 	''',
 	]
 
