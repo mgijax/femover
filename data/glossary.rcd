@@ -90,8 +90,8 @@ definition=5' Untranslated Region. That portion of an \
 
 [ 
 key=ab_initio
-displayName=<I>Ab initio</I>
-definition=Formulated without experimental data. <I>Latin</I>. From the beginning. 
+displayName=Ab initio
+definition=<i>Ab initio</i>: formulated without experimental data. <I>Latin</I>. From the beginning. 
 ]
 
 [ 
@@ -1698,7 +1698,7 @@ definition=An additional copy of a <A HREF="!FEWI_URL!glossary/dna">DNA</A> segm
 [ 
 key=e_coli 
 displayName=E. coli
-definition=Common bacterium that geneticists have studied intensively because of its small \ 
+definition=<i>E. coli</i>, a common bacterium that geneticists have studied intensively because of its small \ 
 <A HREF="!FEWI_URL!glossary/genome">genome</A> size, normal lack of pathogenicity, \
 and ease of growth in the laboratory. 
 ]
@@ -2725,16 +2725,16 @@ definition=A type of <A HREF="!FEWI_URL!glossary/mutation">mutation</A> in which
 
 [ 
 key=in_silico 
-displayName=<I>In silico</I> 
-definition=Computationally, as opposed to <A HREF="!FEWI_URL!glossary/in_vitro"><I>in vitro</I></A> or \ 
+displayName=In silico 
+definition=<I>In silico</I>: Computationally, as opposed to <A HREF="!FEWI_URL!glossary/in_vitro"><I>in vitro</I></A> or \ 
 <A HREF="!FEWI_URL!glossary/in_vivo"><I>in vivo</I></A>. 
 ]
 
 
 [ 
 key=in_situ 
-displayName=<I>In situ</I> Hybridization 
-definition=A method of detecting the presence of specific \
+displayName=In situ Hybridization 
+definition=<I>In situ</I> Hybridization: A method of detecting the presence of specific \
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> sequences within a cytological preparation. A \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> or <A HREF="!FEWI_URL!glossary/rna">RNA</A> \ 
 <A HREF="!FEWI_URL!glossary/probe">probe</A> is labeled radioactively or chemically and \ 
@@ -2749,8 +2749,8 @@ for an example. <BR>See also <A HREF="!FEWI_URL!glossary/fish">FISH</A>.
 
 [ 
 key=in_situ_reporter 
-displayName=<I>In situ</I> Reporter (Knock in)
-definition=An <A HREF="!FEWI_URL!glossary/assay">assay</A> type that uses mice containing a \ 
+displayName=In situ Reporter (Knock in)
+definition=<I>In situ</I> Reporter (Knock in): An <A HREF="!FEWI_URL!glossary/assay">assay</A> type that uses mice containing a \ 
 <A HREF="!FEWI_URL!glossary/targeted_mutation">targeted mutation</A> in which a \ 
 <A HREF="!FEWI_URL!glossary/reporter_gene">reporter gene</A> has replaced an \ 
 <A HREF="!FEWI_URL!glossary/endogenous">endogenous</A> \ 
@@ -2803,8 +2803,8 @@ definition=Part of a <A HREF="!FEWI_URL!glossary/gene">gene</A> whose sequence i
 ]
 [ 
 key=in_utero 
-displayName=<I>In utero</I> 
-definition=A reaction, process or experiment on an embryo in a living mammal rather than \ 
+displayName=In utero 
+definition=<I>In utero</I>: A reaction, process or experiment on an embryo in a living mammal rather than \ 
 <A HREF="!FEWI_URL!glossary/in_vitro"><I>in vitro</I></A>. 
 ]
 
@@ -2819,8 +2819,8 @@ medial segment is now present in reverse order. Inversions range in size from th
 
 [ 
 key=in_vitro 
-displayName=<I>In vitro</I> 
-definition=Literally, "in glass", meaning a reaction, process or experiment in a metaphorical test tube rather than in a living \
+displayName=In vitro 
+definition=<I>In vitro</I>: Literally, "in glass", meaning a reaction, process or experiment in a metaphorical test tube rather than in a living \
 organism. In <A HREF="!FEWI_URL!glossary/mgi">MGI</A> this term also applies to \ 
 <A HREF="!FEWI_URL!glossary/cdna">cDNA</A> clones originating from tissue culture cells rather than from \
 tissues from whole organisms.<BR>See also:<UL><LI><A HREF="!FEWI_URL!glossary/in_vivo"><I>In vivo</I></A></LI>\
@@ -2830,8 +2830,8 @@ tissues from whole organisms.<BR>See also:<UL><LI><A HREF="!FEWI_URL!glossary/in
 
 [ 
 key=in_vivo 
-displayName=<I>In vivo</I> 
-definition=Literally, "in life", meaning a reaction, process or experiment in a living organism rather than in a metaphorical \
+displayName=In vivo 
+definition=<I>In vivo</I>: Literally, "in life", meaning a reaction, process or experiment in a living organism rather than in a metaphorical \
 test tube.<BR>See also:<UL><LI><A HREF="!FEWI_URL!glossary/in_vitro"><I>In vitro</I></A></LI>\
 <LI><A HREF="!FEWI_URL!glossary/in_silico"><I>In silico</I></A></LI></UL>
 ]
