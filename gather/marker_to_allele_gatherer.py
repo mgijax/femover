@@ -19,7 +19,8 @@ class MarkerToAlleleGatherer (Gatherer.Gatherer):
 cmds = [
 	'''select a._Marker_key,
 		a._Allele_key
-	from all_allele a''',
+	from all_allele a
+	where a._Marker_key is not null''',
 	]
 
 # order of fields (from the query results) to be written to the
