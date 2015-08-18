@@ -198,7 +198,7 @@ IMSR = [ 'imsr',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
-		'marker_location', 'marker_counts',
+		'marker_location', 'marker_counts', 'marker_slimgrid',
 		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
@@ -221,7 +221,8 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
-	'term_emap', 'term_emaps_child',
+	'term_emap', 'term_emaps_child', 'go_evidence_category',
+	'term_to_header',
 	]
 TESTS = ['test_stats']
 

@@ -14,6 +14,8 @@ createStatement = '''CREATE TABLE %s  (
 	marker_key				int	NOT NULL,
 	reference_count				int	NULL,
 	disease_relevant_reference_count	int	NULL,
+	go_reference_count			int	NULL,
+	phenotype_reference_count		int	NULL,
 	sequence_count				int	NULL,
 	sequence_refseq_count			int	NULL,
 	sequence_uniprot_count			int	NULL,
@@ -35,6 +37,10 @@ createStatement = '''CREATE TABLE %s  (
 	antibody_count				int	NULL,
 	imsr_count				int	NULL,
 	mutation_involves_count			int	NULL,
+	mp_annotation_count			int	NULL,
+	mp_allele_count				int	NULL,
+	mp_background_count			int	NULL,
+	mp_multigenic_annotation_count		int	NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -54,6 +60,8 @@ comments = {
 		'marker_key' : 'identifies the marker',
 		'reference_count' : 'count of related references',
 		'disease_relevant_reference_count' : 'count of related references which are related to disease annotations',
+		'go_reference_count' : 'count of references for GO annotations for this marker',
+		'phenotype_reference_count' : 'count of references indexed to alleles of this marker',
 		'sequence_count' : 'count of related sequences',
 		'sequence_refseq_count' : 'count of RefSeq sequences',
 		'sequence_uniprot_count' : 'count of UniProt sequences',
@@ -75,6 +83,10 @@ comments = {
 		'antibody_count' : 'count of antibodies',
 		'imsr_count' : 'count of lines/mice in IMSR',
 		'mutation_involves_count' : 'count of alleles with this marker in a mutation-involves relationship',
+		'mp_annotation_count' : 'count of MP annotations which roll up to the marker',
+		'mp_allele_count' : 'count of non-wild-type alleles which contribute to those annotations',
+		'mp_background_count' : 'number of distinct background strains for genotypes with rolled up annotations',
+		'mp_multigenic_annotation_count' : 'count of annotations which did not roll up to this marker due to multigenic genotypes',
 		},
 	}
 

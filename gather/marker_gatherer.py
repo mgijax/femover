@@ -86,7 +86,6 @@ class MarkerGatherer (Gatherer.Gatherer):
 
 		self.featureTypes = {}	# marker key -> [ feature types ]
 		self.ids = {}		# marker key -> (id, logical db key)
-		self.inRefGenome = {}	# marker key -> 0/1
 
 		# feature types from MCV vocab are in query 0 results
 
@@ -119,21 +118,8 @@ class MarkerGatherer (Gatherer.Gatherer):
 		logger.debug ('Found %d primary IDs for markers' % \
 			len(self.ids))
 
-		# reference genome flags are in query 2
-
-		cols, rows = self.results[2]
-		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		flagCol = Gatherer.columnNumber (cols, 'isReferenceGene')
-
-		for row in rows:
-			self.inRefGenome[row[keyCol]] = row[flagCol]
-	
-		logger.debug ('Found %d reference genome flags' % \
-			len(self.inRefGenome))
-
-		
-                # sql (3)
-                (cols, rows) = self.results[3]
+                # sql (2) -- location data for each marker
+                (cols, rows) = self.results[2]
 
                 # set of columns for common sql fields
 		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -184,11 +170,6 @@ class MarkerGatherer (Gatherer.Gatherer):
 				ldb = None
 				ldbName = None
 
-			if self.inRefGenome.has_key(markerKey):
-				isInRefGenome = self.inRefGenome[markerKey]
-			else:
-				isInRefGenome = 0
-
 			self.addColumn ('accid', accid, r, self.finalColumns)
 			self.addColumn ('subtype', feature, r,
 				self.finalColumns)
@@ -207,8 +188,6 @@ class MarkerGatherer (Gatherer.Gatherer):
 				r, self.finalColumns)
 			self.addColumn ('hasGOGraph',
 				GOGraphs.hasGOGraph(accid),
-				r, self.finalColumns)
-			self.addColumn ('isInReferenceGenome', isInRefGenome,
 				r, self.finalColumns)
 
 			# location and coordinate information
@@ -266,10 +245,7 @@ cmds = [
 		and a._LogicalDB_key = ldb._LogicalDB_key
 		and ldb._Organism_key = m._Organism_key''',
 
-	# 2. markers in the reference genome project
-	'select _Marker_key, isReferenceGene from GO_Tracking',
-
-	# 3. all markers with mrk_location_cache (mouse/human only)
+	# 2. all markers with mrk_location_cache (mouse/human only)
         #    + pick up the non-mouse, non-human organisms 
         #    (as these are not included in MRK_Location_Cache)
 	'''select distinct _Marker_key, genomicchromosome, chromosome,
@@ -287,7 +263,7 @@ cmds = [
 		  and not exists (select 1 from mrk_location_cache l
 			where m._Marker_key = l._Marker_key)''',
 
-	# 4. all markers
+	# 3. all markers
 	'''select _Marker_key, symbol, name, _Marker_Type_key, _Organism_key,
 		_Marker_Status_key
 	from mrk_marker''',
@@ -297,7 +273,6 @@ cmds = [
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
 	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
-	'isInReferenceGenome', 
 	'location_display', 'coordinate_display', 'build_identifier' ]
 
 # prefix for the filename of the output file

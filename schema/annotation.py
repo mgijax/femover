@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	vocab_name		text	null,
 	term			text	null,
 	term_id			text	null,
+	term_key        int    null,
 	evidence_code		text	null,
 	evidence_term		text	null,
 	object_type		text	null,

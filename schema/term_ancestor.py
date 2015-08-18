@@ -29,6 +29,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'term_key' : 'create index %s on %s (term_key)',
+	'term_key_depth' : 'create index %s on %s (term_key, depth)'
 	}
 
 keys = {
@@ -37,7 +38,7 @@ keys = {
 	}
 
 # index used to cluster data in the table
-clusteredIndex = ('term_key_depth', 'create index %s on %s (term_key, depth)')
+clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
