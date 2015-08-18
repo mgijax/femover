@@ -2,7 +2,7 @@
 # Purpose: to access allele and marker counts from IMSR
 
 import logger
-import httpReader
+import urllib2
 import config
 
 class IMSRDatabase:
@@ -16,8 +16,15 @@ class IMSRDatabase:
 		logger.debug ('IMSR_COUNT_URL : %s' % self.IMSR_COUNT_URL)
 		logger.debug ('IMSR_COUNT_TIMEOUT : %d' % self.IMSR_COUNT_TIMEOUT)
 
-		(lines, err) = httpReader.getURL (self.IMSR_COUNT_URL,
-			timeout = self.IMSR_COUNT_TIMEOUT)
+		# TODO (kstone): add timeout when we move past python 2.4
+		#	Not supported in older versions
+		#f = urllib2.urlopen(self.IMSR_COUNT_URL, timeout=self.IMSR_COUNT_TIMEOUT)
+		f = urllib2.urlopen(self.IMSR_COUNT_URL)
+		try:
+		    lines = f.readlines()
+		finally:
+		    f.close()
+		
 
 		cellLines = {}
 		strains = {}
@@ -67,7 +74,7 @@ class IMSRDatabase:
 
 if __name__=="__main__":
 	imsrDB = IMSRDatabase()
-	imsrDB.IMSR_COUNT_URL = "http://emnet.informatics.jax.org:48080/imsrwi/imsrwi/report/mgiCounts.txt"
+	imsrDB.IMSR_COUNT_URL = "http://www.findmice.org/report/mgiCounts.txt"
 	imsrDB.IMSR_COUNT_TIMEOUT=300
 	import unittest
 	class IMSRDBTestCase(unittest.TestCase):
