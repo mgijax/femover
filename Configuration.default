@@ -56,8 +56,7 @@ export LOG_DEBUG LOG_INFO
 #
 # settings for retrieving IMSR counts of strains and cell lines
 #
-IMSR_COUNT_URL="http://emnet.informatics.jax.org:48080/imsrwi/imsrwi/report/mgiCounts.txt"
-#IMSR_COUNT_URL="http://www.findmice.org/report/mgiCounts.txt"
+IMSR_COUNT_URL="http://www.findmice.org/report/mgiCounts.txt"
 IMSR_COUNT_TIMEOUT=300		# number of seconds before a timeout occurs
 
 export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
