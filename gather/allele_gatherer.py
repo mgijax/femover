@@ -337,9 +337,9 @@ cmds = [
 
 	# 8. map allele_key to chromosome
 	'''
-	select aa._allele_key, m.chromosome 
-	from all_allele aa join 
-	mrk_marker m on m._marker_key=aa._marker_key
+	select _allele_key,chromosome 
+	from all_marker_assoc ma join 
+	mrk_marker m on m._marker_key=ma._marker_key
 	''',
 	# 9. map allele_key to allele subtypes
 	'''

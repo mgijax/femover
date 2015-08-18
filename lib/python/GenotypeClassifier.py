@@ -90,9 +90,11 @@ def _initialize():
 	transgeneQuery = '''select distinct g._Genotype_key
                 from gxd_allelegenotype g, 
 				all_allele a,
+				all_marker_assoc ama,
 				mrk_marker m
                 where g._Allele_key = a._Allele_key
-				and a._marker_key=m._marker_key
+				and a._allele_key=ama._allele_key
+				and ama._marker_key=m._marker_key
                 	and a._Allele_Type_key in (847126)
 				and m._marker_type_key=12
 	'''

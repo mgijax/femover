@@ -15,8 +15,6 @@ Error = 'dbAgnostic.error'	# exception raised by this module
 SOURCE_DB = config.SOURCE_TYPE	# either mysql, or postgres
 DBM = None			# dbManager object for postgres/mysql access
 
-SQL_LOG_FILE = None		# file pointer; where to log SQL commands
-
 # set up our database connectivity
 
 if SOURCE_DB == 'postgres':
@@ -40,24 +38,12 @@ class DbInitError(Exception):
 
 ###--- Functions ---###
 
-def setSqlLogFile(filename):
-	global SQL_LOG_FILE
-
-	SQL_LOG_FILE = open(filename, 'w')
-	return
-
 def execute (cmd):
 	# Purpose: execute the given SQL 'cmd' against the source database
 	# Returns: two-item tuple of (columns, rows)
 	#	columns - list of column names
 	#	rows - list of rows, where each row is a list of values in the
 	#		order corresponding to the column names in 'columns'
-
-	if SQL_LOG_FILE:
-		SQL_LOG_FILE.write(cmd)
-		SQL_LOG_FILE.write('\n')
-		SQL_LOG_FILE.write('||\n')
-		SQL_LOG_FILE.flush()
 
 	# if using either postgres or mysql, our dbManager object will handle
 	# all necessary database interaction
@@ -67,11 +53,6 @@ def execute (cmd):
 	
 	raise DbInitError("dbManager not initialized")
 
-
-def commit():
-	if DBM:
-		return DBM.commit()
-	return
 
 def columnNumber (columns, columnName):
 	# find the position of 'columnName' in the list of 'columns'

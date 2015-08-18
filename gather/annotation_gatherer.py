@@ -33,8 +33,6 @@ FISSION_YEAST_LDB = 115		# logical database key for fission yeast
 FISSION_YEAST = 'fission yeast'	# organism name for fission yeast
 CHEBI_LDB = 127			# logical database key for ChEBI
 
-EVIDENCE_ID_TABLE = 'evid'
-
 ###--- Globals ---###
 
 MARKER_DATA = {}	# marker key : [ symbol, name, ID, logical db, chrom,
@@ -51,29 +49,6 @@ KEY_GENERATOR = AnnotationKeyGenerator.EvidenceInferredKeyGenerator()
 MPG_KEY_GENERATOR = AnnotationKeyGenerator.KeyGenerator()
 
 ###--- Functions ---###
-
-def initialize():
-	# build any temp tables needed to support the standard queries
-
-	logger.debug('Entered initialize()...')
-
-	# temp table of seq IDs cited as evidence (inferred-from) for GO
-	# annotations
-
-	cmd1 = '''select distinct accID
-		into temporary table %s
-		from acc_accession
-		where _MGIType_key = 25
-		and _LogicalDB_key in (68, 9, 13)''' % EVIDENCE_ID_TABLE
-
-	cmd2 = 'create unique index %s_idx1 on %s (accID)' % (
-		EVIDENCE_ID_TABLE, EVIDENCE_ID_TABLE)
-
-	dbAgnostic.execute(cmd1)
-	dbAgnostic.execute(cmd2)
-
-	logger.debug('  - built %s' % EVIDENCE_ID_TABLE)
-	return
 
 # annotation keys to be omitted (for GO ND annotations)
 # 	annotKeyToSkip[annot key] = 1
@@ -309,32 +284,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 	def translateAnnotKey (self, annotKey):
 		return self.uniqueAnnotKey[annotKey]
-
-	def cacheHeaderTerms (self):
-		# cache the (currently only) GO header terms for each term
-
-		self.headers = {}
-
-		cols, rows = self.results[15]
-
-		termCol = Gatherer.columnNumber (cols, 'term_key')
-		headerCol = Gatherer.columnNumber (cols, 'header_term_key')
-
-		for row in rows:
-			termKey = row[termCol]
-			headerKey = row[headerCol]
-
-			if self.headers.has_key(termKey):
-				self.headers[termKey].append(headerKey)
-			else:
-				self.headers[termKey] = [ headerKey ]
-
-		logger.debug('Cached %d headers for %d terms' % (
-			len(rows), len(self.headers)) )
-
-		self.results[15] = (cols, [])
-		gc.collect()
-		return
 
 	def buildMarkerCache (self):
 		global MARKER_DATA
@@ -664,8 +613,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			done[annotationKey] = 1
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey, None, None,
-				'Marker', annotType, 0, 0 ]
+				row[termCol], termID, None, None, 'Marker',
+				annotType, 0, 0 ]
 			aRows.append (aRow)
 
 			mRow = [ len(mRows), markerKey, annotationKey,
@@ -738,8 +687,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			annotType = 'Protein Ontology/Marker'
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey,
-				None, None, 'Marker',
+				row[termCol], termID, None, None, 'Marker',
 				annotType, 0, 0 ]
 			aRows.append (aRow)
 
@@ -835,8 +783,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			done[annotationKey] = 1
 
 			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey,
-				None, None, 'Marker',
+				row[termCol], termID, None, None, 'Marker',
 				annotType, 0, 0 ]
 			aRows.append (aRow)
 
@@ -940,8 +887,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# annotation table columns and rows
 		aCols = [ 'annotation_key', 'dag_name', 'qualifier',
-			'vocab_name', 'term', 'term_id', 'term_key',
-			'evidence_code', 'evidence_term',
+			'vocab_name', 'term', 'term_id', 'evidence_code',
+			'evidence_term',
 			'object_type', 'annotation_type', 'reference_count',
 			'inferred_id_count' ]
 		aRows = []
@@ -972,10 +919,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			'by_term_alpha', 'by_vocab', 'by_annotation_type',
 			'by_vocab_dag_term', 'by_marker_dag_term' ]
 		sRows = []
-
-		# annotation_to_header columns and rows
-		hCols = [ 'annotation_key', 'header_term_key' ]
-		hRows = []
 
 		finder = OrganismFinder()
 
@@ -1070,6 +1013,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				mgdToNewKeys[annotKey] = [
 				    sKeyGenerator.getKey(annotKey,
 					    specialType = 'no evidence') ]
+#				    getNewAnnotationKey (
+#					annotKey, None, None, 'no evidence') ]
 
 			for annotationKey in mgdToNewKeys[annotKey]:
 			    refCount = 0	# number of references
@@ -1112,17 +1057,10 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			    # populate annotation table
 
 			    baseRow = [ annotationKey, dagName, qualifier,
-				vocab, term, termID, termKey,
-				evidenceCode, evidenceTerm,
+				vocab, term, termID, evidenceCode, evidenceTerm,
 				objectType, annotType, refCount, idCount ]
 
 			    aRows.append (baseRow)
-
-			    # populate the mapping to headers, if needed
-
-			    if self.headers.has_key(termKey):
-				    for hKey in self.headers[termKey]:
-					    hRows.append((annotationKey, hKey))
 
 			    # populate annotation_sequence_num table
 
@@ -1204,7 +1142,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		self.output = [ (aCols, aRows), (iCols, iRows),
 			(rCols, rRows), (mCols, mRows), (sCols, sRows),
-			(gCols, gRows), (hCols, hRows) ]
+			(gCols, gRows) ]
 		logger.debug ('%d annotations, %d IDs, %d refs, %d markers' \
 			% (len(aRows), len(iRows), len(rRows), len(mRows) ) )
 		return
@@ -1231,9 +1169,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 
 		# process queries 3 and 4 - inferred-from IDs
 		inferredFromIDs = self.getInferredFromIDs()
-
-		# process query 15 - maps term key to its header term keys
-		self.cacheHeaderTerms()
 
 		# process query 5 and join with prior results
 		self.buildRows (termKeyToID, termKeyToDagKey, mgdToNewKeys,
@@ -1308,10 +1243,13 @@ cmds = [
 	# with the MGI logical database to link to our sequence detail page
 	'''select distinct aa.accID,
 		aa._LogicalDB_key
-	from acc_accession aa, %s aa2
-	where aa._MGIType_key = 19
+	from acc_accession aa
+	where aa._MGIType_key = 25
 		and aa._LogicalDB_key in (68, 9, 13)
-		and aa.accID = aa2.accID''' % EVIDENCE_ID_TABLE,
+		and exists (select 1 from acc_accession aa2
+			where aa.accID = aa2.accID
+				and aa2._MGIType_key = 19
+				and aa2._LogicalDB_key in (68, 9, 13))''',
 
 	# 5. get all annotations
 	'''select va._Object_key,
@@ -1435,24 +1373,6 @@ cmds = [
 	'''select _Annot_key, _AnnotType_key, _Term_key, _Object_key,
 		_Qualifier_key
 	from voc_annot''',
-
-	# 15. mapping from GO terms to the keys of the header terms to which
-	# they can be aggregated.  (Only GO currently, because that's the only
-	# need.  If we need MP at a later date, switch to an IN and add it.)
-	'''select t._Term_key as header_term_key,
-		t._Term_key as term_key
-	from voc_term t
-	where t._Vocab_key = 4
-		and t.abbreviation is not null
-		and t.sequenceNum is not null
-	union
-	select h._Term_key as header_term_key, t._Term_key as term_key
-	from voc_term h, dag_closure dc, voc_term t
-	where h._Vocab_key = 4
-		and h.abbreviation is not null
-		and h.sequenceNum is not null
-		and h._Term_key = dc._AncestorObject_key
-		and dc._DescendentObject_key = t._Term_key''',
 	]
 
 # definition of output files, each as:
@@ -1460,8 +1380,7 @@ cmds = [
 files = [
 	('annotation',
 		[ 'annotation_key', 'dag_name', 'qualifier', 'vocab_name',
-			'term', 'term_id', 'term_key',
-			'evidence_code', 'evidence_term',
+			'term', 'term_id', 'evidence_code', 'evidence_term',
 			'object_type', 'annotation_type', 'reference_count',
 			'inferred_id_count' ],
 		'annotation'),
@@ -1492,10 +1411,6 @@ files = [
 		[ 'unique_key', 'genotype_key', 'annotation_key',
 			'reference_key', 'qualifier', 'annotation_type' ],
 		'genotype_to_annotation'),
-
-	('annotation_to_header',
-		[ Gatherer.AUTO, 'annotation_key', 'header_term_key' ],
-		'annotation_to_header'),
 	]
 
 # global instance of a AnnotationGatherer
@@ -1506,5 +1421,4 @@ gatherer = AnnotationGatherer (files, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	initialize()
 	Gatherer.main (gatherer)

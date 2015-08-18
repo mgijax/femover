@@ -14,6 +14,8 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int		NOT NULL,
 	marker_key	int		NOT NULL,
 	allele_key	int 		NOT NULL,
+	reference_key	int		NULL,
+	qualifier	text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -21,11 +23,13 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'allele_key' : 'create index %s on %s (allele_key, marker_key)',
+	'reference_key' : 'create index %s on %s (reference_key)',
 	}
 
 keys = {
 	'marker_key' : ('marker', 'marker_key'),
 	'allele_key' : ('allele', 'allele_key'),
+	'reference_key' : ('reference', 'reference_key'),
 	}
 
 # index used to cluster data in the table
@@ -39,10 +43,13 @@ comments = {
 		'unique_key' : 'unique key identifying this association, no other purpose',
 		'marker_key' : 'identifies the marker',
 		'allele_key' : 'identifies an allele of the marker',
+		'reference_key' : 'identifies the reference for this association',
+		'qualifier' : 'qualifier describing this association',
 		},
 	Table.INDEX : {
 		'marker_key' : 'clusters the data so all allele associations for a marker are stored together on disk, aiding quick retrieval',
 		'allele_key' : 'look up a marker by its allele',
+		'reference_key' : 'look up all marker/allele associations for a reference',
 		},
 	}
 

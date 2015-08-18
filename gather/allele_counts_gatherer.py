@@ -126,14 +126,9 @@ cmds = [
 	'''select _Allele_key from all_allele''',
 
 	# 1. count of markers for each allele
-	'''select _Allele_key, 1 as mrkCount
-		from all_allele 
-		where _Marker_key is not null
-	   UNION ALL
-	   select _Allele_key, 0 as mrkCount
-	    from all_allele
-	    where _Marker_key is null
-	''',
+	'''select m._Allele_key, count(1) as mrkCount
+		from all_marker_assoc m
+		group by m._Allele_key''',
 
 	# 2. count of references for each allele
 	'''select _Object_key as _Allele_key, 

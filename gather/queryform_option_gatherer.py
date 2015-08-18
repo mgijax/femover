@@ -171,16 +171,11 @@ class QFOptionGatherer (Gatherer.Gatherer):
 		headerCol = Gatherer.columnNumber (cols, 'shortHeader')
 		booleanCol = Gatherer.columnNumber (cols, 'searchExpression')
 		seqNumCol = Gatherer.columnNumber (cols, 'sequenceNum')
-		ct = 0
 
 		for row in rows:
 			term = row[headerCol]
 			booleanExpression = row[booleanCol].strip()
 			seqNum = row[seqNumCol]
-
-			if seqNum == None:
-				seqNum = len(rows) + ct
-				ct = ct + 1
 
 			self.finalResults.append ( [ 'allele', 'phenotype',
 				term, booleanExpression, None, seqNum, None,

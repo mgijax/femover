@@ -18,10 +18,6 @@ import GenotypeClassifier
 import ReferenceUtils
 from IMSRData import IMSRDatabase
 
-# The count of GO annotations for a marker should exclude all annotations with
-# an ND (No Data) evidence code.
-GOFilter.removeAllND()
-
 ###--- Globals ---###
 
 OMIM_GENOTYPE = 1005		# from VOC_AnnotType
@@ -39,8 +35,6 @@ PHENOTYPE_IMAGE = 6481782	# VOC_Term for phenotype image class
 
 ReferenceCount = 'referenceCount'
 DiseaseRelevantReferenceCount = 'diseaseRelevantReferenceCount'
-GOReferenceCount = 'goReferenceCount'
-PhenotypeReferenceCount = 'phenotypeReferenceCount'
 SequenceCount = 'sequenceCount'
 AlleleCount = 'alleleCount'
 GOCount = 'goTermCount'
@@ -62,10 +56,6 @@ AllelesWithDiseaseCount = 'allelesWithHumanDiseasesCount'
 AntibodyCount = 'antibodyCount'
 ImsrCount = 'imsrCount'
 MutationInvolvesCount = 'mutationInvolvesCount'
-MpAnnotationCount = 'mpAnnotationCount'
-MpAlleleCount = 'mpAlleleCount'
-StrainCount = 'strainCount'
-OtherAnnotCount = 'otherAnnotationCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -155,13 +145,6 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 			(self.results[19], AllelesWithDiseaseCount,
 				'alleleCount'),
 			(self.results[20], HumanDiseaseCount, 'diseaseCount'),
-			(self.results[22], MpAnnotationCount, 'annotCount'),
-			(self.results[23], MpAlleleCount, 'alleleCount'),
-			(self.results[24], GOReferenceCount, 'goRefCount'),
-			(self.results[25], PhenotypeReferenceCount,
-				'phenoRefCount'),
-			(self.results[26], StrainCount, 'strainCount'),
-			(self.results[27], OtherAnnotCount, 'otherCount'), 
 
 			# IMSR count processed separately
 			]
@@ -299,15 +282,17 @@ cmds = [
 
 	# 7. count of gene trap insertions for each marker (gene trap alleles
 	# which have at least one sequence with coordinates)
-	'''select aa._Marker_key, count(1) as numGeneTraps
-		from all_allele aa
-		where aa._Allele_Type_key = 847121
+	'''select ama._Marker_key, count(1) as numGeneTraps
+		from all_marker_assoc ama,
+			all_allele aa
+		where ama._Allele_key = aa._Allele_key
+			and aa._Allele_Type_key = 847121
 			and exists (select 1
 				from seq_allele_assoc saa,
 				    seq_coord_cache scc
 				where aa._Allele_key = saa._Allele_key
 				    and saa._Sequence_key = scc._Sequence_key)
-		group by aa._Marker_key''',
+		group by ama._Marker_key''',
 
 	# 8. count of GXD results for each marker (only for structures that
 	# map to EMAPS terms)
@@ -489,6 +474,7 @@ cmds = [
 			and va._AnnotType_key = 1005
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key
+			and vt.term is null
 		union
 		select r._Object_key_2 as Marker_key, a._Allele_key
 		from mgi_relationship r,
@@ -498,7 +484,7 @@ cmds = [
 			voc_annot va,
 			voc_term vt
 		where a._Allele_key = gag._Allele_key
-			and c.name = 'expresses_component'
+			and (c.name = 'mutation_involves' or c.name = 'expresses_component')
 			and c._Category_key = r._Category_key
 			and a._Allele_key = r._Object_key_1
 			and gag._Genotype_key = va._Object_key
@@ -534,76 +520,17 @@ cmds = [
                 and a.preferred = 1
                 and m._Organism_key = 1
 	''',
-
-	# 22. MP annotation count
-	'''select _Marker_key, count(distinct _DerivedAnnot_key) as annotCount
-	from %s
-	group by _Marker_key''' % MarkerUtils.getSourceAnnotationTable(),
-
-	# 23. MP allele count
-	'''select _Marker_key, count(distinct _Allele_key) as alleleCount
-	from %s
-	group by _Marker_key''' % MarkerUtils.getSourceGenotypeTable(),
-
-	# 24. GO reference count (except for annotations with an ND evidence
-	# code)
-	'''select va._Object_key as _Marker_key,
-		count(distinct ve._Refs_key) as goRefCount
-	from voc_annot va, voc_evidence ve, voc_term et
-	where va._AnnotType_key = 1000
-		and va._Annot_key = ve._Annot_key
-		and ve._EvidenceTerm_key = et._Term_key
-		and et.abbreviation != 'ND'
-	group by va._Object_key''', 
-
-	# 25. phenotype reference count (including traditional marker/allele
-	# pairs, plus relationships via mutation involves and expresses
-	# component).  Assumes that no wild-type alleles appear in the data
-	# from the relationship table.)
-	'''with temp_table as (
-		select _Marker_key,
-			_Allele_key 
-		from all_allele
-		where isWildType = 0
-		union
-		select r._Object_key_2 as _Marker_key,
-			r._Object_key_1 as _Allele_key
-		from mgi_relationship r
-		where r._Category_key in (%d, %d)
-		)
-	select t._Marker_key,
-		count(distinct r._Refs_key) as phenoRefCount
-	from temp_table t,
-		mgi_reference_assoc r
-	where t._Allele_key = r._Object_key
-		and r._MGIType_key = 11
-	group by t._Marker_key''' % (MUTATION_INVOLVES, EXPRESSES_COMPONENT),
-
-	# 26. background strains represented in the set of annotations rolled
-	# up to the marker.
-	'''select sg._Marker_key, count(distinct s.strain) as strainCount
-	from %s sg, gxd_genotype g, prb_strain s
-	where sg._Genotype_key = g._Genotype_key
-		and g._Strain_key = s._Strain_key
-	group by sg._Marker_key''' % MarkerUtils.getSourceGenotypeTable(),
-
-	# 27. other MP annotations that didn't roll up to the marker
-	'''select _Marker_key, count(1) as otherCount
-	from %s
-	group by _Marker_key''' % MarkerUtils.getOtherAnnotationsTable()
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', ReferenceCount, DiseaseRelevantReferenceCount,
-	GOReferenceCount, PhenotypeReferenceCount,
 	SequenceCount, SequenceRefSeqCount, SequenceUniprotCount, AlleleCount,
 	GOCount, GxdAssayCount, GxdResultCount, GxdLiteratureCount,
 	GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
 	MappingCount, CdnaSourceCount, MicroarrayCount,
 	PhenotypeImageCount, HumanDiseaseCount, AllelesWithDiseaseCount,
-	AntibodyCount, ImsrCount, MutationInvolvesCount, MpAnnotationCount,
-	MpAlleleCount, StrainCount, OtherAnnotCount,
+	AntibodyCount, ImsrCount, MutationInvolvesCount
 	]
 
 # prefix for the filename of the output file
