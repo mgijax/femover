@@ -282,17 +282,15 @@ cmds = [
 
 	# 7. count of gene trap insertions for each marker (gene trap alleles
 	# which have at least one sequence with coordinates)
-	'''select ama._Marker_key, count(1) as numGeneTraps
-		from all_marker_assoc ama,
-			all_allele aa
-		where ama._Allele_key = aa._Allele_key
-			and aa._Allele_Type_key = 847121
+	'''select aa._Marker_key, count(1) as numGeneTraps
+		from all_allele aa
+		where aa._Allele_Type_key = 847121
 			and exists (select 1
 				from seq_allele_assoc saa,
 				    seq_coord_cache scc
 				where aa._Allele_key = saa._Allele_key
 				    and saa._Sequence_key = scc._Sequence_key)
-		group by ama._Marker_key''',
+		group by aa._Marker_key''',
 
 	# 8. count of GXD results for each marker (only for structures that
 	# map to EMAPS terms)

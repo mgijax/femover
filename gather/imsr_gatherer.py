@@ -91,13 +91,13 @@ cmds = [
 			and private = 0''',
 
 	# get the mapping from marker MGI IDs to the markers' allele keys
-	'''select a.accID, m._Allele_key
-		from acc_accession a, all_marker_assoc m
+	'''select a.accID, aa._Allele_key
+		from acc_accession a, all_allele aa
 		where a._LogicalDB_key = 1
 			and a._MGIType_key = 2
 			and a.private = 0
 			and a.preferred = 1
-			and a._Object_key = m._Marker_key''',
+			and a._Object_key = aa._Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the
