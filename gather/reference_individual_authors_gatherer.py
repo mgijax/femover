@@ -96,8 +96,7 @@ class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
 	#	reference, collates results, writes tab-delimited text file
 	
 	def collateResults (self):
-		# Notes: We need to join the authors and authors2 fields into
-		#	a single string, then split it up into individual
+		# Notes: We need to split the authors field into individual
 		#	authors, each of which will have their own record.
 
 		self.finalColumns = self.fieldOrder[1:]
@@ -107,15 +106,11 @@ class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
 
 		refsKeyCol = Gatherer.columnNumber (rawColumns, '_Refs_key')
 		authorsCol = Gatherer.columnNumber (rawColumns, 'authors')
-		authors2Col = Gatherer.columnNumber (rawColumns, 'authors2')
 
 		for r in self.results[-1][1]:
 			longAuthors = None
 			if r[authorsCol] != None:
 				longAuthors = r[authorsCol]
-				if r[authors2Col] != None:
-					longAuthors = longAuthors + \
-						r[authors2Col]
 
 			if longAuthors:
 				refsKey = r[refsKeyCol]
@@ -146,7 +141,7 @@ class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'select _Refs_key, authors, authors2 from bib_refs',
+	'select _Refs_key, authors from bib_refs',
 	]
 
 # order of fields (from the query results) to be written to the

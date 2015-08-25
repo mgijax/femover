@@ -20,8 +20,6 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 			'_Refs_key')
 		authorsCol = Gatherer.columnNumber (self.results[0][0],
 			'authors')
-		authors2Col = Gatherer.columnNumber (self.results[0][0],
-			'authors2')
 		titleCol = Gatherer.columnNumber (self.results[0][0], 'title')
 		title2Col = Gatherer.columnNumber (self.results[0][0],
 			'title2')
@@ -44,8 +42,6 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 
 			if row[authorsCol]:
 				author = row[authorsCol]
-				if row[authors2Col]:
-					author = author + row[authors2Col]
 				author = author.lower()
 			else:
 				author = None
@@ -99,7 +95,7 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select m._Refs_key, m.authors, m.authors2, m.year, 
+	'''select m._Refs_key, m.authors, m.year, 
 		c.numericPart, c.jnumID, m.title, m.title2
 	from bib_refs m, bib_citation_cache c
 	where m._Refs_key = c._Refs_key''',

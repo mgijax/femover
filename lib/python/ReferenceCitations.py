@@ -71,7 +71,6 @@ def _getRefs():
 	allCmd = '''select r._Refs_key,
 			r.refType as referenceType,
 			r.authors,
-			r.authors2,
 			r.title,
 			r.title2,
 			r.journal,
@@ -95,7 +94,6 @@ def _getRefs():
 	keyCol = dbAgnostic.columnNumber (columns, '_Refs_key')
 	typeCol = dbAgnostic.columnNumber (columns, 'referenceType')
 	authorCol = dbAgnostic.columnNumber (columns, 'authors')
-	author2Col = dbAgnostic.columnNumber (columns, 'authors2')
 	titleCol = dbAgnostic.columnNumber (columns, 'title')
 	title2Col = dbAgnostic.columnNumber (columns, 'title2')
 	journalCol = dbAgnostic.columnNumber (columns, 'journal')

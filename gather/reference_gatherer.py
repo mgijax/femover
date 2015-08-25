@@ -51,8 +51,6 @@ class ReferenceGatherer (Gatherer.Gatherer):
 			'referenceKey')
 		authorsCol = Gatherer.columnNumber (self.finalColumns,
 			'authors')
-		authors2Col = Gatherer.columnNumber (self.finalColumns,
-			'authors2')
 
 		titleCol = Gatherer.columnNumber (self.finalColumns, 'title')
 		title2Col = Gatherer.columnNumber (self.finalColumns,
@@ -69,9 +67,6 @@ class ReferenceGatherer (Gatherer.Gatherer):
 			longAuthors = None
 			if r[authorsCol] != None:
 				longAuthors = r[authorsCol]
-				if r[authors2Col] != None:
-					longAuthors = longAuthors + \
-						r[authors2Col]
 			self.addColumn ('longAuthors', longAuthors, r,
 				self.finalColumns)
 
@@ -139,7 +134,6 @@ cmds = [ '''select distinct _Refs_key
 		r.refType as referenceType,
 		r._primary as primaryAuthor,
 		r.authors,
-		r.authors2,
 		r.title,
 		r.title2,
 		r.journal,
