@@ -53,8 +53,6 @@ class ReferenceGatherer (Gatherer.Gatherer):
 			'authors')
 
 		titleCol = Gatherer.columnNumber (self.finalColumns, 'title')
-		title2Col = Gatherer.columnNumber (self.finalColumns,
-			'title2')
 
 		pubmedCol = Gatherer.columnNumber (self.finalColumns,
 			'pubmedID')
@@ -75,8 +73,6 @@ class ReferenceGatherer (Gatherer.Gatherer):
 			longTitle = None
 			if r[titleCol] != None:
 				longTitle = r[titleCol]
-				if r[title2Col] != None:
-					longTitle = longTitle + r[title2Col]
 				longTitle = longTitle.rstrip()
 
 			self.addColumn ('longTitle', longTitle, r,
@@ -135,7 +131,6 @@ cmds = [ '''select distinct _Refs_key
 		r._primary as primaryAuthor,
 		r.authors,
 		r.title,
-		r.title2,
 		r.journal,
 		lower(r.journal) as lowerJournal,
 		r.vol,

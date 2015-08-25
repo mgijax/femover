@@ -72,7 +72,6 @@ def _getRefs():
 			r.refType as referenceType,
 			r.authors,
 			r.title,
-			r.title2,
 			r.journal,
 			r.vol,
 			r.issue,
@@ -95,7 +94,6 @@ def _getRefs():
 	typeCol = dbAgnostic.columnNumber (columns, 'referenceType')
 	authorCol = dbAgnostic.columnNumber (columns, 'authors')
 	titleCol = dbAgnostic.columnNumber (columns, 'title')
-	title2Col = dbAgnostic.columnNumber (columns, 'title2')
 	journalCol = dbAgnostic.columnNumber (columns, 'journal')
 	volCol = dbAgnostic.columnNumber (columns, 'vol')
 	issueCol = dbAgnostic.columnNumber (columns, 'issue')
@@ -116,9 +114,6 @@ def _getRefs():
 			'authors' : row[authorCol],
 			'title' : row[titleCol],
 			}
-
-		if row[title2Col]:
-			out['title'] = out['title'] + row[title2Col]
 
 		refs[row[keyCol]] = out
 
