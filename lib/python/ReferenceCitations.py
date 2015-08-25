@@ -120,9 +120,6 @@ def _getRefs():
 		if row[title2Col]:
 			out['title'] = out['title'] + row[title2Col]
 
-		if row[author2Col]:
-			out['authors'] = out['authors'] + row[author2Col]
-
 		refs[row[keyCol]] = out
 
 	logger.debug ('Got data for %d refs' % len(refs))
