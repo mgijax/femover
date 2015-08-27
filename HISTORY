@@ -1,7 +1,8 @@
-TAG: femover-6-0-0-4, femover-6-0-0-5
+TAG: femover-6-0-0-4, femover-6-0-0-5, femover-6-0-0-6
 DATE: 8/24/2015
 STAFF: kstone
 1) removed all_marker_assoc table
+2) removed authors2/title2
 
 TAG: femover-6-0-0-3
 DATE: 8/18/2015
