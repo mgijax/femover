@@ -17,7 +17,6 @@ import Gatherer
 import VocabSorter
 import Lookup
 import logger
-import GOFilter
 import GenotypeClassifier
 import MPSorter
 import copy

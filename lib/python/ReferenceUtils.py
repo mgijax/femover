@@ -4,6 +4,7 @@
 import dbAgnostic
 import logger
 import gc
+import MarkerUtils
 
 ###--- globals ---###
 
@@ -57,28 +58,43 @@ def _populateDiseaseRelevantReferenceCache():
 
 	diseaseRefs = {}
 
-	# query returns all references for disease annotations that have been
-	# rolled up to markers (type 1016)
+	# get the name of a temp table that maps from a marker to its
+	# (traditional) alleles, as well as any alleles that express it (via
+	# "expresses component" relationshps) or that are associated with it
+	# through "mutation involves" relationships
 
-	cmdMain = '''select distinct a._Object_key as _Marker_key,
-			e._Refs_key
+	markerAlleleTable = MarkerUtils.getMarkerAlleleTable(
+		[ MarkerUtils.ec, MarkerUtils.mi ], 'pairs_ec_mi')
+
+	# query returns all references for disease annotations that have been
+	# made to genotypes (annotation type 1005) which can be tied to a
+	# marker though the allele/marker relationships in the temp table.
+
+	cmdMain = '''select distinct ma._Marker_key, e._Refs_key
 		from voc_annot a,
-			voc_evidence e
-		where a._AnnotType_key = 1016
-		and a._Annot_key = e._Annot_key'''	
+			voc_evidence e,
+			gxd_allelegenotype gag,
+			%s ma
+		where a._AnnotType_key = 1005
+			and a._Annot_key = e._Annot_key
+			and a._Object_key = gag._Genotype_key
+			and gag._Allele_key = ma._Allele_key''' % \
+				markerAlleleTable
 
 	# query returns all references which directly tie a disease to an
-	# allele (bypassing a genotype), pulled up to that allele's marker
-	# (type 1012)
+	# allele (bypassing a genotype, annotation type 1012), where those
+	# genotypes include alleles that can be tied to markers via the set of
+	# relationships in the temp table.
 
 	cmdSpecial = '''select distinct aa._Marker_key,
 			e._Refs_key
 		from voc_annot a,
 			voc_evidence e,
-			all_allele aa
+			%s aa
 		where a._AnnotType_key = 1012
 			and a._Annot_key = e._Annot_key
-			and a._Object_key = aa._Allele_key'''
+			and a._Object_key = aa._Allele_key''' % \
+				markerAlleleTable
 
 	for cmd in [ cmdMain, cmdSpecial ]:
 		(cols, rows) = dbAgnostic.execute(cmd)

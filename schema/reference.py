@@ -29,6 +29,7 @@ createStatement = '''CREATE TABLE %s  (
 	short_citation 	text NULL,
 	long_citation  	text NULL,
 	indexed_for_gxd	int	not null,
+	reference_group	text	null,
 	PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -66,6 +67,7 @@ comments = {
 		'short_citation' : 'short-format citation',
 		'long_citation' : 'long-format citation',
 		'indexed_for_gxd' : '1 if reference is indexed for expression data, 0 if not',
+		'reference_group' : 'grouping of references to be used in filtering (ie- literature vs data loads, etc)',
 		},
 	Table.INDEX : {
 		'jnum_id' : 'provides quick lookup by J: number',

@@ -9,6 +9,7 @@
 import Gatherer
 import ReferenceCitations
 import logger
+import dbAgnostic
 
 #
 # translate some journal names
@@ -16,6 +17,61 @@ import logger
 journalTranslation = {'PLoS One': 'PLoS ONE',
 	'Cell Mol Biol (Noisy-le-grand)': 'Cell Mol Biol (Noisy-Le-Grand)'}
 
+###--- Functions ---###
+
+def getGroupingTable():
+	# build a temp table which maps from each reference key to its
+	# grouping (for filtering -- literature vs. data load, etc.)
+
+	tbl = 'ref_groupings'
+
+	lit = 'Literature'
+	nonLit = 'Database, data loads, curation, submissions'
+
+	logger.debug('Building temp table %s' % tbl)
+
+	# begin with assumption that everything is "Literature"
+
+	cmd0 = '''create temporary table %s (
+		_Refs_key	int	not null,
+		grouping	text	not null,
+		primary key (_Refs_key))''' % tbl
+
+	cmd1 = '''insert into %s
+		select _Refs_key, '%s' as grouping
+		from bib_refs''' % (tbl, lit)
+
+	cmd2 = 'select count(1) from %s' % tbl
+
+	for cmd in [ cmd0, cmd1, cmd2 ]:
+		results = dbAgnostic.execute(cmd)
+
+	logger.debug(' - added %d refs to %s' % (results[1][0][0], tbl))
+
+	# flag refs:
+	# 1. personal communications
+	# 2. null titles
+	# 3. database releases, submissions, curation, etc.
+	cmd3 = 'update ' + tbl + \
+	    " set grouping = '" + nonLit + """'
+	    where _Refs_key in (
+	    	select _refs_key
+		from bib_refs
+		where lower(title) like '%personal communic%'
+		    or lower(journal) similar to '%database release%|%database proc%|%load%|%personal communic%|%direct data%|%submission%|%curation%|unpublished|%omim%|%www%'
+		    or (journal is null and
+			(lower(title) similar to '%database%|%load%|%direct data%|%curation%|%annotation%|%nomenclature%|%mouse genome informatics%|%locuslink%'
+			or (reftype = 'ART' AND title is null) ) )
+	    )"""
+
+	cmd4 = '''select count(1) from %s where grouping = '%s' ''' % (tbl, 
+		nonLit)
+
+	for cmd in [ cmd3, cmd4, ]:
+		results = dbAgnostic.execute(cmd)
+
+	logger.debug(' - flagged %d refs as "%s"' % (results[1][0][0], nonLit))
+	return tbl
 
 ###--- Classes ---###
 
@@ -123,6 +179,8 @@ class ReferenceGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
+groupingTable = getGroupingTable()
+
 cmds = [ '''select distinct _Refs_key
 	from gxd_index''',
 
@@ -140,10 +198,13 @@ cmds = [ '''select distinct _Refs_key
 		r.pgs as pages,
 		c.jnumID,
 		c.numericPart,
-		c.pubmedID
+		c.pubmedID,
+		g.grouping
 	from bib_refs r,
-		bib_citation_cache c
-	where r._Refs_key = c._Refs_key''',
+		bib_citation_cache c,
+		%s g
+	where r._Refs_key = c._Refs_key
+		and r._Refs_key = g._Refs_key''' % groupingTable,
 	]
 
 # order of fields (from the query results) to be written to the
@@ -153,7 +214,7 @@ fieldOrder = [
 	'longAuthors', 'longTitle',
 	'journal', 'vol', 'issue', 'pubDate', 'year', 'pages',
 	'jnumID', 'numericPart', 'pubmedID', 'miniCitation',
-	'shortCitation', 'longCitation', 'indexedForGXD',
+	'shortCitation', 'longCitation', 'indexedForGXD', 'grouping'
 	]
 
 # prefix for the filename of the output file

@@ -4,7 +4,6 @@
 
 import Gatherer
 
-MUTATION_INVOLVES = 1003
 EXPRESSES_COMPONENT = 1004
 
 ###--- Classes ---###
@@ -73,8 +72,7 @@ cmds = [ '''select distinct i._Image_key,
 		and p._ImagePane_key = a._ImagePane_key
 		and a._MGIType_key = 11
 		and a._Object_key = r._Object_key_1
-		and r._Category_key in (%d, %d)''' % (MUTATION_INVOLVES,
-			EXPRESSES_COMPONENT)
+		and r._Category_key = %d''' % EXPRESSES_COMPONENT
 	]
 
 # order of fields (from the query results) to be written to the

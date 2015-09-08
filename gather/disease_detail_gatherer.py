@@ -1317,9 +1317,9 @@ cmds = [
 		and gag._Allele_key = a._Allele_key
 		and a.isWildType = 0
 		and a._Allele_key = r._Object_key_1
-		and r._Category_key in (%d, %d)
+		and r._Category_key = %d
 	order by r._Object_key_2''' % (OMIM_GENOTYPE, 
-		EXPRESSES_COMPONENT, MUTATION_INVOLVES),	
+		EXPRESSES_COMPONENT),	
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
