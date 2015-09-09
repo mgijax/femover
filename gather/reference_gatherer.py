@@ -26,7 +26,7 @@ def getGroupingTable():
 	tbl = 'ref_groupings'
 
 	lit = 'Literature'
-	nonLit = 'Database, data loads, curation, submissions'
+	nonLit = 'Other: database loads, direct submissions, etc.'
 
 	logger.debug('Building temp table %s' % tbl)
 
