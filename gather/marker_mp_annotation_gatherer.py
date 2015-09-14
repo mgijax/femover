@@ -130,10 +130,15 @@ def compareAnnotations (a, b):
 	#   term ID, annotation key, genotype key, reference key,
 	#   jnum ID, numeric part of jnum ]
 	# Basic rules:
+	# 0. sort by marker key
 	# 1. sort by genotype key
 	# 2. sort by term
 	# 3. if terms match, sort by qualifier
 	# 4. fall back on sorting by annotation key, just to be deterministic
+
+	v = cmp(a[0], b[0])
+	if v != 0:
+		return v
 
 	w = cmp(a[7], b[7])
 	if w != 0:
@@ -263,17 +268,28 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 
 		annotSeqNum = 0		# for ordering annotations
 
-		lastAnnot = None	# last annotation key
+		lastMarker = None	# last marker key
 		lastGenotype = None	# last genotype key
+		lastQualifier = None	# last qualifier
+		lastTerm = None		# last annotated term
+		lastRef = None		# last reference key
+		lastAnnot = None	# last annotation key
+
+		# dictionary to track which mpRefsKey values we've already
+		# added to the file (db table), so we don't add dups
+		mpRefsKeys = {}
 
 		for [ markerKey, multigenic, qualifier, term, termKey,
 			termID, annotKey, genotypeKey, refsKey, jnumID,
 			numericPart ] in rows:
 
-			# if we have a new genotype, add it to the file and
-			# update which mpGenoKey we're using for associations
+			# different marker or different genotype requires a
+			# new mpGenoKey.  Add it to the file and update which
+			# mpGenoKey we're using for associations
 
-			if lastGenotype != genotypeKey:
+			if (lastMarker != markerKey) or \
+			    (lastGenotype != genotypeKey):
+
 				mpGenoKey = GENOTYPE_KG.getKey( (markerKey,
 					genotypeKey) )
 
@@ -284,23 +300,29 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				    markerKey, multigenic,
 				    TagConverter.convert(allelePairs, False),
 				    strain, accID, genoSeqNum ] )
-				
+
+				lastMarker = markerKey
 				lastGenotype = genotypeKey
+				
+			# different mpGenoKey, qualifier, or term requires a
+			# new mpAnnotKey (if same marker, genotype, qualifier, 
+			# and term, use same mpAnnotKey, even if different
+			# annotation key in production db).  If new, add it to 
+			# the file and update which mpAnnotKey we're using for
+			# associations
 
-			# if we have a new annotation, add it to the file and
-			# update which mpAnnotKey we're using for associations
+			if (lastGenotype != genotypeKey) \
+			    or (lastQualifier != qualifier) \
+			    or (lastTerm != term):
 
-			if lastAnnot != annotKey:
 				mpAnnotKey = ANNOT_KG.getKey ( (mpGenoKey,
-					annotKey) )
+					qualifier, termKey) )
 				annotSeqNum = annotSeqNum + 1
 
 				self.addRow (self.annotTable, [ mpAnnotKey,
 					mpGenoKey, qualifier, termKey, termID,
 					term, annotSeqNum ] )
 				
-				lastAnnot = annotKey
-
 				# Since we found a new annotation, we need to
 				# record the headers for it.
 
@@ -312,14 +334,33 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 							[ self.headerRowNum,
 								mpAnnotKey,
 								headerKey ] )
+				lastTerm = term
+				lastQualifier = qualifier
 
-			# We always have a new reference, so add it to the
-			# file for the proper mpAnnotKey.
+				# now that we've used the lastGenotype in the
+				# prior comparison, we can update it to the
+				# new one
 
-			mpRefsKey = REFS_KG.getKey ( (mpAnnotKey, refsKey) )
+				lastGenotype = genotypeKey
 
-			self.addRow (self.refsTable, [ mpRefsKey, mpAnnotKey,
-				refsKey, jnumID, numericPart ] )
+			# If we have a new reference key or a new annotation
+			# key, we need to add this reference.
+
+# need to ensure we don't duplicate mpRefsKey values -- could happen for consecutive annotation keys where the first has multiple refs.  Keep a dictionary within this method to track which ones have been seen before.
+
+			if (lastRef != refsKey) or (lastAnnot != mpAnnotKey):
+				mpRefsKey = REFS_KG.getKey ( (mpAnnotKey,
+					refsKey) )
+
+				if not mpRefsKeys.has_key(mpRefsKey):
+				    self.addRow (self.refsTable, [ mpRefsKey,
+					mpAnnotKey, refsKey, jnumID,
+					numericPart ] )
+
+				    mpRefsKeys[mpRefsKey] = 1
+
+				lastRef = refsKey
+				lastAnnot = mpAnnotKey
 		return
 
 	def processAnnotations (self, genotypes):
