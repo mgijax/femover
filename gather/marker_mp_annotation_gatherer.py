@@ -274,6 +274,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		lastTerm = None		# last annotated term
 		lastRef = None		# last reference key
 		lastAnnot = None	# last annotation key
+		lastMpGenoKey = None	# last mpGenotypeKey
 
 		# dictionary to track which mpRefsKey values we've already
 		# added to the file (db table), so we don't add dups
@@ -311,7 +312,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			# the file and update which mpAnnotKey we're using for
 			# associations
 
-			if (lastGenotype != genotypeKey) \
+			if (lastMpGenoKey != mpGenoKey) \
 			    or (lastQualifier != qualifier) \
 			    or (lastTerm != term):
 
@@ -342,6 +343,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				# new one
 
 				lastGenotype = genotypeKey
+				lastMpGenoKey = mpGenoKey
 
 			# If we have a new reference key or a new annotation
 			# key, we need to add this reference.
