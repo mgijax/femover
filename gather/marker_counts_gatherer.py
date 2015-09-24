@@ -255,7 +255,7 @@ cmds = [
 	group by r._Marker_key''',
 
 	# 2. count of sequences for each marker
-	'''select _Marker_key, count(1) as numSeq
+	'''select _Marker_key, count(distinct _Sequence_key) as numSeq
 		from seq_marker_cache
 		group by _Marker_key''',
 
