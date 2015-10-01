@@ -34,6 +34,7 @@ import types
 import getopt
 import top
 import string
+import re
 
 if '.' not in sys.path:
 	sys.path.insert (0, '.')
@@ -1414,6 +1415,112 @@ def logProfilingData():
 		logger.debug('Could not write gatherer_profilers.txt')
 	return
 
+def readTimings():
+	# Purpose: if a profiling file exists in the log directory, read it in
+	#	and get the timings for each gatherer, so we can use them for
+	#	optimizing the order in which gatherers run.
+	# Returns: { gatherer name : seconds of runtime }
+	#	or an empty dictionary if file doesn't exist
+	# Assumes: nothing
+	# Modifies: nothing
+	# Throws: nothing
+
+	timings = {}
+	inputFile = os.path.join(config.LOG_DIR, 'gatherer_profiles.txt')
+
+	if os.path.exists(inputFile):
+		try:
+			fp = open(inputFile, 'r')
+			lines = map(string.rstrip, fp.readlines())
+			fp.close()
+
+			for line in lines[1:]:
+				cols = line.split('\t')
+
+				if len(cols) > 8:
+					timings[cols[0]] = float(cols[8])
+		except:
+			logger.debug('Failed when reading %s' % inputFile)
+
+	return timings
+
+def getLastRuntime(gatherer):
+	# Purpose: get the runtime (in seconds) of the last recorded run of
+	#	the specified gatherer -- from its log file, not from the
+	#	profiling file
+	# Returns: float or None
+	# Assumes: nothing
+	# Modifies: reads from the file system
+	# Throws: nothing
+
+	inputFile = os.path.join(config.LOG_DIR, '%s_gatherer.log' % gatherer)
+
+	if os.path.exists(inputFile):
+		try:
+			fp = open(inputFile, 'r')
+			lines = fp.readlines()
+			fp.close()
+
+			r = re.compile(': +([0-9]+\.[0-9]{3}) sec :')	
+
+			match = r.search(lines[-1])
+			if match:
+				return float(match.group(1))
+		except:
+			pass
+	return None 
+
+def sortGatherers(gatherers):
+	# Purpose: sort the gatherers in order of decreasing runtime, to try
+	#	to optimize scheduling (no long-running ones hanging around
+	#	running solo for their final hour...)
+	# Returns: list of gatherer names
+	# Assumes: nothing
+	# Modifies: nothing
+	# Throws: nothing
+	# Notes: This is not designed to find the optimal arrangement of
+	#	gatherers, just a "good enough" grouping that will be a
+	#	reasonable approximation.
+
+	timings = readTimings()
+	highPriority = 99999999
+
+	fromProfile = 0
+	fromLogfile = 0
+	highPriority = 0
+	lowPriority = 0
+
+	# prioritization:
+	# 1. if we have a time for a gatherer, use it
+	# 2. if we can get a runtime from the gatherer's log file, use it
+	# 2. if a gatherer is in the high-priority list, put it higher than
+	#	the max (run sooner)
+	# 3. otherwise, put it lower (run later)
+
+	toOrder = []
+	for gatherer in gatherers:
+		if timings.has_key(gatherer):
+			toOrder.append( (timings[gatherer], gatherer) )
+			fromProfile = fromProfile + 1
+		else:
+			myTime = getLastRuntime(gatherer)
+			if myTime:
+				toOrder.append( (myTime, gatherer) )
+				fromLogfile = fromLogfile + 1
+			elif gatherer in HIGH_PRIORITY_TABLES:
+				toOrder.append( (highPriority, gatherer) )
+				highPriority = highPriority + 1
+			else:
+				toOrder.append( (0, gatherer) )
+				lowPriority = lowPriority + 1
+
+	toOrder.sort()
+	toOrder.reverse()	# highest first
+
+	logger.info('Ordered gatherers -- %d from profile, %d from log, %d high priority, %d other' % (fromProfile, fromLogfile, highPriority, lowPriority) )
+
+	return map(lambda x : x[1], toOrder)
+
 def main():
 	# Purpose: main program (main logic of the script)
 	# Returns: nothing
@@ -1423,7 +1530,8 @@ def main():
 	# Throws: propagates 'error' if problems occur
 
 	logger.info ('Beginning %s script' % sys.argv[0])
-	gatherers = shuffle(processCommandLine())
+	#gatherers = shuffle(processCommandLine())
+	gatherers = sortGatherers(processCommandLine())
 	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
 	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
 	dbInfoTable.dropTable()
