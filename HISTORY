@@ -1,3 +1,9 @@
+TAG: femover-6-0-1-3
+DATE: 10/01/2015
+STAFF: jsb
+CHANGES: 
+1) changed algorithm in buildDatabase.py for ordering gatherers, now going from longest-running to shortest.  Helps reduce overall runtime.
+
 TAG: femover-6-0-1-2
 DATE: 09/29/2015
 STAFF: jsb
