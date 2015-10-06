@@ -299,21 +299,15 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		else:
 			snp = 'SNPs'		# not counted in 'all'
 
-		multiSnp = '%s including multiple locations' % snp
-
 		MarkerSnpAssociations.unload()
 		gc.collect()
 
-		# first populate SNP counts for markers with SNPs
+		# first populate SNP counts for markers with SNPs (and include
+		# the various locations for SNPs with multiple locations)
 
 		for key in markersWithSNPs.keys():
 			snpCount, multiSnpCount = markersWithSNPs[key]
-
-			byMarker[key] = { snp : snpCount }
-
-			if multiSnpCount > 0:
-				byMarker[key][multiSnp] = multiSnpCount + \
-					snpCount
+			byMarker[key] = { snp : snpCount + multiSnpCount }
 
 		# collate counts per marker
 
@@ -350,7 +344,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			
 		# generate rows, one per marker/count pair
 
-		orderedTerms = [ all, pcr, rflp, snp, multiSnp ]
+		orderedTerms = [ all, pcr, rflp, snp ]
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):

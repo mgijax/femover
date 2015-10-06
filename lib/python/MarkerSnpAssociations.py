@@ -136,7 +136,10 @@ def _addAssoc (snpCache, markerKey, snpKey, coord = None):
 
 	# in order to count separate coordinates for a multi-coordinate SNP,
 	# we need to count the SNP key / SNP coordinate pairs
-	pair = (snpKey, coord)
+	#pair = (snpKey, coord)
+
+	# We now only want to count the distinct SNPs, not locations.
+	pair = snpKey
 
 	if snpCache.has_key(markerKey):
 		snpCache[markerKey][pair] = 1
@@ -148,13 +151,17 @@ def _addAssoc (snpCache, markerKey, snpKey, coord = None):
 	return
 
 def _loadDbSnpAssociations():
-	# cache the SNP/marker associations made by dbSNP
+	# cache the SNP/marker associations made by dbSNP, exclude SNPs with
+	# multiple locations
 
 	global SNP_CACHE
 
 	dbSnpQuery = '''select csm._Marker_key, csm._ConsensusSnp_key
-		from snp_consensussnp_marker csm, mrk_location_cache mlc
+		from snp_consensussnp_marker csm, mrk_location_cache mlc,
+			snp_coord_cache scc
 		where csm._Marker_key = mlc._Marker_key
+			and csm._ConsensusSnp_key = scc._ConsensusSnp_key
+			and scc.isMultiCoord = 0
 			and mlc.chromosome = '%s' ''' % CURRENT_CHROMOSOME
 
 	(cols, rows) = dbAgnostic.execute (dbSnpQuery)
@@ -243,9 +250,6 @@ def _loadDistanceAssociations():
 					byMb[mb] = len(markers) - 1
 
 		markerCount = len(markers) 
-
-#		logger.debug ('Found %d markers on chr %s' % (markerCount,
-#			chromosome))
 
 		# walk the SNPs from the same chromosome, finding which
 		# markers they overlap
@@ -407,7 +411,8 @@ def getSnps (markerKey,chromosome):
 	if markerKey in SNP_CACHE:
 		#logger.debug("getSnps() in cache mkey=%s"%markerKey)
 		snpKeys = []
-		for (key, coord) in SNP_CACHE[markerKey].keys():
+		#for (key, coord) in SNP_CACHE[markerKey].keys():
+		for key in SNP_CACHE[markerKey].keys():
 			snpKeys.append (key)
 		return snpKeys
 	return []
@@ -431,7 +436,8 @@ def getMultiCoordSnps (markerKey,chromosome):
 
 	if MULTI_SNP_CACHE.has_key(markerKey):
 		snpKeys = []
-		for (key, coord) in MULTI_SNP_CACHE[markerKey].keys():
+		#for (key, coord) in MULTI_SNP_CACHE[markerKey].keys():
+		for key in MULTI_SNP_CACHE[markerKey].keys():
 			snpKeys.append(key)
 		return snpKeys
 	return []
