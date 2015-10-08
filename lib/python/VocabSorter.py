@@ -507,7 +507,7 @@ class VocabSorterAlpha:
 			from voc_vocab'''
 
 		if VOCABS:
-			cmd1 = '%s where _Vocab_key in (%s)' % (cmd, VOCABS)
+			cmd1 = '%s where _Vocab_key in (%s)' % (cmd1, VOCABS)
 
 		vocabSeqNum = _prepareOrderingDictionary (cmd1, _vocabNameCmp)
 
