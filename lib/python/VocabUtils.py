@@ -16,7 +16,30 @@ abbrevCache = {}
 # term key -> { synonym type : synonym }
 synonymCache = {}
 
+# acc ID -> term key
+idCache = {}
+
 ###--- functions dealing with terms ---###
+
+def getKey(termID):
+	# finds the term key associated with the given ID
+
+	global idCache
+
+	if not idCache.has_key(termID):
+		cmd = '''select _Object_key
+			from acc_accession
+			where _MGIType_key = 13
+				and accID = '%s' ''' % termID
+
+		(cols, rows) = dbAgnostic.execute(cmd)
+
+		if len(rows) > 0:
+			idCache[termID] = rows[0][0]
+		else:
+			idCache[termID] = None
+
+	return idCache[termID]
 
 def getTerm(termKey):
 	# gets term associated with the given 'termKey', populating the cache
