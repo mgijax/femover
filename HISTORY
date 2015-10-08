@@ -1,3 +1,9 @@
+TAG: femover-6-0-1-6
+DATE: 10/08/2015
+STAFF: jsb
+CHANGES: 
+1) switched MP slimgrid headers to come from text file, rather than database
+
 TAG: femover-6-0-1-5
 DATE: 10/06/2015
 STAFF: jsb
