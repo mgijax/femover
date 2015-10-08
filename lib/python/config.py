@@ -44,6 +44,7 @@ SCHEMA_DIR = os.path.join(INSTALL_DIR, 'schema/')
 CONTROL_DIR = os.path.join(INSTALL_DIR, 'control/')
 LIB_DIR = os.path.join(INSTALL_DIR, 'lib/python/')
 LOG_DIR = os.environ['LOG_DIR']
+MP_SLIMGRID_HEADERS = os.environ['MP_SLIMGRID_HEADERS']
 
 # if we don't specify a GO_GRAPH_PATH, then just default to the standard one
 if os.environ.has_key('GO_GRAPH_PATH'):

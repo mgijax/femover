@@ -118,3 +118,6 @@ export HIGH_PRIORITY_TABLES
 SINGLE_PRIORITY_TABLES=""
 export SINGLE_PRIORITY_TABLES
 
+# where to find the file of headers for the MP slimgrid
+MP_SLIMGRID_HEADERS="/mgi/all/wts_projects/11700/11726/slimTermLoads/mpslimload.txt"
+export MP_SLIMGRID_HEADERS
