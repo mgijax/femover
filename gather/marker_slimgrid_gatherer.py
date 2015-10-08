@@ -3,11 +3,14 @@
 # gathers data for the tables supporting the slimgrids on the marker detail
 # page
 
+import config
 import Gatherer
 import logger
 import dbAgnostic
 import GOFilter
 import gc
+import os
+import VocabUtils
 
 # don't count GO annotations with NOT qualifiers
 GOFilter.keepNots(False)
@@ -43,7 +46,23 @@ def getNextSequenceNum():
 	MAX_SEQUENCE_NUM = MAX_SEQUENCE_NUM + 1
 	return MAX_SEQUENCE_NUM
 
-def setupPhenoHeaderKeys():
+def setupPhenoHeaderKeys(mph):
+	# build a temp table with the keys of the MP header terms
+
+	cmd1 = '''create temporary table %s (
+		_Term_key	int	not null,
+		primary key(_Term_Key) )''' % MP_HEADER_KEYS
+
+	cmd2 = 'insert into %s values (%d)'
+
+	dbAgnostic.execute(cmd1)
+	for (termKey, headingKey) in mph.getMapping():
+		dbAgnostic.execute(cmd2 % (MP_HEADER_KEYS, termKey))
+
+	logger.debug('Found %d MP header keys' % len(mph.getMapping()))
+	return 
+
+def setupPhenoHeaderKeysOld():
 	# build a temp table with the keys of the MP header terms
 
 	cmd1 = '''select t._Term_key
@@ -471,6 +490,77 @@ class HeadingCollection:
 		return out
 
 class MPHeadingCollection (HeadingCollection):
+	# Is: a HeadingCollection for the MP (Mammalian Phenotype) slimgrid,
+	#	read from a data file
+
+	def initialize (self):
+		# input data file is a tab-delimited file with three columns:
+		#	header term ID, header term, header abbreviation
+		# mpFile is the full path to this file
+		mpFile = None
+
+		# verify that we have the file specified in the config
+		try:
+			mpFile = config.MP_SLIMGRID_HEADERS
+		except:
+			raise error, \
+			'Missing configuration parameter MP_SLIMGRID_HEADERS'
+
+		# verify that the path is valid
+		if not os.path.exists(mpFile):
+			raise error, 'Cannot find file: %s' % mpFile
+
+		# read from the file and raise exception if we can't
+		try:
+			fp = open(mpFile, 'r')
+			rawLines = fp.readlines()
+			fp.close()
+		except:
+			raise error, 'Error reading from: %s' % mpFile
+
+		# slimgrid definitions
+
+		slimgrid = 'Mammalian Phenotype'
+		slimgridAbbrev = 'MP'
+
+		# remove any blank lines or commented lines from the list of
+		# data lines
+
+		lines = []
+		for line in rawLines:
+			line = line.strip()
+			if (line != '') and (line[0] != '#'):
+				lines.append(line.split('\t'))
+
+		# at this point, lines is a list of lists.  Each sublist 
+		# should have three items:  [ term ID, term, abbrev ].  We're
+		# going to expand these to add the term key as a fourth column.
+
+		lineNum = 0
+		for line in lines:
+			lineNum = lineNum + 1
+
+			if len(line) < 3:
+				raise error, 'In %s line %d has too few fields' % (mpFile, lineNum)
+			if len(line) > 3:
+				raise error, 'In %s line %d has too many fields' % (mpFile, lineNum)
+
+			termKey = VocabUtils.getKey(line[0])
+			if not termKey:
+				raise error, 'In %s line %s, cannot find term key for ID %s' % (mpFile, lineNum, line[0])
+
+			line.append(termKey)
+	
+		# now store the data from the data file internally
+		for [ termID, term, abbrev, termKey ] in lines:
+			self.store(getNextHeadingKey(), term, abbrev, termKey,
+				termID, slimgrid, slimgridAbbrev,
+				getNextSequenceNum())
+
+		logger.debug('Got %d MP headers' % len(lines))
+		return
+
+class MPHeadingCollectionOld (HeadingCollection):
 	# Is: a HeadingCollection for the MP (Mammalian Phenotype) slimgrid
 
 	def initialize (self):
@@ -635,6 +725,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		self.mpHeaderCollection = mph
 		self.saveHeadings(mph.getHeadingRows())
 		self.saveTermMapping(mph.getTermRows())
+		setupPhenoHeaderKeys(mph)
 		return
 
 	def setGOHeaderCollection (self, goh):
@@ -997,7 +1088,7 @@ setupGOCacheTables()
 gatherer.setGOHeaderCollection(GOHeadingCollection())
 
 # custom MP setup
-setupPhenoHeaderKeys()
+#setupPhenoHeaderKeys()
 gatherer.setMPHeaderCollection(MPHeadingCollection())
 
 # custom anatomy setup
