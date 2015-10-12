@@ -35,6 +35,10 @@ REFS_KG = KeyGenerator.KeyGenerator('marker_mp_annotation_reference')
 # dictionary; maps from annotated term key to a list of its header term keys
 HEADERS = {}
 
+# top-levevl MP terms which should be excluded from consideration as
+# slimgrid headers
+EXCLUDE = [ 'no phenotypic analysis', 'normal phenotype', 'other phenotype' ]
+
 ###--- Functions ---###
 
 def cacheHeaders():
@@ -47,22 +51,27 @@ def cacheHeaders():
 	# term (where those are not annotations directly to a header term).
 	# Bottom includes annotations to the header terms themselves.
 
-	cmd = '''with mp_dag as (
-		select _AncestorObject_key, _DescendentObject_key
-		from dag_closure dc, voc_term t
-		where dc._AncestorObject_key = t._Term_key
-			and t._Vocab_key = 5
-			and t.sequenceNum is not null
+	cmd = '''with mp_headers as (
+		select distinct vah._Term_key
+		from voc_annotheader vah, voc_term t
+		where vah._AnnotType_key = 1002
+			and vah._Term_key = t._Term_key
+			and t.term not in ('%s')
+		
+		), 
+		mp_dag as (
+		select dc._AncestorObject_key, dc._DescendentObject_key
+		from dag_closure dc, mp_headers h
+		where dc._AncestorObject_key = h._Term_key
 		union
 		select _Term_key, _Term_key
-		from voc_term
-		where sequenceNum is not null
-			and _Vocab_key = 5
+		from mp_headers
 		)
 		select distinct va._Term_key, dag._AncestorObject_key
 		from voc_annot va, mp_dag dag
 		where va._AnnotType_key = 1002
-			and va._Term_key = dag._DescendentObject_key'''
+			and va._Term_key = dag._DescendentObject_key''' % \
+				"', '".join(EXCLUDE)
 
 	cols, rows = dbAgnostic.execute(cmd)
 
