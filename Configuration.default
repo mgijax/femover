@@ -90,7 +90,7 @@ FULL_TEXT_LINKS_PATH=../data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
 # path to incidental mutations master file
-INCIDENTAL_MUTS_FILE=/lindondata/loads/mgi/incidental_muts/curator_INC.txt
+INCIDENTAL_MUTS_FILE=/bhmgiapp01data/loads/mgi/incidental_muts/curator_INC.txt
 export INCIDENTAL_MUTS_FILE
 
 GLOSSARY_PATH=../data/glossary.rcd
@@ -119,5 +119,5 @@ SINGLE_PRIORITY_TABLES=""
 export SINGLE_PRIORITY_TABLES
 
 # where to find the file of headers for the MP slimgrid
-MP_SLIMGRID_HEADERS="/mgi/all/wts_projects/11700/11726/slimTermLoads/mpslimload.txt"
+MP_SLIMGRID_HEADERS="/bhmgiapp01data/loads/mgi/vocabbrevload/mpslimload/input/mpslimload.txt"
 export MP_SLIMGRID_HEADERS
