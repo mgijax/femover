@@ -1,10 +1,14 @@
+TAG: femover-tr11937-BP
+DATE: 10/16/2015
+STAFF: jsb
+CHANGES: branch point for Project Florida, SNP portion (scrum-bob)
+
 TAG: femover-6-0-1-8
 DATE: 10/12/2015
 STAFF: lnh
 CHANGES:
 1) Modified path to incidental mutations master file to use /bhmgiapp01data instead of /lindondata
 2) Modified path to MP header terms  master file to use /bhmgiapp01data instead of the WTS directory
-
 
 TAG: femover-6-0-1-7
 DATE: 10/12/2015
