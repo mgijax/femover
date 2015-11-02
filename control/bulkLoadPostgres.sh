@@ -3,7 +3,7 @@
 # bulk load an input file into a Postgres table
 # Usage: bulkLoadPostgres.sh <server> <database> <user> <password> <input file> <table name>
 
-. Configuration
+. ./Configuration
 echo $PATH
 
 # commented out, as this was causing process to hang when run in background

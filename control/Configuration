@@ -1,4 +1,4 @@
 #!/bin/sh
 cd ..
-. Configuration
+. ./Configuration
 cd control

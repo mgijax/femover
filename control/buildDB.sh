@@ -1,6 +1,6 @@
 #!/bin/sh
 
-cd `dirname $0`; . Configuration
+cd `dirname $0`; . ./Configuration
 
 usage()
 {
