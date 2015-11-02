@@ -1,3 +1,16 @@
+TAG: femover-6-0-1-9
+DATE: 11/02/2015
+STAFF: dbm
+CHANGES: 
+1) control/Configuration:
+   control/buildDB.sh:
+   control/bulkLoadPostgres.sh:
+   control/optimizeTablePostgres.sh:
+   control/reportMgiDbInfo.sh:
+       Use "./Configuration" when sourcing a config file in case the current
+       directory is not in the path. This is the case when buildDB.sh is run
+       from a cron on the linux replacement for mtdoom (bhmgidb05ld).
+
 TAG: femover-tr11937-BP
 DATE: 10/16/2015
 STAFF: jsb
