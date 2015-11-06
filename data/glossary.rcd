@@ -3963,6 +3963,12 @@ to be detected.<LI><A HREF="!FEWI_URL!glossary/immunohistochemistry">Immunohisto
 ]
 
 [
+key=proteoform 
+displayName=Proteoform 
+definition=Protein isoforms (different <A HREF="!FEWI_URL!glossary/protein">proteins</A> derived from the same gene by alternative splicing, alternative start site, or combinations thereof), modified protein forms, functional fragments derived from proteins, and combinations thereof.
+]
+
+[
 key=proteome 
 displayName=Proteome 
 definition=The complete collection of all <A HREF="!FEWI_URL!glossary/protein">proteins</A> encoded by the \ 
