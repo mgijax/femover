@@ -1,0 +1,5 @@
+.project
+.cvsignore
+.pydevproject
+*.pyc
+Configuration

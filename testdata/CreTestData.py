@@ -24,10 +24,6 @@ Queries = [
 	DESCRIPTION:"Count of cre alleles associated with dorsal mesocardium",
 	SQLSTATEMENT:TEMPLATE_CRE_STRUCTURE_SQL%"dorsal mesocardium"
 },
-{	ID:"creHeartAlleleCount",
-	DESCRIPTION:"Count of cre alleles associated with heart",
-	SQLSTATEMENT:TEMPLATE_CRE_STRUCTURE_SQL%"heart"
-},
 {	ID:"creEsophagusAlleleCount",
 	DESCRIPTION:"Count of cre alleles associated with esophagus",
 	SQLSTATEMENT:TEMPLATE_CRE_STRUCTURE_SQL%"esophagus"

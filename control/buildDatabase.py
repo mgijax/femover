@@ -52,6 +52,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gathere
 	-l : Glossary Index
 	-h : IMSR counts (via HTTP)
 	-i : Images
+	-l : Other
 	-m : Markers
 	-n : Annotations
 	-o : Human Disease Portal
@@ -193,13 +194,14 @@ IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
 		'genotype_to_image', 'marker_to_phenotype_image', 
 		'expression_imagepane', 'allele_to_image', 'image_id',
 	]
-GLOSSARY = [ 'glossary',
+OTHER = [ 'glossary', 'statistic'
 	]
 IMSR = [ 'imsr',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
-		'marker_location', 'marker_counts', 'marker_slimgrid',
+		'marker_location', 'marker_counts', 
+		'marker_slimgrid',
 		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
@@ -243,7 +245,7 @@ FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
-	'-t' : TESTS, 		'-l' : GLOSSARY,	'-o' : HDPORTAL,
+	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
 	}
 
 # boolean; are we doing a build of the complete front-end database?

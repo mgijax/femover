@@ -31,8 +31,9 @@ myProcess = top.getMyProcess()
 def myMemory():
 	# Return as a string the current memory used by the current process
 
-	myProcess.measure()
-	return top.displayMemory(myProcess.getLatestMemoryUsed())
+	#myProcess.measure()
+	#return top.displayMemory(myProcess.getLatestMemoryUsed())
+	return "disabled"
 
 def resolve (key,		# integer; key value to look up
 	table = "voc_term",	# string; table in which to look up key
@@ -543,16 +544,11 @@ class CachingMultiFileGatherer:
 
 		# manages our CachingOutputFiles
 		self.files = OutputFile.CachingOutputFileFactory()
+		
+		self.outputFiles = files
 
 		# maps from table name (string) to the file ID in self.files
 		self.tablenameToFileID = {}
-
-		for (tableName, inFieldOrder, outFieldOrder) in files:
-			fileID = self.files.createFile(tableName, inFieldOrder,
-				outFieldOrder, OutputFile.MEDIUM_CACHE)
-			self.tablenameToFileID[tableName] = fileID
-
-		logger.debug('Set up %d CachingOutputFiles' % len(files))
 
 		# chunking is optional, but can keep memory down for those 
 		# data sets where the queries can be walked through a few keys
@@ -618,12 +614,12 @@ class CachingMultiFileGatherer:
 				self.cmds.append (cmd)
 		return
 
-	def getFileID (self, tableName):
+	def _getFileID (self, tableName):
 		# returns the file ID associated with the tableName
 
 		if self.tablenameToFileID.has_key(tableName):
 			return self.tablenameToFileID[tableName]
-		raise Error, 'Unknown table name: %s' % tableName
+		raise Exception('Unknown table name: %s' % tableName)
 
 	def setCacheSize (self, fileID, cacheSize):
 		# adjust the cache size for the file with the given fileID
@@ -631,16 +627,18 @@ class CachingMultiFileGatherer:
 		self.files.setCacheSize(fileID, cacheSize)
 		return
 
-	def addRow (self, fileID, row):
+	def addRow (self, tableName, row):
 		# adds the given row to the data file identified by fileID
 
+		fileID = self._getFileID(tableName)
 		self.files.addRow(fileID, row)
 		return
 
-	def addRows (self, fileID, rows):
+	def addRows (self, tableName, rows):
 		# adds the given list of rows to the data file identified by
 		# fileID
 
+		fileID = self._getFileID(tableName)
 		self.files.addRows(fileID, rows)
 		return
 
@@ -654,6 +652,16 @@ class CachingMultiFileGatherer:
 		#	containing the path to the file and the table into
 		#	which it should be loaded
 		# Throws: propagates all exceptions
+		
+		
+		# create output files
+		for (tableName, inFieldOrder, outFieldOrder) in self.outputFiles:
+			fileID = self.files.createFile(tableName, inFieldOrder,
+				outFieldOrder, OutputFile.MEDIUM_CACHE)
+			self.tablenameToFileID[tableName] = fileID
+
+		logger.debug('Set up %d CachingOutputFiles' % len(self.outputFiles))
+
 
 		self.preprocessCommands()
 		logger.info ('Pre-processed queries')

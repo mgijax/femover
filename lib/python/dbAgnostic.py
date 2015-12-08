@@ -11,7 +11,11 @@ import dbManager
 
 ###--- Globals ---###
 
-Error = 'dbAgnostic.error'	# exception raised by this module
+class DbAgnosticError(Exception):
+	"""
+		dbAgnostic.error
+	"""
+	
 SOURCE_DB = config.SOURCE_TYPE	# either mysql, or postgres
 DBM = None			# dbManager object for postgres/mysql access
 
@@ -31,7 +35,7 @@ elif SOURCE_DB == 'mysql':
 		config.SOURCE_PASSWORD)
 	logger.debug ('Created mysqlManager')
 else:
-	raise Error, 'Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB
+	raise DbAgnosticError('Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB)
 
 class DbInitError(Exception):
 	"""
@@ -67,6 +71,33 @@ def execute (cmd):
 	
 	raise DbInitError("dbManager not initialized")
 
+def bcp (inputFilePointer,
+	table,
+	delimiter='\\t'):
+	"""
+	BCP an inputFile (referenced by inputFilePointer)
+	into table
+	using delimiter as the column separator
+	"""
+	
+	if not DBM:
+	
+		raise DbInitError("dbManager not initialized")
+		
+	cursor = DBM.sharedConnection.cursor()
+	
+	if hasattr(cursor, 'copy_expert'):
+		
+		bcpCommand = "copy %s from STDIN with null as '' delimiter as E'%s' " % \
+    		(table, delimiter)
+    	
+		cursor.copy_expert(bcpCommand, inputFilePointer)
+		
+	else:
+		
+		raise DbAgnosticError("BCP not supported for %s" % DBM)
+	
+
 def commit():
 	if DBM:
 		return DBM.commit()
@@ -88,7 +119,7 @@ def columnNumber (columns, columnName):
 		logger.info('column = %s'%c);
 		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
 			', '.join (columns) ) )
-		raise Error, 'Unknown column name: %s' % columnName
+		raise DbAgnosticError('Unknown column name: %s' % columnName)
 
 	return columns.index(c)
 
@@ -118,8 +149,8 @@ def mergeResultSets (cols1, rows1, cols2, rows2):
 
 	for c in cols1:
 		if (c not in cols2):
-			raise Error, 'Item "%s" not in cols2: %s' % \
-				(c, str(cols2))
+			raise DbAgnosticError('Item "%s" not in cols2: %s' % \
+				(c, str(cols2)))
 
 		if (cols1.index(c) != cols2.index(c)):
 			colsMatch = False
@@ -137,8 +168,8 @@ def mergeResultSets (cols1, rows1, cols2, rows2):
 	colOrder = []
 	for c in cols1:
 		if (c not in cols2):
-			raise Error, 'Item "%s" not in cols2: %s' % \
-				(c, str(cols2))
+			raise DbAgnosticError('Item "%s" not in cols2: %s' % \
+				(c, str(cols2)))
 
 		colOrder.append(cols2.index(c))
 

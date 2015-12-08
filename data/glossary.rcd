@@ -1660,14 +1660,6 @@ animals are <A HREF="!FEWI_URL!glossary/wild_type">wild-type</A>. <BR>See also: 
 ]
 
 [ 
-key=dots 
-displayName=DoTS 
-definition= <A HREF="http://www.allgenes.org/">Database of Transcribed Sequences</A>. The DoTS mouse transcript \ 
-index is created from all publicly available <A HREF="!FEWI_URL!glossary/transcript">transcript</A> \
-sequences. Input sequences are clustered and assembled to form the DoTS Consensus Transcripts that make up the index. 
-]
-
-[ 
 key=double_helix 
 displayName=Double Helix 
 definition=The shape that two linear strands of <A HREF="!FEWI_URL!glossary/dna">DNA</A> \

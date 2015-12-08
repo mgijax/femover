@@ -8,15 +8,16 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'annotation_inferred_from_id'
+tableName = 'annotation_property'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		NOT NULL,
 	annotation_key		int		NOT NULL,
-	logical_db		text	NULL,
-	acc_id			text	NULL,
-	organism		text	NULL,
+	type			text	NULL,
+	property		text	NOT NULL,
+	value			text	NOT NULL,
+	stanza			int		NOT NULL,
 	sequence_num		int		NOT NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
@@ -32,16 +33,18 @@ clusteredIndex = ('annotation_key', 'create index %s on %s (annotation_key)')
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the annotation flower, containing IDs from which annotations were inferred.  Can have multiple rows per annotation.',
+	Table.TABLE : 'petal table for the annotation flower, containing annotation properties',
 	Table.COLUMN : {
 		'unique_key' : 'unique identifier for this record',
 		'annotation_key' : 'identifies the annotation',
-		'logical_db' : 'entity assigning this ID',
-		'acc_id' : 'accession ID used to infer the annotation',
+		'type' : 'Custom annotation type',
+		'property' : 'property name',
+		'value' : 'property value',
+		'stanza' : 'Which grouping this property belongs',
 		'sequence_num' : 'used for ordering rows for a given annotation',
 		},
 	Table.INDEX : {
-		'annotation_key' : 'clusters data so all inferred-from IDs can be quickly retrieved for a given annotation',
+		'annotation_key' : 'clusters data so all iproperties can be quickly retrieved for a given annotation',
 		},
 	}
 

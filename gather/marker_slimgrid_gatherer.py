@@ -704,19 +704,37 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 	#	the marker detail page, collates results, writes tab-delimited
 	#	text file
 
+	def preprocessCommands(self):
+		"""
+		Pre-processing & initialization queries
+		"""
+		
+		# custom GO setup
+		setupGOHeaderKeys()
+		setupGOCacheTables()
+		self.setGOHeaderCollection(GOHeadingCollection())
+		
+		# custom MP setup
+		#setupPhenoHeaderKeys()
+		self.setMPHeaderCollection(MPHeadingCollection())
+		
+		# custom anatomy setup
+		setupGxdHeaderKeys()
+		setupGxdCacheTables()
+		self.setGxdHeaderCollection(GxdHeadingCollection())
+		
+
 	def saveHeadings (self, headerRows):
 		# save the given set of header rows to their table file
 
-		headingsID = self.getFileID('marker_grid_heading')
-		self.addRows(headingsID, headerRows)
+		self.addRows('marker_grid_heading', headerRows)
 		return 
 
 	def saveTermMapping (self, termRows):
 		# save the mapping (join table) between grid headings and
 		# vocabulary terms
 
-		termID = self.getFileID('marker_grid_heading_to_term')
-		self.addRows(termID, termRows)
+		self.addRows('marker_grid_heading_to_term', termRows)
 		return
 
 	def setMPHeaderCollection (self, mph):
@@ -950,7 +968,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 	def collateResults (self):
 		# override standard method for processing results
 
-		self.cellTable = self.getFileID('marker_grid_cell')
+		self.cellTable = 'marker_grid_cell'
 		self.processMP()
 		self.processGO()
 		self.processAnatomy()
@@ -1081,20 +1099,6 @@ gatherer.setupChunking (
 	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
 	10000
 	)
-
-# custom GO setup
-setupGOHeaderKeys()
-setupGOCacheTables()
-gatherer.setGOHeaderCollection(GOHeadingCollection())
-
-# custom MP setup
-#setupPhenoHeaderKeys()
-gatherer.setMPHeaderCollection(MPHeadingCollection())
-
-# custom anatomy setup
-setupGxdHeaderKeys()
-setupGxdCacheTables()
-gatherer.setGxdHeaderCollection(GxdHeadingCollection())
 
 ###--- main program ---###
 

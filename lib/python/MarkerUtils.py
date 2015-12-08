@@ -1,6 +1,6 @@
 # Module: MarkerUtils.py
 # Purpose: to provide handy utility functions for dealing with mouse marker
-#	data
+#    data
 
 import dbAgnostic
 import logger
@@ -10,8 +10,8 @@ import Lookup
 ###--- globals ---###
 
 # marker key -> (genetic chrom, genomic chrom, start coord, end coord,
-#	chromosome sequence number)
-coordCache = {}	
+#    chromosome sequence number)
+coordCache = {}    
 
 # marker key -> symbol
 symbolCache = {}
@@ -26,15 +26,15 @@ keyCache = {}
 nonMouseEGCache = None
 
 # cache of rows for traditional allele-to-marker relationships.  Each row is:
-#	[ allele key, marker key, count type, count type sequence num ]
+#    [ allele key, marker key, count type, count type sequence num ]
 amRows = None
 
 # cache of rows for 'mutation involves' allele-to-marker relationships, each:
-#	[ allele key, marker key, count type, count type sequence num ]
+#    [ allele key, marker key, count type, count type sequence num ]
 miRows = None
 
 # cache of rows for 'expresses component' allele-to-marker relationships, each:
-#	[ allele key, marker key, count type, count type sequence num ]
+#    [ allele key, marker key, count type, count type sequence num ]
 ecRows = None
 
 # constants specifying which set of marker/allele pairs to return
@@ -52,517 +52,517 @@ markerTypeCache = {}
 ###--- private functions ---###
 
 def _populateCoordCache():
-	# populate the global 'coordCache' with location data for markers
+    # populate the global 'coordCache' with location data for markers
 
-	global coordCache
+    global coordCache
 
-	cmd = '''select _Marker_key, genomicChromosome, chromosome,
-			startCoordinate, endCoordinate, sequenceNum
-		from mrk_location_cache
-		where _Organism_key = 1'''
+    cmd = '''select _Marker_key, genomicChromosome, chromosome,
+            startCoordinate, endCoordinate, sequenceNum
+        from mrk_location_cache
+        where _Organism_key = 1'''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
+    (cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber(cols, '_Marker_key')
-	genomicChrCol = dbAgnostic.columnNumber(cols, 'genomicChromosome')
-	geneticChrCol = dbAgnostic.columnNumber(cols, 'chromosome')
-	startCol = dbAgnostic.columnNumber(cols, 'startCoordinate')
-	endCol = dbAgnostic.columnNumber(cols, 'endCoordinate')
-	seqNumCol = dbAgnostic.columnNumber(cols, 'sequenceNum')
+    keyCol = dbAgnostic.columnNumber(cols, '_Marker_key')
+    genomicChrCol = dbAgnostic.columnNumber(cols, 'genomicChromosome')
+    geneticChrCol = dbAgnostic.columnNumber(cols, 'chromosome')
+    startCol = dbAgnostic.columnNumber(cols, 'startCoordinate')
+    endCol = dbAgnostic.columnNumber(cols, 'endCoordinate')
+    seqNumCol = dbAgnostic.columnNumber(cols, 'sequenceNum')
 
-	for row in rows:
-		coordCache[row[keyCol]] = (row[geneticChrCol],
-			row[genomicChrCol], row[startCol], row[endCol],
-			row[seqNumCol])
+    for row in rows:
+        coordCache[row[keyCol]] = (row[geneticChrCol],
+            row[genomicChrCol], row[startCol], row[endCol],
+            row[seqNumCol])
 
-	del cols
-	del rows
-	gc.collect()
+    del cols
+    del rows
+    gc.collect()
 
-	logger.debug ('Cached %d locations' % len(coordCache))
-	return
+    logger.debug ('Cached %d locations' % len(coordCache))
+    return
 
 def _populateSymbolCache():
-	# populate the global 'symbolCache' with symbols for mouse markers
+    # populate the global 'symbolCache' with symbols for mouse markers
 
-	global symbolCache
+    global symbolCache
 
-	cmd = '''select _Marker_key, symbol
-		from mrk_marker
-		where _Organism_key = 1
-			and _Marker_Status_key in (1,3)'''
+    cmd = '''select _Marker_key, symbol
+        from mrk_marker
+        where _Organism_key = 1
+            and _Marker_Status_key in (1,3)'''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
+    (cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-	symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
+    keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+    symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
 
-	for row in rows:
-		symbolCache[row[keyCol]] = row[symbolCol]
+    for row in rows:
+        symbolCache[row[keyCol]] = row[symbolCol]
 
-	del cols
-	del rows
-	gc.collect()
+    del cols
+    del rows
+    gc.collect()
 
-	logger.debug ('Cached %d marker symbols' % len(symbolCache))
-	return
+    logger.debug ('Cached %d marker symbols' % len(symbolCache))
+    return
 
 def _populateIDCache():
-	# populate the global 'idCache' with primary IDs for mouse markers
+    # populate the global 'idCache' with primary IDs for mouse markers
 
-	global idCache
+    global idCache
 
-	cmd = '''select m._Marker_key, a.accID
-		from mrk_marker m, acc_accession a
-		where m._Organism_key = 1
-			and m._Marker_Status_key in (1,3)
-			and m._Marker_key = a._Object_key
-			and a._MGIType_key = 2
-			and a.private = 0
-			and a.preferred = 1
-			and a._LogicalDB_key = 1
-			and a.prefixPart = 'MGI:' '''
+    cmd = '''select m._Marker_key, a.accID
+        from mrk_marker m, acc_accession a
+        where m._Organism_key = 1
+            and m._Marker_Status_key in (1,3)
+            and m._Marker_key = a._Object_key
+            and a._MGIType_key = 2
+            and a.private = 0
+            and a.preferred = 1
+            and a._LogicalDB_key = 1
+            and a.prefixPart = 'MGI:' '''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
+    (cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-	idCol = dbAgnostic.columnNumber (cols, 'accID')
+    keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+    idCol = dbAgnostic.columnNumber (cols, 'accID')
 
-	for row in rows:
-		idCache[row[keyCol]] = row[idCol]
+    for row in rows:
+        idCache[row[keyCol]] = row[idCol]
 
-	del cols
-	del rows
-	gc.collect()
+    del cols
+    del rows
+    gc.collect()
 
-	logger.debug ('Cached %d marker IDs' % len(idCache))
-	return
+    logger.debug ('Cached %d marker IDs' % len(idCache))
+    return
 
 def _populateNonMouseEGCache():
-	global nonMouseEGCache
+    global nonMouseEGCache
 
-	if nonMouseEGCache != None:
-		return
+    if nonMouseEGCache != None:
+        return
 
-	nonMouseEGCache = {}
+    nonMouseEGCache = {}
 
-	cmd = '''select m._Marker_key, a.accID
-		from mrk_marker m, acc_accession a
-		where m._Organism_key != 1
-			and m._Marker_Status_key in (1,3)
-			and m._Marker_key = a._Object_key
-			and a._MGIType_key = 2
-			and a._LogicalDB_key = 55
-			and a.private = 0'''
+    cmd = '''select m._Marker_key, a.accID
+        from mrk_marker m, acc_accession a
+        where m._Organism_key != 1
+            and m._Marker_Status_key in (1,3)
+            and m._Marker_key = a._Object_key
+            and a._MGIType_key = 2
+            and a._LogicalDB_key = 55
+            and a.private = 0'''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
+    (cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-	idCol = dbAgnostic.columnNumber (cols, 'accID')
+    keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+    idCol = dbAgnostic.columnNumber (cols, 'accID')
 
-	for row in rows:
-		nonMouseEGCache[row[idCol]] = row[keyCol]
+    for row in rows:
+        nonMouseEGCache[row[idCol]] = row[keyCol]
 
-	del cols
-	del rows
-	gc.collect()
+    del cols
+    del rows
+    gc.collect()
 
-	logger.debug ('Cached %d non-mouse marker IDs' % len(nonMouseEGCache))
-	return
+    logger.debug ('Cached %d non-mouse marker IDs' % len(nonMouseEGCache))
+    return
 
 def _populateMarkerTypeCache():
-	# caches types for human, mouse, rat markers
-	global markerTypeCache
+    # caches types for human, mouse, rat markers
+    global markerTypeCache
 
-	if len(markerTypeCache) > 0:
-		return
+    if len(markerTypeCache) > 0:
+        return
 
-	cmd1 = '''select _Marker_key, _Marker_Type_key
-		from mrk_marker
-		where _Organism_key in (1, 2, 40)
-			and _Marker_Status_key in (1,3)'''
+    cmd1 = '''select _Marker_key, _Marker_Type_key
+        from mrk_marker
+        where _Organism_key in (1, 2, 40)
+            and _Marker_Status_key in (1,3)'''
 
-	(cols, rows) = dbAgnostic.execute(cmd1)
+    (cols, rows) = dbAgnostic.execute(cmd1)
 
-	markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-	typeCol = dbAgnostic.columnNumber (cols, '_Marker_Type_key')
-	
-	for row in rows:
-		markerTypeCache[row[markerCol]] = row[typeCol]
+    markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+    typeCol = dbAgnostic.columnNumber (cols, '_Marker_Type_key')
+    
+    for row in rows:
+        markerTypeCache[row[markerCol]] = row[typeCol]
 
-	del cols
-	del rows
-	gc.collect()
+    del cols
+    del rows
+    gc.collect()
 
-	logger.debug('Cached %d marker types' % len(markerTypeCache))
-	return 
+    logger.debug('Cached %d marker types' % len(markerTypeCache))
+    return 
 
 def _populateMarkerAlleleCache():
-	global amRows
+    global amRows
 
-	if amRows != None:
-		return
+    if amRows != None:
+        return
 
-	cmd1 = '''select distinct a._Marker_key,
-			vt.term as countType,
-			_Allele_key,
-			vt.sequenceNum
-		from all_allele a, voc_term vt
-		where vt._Vocab_key = 38
-			and vt.term not in ('Not Applicable', 'Not Specified',
-				'Other')
-			and vt._Term_key = a._Allele_Type_key
-			and a.isWildType = 0
-			and a._Marker_key is not null
-			and exists (select 1 from mrk_marker m
-				where a._Marker_key = m._Marker_key)
-		order by a._Marker_key, vt.sequenceNum'''
+    cmd1 = '''select distinct a._Marker_key,
+            vt.term as countType,
+            _Allele_key,
+            vt.sequenceNum
+        from all_allele a, voc_term vt
+        where vt._Vocab_key = 38
+            and vt.term not in ('Not Applicable', 'Not Specified',
+                'Other')
+            and vt._Term_key = a._Allele_Type_key
+            and a.isWildType = 0
+            and a._Marker_key is not null
+            and exists (select 1 from mrk_marker m
+                where a._Marker_key = m._Marker_key)
+        order by a._Marker_key, vt.sequenceNum'''
 
-	(cols1, rows1) = dbAgnostic.execute(cmd1)
+    (cols1, rows1) = dbAgnostic.execute(cmd1)
 
-	markerCol = dbAgnostic.columnNumber (cols1, '_Marker_key')
-	alleleCol = dbAgnostic.columnNumber (cols1, '_Allele_key')
-	typeCol = dbAgnostic.columnNumber (cols1, 'countType')
-	seqNumCol = dbAgnostic.columnNumber (cols1, 'sequenceNum')
+    markerCol = dbAgnostic.columnNumber (cols1, '_Marker_key')
+    alleleCol = dbAgnostic.columnNumber (cols1, '_Allele_key')
+    typeCol = dbAgnostic.columnNumber (cols1, 'countType')
+    seqNumCol = dbAgnostic.columnNumber (cols1, 'sequenceNum')
 
-	amRows = []
-	for row in rows1:
-		amRows.append ( [ row[alleleCol], row[markerCol],
-			row[typeCol], row[seqNumCol] ] )
+    amRows = []
+    for row in rows1:
+        amRows.append ( [ row[alleleCol], row[markerCol],
+            row[typeCol], row[seqNumCol] ] )
 
-	del cols1
-	del rows1
-	gc.collect()
+    del cols1
+    del rows1
+    gc.collect()
 
-	logger.debug ('Got %d traditional allele/marker pairs' % len(amRows))
-	return 
+    logger.debug ('Got %d traditional allele/marker pairs' % len(amRows))
+    return 
 
 def _getRelationships(typeName):
-	# get a list of marker/allele pairs based on the given type of
-	# relationships.
+    # get a list of marker/allele pairs based on the given type of
+    # relationships.
 
-	cmd2 = '''select distinct r._Object_key_1 as allele_key,
-			r._Object_key_2 as marker_key,
-			t.term as countType,
-			t.sequenceNum
-		from mgi_relationship r,
-			mgi_relationship_category c,
-			all_allele a,
-			voc_term t
-		where c.name = '%s'
-			and r._Category_key = c._Category_key
-			and r._Object_key_1 = a._Allele_key
-			and a._Allele_Type_key = t._Term_key''' % typeName
+    cmd2 = '''select distinct r._Object_key_1 as allele_key,
+            r._Object_key_2 as marker_key,
+            t.term as countType,
+            t.sequenceNum
+        from mgi_relationship r,
+            mgi_relationship_category c,
+            all_allele a,
+            voc_term t
+        where c.name = '%s'
+            and r._Category_key = c._Category_key
+            and r._Object_key_1 = a._Allele_key
+            and a._Allele_Type_key = t._Term_key''' % typeName
 
-	(cols2, rows2) = dbAgnostic.execute(cmd2)
+    (cols2, rows2) = dbAgnostic.execute(cmd2)
 
-	markerCol = dbAgnostic.columnNumber (cols2, 'marker_key')
-	alleleCol = dbAgnostic.columnNumber (cols2, 'allele_key')
-	typeCol = dbAgnostic.columnNumber (cols2, 'countType')
-	seqNumCol = dbAgnostic.columnNumber (cols2, 'sequenceNum')
+    markerCol = dbAgnostic.columnNumber (cols2, 'marker_key')
+    alleleCol = dbAgnostic.columnNumber (cols2, 'allele_key')
+    typeCol = dbAgnostic.columnNumber (cols2, 'countType')
+    seqNumCol = dbAgnostic.columnNumber (cols2, 'sequenceNum')
 
-	out = []
-	for row in rows2:
-		out.append ( [ row[alleleCol], row[markerCol], 
-			row[typeCol], row[seqNumCol] ] ) 
+    out = []
+    for row in rows2:
+        out.append ( [ row[alleleCol], row[markerCol], 
+            row[typeCol], row[seqNumCol] ] ) 
 
-	del cols2
-	del rows2
-	gc.collect()
+    del cols2
+    del rows2
+    gc.collect()
 
-	logger.debug ('Got %d %s allele/marker pairs' % (len(out), typeName))
-	return out
+    logger.debug ('Got %d %s allele/marker pairs' % (len(out), typeName))
+    return out
 
 def _populateMutationInvolvesCache():
-	# populate the cache of marker/allele pairs based on
-	# 'mutation_involves' relationships
+    # populate the cache of marker/allele pairs based on
+    # 'mutation_involves' relationships
 
-	global miRows
+    global miRows
 
-	if miRows != None:
-		return
+    if miRows != None:
+        return
 
-	miRows = _getRelationships(MUTATION_INVOLVES)
-	return
+    miRows = _getRelationships(MUTATION_INVOLVES)
+    return
 
 def _populateExpressesComponentCache():
-	# populate the cache of marker/allele pairs based on
-	# 'expresses_component' relationships
+    # populate the cache of marker/allele pairs based on
+    # 'expresses_component' relationships
 
-	global ecRows
+    global ecRows
 
-	if ecRows != None:
-		return
+    if ecRows != None:
+        return
 
-	ecRows = _getRelationships(EXPRESSES_COMPONENT)
-	return
+    ecRows = _getRelationships(EXPRESSES_COMPONENT)
+    return
 
 def _toHex(key):
-	# convert integer 'key' to its hex equivalent as a string, but without
-	# the '0x' prefix
+    # convert integer 'key' to its hex equivalent as a string, but without
+    # the '0x' prefix
 
-	return hex(key)[2:]
+    return hex(key)[2:]
 
 def _bundle(alleleKey, markerKey):
-	# bundle allele key and marker key into a unique string for use as a
-	# dictionary key.  keys are converted to hex to save space.
+    # bundle allele key and marker key into a unique string for use as a
+    # dictionary key.  keys are converted to hex to save space.
 
-	return _toHex(alleleKey) + ',' + _toHex(markerKey)
+    return _toHex(alleleKey) + ',' + _toHex(markerKey)
 
 def _getMarkerAllelePairs(whichSet):
-	# get a list of rows for allele/marker relationships, where each row is:
-	#	[ allele key, marker key, count type, count type seq num ]
-	# 'whichSet' should be one of TRADITIONAL, MUTATION_INVOVLES,
-	# EXPRESSES_COMPONENT, or UNIFIED (which is the unique set of rows --
-	# no duplicates)
+    # get a list of rows for allele/marker relationships, where each row is:
+    #    [ allele key, marker key, count type, count type seq num ]
+    # 'whichSet' should be one of TRADITIONAL, MUTATION_INVOVLES,
+    # EXPRESSES_COMPONENT, or UNIFIED (which is the unique set of rows --
+    # no duplicates)
 
-	_populateMutationInvolvesCache()
-	_populateExpressesComponentCache()
-	_populateMarkerAlleleCache()
+    _populateMutationInvolvesCache()
+    _populateExpressesComponentCache()
+    _populateMarkerAlleleCache()
 
-	if whichSet == TRADITIONAL:
-		return amRows
+    if whichSet == TRADITIONAL:
+        return amRows
 
-	if whichSet == MUTATION_INVOLVES:
-		return miRows
+    if whichSet == MUTATION_INVOLVES:
+        return miRows
 
-	if whichSet == EXPRESSES_COMPONENT:
-		return ecRows
+    if whichSet == EXPRESSES_COMPONENT:
+        return ecRows
 
-	unifiedList = []
+    unifiedList = []
 
-	# We previously used a GroupedList here to save on memory, but this
-	# may have been a premature optimization.  We were losing big on
-	# performance, solely to save 15-20Mb.  I'm switching back to a 
-	# dictionary for now.  If memory constrains require, we can switch
-	# back to a GroupedList in the future.
+    # We previously used a GroupedList here to save on memory, but this
+    # may have been a premature optimization.  We were losing big on
+    # performance, solely to save 15-20Mb.  I'm switching back to a 
+    # dictionary for now.  If memory constrains require, we can switch
+    # back to a GroupedList in the future.
 
-	pairs = {}
+    pairs = {}
 
-	for myList in [ amRows, miRows, ecRows ]:
-		for row in myList:
-			pair = _bundle(row[0], row[1])	# allele + marker keys
-			if not pairs.has_key(pair):
-				unifiedList.append(row)
-				pairs[pair] = 1
+    for myList in [ amRows, miRows, ecRows ]:
+        for row in myList:
+            pair = _bundle(row[0], row[1])    # allele + marker keys
+            if not pairs.has_key(pair):
+                unifiedList.append(row)
+                pairs[pair] = 1
 
-	logger.debug('Calculated set of %d distinct allele/marker pairs' % \
-		len(unifiedList))
+    logger.debug('Calculated set of %d distinct allele/marker pairs' % \
+        len(unifiedList))
 
-	del pairs
-	gc.collect()
+    del pairs
+    gc.collect()
 
-	return unifiedList
+    return unifiedList
 
 ###--- functions dealing with location data ---###
 
 def getMarkerCoords(markerKey):
-	# get (genetic chrom, genomic chrom, start coord, end coord) for the
-	# given marker key
+    # get (genetic chrom, genomic chrom, start coord, end coord) for the
+    # given marker key
 
-	if len(coordCache) == 0:
-		_populateCoordCache()
+    if len(coordCache) == 0:
+        _populateCoordCache()
 
-	if coordCache.has_key(markerKey):
-		return coordCache[markerKey]
+    if coordCache.has_key(markerKey):
+        return coordCache[markerKey]
 
-	return (None, None, None, None, 9999)
+    return (None, None, None, None, 9999)
 
 def getChromosome (marker):
-	# get the chromosome for the given marker key, preferring
-	# the genomic one over the genetic one
+    # get the chromosome for the given marker key, preferring
+    # the genomic one over the genetic one
 
-	(geneticChr, genomicChr, startCoord, endCoord, seqNum) = \
-		getMarkerCoords(marker)
+    (geneticChr, genomicChr, startCoord, endCoord, seqNum) = \
+        getMarkerCoords(marker)
 
-	if genomicChr:
-		return genomicChr
-	return geneticChr
+    if genomicChr:
+        return genomicChr
+    return geneticChr
 
 def getChromosomeSeqNum (marker):
-	# return the sequence number for sorting the chromosome of the given
-	# marker key
+    # return the sequence number for sorting the chromosome of the given
+    # marker key
 
-	return getMarkerCoords(marker)[4]
+    return getMarkerCoords(marker)[4]
 
 def getStartCoord (marker):
-	# return the start coordinate for the given marker key, or None if no
-	# coordinates
+    # return the start coordinate for the given marker key, or None if no
+    # coordinates
 
-	return getMarkerCoords(marker)[2]
+    return getMarkerCoords(marker)[2]
 
 def getEndCoord (marker):
-	# return the end coordinate for the given marker key, or None if no
-	# coordinates
+    # return the end coordinate for the given marker key, or None if no
+    # coordinates
 
-	return getMarkerCoords(marker)[3] 
+    return getMarkerCoords(marker)[3] 
 
 ###--- functions dealing with accession IDs ---###
 
 def getPrimaryID (markerKey):
-	# return the primary MGI ID for the given mouse marker key, or None if
-	# there is not one
+    # return the primary MGI ID for the given mouse marker key, or None if
+    # there is not one
 
-	if len(idCache) == 0:
-		_populateIDCache()
+    if len(idCache) == 0:
+        _populateIDCache()
 
-	if idCache.has_key(markerKey):
-		return idCache[markerKey]
-	return None
+    if idCache.has_key(markerKey):
+        return idCache[markerKey]
+    return None
 
 def getMarkerKey (primaryID):
-	# return the marker key for the marker with the given primary MGI ID,
-	# or None if there is not one
+    # return the marker key for the marker with the given primary MGI ID,
+    # or None if there is not one
 
-	global keyCache
+    global keyCache
 
-	if len(keyCache) == 0:
-		if len(idCache) == 0:
-			_populateIDCache()
+    if len(keyCache) == 0:
+        if len(idCache) == 0:
+            _populateIDCache()
 
-		keyCache = {}
-		for key in idCache.keys():
-			keyCache[idCache[key]] = key
+        keyCache = {}
+        for key in idCache.keys():
+            keyCache[idCache[key]] = key
 
-	primaryID = primaryID.strip()
-	if keyCache.has_key(primaryID):
-		return keyCache[primaryID]
-	return None
+    primaryID = primaryID.strip()
+    if keyCache.has_key(primaryID):
+        return keyCache[primaryID]
+    return None
 
 def getNonMouseEGMarkerKey (accID):
-	# return the marker key for the non-mouse marker with the given ID,
-	# or None if there is not one
+    # return the marker key for the non-mouse marker with the given ID,
+    # or None if there is not one
 
-	global nonMouseEGCache
+    global nonMouseEGCache
 
-	if not nonMouseEGCache:
-		_populateNonMouseEGCache()
+    if not nonMouseEGCache:
+        _populateNonMouseEGCache()
 
-	accID = accID.strip()
-	if nonMouseEGCache.has_key(accID):
-		return nonMouseEGCache[accID]
-	return None
+    accID = accID.strip()
+    if nonMouseEGCache.has_key(accID):
+        return nonMouseEGCache[accID]
+    return None
 
 ###--- functions dealing with nomenclature ---###
 
 def getSymbol (markerKey):
-	# return the symbol for the given marker key, or None if the key is
-	# not for a mouse marker
+    # return the symbol for the given marker key, or None if the key is
+    # not for a mouse marker
 
-	if len(symbolCache) == 0:
-		_populateSymbolCache()
+    if len(symbolCache) == 0:
+        _populateSymbolCache()
 
-	if symbolCache.has_key(markerKey):
-		return symbolCache[markerKey]
-	return None
+    if symbolCache.has_key(markerKey):
+        return symbolCache[markerKey]
+    return None
 
 def getMarkerType (markerKey):
-	# return marker type for the given marker key, or None if the key is
-	# not for a mouse marker
+    # return marker type for the given marker key, or None if the key is
+    # not for a mouse marker
 
-	if len(markerTypeCache) == 0:
-		_populateMarkerTypeCache()
-	
-	if markerTypeCache.has_key(markerKey):
-		return markerTypeLookup.get(markerTypeCache[markerKey])
-	return None
+    if len(markerTypeCache) == 0:
+        _populateMarkerTypeCache()
+    
+    if markerTypeCache.has_key(markerKey):
+        return markerTypeLookup.get(markerTypeCache[markerKey])
+    return None
 
 ###--- functions dealing with allele counts ---###
 
 def getAlleleCounts():
-	# returns { marker key : count of all alleles }
-	# includes both direct marker-to-allele relationships and ones from
-	# 'mutation involves' and 'expresses component' relationships
+    # returns { marker key : count of all alleles }
+    # includes both direct marker-to-allele relationships and ones from
+    # 'mutation involves' and 'expresses component' relationships
 
-	# each row has:
-	# [ allele key, marker key, count type, count type order ]
-	rows = _getMarkerAllelePairs(UNIFIED)
+    # each row has:
+    # [ allele key, marker key, count type, count type order ]
+    rows = _getMarkerAllelePairs(UNIFIED)
 
-	alleles = {}		# alleles[markerKey] = [ allele keys ]
+    alleles = {}        # alleles[markerKey] = [ allele keys ]
 
-	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
-		if alleles.has_key(markerKey):
-			if alleleKey not in alleles[markerKey]:
-				alleles[markerKey].append(alleleKey)
-		else:
-			alleles[markerKey] = [ alleleKey ]
+    for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+        if alleles.has_key(markerKey):
+            if alleleKey not in alleles[markerKey]:
+                alleles[markerKey].append(alleleKey)
+        else:
+            alleles[markerKey] = [ alleleKey ]
 
-	counts = {}
+    counts = {}
 
-	for markerKey in alleles.keys():
-		counts[markerKey] = len(alleles[markerKey])
+    for markerKey in alleles.keys():
+        counts[markerKey] = len(alleles[markerKey])
 
-	logger.debug('Found allele counts for %d markers' % len(counts))
-	return counts
+    logger.debug('Found allele counts for %d markers' % len(counts))
+    return counts
 
 def getAlleleCountsByType():
-	# returns two-item tuple with:
-	#	{ marker key : { count type : count of all alleles } }
-	#	{ count type sequence num : count type }
-	# includes both direct marker-to-allele relationships and ones from
-	# 'mutation involves' and 'expresses component' relationships
+    # returns two-item tuple with:
+    #    { marker key : { count type : count of all alleles } }
+    #    { count type sequence num : count type }
+    # includes both direct marker-to-allele relationships and ones from
+    # 'mutation involves' and 'expresses component' relationships
 
-	# each row has:
-	# [ allele key, marker key, count type, count type order ]
-	rows = _getMarkerAllelePairs(UNIFIED)
+    # each row has:
+    # [ allele key, marker key, count type, count type order ]
+    rows = _getMarkerAllelePairs(UNIFIED)
 
-	m = {}		# m[markerKey] = { count type : [ allele keys ] }
-	c = {}		# c[count type seq num] = count type
+    m = {}        # m[markerKey] = { count type : [ allele keys ] }
+    c = {}        # c[count type seq num] = count type
 
-	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+    for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
 
-		# make sure we have the mapping from count type to its seq num
-		if not c.has_key(countTypeOrder):
-			c[countTypeOrder] = countType
+        # make sure we have the mapping from count type to its seq num
+        if not c.has_key(countTypeOrder):
+            c[countTypeOrder] = countType
 
-		# track the alleles for each marker, separated by count type
+        # track the alleles for each marker, separated by count type
 
-		if not m.has_key(markerKey):
-			m[markerKey] = { countType : [ alleleKey ] }
+        if not m.has_key(markerKey):
+            m[markerKey] = { countType : [ alleleKey ] }
 
-		elif not m[markerKey].has_key(countType):
-			m[markerKey][countType] = [ alleleKey ]
+        elif not m[markerKey].has_key(countType):
+            m[markerKey][countType] = [ alleleKey ]
 
-		elif alleleKey not in m[markerKey][countType]:
-			m[markerKey][countType].append (alleleKey)
+        elif alleleKey not in m[markerKey][countType]:
+            m[markerKey][countType].append (alleleKey)
 
-	counts = {}
+    counts = {}
 
-	for markerKey in m.keys():
-		counts[markerKey] = {}
+    for markerKey in m.keys():
+        counts[markerKey] = {}
 
-		for countType in m[markerKey].keys():
-			counts[markerKey][countType] = \
-				len(m[markerKey][countType])
+        for countType in m[markerKey].keys():
+            counts[markerKey][countType] = \
+                len(m[markerKey][countType])
 
-	logger.debug('Found %d types of allele counts for %d markers' % (
-		len(c), len(counts)) )
-	return counts, c
+    logger.debug('Found %d types of allele counts for %d markers' % (
+        len(c), len(counts)) )
+    return counts, c
 
 def getMutationInvolvesCounts():
-	# returns dictionary:
-	#	{ marker key : count of alleles with that marker in a
-	#		'mutation involves' relationship }
+    # returns dictionary:
+    #    { marker key : count of alleles with that marker in a
+    #        'mutation involves' relationship }
 
-	rows = _getMarkerAllelePairs(MUTATION_INVOLVES)
+    rows = _getMarkerAllelePairs(MUTATION_INVOLVES)
 
-	m = {}
+    m = {}
 
-	for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
-		if not m.has_key(markerKey):
-			m[markerKey] = [ alleleKey ]
+    for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
+        if not m.has_key(markerKey):
+            m[markerKey] = [ alleleKey ]
 
-		elif alleleKey not in m[markerKey]:
-			m[markerKey].append (alleleKey)
+        elif alleleKey not in m[markerKey]:
+            m[markerKey].append (alleleKey)
 
-	c = {}
+    c = {}
 
-	for markerKey in m.keys():
-		c[markerKey] = len(m[markerKey])
+    for markerKey in m.keys():
+        c[markerKey] = len(m[markerKey])
 
-	logger.debug('Found %d markers with mutation involves relationships' \
-		% len(c))
-	return c
+    logger.debug('Found %d markers with mutation involves relationships' \
+        % len(c))
+    return c
 
 ###--- functions to build temp tables for marker counts of pheno data ---###
 
@@ -586,52 +586,52 @@ OA_TABLE = None		# name of already-computed table of markers and annot
 			# ...keys for annotations that did not roll up and get
 			# ...included in SRC_TABLE
 
-mpg = 1002		# annotation type key for MP/Genotype
-mpm = 1015		# annotation type for rolled-up MP/Marker annotations
-npa = 293594		# term key for 'no phenotypic analysis'
-mi = 1003		# relationship type for 'mutation involves'
-ec = 1004		# relationship type for 'expresses component'
+mpg = 1002        # annotation type key for MP/Genotype
+mpm = 1015        # annotation type for rolled-up MP/Marker annotations
+npa = 293594        # term key for 'no phenotypic analysis'
+mi = 1003        # relationship type for 'mutation involves'
+ec = 1004        # relationship type for 'expresses component'
 
 def getSourceAnnotationTable():
-	# get the name of a temp table that has a mapping from a marker to its
-	# rolled-up MP annotations and to the source annotations from which
-	# they were derived.  Excludes "no phenotypic analysis" annotations.
+    # get the name of a temp table that has a mapping from a marker to its
+    # rolled-up MP annotations and to the source annotations from which
+    # they were derived.  Excludes "no phenotypic analysis" annotations.
 
-	global SRC_TABLE
-	
-	if SRC_TABLE:
-		return SRC_TABLE
+    global SRC_TABLE
+    
+    if SRC_TABLE:
+        return SRC_TABLE
 
-	SRC_TABLE = 'source_annotations'
+    SRC_TABLE = 'source_annotations'
 
-	cmd0 = '''select va._Object_key as _Marker_key,
-			va._Annot_key as _DerivedAnnot_key,
-			vep.value::int as _SourceAnnot_key
-		into temporary table %s
-		from VOC_Annot va,
-			VOC_Evidence ve,
-			VOC_Evidence_Property vep,
-			VOC_Term t
-		where va._AnnotType_key = %d
-			and va._Annot_key = ve._Annot_key
-			and ve._AnnotEvidence_key = vep._AnnotEvidence_key
-			and vep._PropertyTerm_key = t._Term_key
-			and va._Term_key != %d
-			and t.term = '_SourceAnnot_key' ''' % (SRC_TABLE,
-				mpm, npa)
+    cmd0 = '''select va._Object_key as _Marker_key,
+            va._Annot_key as _DerivedAnnot_key,
+            vep.value::int as _SourceAnnot_key
+        into temporary table %s
+        from VOC_Annot va,
+            VOC_Evidence ve,
+            VOC_Evidence_Property vep,
+            VOC_Term t
+        where va._AnnotType_key = %d
+            and va._Annot_key = ve._Annot_key
+            and ve._AnnotEvidence_key = vep._AnnotEvidence_key
+            and vep._PropertyTerm_key = t._Term_key
+            and va._Term_key != %d
+            and t.term = '_SourceAnnot_key' ''' % (SRC_TABLE,
+                mpm, npa)
 
-	cmd1 = 'create index sa1 on %s (_Marker_key)' % SRC_TABLE
-	cmd2 = 'cluster %s using sa1' % SRC_TABLE
-	cmd3 = 'create index sa2 on %s (_DerivedAnnot_key)' % SRC_TABLE
-	cmd4 = 'create index sa3 on %s (_SourceAnnot_key)' % SRC_TABLE
-	cmd5 = 'select count(1) from %s' % SRC_TABLE
+    cmd1 = 'create index sa1 on %s (_Marker_key)' % SRC_TABLE
+    cmd2 = 'cluster %s using sa1' % SRC_TABLE
+    cmd3 = 'create index sa2 on %s (_DerivedAnnot_key)' % SRC_TABLE
+    cmd4 = 'create index sa3 on %s (_SourceAnnot_key)' % SRC_TABLE
+    cmd5 = 'select count(1) from %s' % SRC_TABLE
 
-	for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
-		cr = dbAgnostic.execute(cmd)
+    for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
+        cr = dbAgnostic.execute(cmd)
 
-	logger.debug('Filled %s with %d rows' % (SRC_TABLE, cr[1][0][0]))
+    logger.debug('Filled %s with %d rows' % (SRC_TABLE, cr[1][0][0]))
 
-	return SRC_TABLE
+    return SRC_TABLE
 
 def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
 	# get the name of a temp table that has been populated with marker /
@@ -639,7 +639,7 @@ def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
 	# default).  Could pass in [ ec, mi ] to also include mutation involves
 	# relationships.
 
-	global MA_TABLE
+    global MA_TABLE
 
 	if tblName in MA_TABLE:
 		return tblName
@@ -667,66 +667,66 @@ def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
 	cmd4 = 'create index %s_p2 on %s(_Allele_key)' % (tblName, tblName)
 	cmd5 = 'select count(1) from %s' % tblName
 
-	for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
-		cr = dbAgnostic.execute(cmd)
+    for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
+        cr = dbAgnostic.execute(cmd)
 
 	logger.debug('Filled %s with %d rows' % (tblName, cr[1][0][0]))
 
 	return tblName
 
 def getSourceGenotypeTable():
-	# get the name of a temp table that has been populated with markers,
-	# alleles, and genotypes for the source annotations included in the
-	# table built by getSourceAnnotations()
+    # get the name of a temp table that has been populated with markers,
+    # alleles, and genotypes for the source annotations included in the
+    # table built by getSourceAnnotations()
 
-	global MAG_TABLE
+    global MAG_TABLE
 
-	if MAG_TABLE:
-		return MAG_TABLE
+    if MAG_TABLE:
+        return MAG_TABLE
 
-	MAG_TABLE = 'marker_allele_genotype'
+    MAG_TABLE = 'marker_allele_genotype'
 
-	srcAnnot = getSourceAnnotationTable()
-	pairs = getMarkerAlleleTable()
+    srcAnnot = getSourceAnnotationTable()
+    pairs = getMarkerAlleleTable()
 
-	cmd0 = '''select p._Marker_key, p._Allele_key, gag._Genotype_key
-		into temporary table %s
-		from %s s, voc_annot va,
-			gxd_allelegenotype gag, %s p
-		where s._SourceAnnot_key = va._Annot_key
-			and va._Object_key = gag._Genotype_key
-			and gag._Allele_key = p._Allele_key
-			and p._Marker_key = s._Marker_key''' % (MAG_TABLE,
-				srcAnnot, pairs)
+    cmd0 = '''select p._Marker_key, p._Allele_key, gag._Genotype_key
+        into temporary table %s
+        from %s s, voc_annot va,
+            gxd_allelegenotype gag, %s p
+        where s._SourceAnnot_key = va._Annot_key
+            and va._Object_key = gag._Genotype_key
+            and gag._Allele_key = p._Allele_key
+            and p._Marker_key = s._Marker_key''' % (MAG_TABLE,
+                srcAnnot, pairs)
 
-	cmd1 = 'create index mag1 on %s (_Marker_key)' % MAG_TABLE
-	cmd2 = 'cluster %s using mag1' % MAG_TABLE
-	cmd3 = 'create index mag2 on %s (_Allele_key)' % MAG_TABLE
-	cmd4 = 'create index mag3 on %s (_Genotype_key)' % MAG_TABLE
-	cmd5 = 'select count(1) from %s' % MAG_TABLE
+    cmd1 = 'create index mag1 on %s (_Marker_key)' % MAG_TABLE
+    cmd2 = 'cluster %s using mag1' % MAG_TABLE
+    cmd3 = 'create index mag2 on %s (_Allele_key)' % MAG_TABLE
+    cmd4 = 'create index mag3 on %s (_Genotype_key)' % MAG_TABLE
+    cmd5 = 'select count(1) from %s' % MAG_TABLE
 
-	for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
-		cr = dbAgnostic.execute(cmd)
+    for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
+        cr = dbAgnostic.execute(cmd)
 
-	logger.debug('Filled %s with %d rows' % (MAG_TABLE, cr[1][0][0]))
+    logger.debug('Filled %s with %d rows' % (MAG_TABLE, cr[1][0][0]))
 
-	return MAG_TABLE
+    return MAG_TABLE
 
 def getOtherAnnotationsTable():
-	# get the name of a temp table that has been popuplated with markers
-	# and annotation keys for genotype-level annotations that did not roll
-	# up to the marker (because of complex genotypes, etc.).  Excludes
-	# "no phenotypic annotation" terms.
+    # get the name of a temp table that has been popuplated with markers
+    # and annotation keys for genotype-level annotations that did not roll
+    # up to the marker (because of complex genotypes, etc.).  Excludes
+    # "no phenotypic annotation" terms.
 
-	global OA_TABLE
+    global OA_TABLE
 
-	if OA_TABLE:
-		return OA_TABLE
+    if OA_TABLE:
+        return OA_TABLE
 
-	OA_TABLE = 'other_annotations'
+    OA_TABLE = 'other_annotations'
 
-	srcAnnot = getSourceAnnotationTable()
-	pairs = getMarkerAlleleTable()
+    srcAnnot = getSourceAnnotationTable()
+    pairs = getMarkerAlleleTable()
 
 	cmd0 = '''select distinct p._Marker_key, va._Annot_key
 		into temporary table other_annotations
@@ -741,14 +741,14 @@ def getOtherAnnotationsTable():
 			and gag._Allele_key = p._Allele_key''' % (
 				pairs, mpg, srcAnnot, npa)
 
-	cmd1 = 'create index oa1 on %s (_Marker_key)' % OA_TABLE
-	cmd2 = 'cluster %s using oa1' % OA_TABLE
-	cmd3 = 'create index oa2 on %s (_Annot_key)' % OA_TABLE
-	cmd4 = 'select count(1) from %s' % OA_TABLE
+    cmd1 = 'create index oa1 on %s (_Marker_key)' % OA_TABLE
+    cmd2 = 'cluster %s using oa1' % OA_TABLE
+    cmd3 = 'create index oa2 on %s (_Annot_key)' % OA_TABLE
+    cmd4 = 'select count(1) from %s' % OA_TABLE
 
-	for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4 ]:
-		cr = dbAgnostic.execute(cmd)
+    for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4 ]:
+        cr = dbAgnostic.execute(cmd)
 
-	logger.debug('Filled %s with %s rows' % (OA_TABLE, cr[1][0][0]))
+    logger.debug('Filled %s with %s rows' % (OA_TABLE, cr[1][0][0]))
 
-	return OA_TABLE
+    return OA_TABLE

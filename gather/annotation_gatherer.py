@@ -2,1457 +2,946 @@
 # 
 # gathers data for the 'annotation_*' and '*_to_annotation' tables in the
 # front-end database
+#
+# Some local functions unit-tested in annotation_gatherer_tests.py
+#
 
 import dbAgnostic
 import Gatherer
-import VocabSorter
 import logger
 import GOFilter
 import GenotypeClassifier
-import symbolsort
-import AlleleAndGenotypeSorter
 import AnnotationKeyGenerator
 import gc
-import utils
+import top
+
+# annotation data specific imports
+import go_annot_extensions
+import go_isoforms
+from annotation import transform
+from annotation import constants as C
+from annotation import sequence_num
+from annotation.organism import OrganismFinder
 
 ###--- Constants ---###
 
-MARKER = 2		# MGI Type for markers
-GENOTYPE = 12		# MGI Type for genotypes
-OMIM_GENOTYPE = 1005	# VOC_AnnotType : OMIM/Genotype
-OMIM_MARKER = 1016	# VOC_AnnotType : OMIM/Marker (Derived)
-MP_MARKER = 1015	# VOC_AnnotType : MP/Marker (Derived)
-MP_GENOTYPE = 1002	# VOC_AnnotType : MP/Genotype
-GT_ROSA = 37270		# marker Gt(ROSA)26Sor
-DRIVER_NOTE = 1034	# MGI_NoteType Driver
-NOT_QUALIFIER = 1614157	# VOC_Term NOT
+# name of table that will hold all the _annot_keys 
+#	for the currently processed batch
+BATCH_TEMP_TABLE = 'annotation_batch_tmp'
 
-BUDDING_YEAST_LDB = 114		# logical database key for budding yeast
-BUDDING_YEAST = 'budding yeast'	# organism name for budding yeast
-FISSION_YEAST_LDB = 115		# logical database key for fission yeast
-FISSION_YEAST = 'fission yeast'	# organism name for fission yeast
-CHEBI_LDB = 127			# logical database key for ChEBI
 
-EVIDENCE_ID_TABLE = 'evid'
-
-###--- Globals ---###
-
-MARKER_DATA = {}	# marker key : [ symbol, name, ID, logical db, chrom,
-			# 	sequence number]
-
-# used to generate new annotation keys for the front-end database for the
-# majority of data cases.  (Special cases will use their own key generators
-# near where they generate keys.  These will have different rules.)
-KEY_GENERATOR = AnnotationKeyGenerator.EvidenceInferredKeyGenerator()
-
-# used to generate new annotation keys for the front-end database for the
-# Mammalian Phenotype/Genotype annotations, which should not consider
-# evidence codes or inferred-from IDs in identifying distinct annotations.
-MPG_KEY_GENERATOR = AnnotationKeyGenerator.KeyGenerator()
-
-###--- Functions ---###
-
-def initialize():
-	# build any temp tables needed to support the standard queries
-
-	logger.debug('Entered initialize()...')
-
-	# temp table of seq IDs cited as evidence (inferred-from) for GO
-	# annotations
-
-	cmd1 = '''select distinct accID
-		into temporary table %s
-		from acc_accession
-		where _MGIType_key = 25
-		and _LogicalDB_key in (68, 9, 13)''' % EVIDENCE_ID_TABLE
-
-	cmd2 = 'create unique index %s_idx1 on %s (accID)' % (
-		EVIDENCE_ID_TABLE, EVIDENCE_ID_TABLE)
-
-	dbAgnostic.execute(cmd1)
-	dbAgnostic.execute(cmd2)
-
-	logger.debug('  - built %s' % EVIDENCE_ID_TABLE)
-	return
-
-# annotation keys to be omitted (for GO ND annotations)
-# 	annotKeyToSkip[annot key] = 1
-annotKeyToSkip = {}
-
-def getAnnotAttributes (annotKey):
-	# returns (annot type, object key, term key, qualifier) if available,
-	#	or (None, None, None, None)
-
-	return AnnotationKeyGenerator.getAnnotationAttributes(annotKey)
-
-def getNewAnnotationKey (annotKey, evidenceTermKey, inferredFrom):
-	# used to get a new annotation key for traditional (not specially
-	# constructed, aka hacked in) annotations.  Masks the complexity of
-	# MP/Genotype annotations versus other annotations.
-
-	global KEY_GENERATOR, MPG_KEY_GENERATOR
-
-	aType = AnnotationKeyGenerator.getAnnotationAttributes(annotKey)[0]
-
-	if aType == MP_GENOTYPE:
-		return MPG_KEY_GENERATOR.getKey(annotKey)
-
-	key =  KEY_GENERATOR.getKey (annotKey,
-		evidenceTermKey = evidenceTermKey,
-		inferredFrom = inferredFrom)
-
-	return key
-
-def getMarker (markerKey):
-	if MARKER_DATA.has_key(markerKey):
-		return MARKER_DATA[markerKey]
-	return None, None, None, None, None, None
+class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 	
-def getSymbol (markerKey):
-	return getMarker(markerKey)[0]
+	def __init__(self,
+				files,
+				cmds = None):
+		"""
+		Extra setup for this gatherer
+		"""
+		Gatherer.CachingMultiFileGatherer.__init__(self, files, cmds)
+		
+		self.curAnnotationKey = 1
+		
+		self.clearGlobals()
 
-def getName (markerKey):
-	return getMarker(markerKey)[1]
-
-def getChromosome (markerKey):
-	return getMarker(markerKey)[4]
-
-def getID (markerKey):
-	return getMarker(markerKey)[2]
-
-def getLogicalDB (markerKey):
-	return getMarker(markerKey)[3]
-
-def getMarkerSeqNum (markerKey):
-	return getMarker(markerKey)[5]
-
-def compareMarkers (a, b):
-	# sort marker tuples (symbol, name, key) as smart-alpha on symbol then
-	# name, and fall back on marker key if symbol + name match
-
-	aSym, aName, aKey = a
-	bSym, bName, bKey = b
-
-	sCmp = symbolsort.nomenCompare(aSym, bSym)
-	if sCmp != 0:
-		return sCmp
-	
-	nCmp = symbolsort.nomenCompare(aName, bName)
-	if nCmp != 0:
-		return nCmp
-
-	return cmp(aKey, bKey) 
-
-###--- Classes ---###
-
-class OrganismFinder:
-	# Is: a mapping from an inferred-from ID to its organism
-	# Has: see Is
-	# Does: maps from each inferred-from ID to its organism, when we can
-	#	track it down
-
-	def __init__ (self):
-		self.idCache = {}	# maps from ID -> organism key
-		self.organismCache = {}	# maps from organism key -> name
-
-		# has this object been initialized?
-		self.initialized = False
-
-		# base query for object lookups; fill in organism key field,
-		# extra table(s), and extra where clause(s)
-		self.baseQuery = '''select distinct aa.accID, %s
-			from voc_evidence ve,
-				acc_accession aa,
-				voc_annot va,
-				acc_accession bb,
-				%s
-			where ve._AnnotEvidence_key = aa._Object_key
-				and aa._MGIType_key = 25
-				and ve._Annot_key = va._Annot_key
-				and va._AnnotType_key not in (%s, %s)
-				and aa.accID = bb.accID
-				and aa._LogicalDB_key != %d
-				and %s
-		''' % ('%s', '%s', OMIM_MARKER, MP_MARKER, CHEBI_LDB, '%s')
-
-		return
-
-	def cacheGeneric(self, cmd, objectType):
-		(cols, rows) = dbAgnostic.execute(cmd)
-
-		idCol = dbAgnostic.columnNumber (cols, 'accID')
-		organismCol = dbAgnostic.columnNumber (cols, '_Organism_key')
-
-		for row in rows:
-			self.idCache[row[idCol]] = row[organismCol]
-		logger.debug('Cached organisms for %d %s IDs' % (
-			len(rows), objectType))
-		return
-
-	def cacheMarkers(self):
-		cmd = self.baseQuery % ('m._Organism_key',
-			'mrk_marker m',
-			'bb._MGIType_key = 2 ' + \
-				'and bb._Object_key = m._Marker_key')
-		self.cacheGeneric(cmd, 'marker')
-		return
-
-	def cacheAlleles(self):
-		cmd = self.baseQuery % ('m._Organism_key',
-			'all_allele a, mrk_marker m',
-			'bb._MGIType_key = 11 ' + \
-				'and bb._Object_key = a._Allele_key ' + \
-				'and a._Marker_key = m._Marker_key')
-		self.cacheGeneric(cmd, 'allele')
-		return
-
-	def cacheSequences(self):
-		cmd = self.baseQuery % ('s._Organism_key',
-			'seq_sequence s',
-			'bb._MGIType_key = 19 ' + \
-				'and bb._Object_key = s._Sequence_key')
-		self.cacheGeneric(cmd, 'sequence')
-		return
-
-	def cacheYeast(self):
-		cmd = '''select distinct accID from acc_accession
-			where _MGIType_key = 25 and _LogicalDB_key = %d'''
-
-		for (name, ldb) in [ (BUDDING_YEAST, BUDDING_YEAST_LDB),
-					(FISSION_YEAST, FISSION_YEAST_LDB) ]:
-			(cols, rows) = dbAgnostic.execute(cmd % ldb)
-
-			idCol = dbAgnostic.columnNumber (cols, 'accID')
-
-			for row in rows:
-				self.idCache[row[idCol]] = name
-
-			self.organismCache[name] = name
-
-			logger.debug('Cached organisms for %d %s IDs' % (
-				len(rows), name) )
-		return
-
-
-	def cacheOrganisms(self):
-		cmd = 'select _Organism_key, commonName from MGI_Organism'
-		(cols, rows) = dbAgnostic.execute(cmd)
-
-		keyCol = dbAgnostic.columnNumber (cols, '_Organism_key')
-		nameCol = dbAgnostic.columnNumber (cols, 'commonName')
-
-		for row in rows:
-			self.organismCache[row[keyCol]] = \
-				utils.cleanupOrganism(row[nameCol])
-		logger.debug('Cached %d organisms' % len(self.organismCache))
-		return
-
-	def getOrganism(self, accID):
-		if not self.initialized:
-			self.cacheYeast()
-			self.cacheSequences()
-			self.cacheAlleles()
-			self.cacheMarkers()
-			self.cacheOrganisms()
-			self.initialized = True
-
-		if self.idCache.has_key(accID):
-			return self.organismCache[self.idCache[accID]]
-		return None
-
-class AnnotationGatherer (Gatherer.MultiFileGatherer):
-	# Is: a data gatherer for most of the marker_go_* tables
-	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for markers' GO
-	#	annotations, collates results, writes tab-delimited text files
-
-	def buildAnnotationConsolidator (self):
-		cols, rows = self.results[14]
-
-		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-		annotTypeCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-		termCol = Gatherer.columnNumber (cols, '_Term_key')
-		objectCol = Gatherer.columnNumber (cols, '_Object_key')
-		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
-
-		# maps each annotation key to a single key for shared (type,
-		# term, object, qualifier) tuples
-		self.uniqueAnnotKey = {}
-
-		# maps (type, term, object, qualifier) to its annotation key
-		annotForData = {}
-
-		for row in rows:
-			t = (row[annotTypeCol], row[termCol], row[objectCol],
-				row[qualifierCol])
 			
-			# if we've already seen an annotation with these
-			# attributes, then we can re-use its annotation key
+	def clearGlobals(self):
+		"""
+		Reset/Initialize all globals
+		"""
+		
+		self.annotGroupsMap = {}
+		self.annotPropertiesMap = {}
+		self.inferredfromIdMap = {}
+		self.evidenceKeyToNew = {}
+		
+	def preprocessCommands(self):
+		"""
+		Pre-processing & initialization queries
+		"""
+				
+		# Create the sequence num sorts for all the annotations
+		sequence_num._createSequenceNumTables()
+		
+		
+	### Queries ###
+			
+	def queryAnnotationProperties(self):
+		"""
+		Query a batch of annotation properties from
+			BATCH_TEMP_TABLE
 
-			if annotForData.has_key(t):
-				annotKey = annotForData[t]
-				self.uniqueAnnotKey[row[annotKeyCol]] = \
-					annotKey
-			else:
-				annotKey = row[annotKeyCol]
-				self.uniqueAnnotKey[annotKey] = annotKey
-				annotForData[t] = annotKey
+		Supports only GO annotation properties
+		
+		return as { _annotevidence_key: [ {type, property, stanza, sequencenum, value}, ] }
+		"""
+		propertiesMap = {}
 
-		logger.debug ('Consolidated %d annotation keys down to %d' % \
-			(len(rows), len(annotForData)) )
+		# Handle the GO annotation extension properties
+		self._queryAnnotationExtensions(propertiesMap)
+			
+		# Handle the GO isoform properties
+		self._queryIsoforms(propertiesMap)
+		
+		
+		return propertiesMap
+	
+	def _queryAnnotationExtensions(self, propertiesMap):
+		"""
+		GO annotation extension propeties
+		
+		populates propertiesMap
+		"""
+		# query the correct keys to use for GO evidence and properties
+		extensionProcessor = go_annot_extensions.Processor()
+		propertyTermKeys = extensionProcessor.querySanctionedPropertyTermKeys()
+		evidenceTermKeys = extensionProcessor.querySanctionedEvidenceTermKeys()
 
-		self.results[14] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory for result set 14')
-		return
+		propertyKeyClause = ",".join([str(k) for k in propertyTermKeys])
+		evidenceKeyClause = ",".join([str(k) for k in evidenceTermKeys])
 
-	def translateAnnotKey (self, annotKey):
-		return self.uniqueAnnotKey[annotKey]
-
-	def cacheHeaderTerms (self):
-		# cache the (currently only) GO header terms for each term
-
-		self.headers = {}
-
-		cols, rows = self.results[15]
-
-		termCol = Gatherer.columnNumber (cols, 'term_key')
-		headerCol = Gatherer.columnNumber (cols, 'header_term_key')
-
+		cmd = '''
+			select vep._annotevidence_key,
+			prop.term as property,
+			vep.stanza,
+			vep.sequencenum,
+			vep.value,
+			nc.note as display_value
+			from voc_evidence ve
+			join %s abt on
+				abt._annot_key = ve._annot_key
+			join voc_evidence_property vep on 
+				vep._annotevidence_key = ve._annotevidence_key
+			join voc_term prop on
+				prop._term_key = vep._propertyterm_key
+			left outer join mgi_note n on
+				n._object_key = vep._evidenceproperty_key
+				and n._notetype_key = %d
+			left outer join mgi_notechunk nc on
+				nc._note_key = n._note_key
+			where ve._evidenceterm_key in (%s)
+				and vep._propertyterm_key in (%s)
+			order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum
+		''' % (
+			BATCH_TEMP_TABLE,
+			C.GO_EXTENSION_NOTETYPE_KEY,
+			evidenceKeyClause, 
+			propertyKeyClause
+		)
+	
+		(cols, rows) = dbAgnostic.execute(cmd)
+		
+		evidenceKeyCol = dbAgnostic.columnNumber (cols, '_annotevidence_key')
+		propertyCol = dbAgnostic.columnNumber (cols, 'property')
+		stanzaCol = dbAgnostic.columnNumber (cols, 'stanza')
+		seqnumCol = dbAgnostic.columnNumber (cols, 'sequencenum')
+		valueCol = dbAgnostic.columnNumber (cols, 'value')
+		displayValueCol = dbAgnostic.columnNumber (cols, 'display_value')
+		
 		for row in rows:
-			termKey = row[termCol]
-			headerKey = row[headerCol]
+			evidenceKey = row[evidenceKeyCol]
+			property = row[propertyCol]
+			stanza = row[stanzaCol]
+			seqnum = row[seqnumCol]
+			value = row[valueCol]
+			displayValue = row[displayValueCol]
 
-			if self.headers.has_key(termKey):
-				self.headers[termKey].append(headerKey)
-			else:
-				self.headers[termKey] = [ headerKey ]
+			# process the annotation extensions to remove comments, etc
+			value = extensionProcessor.processValue(value)
+			
+			if not displayValue:
+				displayValue = value
+			
+			propObj = {
+					'type': 'Annotation Extension',
+					'property':property,
+					'stanza':stanza,
+					'sequencenum':seqnum,
+					'value':displayValue,
+					}
+			propertiesMap.setdefault(evidenceKey, []).append(propObj)
+	
+	
+	def _queryIsoforms(self, propertiesMap):
+		"""
+		GO isoforms
+		
+		populates propertiesMap
+		"""
+		# query the correct keys to use for GO isoform properties
+		isoformProcessor = go_isoforms.Processor()
+		propertyTermKeys = isoformProcessor.querySanctionedPropertyTermKeys()
 
-		logger.debug('Cached %d headers for %d terms' % (
-			len(rows), len(self.headers)) )
+		propertyKeyClause = ",".join([str(k) for k in propertyTermKeys])
 
-		self.results[15] = (cols, [])
-		gc.collect()
-		return
-
-	def buildMarkerCache (self):
-		global MARKER_DATA
-
-		cols, rows = self.results[13]
-
-		markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
-		symbolCol = Gatherer.columnNumber (cols, 'symbol')
-		nameCol = Gatherer.columnNumber (cols, 'name')
-		ldbCol = Gatherer.columnNumber (cols, 'logical_db')
-		idCol = Gatherer.columnNumber (cols, 'accID')
-		chromCol = Gatherer.columnNumber (cols, 'chromosome')
-
+		cmd = '''
+			select vep._annotevidence_key,
+			prop.term as property,
+			vep.stanza,
+			vep.sequencenum,
+			vep.value,
+			nc.note displayValue
+			from voc_evidence ve
+			join %s abt on
+				abt._annot_key = ve._annot_key
+			join voc_evidence_property vep on 
+				vep._annotevidence_key = ve._annotevidence_key
+			join voc_term prop on
+				prop._term_key = vep._propertyterm_key
+			join mgi_note n on
+				n._object_key = vep._evidenceproperty_key
+				and n._notetype_key = %s
+			join mgi_notechunk nc on
+				nc._note_key = n._note_key
+			where vep._propertyterm_key in (%s)
+			order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum
+		''' % (BATCH_TEMP_TABLE, 
+			C.GO_ISOFORM_NOTETYPE_KEY,
+			propertyKeyClause
+		)
+	
+		(cols, rows) = dbAgnostic.execute(cmd)
+		
+		evidenceKeyCol = dbAgnostic.columnNumber (cols, '_annotevidence_key')
+		propertyCol = dbAgnostic.columnNumber (cols, 'property')
+		stanzaCol = dbAgnostic.columnNumber (cols, 'stanza')
+		seqnumCol = dbAgnostic.columnNumber (cols, 'sequencenum')
+		valueCol = dbAgnostic.columnNumber (cols, 'value')
+		displayValueCol = dbAgnostic.columnNumber (cols, 'displayValue')
+		
 		for row in rows:
-			markerKey = row[markerKeyCol]
-			if MARKER_DATA.has_key(markerKey):
-				continue
-
-			MARKER_DATA[markerKey] = [
-				row[symbolCol], row[nameCol], row[idCol],
-				row[ldbCol], row[chromCol],
-				]
-
-		logger.debug ('Cached basic data for %d markers' % \
-			len(MARKER_DATA))
-
-		self.results[13] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory for result set 13')
-
-		toSort = []	# [ (symbol, name, marker key), ... ]
-		for (key, (symbol, name, accID, ldb, chrom)) \
-			in MARKER_DATA.items():
-
-			toSort.append ( (symbol.lower(), name.lower(), key) )
-
-		toSort.sort (compareMarkers)
-
-		i = 0
-		for (symbol, name, key) in toSort:
-			i = i + 1
-			MARKER_DATA[key].append (i)
-
-		logger.debug ('Sorted %d markers' % len(toSort)) 
-
-		# remember what the highest marker sort value is, so we can
-		# put other object types after it for sorts by marker
-
-		self.maxMarkerSequenceNum = i
-
-		del toSort
-		gc.collect()
-		logger.debug('Freed memory used to sort markers')
-		return
-
-	def getTermIDs (self):
-		cols, rows = self.results[0]
-		keyCol = Gatherer.columnNumber (cols, '_Object_key')
-		idCol = Gatherer.columnNumber (cols, 'accID')
-
-		termKeyToID = {}
+			evidenceKey = row[evidenceKeyCol]
+			property = row[propertyCol]
+			stanza = row[stanzaCol]
+			seqnum = row[seqnumCol]
+			displayValue = row[displayValueCol]
+				
+			propObj = {
+					'type': 'Isoform',
+					'property':property,
+					'stanza':stanza,
+					'sequencenum':seqnum,
+					'value':displayValue,
+					}
+			propertiesMap.setdefault(evidenceKey, []).append(propObj)
+				
+	
+	def queryPropertyDisplayNames(self):
+		"""
+		Query annotation property display names
+			
+		Returns propDisplayMap as {property -> [displayName] }
+		
+		Looks specifically fo GO Property synonyms
+		"""
+		
+		# Get synonyms for GO Properties
+		
+		cmd = '''select t.term as property,
+			ms.synonym as display
+		from voc_term t
+		join mgi_synonym ms on
+			ms._object_key = t._term_key
+			and ms._synonymtype_key = %d
+		''' % C.GOREL_SYNONYM_TYPE
+		
+		(cols, rows) = dbAgnostic.execute(cmd)
+		
+		propertyCol = dbAgnostic.columnNumber (cols, 'property')
+		displayNameCol = dbAgnostic.columnNumber (cols, 'display')
+		
+		propDisplayMap = {}
 		for row in rows:
-			termKeyToID[row[keyCol]] = row[idCol]
-
-		logger.debug ('Found %d term IDs' % len(termKeyToID))
-
-		self.results[0] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug('Freed memory for result set 0')
-
-		return termKeyToID
-
-	def getDags (self):
-		cols, rows = self.results[1]
-		keyCol = Gatherer.columnNumber (cols, '_Term_key')
-		dagCol = Gatherer.columnNumber (cols, '_DAG_key')
-
-		termKeyToDagKey = {}
+			property = row[propertyCol]
+			displayName = row[displayNameCol]
+			
+			propDisplayMap[property] = displayName
+			
+		return propDisplayMap
+	
+	
+	def queryInferredFromIds(self):
+		"""
+		Query all inferredfrom IDs for 
+			_annot_key from BATCH_TEMP_TABLE
+		
+		Return map { _annotevidence_key: [{ id, organism, logicaldb}] }
+		"""
+		
+		# initialize an organism finder for the inferredfrom ID data
+		organismFinder = OrganismFinder(annotBatchTableName=BATCH_TEMP_TABLE)
+				
+		# These sequences will be mapped to MGI logicaldb for linking
+		mgi_sequence_logicaldbs = set(['Sequence DB','SWISS-PROT','NCBI Query'])
+		
+		cmd = '''
+			select ve._annotevidence_key,
+			a.accid,
+			ldb._logicaldb_key,
+			ldb.name as logicaldb
+			from voc_evidence ve
+			join acc_accession a on
+				a._object_key = ve._annotevidence_key
+				and a._mgitype_key = 25
+			join acc_logicaldb ldb on
+				ldb._logicaldb_key = a._logicaldb_key
+		'''
+		
+		(cols, rows) = dbAgnostic.execute(cmd)
+		
+		evidenceKeyCol = dbAgnostic.columnNumber (cols, '_annotevidence_key')
+		accidCol = dbAgnostic.columnNumber (cols, 'accid')
+		ldbKeyCol = dbAgnostic.columnNumber (cols, '_logicaldb_key')
+		ldbCol = dbAgnostic.columnNumber (cols, 'logicaldb')
+		
+		
+		inferredfromIdMap = {}
 		for row in rows:
-			termKeyToDagKey[row[keyCol]] = row[dagCol]
-
-		logger.debug ('Found %d DAG keys for terms' % \
-			len(termKeyToDagKey))
-
-		self.results[1] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug('Freed memory for result set 1')
-
-		return termKeyToDagKey
-
-	def getEvidence (self):
-		cols, rows = self.results[2]
-
-		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-		evidenceTermCol = Gatherer.columnNumber (cols,
-			'_EvidenceTerm_key')
-		jnumCol = Gatherer.columnNumber (cols, 'jnumID')
-		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
-		inferredFromCol = Gatherer.columnNumber (cols, 'inferredFrom')
-
-		# mgd's _Annot_key -> [ new annotation keys ]
-		mgdToNewKeys = {}
-
-		# new annotation key -> evidence key
-		annotationEvidence = {}
-
-		# new annotation key -> [ (reference key, jnum ID), ... ]
-		annotationRefs = {}
-
-		for row in rows:
-			annotKey = self.translateAnnotKey(row[annotKeyCol])
-
-			# if we need to skip this, just move on
-			if annotKeyToSkip.has_key(annotKey):
-				continue
-
-			evidenceTermKey = row[evidenceTermCol]
-			inferredFrom = row[inferredFromCol]
-
-#			newKey = getNewAnnotationKey (annotKey,
-#				evidenceTermKey, inferredFrom)
-
-			newKey = getNewAnnotationKey (annotKey,
-				evidenceTermKey = evidenceTermKey,
-				inferredFrom = inferredFrom)
-
-			if not mgdToNewKeys.has_key(annotKey):
-				mgdToNewKeys[annotKey] = [ newKey ]
-			elif not newKey in mgdToNewKeys[annotKey]:
-				mgdToNewKeys[annotKey].append (newKey)
-
-			if not annotationEvidence.has_key(newKey):
-				annotationEvidence[newKey] = \
-					row[evidenceTermCol]
-
-			ref = (row[refsCol], row[jnumCol])
-			if not annotationRefs.has_key(newKey):
-				annotationRefs[newKey] = [ ref ]
-			elif not ref in annotationRefs[newKey]:
-				annotationRefs[newKey].append(ref)
-
-		logger.debug ('Found evidence info for %d annotations' % \
-			len(annotationEvidence) )
-
-		self.results[2] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug('Freed memory for result set 2')
-
-		return mgdToNewKeys, annotationEvidence, annotationRefs
-
-	def getSpecialIDs (self):
-		# get the set of "inferred from" IDs which are sequence IDs
-		# from certain providers that we want to redirect to our own
-		# sequence detail page
-
-		cols, rows = self.results[4]
-
-		idCol = Gatherer.columnNumber (cols, 'accID')
-		ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
-
-		specialIDs = {}
-		for row in rows:
-			specialIDs[row[idCol]] = row[ldbKeyCol]
-
-		logger.debug ('Found %d seq IDs to send to MGI' % \
-			len(specialIDs))
-		return specialIDs
-
-	def getInferredFromIDs (self):
-		# get the various inferred-from IDs for each annotation
-
-		seqIDs = self.getSpecialIDs()
-
-		cols, rows = self.results[3]
-
-		akeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-		evidenceCol = Gatherer.columnNumber(cols, '_EvidenceTerm_key')
-		idCol = Gatherer.columnNumber (cols, 'accID')
-		ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
-		ldbCol = Gatherer.columnNumber (cols, 'logical_db')
-		inferredCol = Gatherer.columnNumber (cols, 'inferredFrom')
-		preferredCol = Gatherer.columnNumber (cols, 'preferred')
-
-		ids = {}	# new annotation key -> list of (acc ID,
-				# ... logical db, preferred)
-
-		for row in rows:
-			annotKey = self.translateAnnotKey(row[akeyCol])
-
-			# if we need to skip this, just move on
-			if annotKeyToSkip.has_key(annotKey):
-				continue
-
-			evidence = row[evidenceCol]
-			id = row[idCol]
+			evidenceKey = row[evidenceKeyCol]
+			accid = row[accidCol]
 			ldbKey = row[ldbKeyCol]
-			ldbName = row[ldbCol]
-
-			# get the special key we are generating for each
-			# unique (annotation key, evidence term key,
-			# inferred from) tuple
-
-			newAnnotKey = getNewAnnotationKey (annotKey,
-				evidenceTermKey = evidence,
-				inferredFrom = row[inferredCol])
-
-			# for certain sequences, we want to have any links go
-			# to MGI rather than to the logical database
-
-			if seqIDs.has_key(id):
-				if seqIDs[id] == ldbKey:
-					ldbKey = 1
-					ldbName = 'MGI'
-
-			tpl = (id, ldbName, row[preferredCol])
-
-			# store the ID info for this GO annot key
-
-			if not ids.has_key(newAnnotKey):
-				ids[newAnnotKey] = [ tpl ]
-			elif not tpl in ids[newAnnotKey]:
-				ids[newAnnotKey].append(tpl)
-
-		logger.debug ('Found inferred-from IDs for %d records' % \
-			len(ids))
-
-		self.results[3] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory from result set 3')
-
-		return ids
-
-	def getSortingMaps (self):
-		byVocab = {}
-		byAnnotType = {}
-		byTermAlpha = {}
-
-		toDo = [ (byVocab, 6), (byAnnotType, 7), (byTermAlpha, 8) ]
-
-		for (d, num) in toDo:
-			cols, rows = self.results[num]
-
-			keyCol = Gatherer.columnNumber (cols, 'myKey')
-			nameCol = Gatherer.columnNumber (cols, 'name')
-
-			i = 0
-			for row in rows:
-				i = i + 1
-				d[row[keyCol]] = i
-				d[row[nameCol]] = i
-
-			self.results[num] = (cols, [])
-			del rows
-			gc.collect()
-			logger.debug('Freed memory from result set %d' % num)
-
-		logger.debug ('Loaded %d sorting maps' % len(toDo))
-		return byVocab, byAnnotType, byTermAlpha
-
-	def buildQuery9Rows (self, byVocab, byAnnotType, byTermAlpha):
-		# build the extra rows from query 9, where we get the set of
-		# MP annotations that have been rolled-up to markers
-
-		# see aCols, mCols, and sCols in buildRows() for column order
-		# for these three lists, respectively:
-
-		aRows = []
-		mRows = []
-		sRows = []
-
-		cols, rows = self.results[9]
-
-		termCol = Gatherer.columnNumber (cols, 'term')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		accIDCol = Gatherer.columnNumber (cols, 'accID')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-		typeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
-
-		# We only want to keep the first annotation for a given
-		# (marker, term) pair, so we need to track what ones we have
-		# kept so far:
-		done = {}	# (marker key, term ID) -> 1
-
-		# need a key generator that defines a unique annotation to
-		# include term ID, marker key, and a special annotation type
-		tmsKeyGenerator = \
-			AnnotationKeyGenerator.TermMarkerSpecialKeyGenerator()
-
-		annotTypeKey = MP_MARKER
-		annotType = 'Mammalian Phenotype/Marker'
-
-		for row in rows:
-			annotKey = self.translateAnnotKey(row[annotKeyCol])
-
-			# if we need to skip this, just move on
-			# (should not happen here, but we add it just in case)
-			if annotKeyToSkip.has_key(annotKey):
-				continue
-
-			markerKey = row[markerCol]
-			termID = row[accIDCol]
-			pair = (markerKey, termID)
-
-			if done.has_key(pair):
-				continue
-			done[pair] = 1
-
-			termKey = row[termKeyCol]
-			vocabKey = row[vocabKeyCol]
-			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
-				'_Vocab_key', 'name')
-
-			annotationKey = tmsKeyGenerator.getKey (annotKey,
-				termID = termID,
-				markerKey = markerKey,
-				specialType = 'MP/Marker')
-
-			if done.has_key(annotationKey):
-				continue
-			done[annotationKey] = 1
-
-			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey, None, None,
-				'Marker', annotType, 0, 0 ]
-			aRows.append (aRow)
-
-			mRow = [ len(mRows), markerKey, annotationKey,
-				None, None, annotType ]
-			mRows.append (mRow)
-
-			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
-
-			sRow = [ annotationKey,
-				VocabSorter.getSequenceNum(termKey),
-				byTermAlpha[termKey],
-				byVocab[vocabKey],
-				0,
-				vdt,
-				]
-			sRows.append (sRow)
-
-			self.byObject.append ( (annotationKey, 'Marker',
-				getMarkerSeqNum(markerKey), vdt) )
-
-		logger.debug ('Pulled %d MP terms up to markers' % \
-			len(aRows) )
-
-		self.results[9] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory from result set 9')
-
-		return aRows, mRows, sRows
-
-	def buildQuery10Rows (self, aRows, mRows, sRows, byVocab, byAnnotType,
-			byTermAlpha):
-		# build the extra rows from query 10, where we pull Protein
-		# Ontology IDs associated with markers up to be annotations
-
-		# see aCols, mCols, and sCols in buildRows() for column order
-		# for these three lists, respectively:
-
-		cols, rows = self.results[10]
-
-		termCol = Gatherer.columnNumber (cols, 'term')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		accIDCol = Gatherer.columnNumber (cols, 'accID')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		accKeyCol = Gatherer.columnNumber (cols, '_Accession_key')
-
-		# need a key generator that accounts for accession keys,
-		# term IDs, marker keys, and a special annotation type
-		atmsKeyGenerator = AnnotationKeyGenerator.AccessionTermMarkerSpecialKeyGenerator()
-
-		for row in rows:
-			markerKey = row[markerCol]
-			termID = row[accIDCol]
-			termKey = row[termKeyCol]
-			vocabKey = row[vocabKeyCol]
-			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
-				'_Vocab_key', 'name')
-			accKey = row[accKeyCol]
-
-#			annotationKey = getNewAnnotationKey (accKey,
-#				termID, markerKey, 'PRO/Marker')
-
-			annotationKey = atmsKeyGenerator.getKey (None,
-				accessionKey = accKey,
-				termID = termID,
-				markerKey = markerKey,
-				specialType = 'PRO/Marker')
-
-			annotType = 'Protein Ontology/Marker'
-
-			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey,
-				None, None, 'Marker',
-				annotType, 0, 0 ]
-			aRows.append (aRow)
-
-			mRow = [ len(mRows), markerKey, annotationKey,
-				None, None, annotType ]
-			mRows.append (mRow)
-
-			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
-
-			sRow = [ annotationKey,
-				VocabSorter.getSequenceNum(termKey),
-				byTermAlpha[termKey],
-				byVocab[vocabKey],
-				999,
-				vdt,
-				]
-			sRows.append (sRow)
-
-			self.byObject.append ( (annotationKey, 'Marker',
-				getMarkerSeqNum(markerKey), vdt) )
-
-		logger.debug ('Pulled in %d Protein Ontology terms' % \
-			len(rows) )
-
-		self.results[10] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug('Freed memory from result set 10')
-
-		return aRows, mRows, sRows
-
-	def buildQuery12Rows (self, aRows, mRows, sRows,
-			byVocab, byAnnotType, byTermAlpha):
-		# build the extra rows from query 12, where we pull a set of
-		# of derived OMIM annotations to mouse markers
-
-		# see aCols, mCols, and sCols in buildRows() for column order
-		# for these three lists, respectively:
-
-		cols, rows = self.results[12]
-
-		termCol = Gatherer.columnNumber (cols, 'term')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		accIDCol = Gatherer.columnNumber (cols, 'accID')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
-		markerCol = Gatherer.columnNumber (cols, '_Object_key')
-		annotKeyCol = Gatherer.columnNumber (cols, '_Annot_key')
-
-		annotTypeKey = OMIM_MARKER
-		annotType = 'OMIM/Marker'
-
-		# We only want to keep the first annotation for a given
-		# (marker, term) pair, so we need to track what ones we have
-		# kept so far:
-		done = {}	# (marker key, term ID) -> 1
-
-		# need a key generator that takes into account the term ID,
-		# marker key, and a special annotation type
-		tmsKeyGenerator = \
-			AnnotationKeyGenerator.TermMarkerSpecialKeyGenerator()
-
-		for row in rows:
-			annotKey = self.translateAnnotKey(row[annotKeyCol])
-
-			# if we need to skip this, just move on
-			# (should not happen here, but we add it just in case)
-			if annotKeyToSkip.has_key(annotKey):
-				continue
-
-			markerKey = row[markerCol]
-			termID = row[accIDCol]
-			pair = (markerKey, termID)
-
-			if done.has_key(pair):
-				continue
-			done[pair] = 1
-
-			termKey = row[termKeyCol]
-			vocabKey = row[vocabKeyCol]
-			vocab = Gatherer.resolve (vocabKey, 'voc_vocab',
-				'_Vocab_key', 'name')
-
-			# use termID and markerKey to distinguish genotypes
-			# with multiple allele pairs and different markers
-
-			annotationKey = tmsKeyGenerator.getKey (annotKey,
-				termID = termID,
-				markerKey = markerKey,
-				specialType = annotType)
-
-			if done.has_key(annotationKey):
-				continue
-			done[annotationKey] = 1
-
-			aRow = [ annotationKey, None, None, vocab,
-				row[termCol], termID, termKey,
-				None, None, 'Marker',
-				annotType, 0, 0 ]
-			aRows.append (aRow)
-
-			mRow = [ len(mRows), markerKey, annotationKey,
-				None, None, annotType ]
-			mRows.append (mRow)
-
-			vdt = VocabSorter.getVocabDagTermSequenceNum(termKey)
-
-			sRow = [ annotationKey,
-				VocabSorter.getSequenceNum(termKey),
-				byTermAlpha[termKey],
-				byVocab[vocabKey],
-				0,
-				vdt,
-				]
-			sRows.append (sRow)
-
-			self.byObject.append ( (annotationKey, 'Marker',
-				getMarkerSeqNum(markerKey), vdt) )
-
-		logger.debug ('Pulled %d OMIM terms up to markers' % \
-			len(aRows) )
-
-		self.results[12] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory from result set 12')
-
-		return aRows, mRows, sRows
-
-	def cacheAnnotationData (self):
-		# our base data is in the results from query 5
-
-		global annotKeyToSkip
-
-		cols, rows = self.results[5]
-
-		annotCol = Gatherer.columnNumber (cols, '_Annot_key')
-		objectCol = Gatherer.columnNumber (cols, '_Object_key')
-		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		annotTypeKeyCol = Gatherer.columnNumber (cols,
-			'_AnnotType_key')
-		objectTypeCol = Gatherer.columnNumber (cols, '_MGIType_key')
-
-		for row in rows:
-			# for GO annotations (type 1000), we need to check
-			# that we should keep it
-
-			annotKey = self.translateAnnotKey(row[annotCol])
-			annotType = row[annotTypeKeyCol]
-
-			if annotType == 1000:
-				if not GOFilter.shouldInclude(annotKey):
-					annotKeyToSkip[annotKey] = 1
-					continue
-
-			AnnotationKeyGenerator.cacheAnnotationAttributes (
-				annotKey,
-				row[annotTypeKeyCol], row[objectCol],
-				row[termKeyCol], row[qualifierCol])
-
-		logger.debug ('Cached data for %d annotations' % len(rows))
-		logger.debug ('Skipped %d GO ND annotations' % \
-			len(annotKeyToSkip))
-		return
-
-	def filterInvalidMarkers (self, mRows):
-		# filter out any rows from mRows where are for invalid marker
-		# keys
-		cols, rows = self.results[11]
-
-		validKeys = {}
-		for row in rows:
-			validKeys[row[0]] = 1
-
-		i = len(mRows) - 1
-		ct = 0
-
-		while i >= 0:
-			markerKey = mRows[i][1]
-			if not validKeys.has_key(markerKey):
-				del mRows[i]
-				ct = ct + 1
-			i = i - 1
-
-		logger.debug ('Filtered out %d marker annotation rows' % ct) 
-
-		self.results[11] = (cols, [])
-		del rows
-		gc.collect()
-		logger.debug ('Freed memory for result set 11')
-
-		return mRows
-
-	def buildRows (self, termKeyToID, termKeyToDagKey, mgdToNewKeys,
-		annotationEvidence, annotationRefs, inferredFromIDs):
-
-		# We will produe rows for four tables on the first pass:
-
-		# annotation table columns and rows
-		aCols = [ 'annotation_key', 'dag_name', 'qualifier',
-			'vocab_name', 'term', 'term_id', 'term_key',
-			'evidence_code', 'evidence_term',
-			'object_type', 'annotation_type', 'reference_count',
-			'inferred_id_count' ]
-		aRows = []
-
-		# annotation_inferred_from_id columns and rows
-		iCols = [ 'unique_key', 'annotation_key', 'logical_db',
-			'acc_id', 'organism', 'preferred', 'private',
-			'sequence_num' ]
-		iRows = []
-
-		# annotation_reference columns and rows
-		rCols = [ 'unique_key', 'annotation_key', 'reference_key',
-			'jnum_id', 'sequence_num' ]
-		rRows = []
-
-		# marker_to_annotation columns and rows
-		mCols = [ 'unique_key', 'marker_key', 'annotation_key',
-			'reference_key', 'qualifier', 'annotation_type' ]
-		mRows = []
-
-		# genotype_to_annotation columns and rows
-		gCols = [ 'unique_key', 'genotype_key', 'annotation_key',
-			'reference_key', 'qualifier', 'annotation_type' ]
-		gRows = []
-
-		# annotation_sequence_num columns and rows
-		sCols = [ 'annotation_key', 'by_dag_structure',
-			'by_term_alpha', 'by_vocab', 'by_annotation_type',
-			'by_vocab_dag_term', 'by_marker_dag_term' ]
-		sRows = []
-
-		# annotation_to_header columns and rows
-		hCols = [ 'annotation_key', 'header_term_key' ]
-		hRows = []
-
-		finder = OrganismFinder()
-
-		# object/dag/term sorting to be done later; just collect the
-		# needed data for now.  We need to put this in an instance
-		# variable so other methods can populate it as well. Contains:
-		# [ (annot key, object type, object seq num,
-		#    vocab/dag/term seq num), ... ]
-		self.byObject = []
-
-		# get our sorting maps for vocab and annotation type
-		byVocab, byAnnotType, byTermAlpha = self.getSortingMaps()
-
-		# get the starter data for markers that we're pulling up from
-		# MP/genotype annotations
-
-		aRows, mRows, sRows = self.buildQuery9Rows(byVocab,
-			byAnnotType, byTermAlpha)
-
-		# fill in the Protein Ontology data
-		aRows, mRows, sRows = self.buildQuery10Rows (aRows, mRows,
-			sRows, byVocab, byAnnotType, byTermAlpha)
-
-		# fill in the OMIM data (pulled up from genotypes to markers)
-		aRows, mRows, sRows = self.buildQuery12Rows (aRows, mRows,
-			sRows, byVocab, byAnnotType, byTermAlpha)
-
-		# our base data is in the results from query 5
-		cols, rows = self.results[5]
-
-		annotCol = Gatherer.columnNumber (cols, '_Annot_key')
-		objectCol = Gatherer.columnNumber (cols, '_Object_key')
-		qualifierCol = Gatherer.columnNumber (cols, '_Qualifier_key')
-		termKeyCol = Gatherer.columnNumber (cols, '_Term_key')
-		vocabKeyCol = Gatherer.columnNumber (cols, '_Vocab_key')
-		annotTypeCol = Gatherer.columnNumber (cols, 'annotType')
-		annotTypeKeyCol = Gatherer.columnNumber (cols,
-			'_AnnotType_key')
-		termCol = Gatherer.columnNumber (cols, 'term')
-		objectTypeCol = Gatherer.columnNumber (cols, '_MGIType_key')
-
-		# new annot key -> 1 (once done)
-		done = {}
-
-		# need a key generator that only considers the annotation key
-		# and the special 'no evidence' type
-		sKeyGenerator = AnnotationKeyGenerator.SpecialKeyGenerator()
-
-		for row in rows:
-			# base values that we'll need later
-			annotKey = self.translateAnnotKey(row[annotCol])
-
-			# if we need to skip this, just move on
-			if annotKeyToSkip.has_key(annotKey):
-				continue
-
-			mgiType = row[objectTypeCol]
-			objectKey = row[objectCol]
-			termKey = row[termKeyCol]
-			term = row[termCol]
-			annotType = row[annotTypeCol]
-			termID = None
-			vocabKey = row[vocabKeyCol]
-			annotTypeKey = row[annotTypeKeyCol]
-
-			if termKeyToID.has_key(termKey):
-				termID = termKeyToID[termKey]
-
-			# resolve the keys to their respective terms
-			qualifier = Gatherer.resolve (row[qualifierCol])
-			objectType = Gatherer.resolve (row[objectTypeCol],
-				'ACC_MGIType', '_MGIType_key', 'name')
-			vocab = Gatherer.resolve (vocabKey,
-				'VOC_Vocab', '_Vocab_key', 'name')
-
-			dagName = None	# name of the term's DAG
-
-			if termKeyToDagKey.has_key(termKey):
-				dagKey = termKeyToDagKey[termKey]
-				if dagKey:
-					dagName = Gatherer.resolve (dagKey,
-						'DAG_DAG', '_DAG_key', 'name')
-
-			# list of annotation records produced for this
-			# object for this mgd annotation record
-			annotations = []
-
-			# for annotations without evidence, they would not
-			# have been assigned a new annotation key for the
-			# front-end database; get one now
-			if not mgdToNewKeys.has_key(annotKey):
-				mgdToNewKeys[annotKey] = [
-				    sKeyGenerator.getKey(annotKey,
-					    specialType = 'no evidence') ]
-
-			for annotationKey in mgdToNewKeys[annotKey]:
-			    refCount = 0	# number of references
-			    idCount = 0		# number of inferred-from IDs
-			    evidenceCode = None	# default to no evidence code
-			    evidenceTerm = None	# default to no evidence code
-
-			    if done.has_key(annotationKey):
-				    continue
-			    done[annotationKey] = 1
-
-			    # look up an evidence code, if one exists
-			    if annotationEvidence.has_key(annotationKey):
-				evidenceCode = Gatherer.resolve (
-				    annotationEvidence[annotationKey],
-				    'VOC_Term', '_Term_key', 'abbreviation')
-				evidenceTerm = Gatherer.resolve (
-				    annotationEvidence[annotationKey],
-				    'VOC_Term', '_Term_key', 'term')
-
-			    # reference records
-			    if annotationRefs.has_key(annotationKey):
-				refs = annotationRefs[annotationKey]
-				for (refsKey, jnum) in refs:
-				    rRows.append ( (len(rRows),
-					annotationKey, refsKey, jnum,
-					len(rRows) ) )
-				refCount = len(annotationRefs[annotationKey])
-
-			    # inferred-from IDs
-			    if inferredFromIDs.has_key(annotationKey):
-				ids = inferredFromIDs[annotationKey]
-				for (id, ldb, preferred) in ids:
-				    iRows.append ( (len(iRows),
-					annotationKey, ldb, id,
-					finder.getOrganism(id),
-					preferred, 0, len(iRows) ) )
-				idCount = len(inferredFromIDs[annotationKey])
-
-			    # populate annotation table
-
-			    baseRow = [ annotationKey, dagName, qualifier,
-				vocab, term, termID, termKey,
-				evidenceCode, evidenceTerm,
-				objectType, annotType, refCount, idCount ]
-
-			    aRows.append (baseRow)
-
-			    # populate the mapping to headers, if needed
-
-			    if self.headers.has_key(termKey):
-				    for hKey in self.headers[termKey]:
-					    hRows.append((annotationKey, hKey))
-
-			    # populate annotation_sequence_num table
-
-			    vdt = VocabSorter.getVocabDagTermSequenceNum(
-				termKey)
-
-			    sRow = [ annotationKey,
-				VocabSorter.getSequenceNum(termKey),
-				byTermAlpha[termKey],
-				byVocab[vocabKey],
-				byAnnotType[annotTypeKey],
-				vdt,
-				]
-			    sRows.append (sRow)
+			ldb = row[ldbCol]
 			
-			    if mgiType == MARKER:
-				self.byObject.append ( (annotationKey,
-				    objectType,
-				    getMarkerSeqNum(objectKey), vdt) )
-			    elif mgiType == GENOTYPE:
-				self.byObject.append ( (annotationKey,
-				    objectType,
-				    AlleleAndGenotypeSorter.getGenotypeSequenceNum(objectKey),
-				    vdt) )
-			    else:
-				self.byObject.append ( (annotationKey,
-				    objectType,
-				    self.maxMarkerSequenceNum + 1, vdt) )
+			# Some sequences will be mapped to MGI logicaldb for URL linking
+			if ldb in mgi_sequence_logicaldbs:
+				ldb = 'MGI'
+			
+			organism = organismFinder.getOrganism(accid)
+			
+			inferredfromObj = {'id':accid, 
+							'organism': organism, 
+							'logicaldb': ldb
+			}
+			
+			inferredfromIdMap.setdefault(evidenceKey, []).append(inferredfromObj)
+			
+		
+		return inferredfromIdMap
+	
+	
+	def queryHeaderTerms(self):
+		"""
+		Query annotation header terms for
+			_annot_key in BATCH_TEMP_TABLE
+			
+		Returns headerMap as {_term_key -> [_header_key] }
+			
+		Note: Only processes GO header terms
+		"""
+		
+		# Get terms for GO
+		
+		cmd = '''select t._Term_key as header_key,
+		t._term_key
+		from voc_term t
+		join voc_annot va on
+			va._term_key = t._term_key
+		join %s abt on
+			abt._annot_key = va._annot_key
+		where t._Vocab_key = 4
+			and t.abbreviation is not null
+			and t.sequenceNum is not null
+		union
+		select h._Term_key as header_key, 
+		t._term_key
+		from voc_term h
+		join dag_closure dc on
+			dc._ancestorobject_key = h._term_key
+		join voc_term t on
+			t._term_key = dc._descendentobject_key
+		join voc_annot va on
+			va._term_key = t._term_key
+		join %s abt on
+			abt._annot_key = va._annot_key
+		where h._Vocab_key = 4
+			and h.abbreviation is not null
+			and h.sequenceNum is not null
+		''' % (BATCH_TEMP_TABLE, BATCH_TEMP_TABLE)
+		
+		(cols, rows) = dbAgnostic.execute(cmd)
+		
+		termKeyCol = dbAgnostic.columnNumber (cols, '_term_key')
+		headerKeyCol = dbAgnostic.columnNumber (cols, 'header_key')
+		
+		headerMap = {}
+		for row in rows:
+			termKey = row[termKeyCol]
+			headerKey = row[headerKeyCol]
+			
+			headerMap.setdefault(termKey, []).append(headerKey)
+			
+		return headerMap
+	
+	
+	### Helper Methods ###
+	
+	def transformAnnotations(self):
+		"""
+		Perform data transforms on the base annotation record data
+		"""
+		
+		# make query results editable
+		self.results[3] = ( self.results[3][0], dbAgnostic.tuplesToLists(self.results[3][1]) )
+		
+		cols, rows = self.results[3]
+		
+		
+		transform.transformAnnotationType(cols, rows)
+			
+		
 
-			    # remember this annotation for later use
+	### Building specific tables ###
 
-			    annotations.append ( (annotationKey, qualifier,
-				    annotType) )
-
-			# use the annotations to populate the necessary join
-			# tables to other objects
-
-		 	if row[objectTypeCol] == MARKER:
-			    for (annotationKey, qualifier, annotType) in \
-				annotations:
-
-				mRows.append ( (len(mRows), objectKey,
-				    annotationKey, None, qualifier,
-				    annotType) )
-
-			elif row[objectTypeCol] == GENOTYPE:
-			    for (annotationKey, qualifier, annotType) in \
-				annotations:
-
-				gRows.append ( (len(gRows), objectKey,
-				    annotationKey, None, qualifier,
-				    annotType) )
-
-		logger.debug ('Collected basic data')
-
-		mRows = self.filterInvalidMarkers(mRows)
-
-		logger.debug ('Filtered invalid markers')
-
-		# now we need to go back, compute, and append to 'sRows' the
-		# sorting by object and vocab/dag/term for each annotation;
-		# sort by object type, object nomen, then vocab/dag/term, then
-		# annot key
-
-		self.byObject.sort (lambda a, b : cmp(
-			(a[1], a[2], a[3], a[0]),
-			(b[1], b[2], b[3], b[0]) ) )
-
-		i = 0
-		byAnnotation = {}
-		for (annotationKey, objectType, objectSeqNum, termSeqNum) in self.byObject:
-			i = i + 1
-			byAnnotation[annotationKey] = i 
-
-		for sRow in sRows:
-			sRow.append(byAnnotation[sRow[0]])
-
-		logger.debug ('Appended extra marker/dag sort')
-
-		self.output = [ (aCols, aRows), (iCols, iRows),
-			(rCols, rRows), (mCols, mRows), (sCols, sRows),
-			(gCols, gRows), (hCols, hRows) ]
-		logger.debug ('%d annotations, %d IDs, %d refs, %d markers' \
-			% (len(aRows), len(iRows), len(rRows), len(mRows) ) )
-		return
-
+	def buildAnnotation(self):
+		"""
+		build the annotation table
+		"""
+		
+		cols, rows = self.results[3]
+		
+		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		termCol = Gatherer.columnNumber (cols, 'term')
+		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
+		termIdCol = Gatherer.columnNumber (cols, 'term_id')
+		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		evidenceTermCol = Gatherer.columnNumber (cols, 'evidence_term')
+		evidenceCodeCol = Gatherer.columnNumber (cols, 'evidence_code')
+		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
+		inferredfromCol = Gatherer.columnNumber (cols, 'inferredfrom')
+		vocabCol = Gatherer.columnNumber (cols, 'vocab')
+		dagCol = Gatherer.columnNumber (cols, 'dag_name')
+		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		
+		if not rows:
+			return
+			
+		# fetch properties for grouping
+		propertiesMap = self.queryAnnotationProperties()
+		
+		# fetch inferredfrom IDs
+		inferredfromIdMap = self.queryInferredFromIds()
+			
+		# group/roll up annotations
+		groupMap = transform.groupAnnotations(cols, rows,
+										propertiesMap=propertiesMap)
+			
+		annots = []
+		for rows in groupMap.values():
+			
+			repRow = rows[0]
+			
+			# get basic info shared between grouped annotations
+			annotType = repRow[annotTypeCol]
+			term = repRow[termCol]
+			termKey = repRow[termKeyCol]
+			termId = repRow[termIdCol]
+			objectKey = repRow[objectKeyCol]
+			qualifier = repRow[qualifierCol]
+			evidenceKey = repRow[evidenceKeyCol]
+			evidenceTerm = repRow[evidenceTermCol]
+			evidenceCode = repRow[evidenceCodeCol]
+			dagName = repRow[dagCol]
+			vocabName = repRow[vocabCol]
+			mgitype = repRow[mgitypeCol]
+			
+			# count references
+			refKeys = set([])
+			for row in rows:
+				refsKey = row[refsKeyCol]
+				refKeys.add(refsKey)
+			refsCount = len(refKeys)
+			
+			# count inferredfrom IDs
+			inferredIds = set([])
+			for row in rows:
+				evidenceKey = row[evidenceKeyCol]
+				if evidenceKey in inferredfromIdMap:
+					for idObj in inferredfromIdMap[evidenceKey]:
+						inferredIds.add(idObj['id'])
+			inferredIdCount = len(inferredIds)
+			
+			# set the new annotation/evidence keys
+			for row in rows:
+				evidenceKey = row[evidenceKeyCol]
+				self.evidenceKeyToNew[evidenceKey] = self.curAnnotationKey
+			
+			# append new annotation row
+			annots.append((
+						self.curAnnotationKey,
+						dagName,
+						qualifier,
+						vocabName,
+						term,
+						termId,
+						termKey,
+						evidenceCode,
+						evidenceTerm,
+						mgitype,
+						annotType,
+						refsCount,
+						inferredIdCount
+						))
+			
+			self.curAnnotationKey += 1
+			
+			
+		self.addRows('annotation', annots)
+		
+		# store these for sub-table processing
+		self.annotPropertiesMap = propertiesMap
+		self.inferredfromIdMap = inferredfromIdMap
+		self.annotGroupsMap = groupMap
+		
+		
+	def buildAnnotationProperty(self):
+		"""
+		Build the annotation_property table
+		
+		Assumes self.annotPropertiesMap has been initialized (in buildAnnotation)
+		"""
+		
+		# get alternate display names for properties
+		propDisplayMap = self.queryPropertyDisplayNames()
+		
+		propertyRows = []
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		
+		for rows in self.annotGroupsMap.values():
+			
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+				
+			# get any properties
+			aggregatedProps = transform.getAggregatedProperties(cols, rows, self.annotPropertiesMap)
+			
+			if aggregatedProps:
+				
+				for prop in aggregatedProps:
+					
+					# if we have an alternate display synonym, use it
+					property = prop['property']
+					if property in propDisplayMap:
+						property = propDisplayMap[property]
+					
+					propertyRows.append((
+						newAnnotationKey,
+						prop['type'],
+						property,
+						prop['value'],
+						prop['stanza'],
+						prop['sequencenum']
+					))
+		
+		self.addRows('annotation_property', propertyRows)
+		
+	
+	def buildAnnotationInferredFromId(self):
+		"""
+		Build the annotation_inferred_from_id table
+		
+		Assumes that self.inferredfromIdMap has been initialized (in buildAnnotation)
+		"""
+		
+		# build the inferred_from_id rows
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		inferredfromCol = Gatherer.columnNumber (cols, 'inferredfrom')
+		
+		inferredIdRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			
+			# gather all the IDs for this grouped annotation 
+			inferredIdObjs = []
+			seenIds = set([])
+			for row in rows:
+				evidenceKey = row[evidenceKeyCol]
+				
+				if evidenceKey in self.inferredfromIdMap:
+					for idObj in self.inferredfromIdMap[evidenceKey]:
+						if (idObj['id'], idObj['logicaldb']) in seenIds:
+							continue
+						seenIds.add((idObj['id'], idObj['logicaldb']))
+						inferredIdObjs.append(idObj)
+						
+			# sort by IDs
+			inferredIdObjs.sort(key=lambda x: x['id'])
+			
+			seqnum = 1
+			for idObj in inferredIdObjs:
+				
+				logicalDb = idObj['logicaldb']
+				id = idObj['id']
+				organism = idObj['organism']
+				
+				inferredIdRows.append((
+					newAnnotationKey,
+					logicalDb,
+					id,
+					organism,
+					seqnum
+				))
+				
+				seqnum += 1
+						
+						
+		self.addRows('annotation_inferred_from_id', inferredIdRows)
+		
+		
+	def buildAnnotationReference(self):
+		"""
+		Build the annotation_reference table
+		"""
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
+		jnumidCol = Gatherer.columnNumber (cols, 'jnumid')
+		
+		referenceRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			
+			
+			# aggregate the references for this annotation group
+			seen = set([])
+			refs = []
+			for row in rows:
+				evidenceKey = row[evidenceKeyCol]
+				refsKey = row[refsKeyCol]
+				jnumid = row[jnumidCol]
+				
+				if refsKey in seen:
+					continue
+				seen.add(refsKey)
+				
+				refs.append( (refsKey, jnumid) )
+				
+			# sort by refsKey
+			refs.sort(key=lambda x: x[0])
+				
+			seqnum = 1
+			for ref in refs:
+				
+				referenceRows.append((
+					newAnnotationKey,
+					ref[0],
+					ref[1],
+					seqnum
+				))
+				
+				seqnum += 1
+				
+		self.addRows('annotation_reference', referenceRows)
+				
+				
+	def buildMarkerToAnnotation(self):
+		"""
+		Build the marker_to_annotation table
+		"""
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
+		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
+		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		
+		markerAnnotRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			objectKey = repRow[objectKeyCol]
+			mgitype = repRow[mgitypeCol]
+			
+			if mgitype == 'Marker':
+				
+				markerAnnotRows.append((
+					objectKey,
+					newAnnotationKey,
+					annotType
+				))
+				
+				
+		self.addRows('marker_to_annotation', markerAnnotRows)
+		
+	def buildGenotypeToAnnotation(self):
+		"""
+		Build the genotype_to_annotation table
+		"""
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
+		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
+		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
+		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		
+		genotypeAnnotRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			objectKey = repRow[objectKeyCol]
+			mgitype = repRow[mgitypeCol]
+			
+			if mgitype == 'Genotype':
+				
+				genotypeAnnotRows.append((
+					objectKey,
+					newAnnotationKey,
+					annotType
+				))
+				
+				
+		self.addRows('genotype_to_annotation', genotypeAnnotRows)
+		
+	
+	def buildAnnotationHeader(self):
+		"""
+		Build the annotation_to_header table
+		"""
+		
+		# query the _term_key -> header _term_key mappings
+		headerMap = self.queryHeaderTerms()
+		
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
+		
+		headerRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			termKey = repRow[termKeyCol]
+			
+			if termKey in headerMap:
+			
+				for headerKey in headerMap[termKey]:
+					
+					headerRows.append((
+						newAnnotationKey,
+						headerKey
+					))
+				
+				
+		self.addRows('annotation_to_header', headerRows)
+		
+		
+	def buildAnnotationSequenceNum(self):
+		"""
+		Build the annotation_sequence_num table
+		"""
+		
+		byVocabMap = sequence_num.queryByVocabSeqnums()
+		byAnnotTypeMap = sequence_num.queryByAnnotTypeSeqnums()
+		byTermAlphaMap = sequence_num.queryByTermAlphaSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
+		byTermDagMap = sequence_num.queryByTermDagSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
+		byVocabDagMap = sequence_num.queryByVocabDagSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
+		byObjectDagMap = sequence_num.queryByObjectDagSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
+		byIsoformMap = sequence_num.queryByIsoformSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
+		
+		cols = self.results[3][0]
+		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
+		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
+		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
+		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
+		vocabCol = Gatherer.columnNumber (cols, 'vocab')
+		
+		seqnumRows = []
+		
+		for rows in self.annotGroupsMap.values():
+		
+			repRow = rows[0]
+			
+			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
+			annotType = repRow[annotTypeCol]
+			annotKey = repRow[annotKeyCol]
+			termKey = repRow[termKeyCol]
+			vocab = repRow[vocabCol]
+			repEvidenceKey = repRow[evidenceKeyCol]
+			
+			byVocab = byVocabMap[vocab]
+			byAnnotType = byAnnotTypeMap[annotType]
+			byTermAlpha = byTermAlphaMap[termKey]
+			
+			byDagStructure = 0
+			if termKey in byTermDagMap:
+				byDagStructure = byTermDagMap[termKey]
+			
+			byVocabDagTerm = 0
+			if termKey in byVocabDagMap:
+				byVocabDagTerm = byVocabDagMap[termKey]
+				
+			byObjectDagTerm = 0
+			if annotKey in byObjectDagMap:
+				byObjectDagTerm = byObjectDagMap[annotKey]
+				
+			byIsoform = 0
+			if repEvidenceKey in byIsoformMap:
+				byIsoform = byIsoformMap[repEvidenceKey]
+					
+			seqnumRows.append((
+				newAnnotationKey,
+				byDagStructure,
+				byTermAlpha,
+				byVocab,
+				byAnnotType,
+				byVocabDagTerm,
+				byObjectDagTerm,
+				byIsoform
+			))
+				
+		self.addRows('annotation_sequence_num', seqnumRows)
+		
+	
 	def collateResults (self):
-		# build annotation consolidator
-		self.buildAnnotationConsolidator()
-
-		# cache marker data
-		self.buildMarkerCache()
-
-		# cache some of our base annotation data for use later
-		self.cacheAnnotationData()
-
-		# process query 0 - maps term key to primary ID
-		termKeyToID = self.getTermIDs()
-
-		# process query 1 - maps term key to DAG key
-		termKeyToDagKey = self.getDags()
-
-		# process query 2 - evidence for annotations
-		mgdToNewKeys, annotationEvidence, annotationRefs = \
-			self.getEvidence()
-
-		# process queries 3 and 4 - inferred-from IDs
-		inferredFromIDs = self.getInferredFromIDs()
-
-		# process query 15 - maps term key to its header term keys
-		self.cacheHeaderTerms()
-
-		# process query 5 and join with prior results
-		self.buildRows (termKeyToID, termKeyToDagKey, mgdToNewKeys,
-			annotationEvidence, annotationRefs, inferredFromIDs)
-		return
+		"""
+		Process the results of cmds queries
+		
+		Builds all the tables in files 
+			e.g. annotation, annotation_inferred_from_id, etc
+		"""
+		
+		# perform any necessary data transforms on the base query
+		self.transformAnnotations()
+		
+		# Build the tables for each batch
+		
+		self.buildAnnotation()
+		
+		self.buildAnnotationProperty()
+		
+		self.buildAnnotationInferredFromId()
+		
+		self.buildAnnotationReference()
+		
+		self.buildMarkerToAnnotation()
+		
+		self.buildGenotypeToAnnotation()
+		
+		self.buildAnnotationHeader()
+		
+		self.buildAnnotationSequenceNum()
+		
+		# clear the memory state for this batch of annotations
+		self.clearGlobals()
+		
+		
 
 ###--- globals ---###
 
 cmds = [
-	# Note that we're excluding the two derived annotation types from most
-	# of these queries, as they're handled specially.  (This ensures that
-	# NOTs are removed.  If we want all the derived annotations available
-	# here -- with their original annotation types -- then we just need to
-	# remove the restrictions.)
-
-	# 0. vocab terms' primary IDs
-	'''select _Object_key,
-		accID
-	from acc_accession
-	where _MGIType_key = 13
-		and private = 0
-		and preferred = 1''',
-
-	# 1. DAG key for each vocab term
-	'''select va._Term_key,
-		dn._DAG_key
-	from voc_annot va,
-		dag_node dn
-	where va._Term_key = dn._Object_key''',
-
-	# 2. evidence for each annotation
-	'''select ve._Annot_key,
-		ve._AnnotEvidence_key,
-		bc.jnumID,
-		bc._Refs_key,
-		bc.numericPart,
-		ve.inferredFrom,
-		ve._EvidenceTerm_key
-	from voc_evidence ve,
-		bib_citation_cache bc,
-		voc_annot va
-	where ve._Refs_key = bc._Refs_key
-		and ve._Annot_key = va._Annot_key
-		and va._AnnotType_key not in (%d, %d)
-	order by ve._Annot_key, bc.numericPart''' % (OMIM_MARKER, MP_MARKER),
-		
-	# 3. 'inferred from' IDs for each annotation/evidence pair
-	'''select ve._Annot_key,
-		ve._AnnotEvidence_key,
-		aa.accID,
-		aa._LogicalDB_key,
-		aa.prefixPart,
-		aa.numericPart,
-		aa.preferred,
-		ldb.name as logical_db,
-		ve.inferredFrom,
-		ve._EvidenceTerm_key
-	from voc_evidence ve,
-		acc_accession aa,
-		acc_logicaldb ldb,
-		voc_annot va
-	where ve._AnnotEvidence_key = aa._Object_key
-		and aa._MGIType_key = 25
-		and aa._LogicalDB_key = ldb._LogicalDB_key
-		and ve._Annot_key = va._Annot_key
-		and va._AnnotType_key not in (%d, %d)
-	order by ve._AnnotEvidence_key, aa.prefixPart, aa.numericPart''' % (
-		OMIM_MARKER, MP_MARKER),
-
-	# 4. get the set of IDs which are sequence IDs from NCBI, EMBL, and
-	# UniProt; for these, we will need to replace the logical database
-	# with the MGI logical database to link to our sequence detail page
-	'''select distinct aa.accID,
-		aa._LogicalDB_key
-	from acc_accession aa, %s aa2
-	where aa._MGIType_key = 19
-		and aa._LogicalDB_key in (68, 9, 13)
-		and aa.accID = aa2.accID''' % EVIDENCE_ID_TABLE,
-
-	# 5. get all annotations
-	'''select va._Object_key,
-		va._Annot_key,
-		va._Qualifier_key,
-		va._Term_key,
-		vat._AnnotType_key,
-		vat.name as annotType,
-		vt.term,
-		vat._MGIType_key,
-		vt._Vocab_key
-	from voc_annot va,
-		voc_annottype vat,
-		voc_term vt
-	where va._AnnotType_key = vat._AnnotType_key
-		and va._Term_key = vt._Term_key
-		and va._AnnotType_key not in (%d, %d)
-	order by _Object_key''' % (OMIM_MARKER, MP_MARKER),
-
-	# 6. get all vocabularies
-	'''select _Vocab_key as myKey,
-		name 
-	from voc_vocab 
-	order by name''',
-
-	# 7. get all annotation types
-	'''select _AnnotType_key as myKey,
-		name 
-	from voc_annottype
-	order by name''',
-
-	# 8. get all terms
-	'''select _Term_key as myKey,
-		term as name
-	from voc_term
-	order by term''',
-
-	# 9. get the set of MP annotations that have been rolled up to markers
-	# (only keep null qualifiers, to avoid NOT and "normal" annotations).
-	'''select distinct va._Annot_key,
-		va._Term_key,
-		t.term,
-		t._Vocab_key,
-		a.accID,
-		va._Object_key as _Marker_key,
-		va._AnnotType_key
-	from voc_annot va,
-		voc_term t,
-		acc_accession a,
-		voc_term q
-	where va._AnnotType_key = %d
-		and va._Term_key = t._Term_key
-		and va._Term_key = a._Object_key
-		and a._MGIType_key = 13
-		and a.preferred = 1
-		and va._Qualifier_key = q._Term_key
-		and q.term is null''' % MP_MARKER,
-
-	# 10. get the Protein Ontology IDs for each marker, so we can convert
-	# them to be annotations
-	'''select distinct a._Accession_key,
-		t._Term_key,
-		t.term,
-		a.accID,
-		t._Vocab_key,
-		a._Object_key as _Marker_key
-	from acc_accession a,
-		voc_term t,
-		acc_accession a2
-	where a._MGIType_key = 2
-		and a._LogicalDB_key = 135
-		and a.private = 0
-		and a.accID = a2.accID
-		and a2._MGIType_key = 13
-		and a2._Object_key = t._Term_key''',
-
-	# 11. get the valid marker keys
-	'''select _Marker_key from mrk_marker''',
-
-	# 12. get OMIM annotations that have been derived for mouse markers
-	# via a series of rollup rules in the production database.  (These
-	# annotations are made to genotypes and the rollup rules determine
-	# when they should be tied to a specific marker.)
-	# Exclude: annotations with a NOT qualifier
-	'''select va._Annot_key,
-		va._Term_key,
-		t.term,
-		t._Vocab_key,
-		a.accID,
-		va._Object_key
-	from voc_annot va,
-		voc_term t,
-		acc_accession a
-	where va._AnnotType_key = %d
-		and va._Term_key = t._Term_key
-		and va._Term_key = a._Object_key
-		and a._MGIType_key = 13
-		and a.preferred = 1
-		and va._Qualifier_key != %d''' % (
-			OMIM_MARKER, NOT_QUALIFIER),
-
-	# 13. get a set of basic data about markers so we can cache the marker
-	# data for each annotation (order by logical db key so MGI IDs come
-	# first and are preferred)
-	'''select m._Marker_key, m.symbol, m.name, m.chromosome,
-		ldb._LogicalDB_key, ldb.name as logical_db, a.accID
-	from mrk_marker m,
-		acc_accession a,
-		acc_logicaldb ldb
-	where m._Marker_key = a._Object_key
-		and a._MGIType_key = 2
-		and a.private = 0
-		and a.preferred = 1
-		and a._LogicalDB_key = ldb._LogicalDB_key
-	order by 1, 4''',
-
-	# 14. get a basic set of data about annotations, so we can consolidate
-	# into one all the disparate annotations that should really be
-	# considered a single annotation (based on matching annotation type,
-	# object key, term key, qualifier key)
-	'''select _Annot_key, _AnnotType_key, _Term_key, _Object_key,
-		_Qualifier_key
-	from voc_annot''',
-
-	# 15. mapping from GO terms to the keys of the header terms to which
-	# they can be aggregated.  (Only GO currently, because that's the only
-	# need.  If we need MP at a later date, switch to an IN and add it.)
-	'''select t._Term_key as header_term_key,
-		t._Term_key as term_key
-	from voc_term t
-	where t._Vocab_key = 4
-		and t.abbreviation is not null
-		and t.sequenceNum is not null
-	union
-	select h._Term_key as header_term_key, t._Term_key as term_key
-	from voc_term h, dag_closure dc, voc_term t
-	where h._Vocab_key = 4
-		and h.abbreviation is not null
-		and h.sequenceNum is not null
-		and h._Term_key = dc._AncestorObject_key
-		and dc._DescendentObject_key = t._Term_key''',
+	
+	#
+	# 0 - 2. setup a temp table for each batch
+	#
+	'''
+	drop table if exists %s
+	''' % BATCH_TEMP_TABLE,
+	'''
+	select _annot_key into
+	temp %s
+	from voc_annot va
+	order by va._annottype_key, va._object_key, va._term_key
+	limit 100000 		-- limit must match chunkSize
+	offset %%d -- %%d
+	''' % BATCH_TEMP_TABLE,
+	'''
+	create index annotation_batch_tmp_idx on %s (_annot_key)
+	''' % BATCH_TEMP_TABLE,
+	
+	#
+	# 3. Base Annotation/Evidence data
+	#
+	#	All other information is considered secondary and is
+	#	gathered at runtime for the specific sub-tables that
+	#	require secondary information (e.g. evidence properties & inferredfrom IDs)
+	#
+	'''select va._annot_key, 
+		vat.name as annottype, 
+		va._object_key, 
+		term._term_key,
+		term.term, 
+		term_acc.accid as term_id,
+		qual.term as qualifier,
+		ve._annotevidence_key, 
+		ev_term.term as evidence_term,
+		ev_term.abbreviation as evidence_code,
+		ve._refs_key, 
+		ref_acc.accid as jnumid,
+		ve.inferredfrom,
+		voc.name as vocab,
+		dag.name as dag_name,
+		mtype.name as mgitype
+		from voc_annot va
+		join %s abt on 			-- batch annotations with above temp table
+			abt._annot_key = va._annot_key
+		join voc_evidence ve on 
+			ve._annot_key = va._annot_key
+		join voc_annottype vat on
+			vat._annottype_key = va._annottype_key
+		join voc_term term on						-- annotated term
+			term._term_key = va._term_key
+		join voc_term qual on 						-- qualifier
+			qual._term_key = va._qualifier_key
+		join voc_term ev_term on 					-- evidence term/code
+			ev_term._term_key = ve._evidenceterm_key
+		join voc_vocab voc on						-- annotated vocab
+			voc._vocab_key = term._vocab_key
+		join acc_mgitype mtype on					-- mgi type
+			mtype._mgitype_key = vat._mgitype_key
+		join acc_accession ref_acc on				-- j number
+			ref_acc._object_key = ve._refs_key
+			and ref_acc._mgitype_key = 1
+			and ref_acc.prefixpart = 'J:'
+			and ref_acc.preferred = 1
+		left outer join acc_accession term_acc on	-- term accid
+			term_acc._object_key = va._term_key
+			and term_acc._mgitype_key = 13
+			and term_acc.preferred = 1
+			and term_acc.private = 0
+		left outer join dag_node dn on				-- dag name
+			dn._object_key = va._term_key
+		left outer join dag_dag dag on
+			dag._dag_key = dn._dag_key
+	''' % BATCH_TEMP_TABLE,
+	
 	]
 
 # definition of output files, each as:
@@ -1464,47 +953,75 @@ files = [
 			'evidence_code', 'evidence_term',
 			'object_type', 'annotation_type', 'reference_count',
 			'inferred_id_count' ],
-		'annotation'),
+		[ 'annotation_key', 'dag_name', 'qualifier', 'vocab_name',
+			'term', 'term_id', 'term_key',
+			'evidence_code', 'evidence_term',
+			'object_type', 'annotation_type', 'reference_count',
+			'inferred_id_count' ]
+	),
+		
+	('annotation_property',
+		['annotation_key', 'type', 'property', 'value', 'stanza', 'sequencenum' ],
+		[Gatherer.AUTO, 'annotation_key', 'type', 'property', 'value', 'stanza', 'sequencenum' ]
+	),
 
 	('annotation_inferred_from_id',
-		[ 'unique_key', 'annotation_key', 'logical_db', 'acc_id',
-			'organism', 'preferred', 'private', 'sequence_num' ],
-		'annotation_inferred_from_id'),
+		[ 'annotation_key', 'logical_db', 'acc_id',
+			'organism', 'sequence_num' ],
+		[ Gatherer.AUTO, 'annotation_key', 'logical_db', 'acc_id',
+			'organism', 'sequence_num' ]
+	),
 
 	('annotation_reference',
-		[ 'unique_key', 'annotation_key', 'reference_key',
+		[ 'annotation_key', 'reference_key',
 			'jnum_id', 'sequence_num' ],
-		'annotation_reference'),
+		[ Gatherer.AUTO, 'annotation_key', 'reference_key',
+			'jnum_id', 'sequence_num' ]
+	),
 
 	('marker_to_annotation',
-		[ 'unique_key', 'marker_key', 'annotation_key',
-			'reference_key', 'qualifier', 'annotation_type' ],
-		'marker_to_annotation'),
+		[ 'marker_key', 'annotation_key','annotation_type' ],
+		[ Gatherer.AUTO, 'marker_key', 'annotation_key',
+			'annotation_type' ]
+	),
 
+	('genotype_to_annotation',
+		[ 'genotype_key', 'annotation_key','annotation_type' ],
+		[ Gatherer.AUTO, 'genotype_key', 'annotation_key',
+			'annotation_type' ]
+	),
+
+	('annotation_to_header',
+		['annotation_key', 'header_term_key' ],
+		[Gatherer.AUTO, 'annotation_key', 'header_term_key' ]
+	),
+		
 	('annotation_sequence_num',
 		[ 'annotation_key', 'by_dag_structure', 'by_term_alpha',
 			'by_vocab', 'by_annotation_type', 'by_vocab_dag_term',
-			'by_marker_dag_term',
+			'by_object_dag_term', 'by_isoform'
 			],
-		'annotation_sequence_num'),
-
-	('genotype_to_annotation',
-		[ 'unique_key', 'genotype_key', 'annotation_key',
-			'reference_key', 'qualifier', 'annotation_type' ],
-		'genotype_to_annotation'),
-
-	('annotation_to_header',
-		[ Gatherer.AUTO, 'annotation_key', 'header_term_key' ],
-		'annotation_to_header'),
+		[ 'annotation_key', 'by_dag_structure', 'by_term_alpha',
+			'by_vocab', 'by_annotation_type', 'by_vocab_dag_term',
+			'by_object_dag_term', 'by_isoform'
+			]
+	),
 	]
 
 # global instance of a AnnotationGatherer
 gatherer = AnnotationGatherer (files, cmds)
+
+# voc_annot is sparsely populated, so we use limit/offset instead
+#	of the traditional min(key) - max(key) approach
+gatherer.setupChunking(
+	minKeyQuery = '''select 0''',
+	maxKeyQuery = '''select count(*) from voc_annot''',
+	chunkSize = 100000				
+	)
 
 ###--- main program ---###
 
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	initialize()
 	Gatherer.main (gatherer)

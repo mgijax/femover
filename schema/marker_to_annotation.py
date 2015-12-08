@@ -14,8 +14,6 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key	int		NOT NULL,
 	marker_key	int		NOT NULL,
 	annotation_key	int 		NOT NULL,
-	reference_key	int		NULL,
-	qualifier	text	NULL,
 	annotation_type	text	NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
@@ -29,7 +27,6 @@ indexes = {
 keys = {
 	'marker_key' : ('marker', 'marker_key'),
 	'annotation_key' : ('annotation', 'annotation_key'),
-	'reference_key' : ('reference', 'reference_key'),
 	}
 
 # index used to cluster data in the table
@@ -43,8 +40,6 @@ comments = {
 		'unique_key' : 'unique key for this association, no other purpose',
 		'marker_key' : 'identifies the marker',
 		'annotation_key' : 'identifies an annotation for this marker',
-		'reference_key' : 'identifies the reference asserting this annotation',
-		'qualifier' : 'qualifier describing this association',
 		'annotation_type' : 'type of annotation',
 		},
 	Table.INDEX : {

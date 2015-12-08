@@ -32,14 +32,8 @@ class SequenceProviderMapGatherer (Gatherer.Gatherer):
 				abbrev = 'swissprot'
 			elif ldbKey == 27:
 				abbrev = 'refseq'
-			elif ldbKey == 36:
-				abbrev = 'dotsm'
 			elif ldbKey == 41:
 				abbrev = 'trembl'
-			elif ldbKey == 35:
-				abbrev = 'dfcimgi'
-			elif ldbKey == 53:
-				abbrev = 'niamgi'
 
 			# NCBI, Ensembl, Vega
 			elif ldbKey in (59, 60, 85):

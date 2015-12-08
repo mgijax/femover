@@ -113,6 +113,11 @@ class KeyGenerator:
 			data.append (self.callData[key])
 
 		return tuple(data)
+	
+# TODO (kstone): These classes should be named after what they are used
+#	for, not what values they receive
+#	E.g. GO annotations, MP annotations, PRO annotations, etc
+#
 
 class EvidenceInferredKeyGenerator (KeyGenerator):
 	def setRequiredKeywords (self):

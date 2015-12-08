@@ -132,5 +132,6 @@ CONCURRENT_FK = int(os.environ['CONCURRENT_FOREIGN_KEY'])
 ###--- automatically adjust Python library path ---###
 
 import sys
-sys.path.insert (0, SCHEMA_DIR)
-sys.path.insert (0, LIB_DIR)
+sys.path.insert (1, SCHEMA_DIR)
+sys.path.insert (1, LIB_DIR)
+sys.path.insert (1, '.')

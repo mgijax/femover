@@ -86,7 +86,7 @@ done
 
 # run the mover with any specified flags
 echo "buildDatabase.py ${FLAGS}"
-buildDatabase.py ${FLAGS}
+./buildDatabase.py ${FLAGS}
 if [ $? -ne 0 ]; then
     echo "Build failed.  See logs for details."
     exit 1
@@ -100,7 +100,7 @@ mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.log.1
 for table in ${SINGLE_PRIORITY_TABLES}
 do
     echo "buildDatabase.py -G ${table}"
-    buildDatabase.py -G ${table}
+    ./buildDatabase.py -G ${table}
     if [ $? -ne 0 ]; then
         echo "Single-Priority Build failed.  See logs for details."
         exit 1
@@ -111,4 +111,4 @@ do
     mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.${table}.log
 done
 
-dbExecute.py 'grant select on all tables in schema fe to public'
+./dbExecute.py 'grant select on all tables in schema fe to public'

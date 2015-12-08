@@ -21,6 +21,7 @@ createStatement = '''CREATE TABLE %s  (
 	by_annotation_type	int	not null,
 	by_vocab_dag_term	int	not null,
 	by_object_dag_term	int	not null,
+	by_isoform			int not null,
 	PRIMARY KEY(annotation_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -44,6 +45,7 @@ comments = {
 		'by_annotation_type' : 'sort by type of annotation',
 		'by_vocab_dag_term' : 'sort by vocabulary, then by DAG, then by term',
 		'by_object_dag_term' : 'sort by annotated object (marker/genotype/etc) nomenclature, then by DAG, then by term',
+		'by_isoform' : 'sort by isoform (applicable to some GO annotations)'
 		},
 	}
 

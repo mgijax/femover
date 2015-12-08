@@ -91,11 +91,6 @@ class MarkerIDGatherer (Gatherer.CachingMultiFileGatherer):
 
 		resetMarkerIdKeys()
 
-		# get file IDs for our two output files
-
-		idTable = self.getFileID('marker_id')
-		otherTable = self.getFileID('marker_id_other_marker')
-
 		# first, gather all the IDs by marker
 
 		ids = {}	# marker key -> ID rows
@@ -174,7 +169,7 @@ class MarkerIDGatherer (Gatherer.CachingMultiFileGatherer):
 				else:
 					otherDB = 1
 
-				self.addRow(idTable, [ markerIdKey,
+				self.addRow('marker_id', [ markerIdKey,
 					key,
 					r[ldbNameCol],
 					r[idCol],
@@ -203,7 +198,7 @@ class MarkerIDGatherer (Gatherer.CachingMultiFileGatherer):
 				row[ldbCol], row[idCol])
 
 			r = r + 1
-			self.addRow(otherTable, [ markerIdKey,
+			self.addRow('marker_id_other_marker', [ markerIdKey,
 				row[keyCol], row[symbolCol], row[markerIDCol]
 				] )
 

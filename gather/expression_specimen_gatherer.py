@@ -34,9 +34,6 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 		global resultCount, imagepaneCount
 
 		# process specimens +  results 
-		specID = self.getFileID('assay_specimen')
-		resultID = self.getFileID('specimen_result')
-		imagepaneID = self.getFileID('specimen_result_to_imagepane')
 
 		(cols, rows) = self.results[0]
 
@@ -126,7 +123,7 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 			if specimenKey not in uniqueSpecimenKeys:
 				uniqueSpecimenKeys.add(specimenKey)
 				# make a new specimen row
-				self.addRow(specID, (specimenKey,assayKey,genotypeKey,specimenLabel,sex,
+				self.addRow('assay_specimen', (specimenKey,assayKey,genotypeKey,specimenLabel,sex,
 					age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
 
 			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
@@ -135,11 +132,11 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 				resultCount += 1
 				uniqueResultKeys[resultGenKey] = resultCount
 				# make a new specimen result row
-				self.addRow(resultID, (resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
+				self.addRow('specimen_result', (resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
 			if imagepaneKey:
 				imagepaneCount += 1
 				# make a new imagepane row
-				self.addRow(imagepaneID, (imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
+				self.addRow('specimen_result_to_imagepane', (imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
 	
 		return
 
