@@ -641,16 +641,16 @@ def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
 
     global MA_TABLE
 
-	if tblName in MA_TABLE:
+    if tblName in MA_TABLE:
 		return tblName
 
-	MA_TABLE.append(tblName)
+    MA_TABLE.append(tblName)
 
-	cmd0 = '''create temporary table %s (
+    cmd0 = '''create temporary table %s (
 		_Marker_key int not null,
 		_Allele_key int not null)''' % tblName
 
-	cmd1 = '''insert into %s
+    cmd1 = '''insert into %s
 		select _Marker_key, _Allele_key
 		from all_allele
 		where isWildType = 0
@@ -662,17 +662,17 @@ def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
 		where _Category_key in (%s)''' % (tblName,
 			', '.join(map(str, extras)) )
 
-	cmd2 = 'create index %s_p1 on %s (_Marker_key)' % (tblName, tblName)
-	cmd3 = 'cluster %s using %s_p1' % (tblName, tblName)
-	cmd4 = 'create index %s_p2 on %s(_Allele_key)' % (tblName, tblName)
-	cmd5 = 'select count(1) from %s' % tblName
+    cmd2 = 'create index %s_p1 on %s (_Marker_key)' % (tblName, tblName)
+    cmd3 = 'cluster %s using %s_p1' % (tblName, tblName)
+    cmd4 = 'create index %s_p2 on %s(_Allele_key)' % (tblName, tblName)
+    cmd5 = 'select count(1) from %s' % tblName
 
     for cmd in [ cmd0, cmd1, cmd2, cmd3, cmd4, cmd5 ]:
         cr = dbAgnostic.execute(cmd)
 
-	logger.debug('Filled %s with %d rows' % (tblName, cr[1][0][0]))
+    logger.debug('Filled %s with %d rows' % (tblName, cr[1][0][0]))
 
-	return tblName
+    return tblName
 
 def getSourceGenotypeTable():
     # get the name of a temp table that has been populated with markers,
@@ -728,7 +728,7 @@ def getOtherAnnotationsTable():
     srcAnnot = getSourceAnnotationTable()
     pairs = getMarkerAlleleTable()
 
-	cmd0 = '''select distinct p._Marker_key, va._Annot_key
+    cmd0 = '''select distinct p._Marker_key, va._Annot_key
 		into temporary table other_annotations
 		from voc_annot va, gxd_allelegenotype gag, %s p
 		where va._AnnotType_key = %s
