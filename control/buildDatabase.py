@@ -173,7 +173,7 @@ BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 		'batch_marker_snps', 'batch_marker_go_annotations',
 		'batch_marker_mp_annotations',
 	]
-CRE = [ 'allele_recombinase_systems', 'recombinase', 
+CRE = [ 'allele_recombinase_systems', 'recombinase', 'driver'
 	]
 DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
