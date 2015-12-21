@@ -64,7 +64,7 @@ def _createVocabSequenceNums():
     select 
     row_number() over (order by name) sequencenum,
     name as vocab
-    into %s
+    into temp %s
     from voc_vocab
     order by name
     ''' % C.VOCAB_SORT_TEMP_TABLE
@@ -82,7 +82,7 @@ def _createAnnotTypeSequenceNums():
     select 
     row_number() over (order by name) sequencenum,
     name as annottype
-    into %s
+    into temp %s
     from voc_annottype
     order by name
     ''' % C.ANNOTTYPE_SORT_TEMP_TABLE
@@ -101,7 +101,7 @@ def _createTermAlphaSequenceNums():
     row_number() over (order by t.term) sequencenum,
     t._term_key,
     va._annot_key        -- _annot_key for batch fetching
-    into %s
+    into temp %s
     from voc_term t 
     join voc_annot va on
         va._term_key = t._term_key

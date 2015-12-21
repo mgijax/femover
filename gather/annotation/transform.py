@@ -36,12 +36,11 @@ def removeNoDataAnnotations(cols, rows):
     
     annotKeyCol = dbAgnostic.columnNumber( cols, '_annot_key')
     
-    for i in range(len(rows)):
-        
-        annotKey = rows[i][annotKeyCol]
-        if not GOFilter.shouldInclude(annotKey):
-            # remove this row
-            del rows[i]
+    def filter(row):
+        return GOFilter.shouldInclude(row[annotKeyCol])
+    
+    # modify list in place
+    rows[:] = [row for row in rows if filter(row)]
             
             
 def groupAnnotations(cols, rows,
