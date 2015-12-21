@@ -143,6 +143,28 @@ class GroupAnnotationsTestCase(unittest.TestCase):
         self.assertEquals(1, len(groupMap))
         
         
+    def test_GO_different_qualifier(self):
+        
+        rows = [self.makeRow(evidenceKey=1,
+                             annotType='GO/Marker',
+                             termKey=1,
+                             objectKey=1,
+                             qualifier='colocalizes_with',
+                             evidenceCode='IDA',
+                             inferredfrom=''),
+                self.makeRow(evidenceKey=2,
+                             annotType='GO/Marker',
+                             termKey=1,
+                             objectKey=1,
+                             qualifier='',
+                             evidenceCode='IDA',
+                             inferredfrom='')]
+    
+        groupMap = transform.groupAnnotations(self.cols, rows)
+    
+        self.assertEquals(2, len(groupMap))
+        
+        
     def test_GO_annotation_extensions_simple(self):
         """
         One annotation extension

@@ -9,9 +9,7 @@
 import dbAgnostic
 import Gatherer
 import logger
-import GOFilter
 import GenotypeClassifier
-import AnnotationKeyGenerator
 import gc
 import top
 
@@ -386,6 +384,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		cols, rows = self.results[3]
 		
 		
+		transform.removeNoDataAnnotations(cols, rows)
 		transform.transformAnnotationType(cols, rows)
 			
 		

@@ -5,6 +5,7 @@
 #
 
 import dbAgnostic
+import GOFilter
 import constants as C
 
         
@@ -26,6 +27,21 @@ def transformAnnotationType(cols, rows):
         elif annotType == 'OMIM/Marker (Derived)':
             row[annotTypeCol] = 'OMIM/Marker'
             
+
+def removeNoDataAnnotations(cols, rows):
+    """
+    Filter out annotations with 'ND' evidence code that
+        have other data associated to that DAG (e.g. Process, Component, Function)
+    """
+    
+    annotKeyCol = dbAgnostic.columnNumber( cols, '_annot_key')
+    
+    for i in range(len(rows)):
+        
+        annotKey = rows[i][annotKeyCol]
+        if not GOFilter.shouldInclude(annotKey):
+            # remove this row
+            del rows[i]
             
             
 def groupAnnotations(cols, rows,
@@ -69,6 +85,7 @@ def groupAnnotations(cols, rows,
                 
                 uniqueFactor = (objectKey, 
                             termKey, 
+                            qualifier,
                             evidenceCode,
                             inferredfrom,
                             propKey
