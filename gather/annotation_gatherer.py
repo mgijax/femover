@@ -384,7 +384,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		cols, rows = self.results[3]
 		
 		
-		transform.removeNoDataAnnotations(cols, rows)
+		transform.removeGONoDataAnnotations(cols, rows)
 		transform.transformAnnotationType(cols, rows)
 			
 		

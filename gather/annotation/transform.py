@@ -28,16 +28,21 @@ def transformAnnotationType(cols, rows):
             row[annotTypeCol] = 'OMIM/Marker'
             
 
-def removeNoDataAnnotations(cols, rows):
+def removeGONoDataAnnotations(cols, rows):
     """
-    Filter out annotations with 'ND' evidence code that
+    Filter out GO annotations with 'ND' evidence code that
         have other data associated to that DAG (e.g. Process, Component, Function)
     """
     
     annotKeyCol = dbAgnostic.columnNumber( cols, '_annot_key')
+    annotTypeCol = dbAgnostic.columnNumber( cols, 'annottype')
     
     def filter(row):
-        return GOFilter.shouldInclude(row[annotKeyCol])
+        
+        if row[annotTypeCol] == "GO/Marker":
+            return GOFilter.shouldInclude(row[annotKeyCol])
+        
+        return True
     
     # modify list in place
     rows[:] = [row for row in rows if filter(row)]
