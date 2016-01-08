@@ -7,8 +7,8 @@ from TestData import *
 TempTables = [
 	
 	"drop view if exists tmp_gxdview",
-    "create view tmp_gxdview as select * from gxd_expression where isforgxd=1 and _emaps_key is not null",
-	# temp table mapping _structure_key to emaps_term
+    "create view tmp_gxdview as select * from gxd_expression where isforgxd=1",
+	# temp table mapping emaps_term and synonyms
 	"""
 	DROP TABLE IF EXISTS tmp_emaps_ad
 	""",
@@ -16,20 +16,21 @@ TempTables = [
 	DROP TABLE IF EXISTS tmp_emaps_syn
 	""",
         """
-        select ags._object_key _structure_key, et._term_key _emaps_key,et.term emaps_term
-        into tmp_emaps_ad
-        from acc_accession ags join
-                mgi_emaps_mapping mem on ags.accid=mem.accid join
-                acc_accession aet on aet.accid=mem.emapsid join
-                voc_term et on et._term_key=aet._object_key 
-        where ags._mgitype_key=38
-                and aet._mgitype_key=13
-        """,
-        """
-        create index tmp_emaps_ad_skey on tmp_emaps_ad (_structure_key)
+        select et._term_key _emaps_key,et.term emaps_term, vte._stage_key, vte._emapa_term_key
+        into tmp_emaps_ad 
+        from voc_term et 
+        join voc_term_emaps vte on
+        	vte._term_key = et._term_key
+        where et._vocab_key = 91 -- EMAPS
         """,
         """
         create index tmp_emaps_ad_ekey on tmp_emaps_ad (_emaps_key)
+        """,
+        """
+        create index tmp_emaps_ad_ekey on tmp_emaps_ad (_emapa_term_key)
+        """,
+        """
+        create index tmp_emaps_ad_ekey on tmp_emaps_ad (_stage_key)
         """,
 	# temp table combining emaps terms with their synonyms for searching
         """
@@ -125,7 +126,7 @@ Queries = [
 {	ID:"ts6ResultCount",
 	DESCRIPTION:"Assay Result count for Theiler Stage 6",
 	SQLSTATEMENT:"""
-	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key=6
+	select count(*) from tmp_gxdview ge where ge._stage_key=6
 	"""
 },
 {	ID:"allResults",
@@ -137,13 +138,13 @@ Queries = [
 {	ID:"ts6or7ResultCount",
 	DESCRIPTION:"Assay Result count for TS 6 or 7",
 	SQLSTATEMENT:"""
-	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key in (6,7)
+	select count(*) from tmp_gxdview ge where ge._stage_key in (6,7)
 	"""
 },
 {	ID:"ts28ResultCount",
 	DESCRIPTION:"Assay Result count for TS 28",
 	SQLSTATEMENT:"""
-	select count(*) from tmp_gxdview ge, gxd_Structure gs where ge._structure_key=gs._structure_key and gs._stage_key=28
+	select count(*) from tmp_gxdview ge where ge._stage_key=28
 	"""
 },
 {	ID:"allGenes",
@@ -182,7 +183,10 @@ EMAPID_ANATOMY_RESULTS_TEMPLATE_SQL = """
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
+        SELECT COUNT(distinct _expression_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s 
+        WHERE e._emapa_term_key = tea._emapa_term_key 
+        	and e._stage_key = tea._stage_key
+        	and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 EMAPID_ANATOMY_ASSAYS_TEMPLATE_SQL = """
 	WITH 
@@ -191,7 +195,10 @@ EMAPID_ANATOMY_ASSAYS_TEMPLATE_SQL = """
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
+        SELECT COUNT(distinct _assay_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s 
+        WHERE e._emapa_term_key = tea._emapa_term_key 
+        	and e._stage_key = tea._stage_key
+        	and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 EMAPID_ANATOMY_GENES_TEMPLATE_SQL = """
 	WITH 
@@ -200,7 +207,10 @@ EMAPID_ANATOMY_GENES_TEMPLATE_SQL = """
         child AS (SELECT DISTINCT clo._descendentobject_key FROM dag_closure clo 
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
-        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s WHERE e._structure_key = tea._structure_key and tea._emaps_key= s._term_key AND e.isForGXD = 1
+        SELECT COUNT(distinct _marker_key) FROM gxd_expression e, tmp_emaps_ad tea, closure s 
+        WHERE e._emapa_term_key = tea._emapa_term_key
+        	and e._stage_key = tea._stage_key 
+        	and tea._emaps_key= s._term_key AND e.isForGXD = 1
 """
 
 ###--- Anatomy Tests
@@ -236,11 +246,10 @@ Queries.extend([
 {	ID:"resultCountShhTS21",
 	DESCRIPTION:"Count of results for Shh and TS21",
 	SQLSTATEMENT:"""
-	select count(*) from tmp_gxdview ge, mrk_marker m, gxd_structure s 
+	select count(*) from tmp_gxdview ge, mrk_marker m 
 	where m._marker_key=ge._marker_key
-	    and s._structure_key=ge._structure_key
 	    and m.symbol='Shh'
-	    and s._stage_key=21;
+	    and ge._stage_key=21;
 	"""
 },
 {	ID:"resultCountPax*Immunohistochemistry",
@@ -266,18 +275,16 @@ Queries.extend([
 {	ID:"resultCountTS14NorthernBlot",
 	DESCRIPTION:"Count of Results for TS14 and Northern Blot",
 	SQLSTATEMENT:"""
-	select count(distinct ge._expression_key) from tmp_gxdview ge, gxd_structure s
-	where ge._structure_key=s._structure_key
-	    and s._stage_key=14
+	select count(distinct ge._expression_key) from tmp_gxdview ge
+	where ge._stage_key=14
 	    and ge._assaytype_key=2;
 	"""
 },
 {	ID:"geneCountTS14NorthernBlot",
 	DESCRIPTION:"Count of genes for TS14 and Northern Blot",
 	SQLSTATEMENT:"""
-	select count(distinct ge._marker_key) from tmp_gxdview ge, gxd_structure s
-	where ge._structure_key=s._structure_key
-	    and s._stage_key=14
+	select count(distinct ge._marker_key) from tmp_gxdview ge
+	where ge._stage_key=14
 	    and ge._assaytype_key=2;
 	"""
 },

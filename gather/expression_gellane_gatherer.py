@@ -10,7 +10,6 @@
 
 import Gatherer
 import GXDUtils
-import ADMapper
 import logger
 
 ###--- Classes ---###
@@ -37,7 +36,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
 		stageKeyCol = Gatherer.columnNumber (cols, '_stage_key')
 		printnameCol = Gatherer.columnNumber (cols, 'printname')
-		structureKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
 
 		rowCount = 0
 		for row in rows:
@@ -46,20 +45,13 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			stageKey = row[stageKeyCol]
 			structureKey = row[structureKeyCol]
 			printname = row[printnameCol]
-
-			emapsKey = ADMapper.getEmapsKey(structureKey)
-			if emapsKey:
-				structureKey = emapsKey
-				printname = ADMapper.getEmapsTerm(emapsKey)
-				stageKey = ADMapper.getStageByKey(emapsKey)
-			else:
-				continue
+			emapsKey = row[emapsKeyCol]
 
 			# structure format is TS26: brain
 			tsStructure = "TS%s: %s"%(int(stageKey),printname)
 
 			# TODO: if GXD wants these sorted, you would need to do that in here
-			sRows.append((rowCount,laneKey,structureKey,tsStructure,1))
+			sRows.append((rowCount,laneKey,emapsKey,tsStructure,1))
 	
 		return (sCols,sRows)
 
@@ -227,11 +219,12 @@ cmds = [
 	'''
 	select s.printName,
 		gs._gellane_key,
-		gs._structure_key,
-		s._stage_key
-	from GXD_GelLaneStructure gs,
-		GXD_Structure s
-	where gs._Structure_key = s._Structure_key
+		vte._term_key as _emaps_key,
+		gs._stage_key
+	from GXD_GelLaneStructure gs
+		join voc_term_emaps vte on
+			vte._emapa_term_key = gs._emapa_term_key
+			and vte._stage_key = gs._stage_key
 	''',
 	]
 
