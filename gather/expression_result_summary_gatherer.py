@@ -13,7 +13,6 @@
 
 import Gatherer
 import logger
-import ADMapper
 import symbolsort
 import ReferenceCitations
 import types
@@ -473,7 +472,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ageCol = Gatherer.columnNumber (cols, 'age')
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
 		resultCol = Gatherer.columnNumber (cols, '_Result_key')
-		structureCol = Gatherer.columnNumber (cols,'_Structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols,'_emaps_key')
+		stageCol = Gatherer.columnNumber (cols,'_stage_key')
+		structureCol = Gatherer.columnNumber (cols,'structure')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
@@ -482,14 +483,15 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			assayKey = row[assayCol]
 
-			emapsKey = ADMapper.getEmapsKey(row[structureCol])
+			emapsKey = row[emapsKeyCol]
 			if not emapsKey:
 				continue
 
 			extras.setdefault(assayKey,[]).append( [row[genotypeCol],
 				row[ageCol], row[strengthCol], row[resultCol],
-				row[structureCol], emapsKey, row[ageMinCol],
-				row[ageMaxCol], row[patternCol],row[specimenKeyCol] ])
+				emapsKey, row[ageMinCol],
+				row[ageMaxCol], row[patternCol],row[specimenKeyCol],
+				row[stageCol], row[structureCol] ])
 
 		logger.debug ('Got extra data for %d in situ assays' % \
 			len(extras))
@@ -511,7 +513,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		ageCol = Gatherer.columnNumber (cols, 'age')
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
-		structureCol = Gatherer.columnNumber (cols,'_Structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols,'_emaps_key')
+		stageCol = Gatherer.columnNumber (cols,'_stage_key')
+		structureCol = Gatherer.columnNumber (cols,'structure')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		gelLaneCol = Gatherer.columnNumber (cols, '_GelLane_key')
@@ -523,8 +527,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			gelLane = row[gelLaneCol]
-			structure = row[structureCol]
-			emapsKey = ADMapper.getEmapsKey(structure)
+			emapsKey = row[emapsKeyCol]
 
 			if not emapsKey:
 				continue
@@ -551,8 +554,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 		    assayKey = row[assayCol]
 		    gelLane = row[gelLaneCol]
-		    structure = row[structureCol]
-		    emapsKey = ADMapper.getEmapsKey(structure)
+		    emapsKey = row[emapsKeyCol]
 
 		    if not emapsKey:
 			    continue
@@ -571,13 +573,15 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    if extras.has_key(assayKey):
 			extras[row[assayCol]].append( [ row[genotypeCol],
 				row[ageCol], strength,
-				structure, emapsKey, row[ageMinCol],
-				row[ageMaxCol] ] )
+				emapsKey, row[ageMinCol],
+				row[ageMaxCol],
+				row[stageCol], row[structureCol] ] )
 		    else:
 			extras[row[assayCol]] = [ [ row[genotypeCol],
-				row[ageCol], strength, structure,
+				row[ageCol], strength,
 				emapsKey, row[ageMinCol],
-				row[ageMaxCol] ] ]
+				row[ageMaxCol],
+				row[stageCol], row[structureCol] ] ]
 
 		logger.debug ('Got extra data for %d gel assays' % \
 			len(extras))
@@ -779,8 +783,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			panes = []	# image panes for this result
 
 			if isGel:
-			    [ genotypeKey, age, strength, structureKey,
-				emapsKey, ageMin, ageMax ] = items
+			    [ genotypeKey, age, strength,
+				emapsKey, ageMin, ageMax,
+				stage, structure ] = items
 
 			    pattern = None
 			    specimenKey = None
@@ -792,8 +797,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				    hasImage = 1
 			else:
 			    [ genotypeKey, age, strength, resultKey,
-				structureKey, emapsKey, ageMin, ageMax,
-				pattern,specimenKey ] = items
+				emapsKey, ageMin, ageMax,
+				pattern,specimenKey,
+				stage, structure ] = items
 
 			    if panesForInSituResults.has_key(resultKey):
 				panes = panesForInSituResults[resultKey]
@@ -815,8 +821,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			newKey = newKey + 1
 
-			stage = ADMapper.getStageByKey(emapsKey)
-
 			outRow = [ newKey,
 			    assayKey,
 			    assayType,
@@ -828,8 +832,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    abbreviate(age),
 			    ageMin,
 			    ageMax,
-			    ADMapper.getEmapsTerm(emapsKey),
-			    ADMapper.getEmapsTerm(emapsKey),
+			    structure,
+			    structure,
 			    emapsKey,
 			    strength,
 			    getIsExpressed(strength),
@@ -1179,7 +1183,9 @@ cmds = [
 		r._Strength_key,
 		st.strength,
 		r._Result_key,
-		rs._Structure_key,
+		vte._term_key as _emaps_key,
+		rs._stage_key,
+		struct.term as structure,
 		s.ageMin,
 		s.ageMax,
 		p.pattern,
@@ -1189,15 +1195,16 @@ cmds = [
 		gxd_strength st,
 		gxd_isresultstructure rs,
 		gxd_pattern p,
-		acc_accession a
+		voc_term_emaps vte,
+		voc_term struct
 	where s._Specimen_key = r._Specimen_key
 		and r._Strength_key = st._Strength_key
 		and r._Pattern_key = p._Pattern_key
-		and rs._Structure_key = a._Object_key
-		and a._MGIType_key = 38
-		and exists (select 1 from mgi_emaps_mapping e
-			where a.accID = e.accID)
-		and r._Result_key = rs._Result_key''', 
+		and r._Result_key = rs._Result_key
+		and vte._emapa_term_key = rs._emapa_term_key
+		and vte._stage_key = rs._stage_key
+		and struct._term_key = vte._term_key
+	''', 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
 	# there can be > 1 structures per gel lane).  A gel assay may have
@@ -1213,7 +1220,9 @@ cmds = [
 		g.age,
 		st._Strength_key,
 		st.strength,
-		gs._Structure_key,
+		vte._term_key as _emaps_key
+		gs._stage_key,
+		struct.term as structure
 		g.ageMin,
 		g.ageMax,
 		g._GelLane_key
@@ -1221,15 +1230,16 @@ cmds = [
 		gxd_gelband b,
 		gxd_strength st,
 		gxd_gellanestructure gs,
-		acc_accession a
+		voc_term_emaps vte,
+		voc_term struct
 	where g._GelControl_key = 1
 		and g._GelLane_key = b._GelLane_key
 		and b._Strength_key = st._Strength_key
-		and gs._Structure_key = a._Object_key
-		and a._MGIType_key = 38
-		and exists (select 1 from mgi_emaps_mapping e
-			where a.accID = e.accID)
-		and g._GelLane_key = gs._GelLane_key''',
+		and g._GelLane_key = gs._GelLane_key
+		and vte._emapa_term_key = gs._emapa_term_key
+		and vte._stage_key = gs._stage_key
+		and struct._term_key = vte._term_key
+	''',
 
 	# 8. allele pairs for genotypes cited in GXD data
 	'''select gap._Genotype_key,
