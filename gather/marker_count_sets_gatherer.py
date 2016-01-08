@@ -10,7 +10,6 @@
 import Gatherer
 import logger
 import MarkerSnpAssociations
-import ADMapper
 import InteractionUtils
 import MarkerUtils
 import OutputFile
@@ -19,7 +18,6 @@ import gc
 ###--- Constants ---###
 
 MARKER_KEY = '_Marker_key'
-STRUCTURE_KEY = '_Structure_key'
 SET_TYPE = 'setType'
 COUNT_TYPE = 'countType'
 COUNT = 'count'
@@ -73,38 +71,28 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		return self.i
 
 	def collateResultsByTheilerStage (self, resultIndex):
-		# expression results per Theiler stage (now custom, because
-		# we need to translate from AD structures to EMAPS terms)
 
 		setType = 'Expression Results by Theiler Stage'
 
 		cols, rows = self.results[resultIndex]
 
 		markerCol = Gatherer.columnNumber (cols, MARKER_KEY)
-		structureCol = Gatherer.columnNumber (cols, STRUCTURE_KEY)
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
+		stageCol = Gatherer.columnNmber (cols, '_stage_key')
 		countCol = Gatherer.columnNumber (cols, COUNT)
 
-		rows = ADMapper.filterRows (rows, structureCol, setType)
-
-		# first we'll translate each structure to its equivalent EMAPS
-		# term, then we'll find the stage from that EMAPS term.
 
 		# resultCounts[markerKey] = { stage : count of results }
 		resultCounts = {}
 
 		for row in rows:
 			markerKey = row[markerCol]
-			structureKey = row[structureCol]
+			emapsKey = row[emapsKeyCol]
+			stage = row[stageCol]
 			resultCount = row[countCol]
 
-			emapsKey = ADMapper.getEmapsKey(structureKey)
-			stage = ADMapper.getStageByKey(emapsKey)
 			if not stage:
 				continue
-
-			# strip any leading zero
-			if stage[0] == '0':
-				stage = stage[1:]
 
 			if not resultCounts.has_key(markerKey):
 				resultCounts[markerKey] = {
@@ -143,21 +131,12 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		return
 
 	def collateByAssayType (self, resultIndex, setType):
-		# expression assays or results per Theiler stage (now custom,
-		# because we need to filter out AD structures that do not map
-		# to EMAPS terms)
 
 		cols, rows = self.results[resultIndex]
 
 		markerCol = Gatherer.columnNumber (cols, MARKER_KEY)
-		structureCol = Gatherer.columnNumber (cols, STRUCTURE_KEY)
 		countCol = Gatherer.columnNumber (cols, COUNT)
 		assayTypeCol = Gatherer.columnNumber (cols, COUNT_TYPE)
-
-		# filter out any associations to AD structures which cannot be
-		# mapped to EMAPS terms
-
-		rows = ADMapper.filterRows (rows, structureCol, setType)
 
 		# resultCounts[markerKey] = { assay type : count of results }
 		resultCounts = {}
@@ -471,8 +450,6 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.collateAssaysByAssayType(1)
 		self.collateResultsByAssayType(2)
 
-		ADMapper.unload()		# free unneeded memory
-
 		self.collateReagents(3)
 		self.collatePolymorphisms(4)
 		self.collateMarkerInteractions()
@@ -501,45 +478,51 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. expression results by theiler stages 
 	'''select ge._Marker_key,
-		gs._Structure_key,
+		vte._term_key as _emaps_key,
+		ge._stage_key
 		count(distinct ge._Expression_key) as %s
-	from gxd_expression ge,
-		gxd_structure gs,
-		gxd_theilerstage ts
+	from gxd_expression ge
+		join voc_term_emaps vte on
+			vte._emapa_term_key = ge._emapa_term_key
+			and vte._stage_key = ge._stage_key
 	where ge.isForGXD = 1
-		and ge._Structure_key = gs._Structure_key
-		and gs._Stage_key = ts._Stage_key
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, gs._Structure_key
-	order by ge._Marker_key, gs._Structure_key''' % COUNT,
+	group by ge._Marker_key, vte._term_key
+	order by ge._Marker_key, vte._term_key''' % COUNT,
 
 	# 1. expression assays by type
 	'''select ge._Marker_key,
-		ge._Structure_key,
+		vte._term_key as _emaps_key,
 		gat.assayType as %s,
 		count(distinct ge._Assay_key) as %s
 	from gxd_expression ge,
-		gxd_assaytype gat
+		gxd_assaytype gat,
+		voc_term_emaps vte
 	where ge._AssayType_key = gat._AssayType_key
+		and vte._emapa_term_key = ge._emapa_term_key
+		and vte._stage_key = ge._stage_key
 		and ge.isForGXD = 1
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, gat.assayType, ge._Structure_key
+	group by ge._Marker_key, gat.assayType, vte._term_key
 	order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
 
 	# 2. expression results by type
 	'''select ge._Marker_key,
-		ge._Structure_key,
+		vte._term_key as _emaps_key,
 		gat.assayType as %s,
 		count(distinct ge._Expression_key) as %s
 	from gxd_expression ge,
-		gxd_assaytype gat
+		gxd_assaytype gat,
+		voc_term_emaps vte
 	where ge._AssayType_key = gat._AssayType_key
+		and vte._emapa_term_key = ge._emapa_term_key
+		and vte._stage_key = ge._stage_key
 		and ge.isForGXD = 1
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, gat.assayType, ge._Structure_key
+	group by ge._Marker_key, gat.assayType, vte._term_key
 	order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
 
 	# 3. counts of reagents by type (these need to be grouped in code, but
