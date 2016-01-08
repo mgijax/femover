@@ -1065,6 +1065,7 @@ cmds = [
 		and rs._Result_key = r._Result_key
 		and a._Refs_key = b._Refs_key
 		and vte._emapa_term_key = c._emapa_term_key
+		and vte._stage_key = c._stage_key
 		and vte._term_key = struct._term_key
 	''',
 
