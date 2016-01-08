@@ -300,10 +300,15 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 	# for building the marker_tissue_expression_counts table
 	markerTissueCounts = {}
 
-	def addMarkerTissueCount(self,marker_key,emapsKey,detectionLevel):
+	def addMarkerTissueCount(self,marker_key,emapsKey,stage, structure, detectionLevel):
 		structures = self.markerTissueCounts.setdefault(marker_key,{})
 		# counts format is [allCount,detectedCount,notDetectedCount]
-		counts = structures.setdefault(emapsKey,[0,0,0])
+		countsInfo = structures.setdefault(emapsKey,{'stage': stage, 
+												'structure': structure,
+												'counts':[0,0,0]})
+		
+		counts = countsInfo['counts']
+		
 		if detectionLevel in NEGATIVE_STRENGTHS:
 			# negative case
 			counts[0] += 1
@@ -817,7 +822,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    		isWildType = 0
 
 			# while we are in here, add count statistics of tissues
-			self.addMarkerTissueCount(markerKey,emapsKey,strength)
+			self.addMarkerTissueCount(markerKey,emapsKey,stage, structure, strength)
 
 			newKey = newKey + 1
 
@@ -924,13 +929,15 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			CACHE_SIZE)
 
 		for markerKey,structures in markerTissueCounts.items():
-			for emapsKey,counts in structures.items():
+			for emapsKey,countInfo in structures.items():
 				seqNum = VocabSorter.getSequenceNum(emapsKey)
-				printname = ADMapper.getEmapsTerm(emapsKey)
-				stage = ADMapper.getStageByKey(emapsKey)
+				
+				counts = countInfo['counts']
+				stage = countInfo['stage']
+				structure = countInfo['structure']
 
 				FILES.addRow(mtFile, [ markerKey, emapsKey,
-					"TS%s: %s" % (stage, printname),
+					"TS%s: %s" % (stage, structure),
 					counts[0], counts[1], counts[2],
 					seqNum ] )
 
@@ -1030,7 +1037,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		    emapsKey = row[structureKeyCol]
 		    structure = VocabSorter.getSequenceNum(emapsKey)
-		    stageVal = ADMapper.getStageByKey(emapsKey)
+		    stageVal = row[stageCol]
 
 		    if (not emapsKey) or (not stageVal):
 			    continue

@@ -3,7 +3,6 @@
 # gathers data for the 'term_ancestor_simple' table in the front-end database
 
 import Gatherer
-import ADVocab
 import logger
 
 ###--- Classes ---###
@@ -62,20 +61,6 @@ class TermAncestorSimpleGatherer (Gatherer.Gatherer):
 		# clear this to allow memory to be reclaimed
 		ancestors = {}	
 
-		# specify the columns and their order for the ancestors, then
-		# we can simply append it to the existing list of rows
-
-		adRows = ADVocab.getTermAncestorRows ( [ 'termKey',
-			'ancestorTerm', 'ancestorID' ] )
-
-		# Because the AD is tree-structured (rather than a full DAG),
-		# there should only be one path to each node, and thus no
-		# duplication of ancestors for a single term.  As a result,
-		# we do not need to worry about omitting duplicates.
-			
-		self.finalResults = self.finalResults + adRows
-
-		logger.debug ('Added %d ancestors for AD' % len(adRows))
 		return
 
 ###--- globals ---###

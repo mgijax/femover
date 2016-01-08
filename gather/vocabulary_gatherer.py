@@ -5,7 +5,6 @@
 import Gatherer
 import logger
 import TermCounts
-import ADVocab
 import GroupedList
 import gc
 import dbAgnostic
@@ -23,7 +22,6 @@ TERM_COUNTS = 3
 TERM_ANCESTOR = 4
 TERM_ANNOT_COUNTS = 5
 TERM_SIBLING = 6
-TERM_ANATOMY_EXTRAS = 7
 
 ###--- Functions ---###
 
@@ -960,16 +958,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		return vocabularies
 
-	def writeFiles (self, files, skipLast = False):
+	def writeFiles (self, files):
 		# write out data to files
-		# set skipLast = True to skip term_anatomy_extras for vocabs
-		# other than the AD (assumes this table is last in the list)
 
 		i = 0
 		for (filename, fieldOrder, tableName) in self.files:
-
-			if skipLast and (tableName == 'term_anatomy_extras'):
-				break
 
 			writer = files[i]
 			columns, rows = self.output[i]
@@ -1031,46 +1024,13 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 			self.postprocessResults()
 
-			# write to output files (except term_anatomy_extras)
-
-			self.writeFiles(files, skipLast = True)
-
 			logger.debug('Finished %s (%d)' % (vocabName,
 				vocabKey))
 
 		TermCounts.reset()
 
-		# process AD separately
-
 		self.resetInstanceVariables(-1)
-		self.output.append ( (self.files[0][1],
-			ADVocab.getVocabularyRows (self.files[0][1])) )
-		self.output.append ( (self.files[1][1],
-			ADVocab.getTermRows(self.files[1][1])) )
-		self.output.append ( (self.files[2][1][1:],
-			ADVocab.getTermChildRows(self.files[2][1][1:])) )
-		self.output.append ( (self.files[3][1],
-			ADVocab.getTermCountsRows(self.files[3][1])) )
-		self.output.append ( (self.files[4][1][1:],
-			ADVocab.getTermAncestorRows(self.files[4][1][1:])) )
-		self.output.append ( (self.files[5][1][1:],
-			ADVocab.getTermAnnotationCountsRows(
-			    self.files[5][1][1:])) )
-		self.output.append ( (self.files[6][1][1:],
-			ADVocab.getTermSiblingRows(self.files[6][1][1:])) )
-
-		# only for the AD -- term_anatomy_extras table
-
-		columns = [ 'termKey', 'system', 'stage', 'structureKey',
-			'edinburghKey' ]
-		self.output.append ( (columns,
-			ADVocab.getTermAnatomyExtrasRows(columns)) )
-
-		# write AD rows
-
-		self.writeFiles(files)
-		logger.debug('Finished Anatomical Dictionary')
-
+	
 		# close output files
 
 		i = 0
@@ -1226,11 +1186,6 @@ files = [
 		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
 			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ],
 		'term_sibling'),
-
-	('term_anatomy_extras',
-		[ 'termKey', 'system', 'stage', 'structureKey',
-			'edinburghKey' ],
-		'term_anatomy_extras'),
 	]
 
 # global instance of a VocabularyGatherer
