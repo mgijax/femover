@@ -10,7 +10,6 @@
 
 import Gatherer
 import logger
-import ADMapper
 
 ###--- Globals ---###
 
@@ -54,9 +53,9 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 
 		# define result columns from mgd query
 		resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
-		structureCol = Gatherer.columnNumber (cols, 'printname')
 		stageCol = Gatherer.columnNumber (cols, '_stage_key')
-		structureKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
+		structureCol = Gatherer.columnNumber (cols, 'structure')
 		strengthCol = Gatherer.columnNumber (cols, 'strength')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
@@ -79,14 +78,13 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 			specimenSeq = row[specSeqCol]
 
 			resultKey = row[resultKeyCol]
-			structureMGDKey = row[structureKeyCol]
 
 			#structure = row[structureCol]
 			#stage = row[stageCol]
 
-			emapsKey = ADMapper.getEmapsKey(structureMGDKey)
-			structure = ADMapper.getEmapsTerm(emapsKey)
-			stage = ADMapper.getStageByKey(emapsKey)
+			emapsKey = row[emapsKeyCol]
+			structure = row[structureCol]
+			stage = row[stageCol]
 
 			if (not emapsKey) or (not stage) or (not structure):
 				continue
@@ -155,8 +153,10 @@ cmds = [
 		where not exists (select 1 from gxd_insituresultimage i1
 			where r1._result_key=i1._result_key
 		)
-        )
-	select gs._assay_key,gs._specimen_key,gs.specimenlabel,
+    )
+	select gs._assay_key,
+		gs._specimen_key,
+		gs.specimenlabel,
 	    gs.age,
 	    gs.agenote,
 	    gfm.fixation,
@@ -167,23 +167,29 @@ cmds = [
 	    gem.embeddingmethod,
 	    gs.hybridization,
 	    gir._result_key,
-	    struct.printname,struct._structure_key,struct._stage_key,str.strength,
+	    str.strength,
 	    gp.pattern, gir.resultnote,
 	    gir.sequencenum as result_seq,
 	    gs.sequencenum as specimen_seq,
-	    giri._imagepane_key
+	    giri._imagepane_key,
+	    girs._stage_key,
+	    vte._term_key as _emaps_key,
+	    struct.term as structure
 	from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
-	    gxd_structure struct,gxd_strength str, gxd_pattern gp, imagepanes giri,
-	    gxd_fixationmethod gfm, gxd_embeddingmethod gem,gxd_genotype gg
+	    gxd_strength str, gxd_pattern gp, imagepanes giri,
+	    gxd_fixationmethod gfm, gxd_embeddingmethod gem,gxd_genotype gg,
+	    voc_term_emaps vte, voc_term struct
 	where gs._specimen_key=gir._specimen_key
 	    and gir._result_key=girs._result_key
-	    and girs._structure_key=struct._structure_key
 	    and gir._strength_key=str._strength_key
 	    and gir._pattern_key=gp._pattern_key
 	    and gir._result_key=giri._result_key
 	    and gfm._fixation_key=gs._fixation_key
 	    and gem._embedding_key=gs._embedding_key
 	    and gg._genotype_key=gs._genotype_key
+	    and vte._emapa_term_key = girs._emapa_term_key
+	    and vte._stage_key = girs._stage_key
+	    and struct._term_key = vte._term_key
 	    and gs._Specimen_key >= %d
 	    and gs._Specimen_key < %d
 	''',
