@@ -24,7 +24,6 @@ import Gatherer
 import logger
 import re
 import TagConverter
-import ADMapper
 
 # ageTranslation : used to translate an all_cre_cache.age/ageMin/ageMax
 # to the appropriate age/ageMin/ageMax bucket for recombinase display
@@ -117,9 +116,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		cols, rows = self.results[0]
 		keyCol = Gatherer.columnNumber (cols, '_Allele_key')
 		idCol = Gatherer.columnNumber (cols, 'accID')
-		sysCol = Gatherer.columnNumber (cols, 'system')
-		systemKeyCol = Gatherer.columnNumber (cols, '_System_key')
-		structKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
+		structureCol = Gatherer.columnNumber (cols, 'structure')
+		stageCol = Gatherer.columnNumber (cols, '_stage_key')
 		symCol = Gatherer.columnNumber (cols, 'symbol')
 		ageCol = Gatherer.columnNumber (cols, 'age')
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
@@ -164,10 +163,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 
 			key = row[keyCol]
-			system = convert(row[sysCol])
-			#structure = convert(row[structCol])
-			emapsKey = ADMapper.getEmapsKey(row[structKeyCol])
-                        structure = convert(ADMapper.getEmapsTerm(emapsKey))
+			system = 'test system'
+			structure = row[structureCol]
+			emapsKey = row[emapsKeyCol]
 			age = row[ageCol]
 			ageMin = row[ageMinCol]
 			ageMax = row[ageMaxCol]
@@ -387,7 +385,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			#
 
 			if system and (not systemKeys.has_key(system)):
-				systemKeys[system] = row[systemKeyCol]
+				systemKeys[system] = 1
 
 			#
 			# alleleData: dictonary of unique allele id:symbol 
@@ -406,7 +404,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         out.append ( (key, alleleSystemOtherMap[key]['row'][keyCol],
                                 alleleSystemOtherMap[key]['row'][idCol],
                                 convert(alleleSystemOtherMap[key]['row'][sysCol]),
-                                alleleSystemOtherMap[key]['row'][systemKeyCol],
+				1, # _system_key
                                 alleleSystemOtherMap[key]['e1'],
                                 alleleSystemOtherMap[key]['e2'],
                                 alleleSystemOtherMap[key]['e3'],
@@ -679,8 +677,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		cols = self.results[5][0]
 
 		alleleCol = Gatherer.columnNumber (cols, '_Allele_key')
-		systemCol = Gatherer.columnNumber (cols, 'system')
-		structKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
+		structureCol = Gatherer.columnNumber (cols, 'structure')
+		stageCol = Gatherer.columnNumber (cols, '_stage_key')
+		
 		assayTypeCol = Gatherer.columnNumber (cols, '_AssayType_key')
 		reporterCol = Gatherer.columnNumber (cols,
 			'_ReporterGene_key')
@@ -712,7 +712,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		i = 0
 		for r in self.results[5][1]:
-			system = convert(r[systemCol])
+			system = 'test system'
 
 			alleleSystemKey = \
 				alleleSystemMap[r[alleleCol]][system]
@@ -730,8 +730,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			else:
 				newResultKeys[dbResultKey] = [ info ]
 
-			emapsKey = ADMapper.getEmapsKey(r[structKeyCol])
-                        structure = convert(ADMapper.getEmapsTerm(emapsKey))
+			emapsKey = r[emapsKeyCol]
+			structure = r[structureCol]
 
 			row = [ i, alleleSystemKey, structure,
 				r[ageCol], r[sexCol], r[jnumCol],
@@ -961,11 +961,15 @@ cmds = [
 	# all allele / system / structure / age information
 	# make sure 'expression' is ordered descending so that the '1' are encountered first
 	#
-	'''select c._Allele_key, c.accID, c.system, c._structure_key,
+	'''select c._Allele_key, c.accID, c.system, vte._emaps_key, struct.term as structure,
 		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
-		c._System_key, c.hasImage
+		c.hasImage
 	from all_cre_cache c
-	where c.system is not null
+		join voc_term_emaps vte on
+			vte._emapa_term_key = c._emapa_term_key
+			and vte._stage_key = c._stage_key
+		joint voc_term struct on
+			struct._term_key = vte._term_key
 	order by c._Allele_key, c.system, c.expressed desc''',
 
 	#
@@ -1041,7 +1045,7 @@ cmds = [
 	#
 	# main cre assay result data
 	#
-	'''select distinct c._Allele_key, c.system, c._System_key, c._structure_key,
+	'''select distinct c._Allele_key, vte._emaps_key, struct.term as structure,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
@@ -1052,13 +1056,17 @@ cmds = [
 		gxd_specimen s,
 		gxd_insituresult r,
 		gxd_iSresultstructure rs,
-		bib_citation_cache b
+		bib_citation_cache b,
+		voc_term_emaps vte,
+		voc_term struct
 	where c._Assay_key = a._Assay_key
 		and a._Assay_key = s._Assay_key
 		and s._Specimen_key = r._Specimen_key
-		and c._Structure_key = rs._Structure_key
 		and rs._Result_key = r._Result_key
-		and a._Refs_key = b._Refs_key''',
+		and a._Refs_key = b._Refs_key
+		and vte._emapa_term_key = c._emapa_term_key
+		and vte._term_key = struct._term_key
+	''',
 
 	#
 	# image panes associated with recombinase assay results
