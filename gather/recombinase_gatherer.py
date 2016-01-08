@@ -961,7 +961,7 @@ cmds = [
 	# all allele / system / structure / age information
 	# make sure 'expression' is ordered descending so that the '1' are encountered first
 	#
-	'''select c._Allele_key, c.accID, c.system, vte._emaps_key, struct.term as structure,
+	'''select c._Allele_key, c.accID, c.system, vte._term_key as _emaps_key, struct.term as structure,
 		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
 		c.hasImage
 	from all_cre_cache c
@@ -1045,7 +1045,7 @@ cmds = [
 	#
 	# main cre assay result data
 	#
-	'''select distinct c._Allele_key, vte._emaps_key, struct.term as structure,
+	'''select distinct c._Allele_key, vte._term_key as _emaps_key, struct.term as structure,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
