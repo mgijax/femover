@@ -149,35 +149,6 @@ def setupGOCacheTables():
 def setupGxdCacheTables():
 	# sets up the cache tables necessary for GXD results
 
-	# create mapping table from an AD structure key to its corresponding
-	# EMAPS and EMAPA keys
-
-	# Using these 'with' clauses is a little more cumberson, but the
-	# performance improves dramatically. (65 seconds vs. 0.5 second)
-	cmd0 = '''with ad as (
-			select m._mapping_key, d._Object_key as _Structure_key
-			from mgi_emaps_mapping m, acc_accession d
-			where m.accID = d.accID
-			and d._MGIType_key = 38
-		),
-		emaps as (
-			select m._mapping_key, e._Object_key as _Emaps_key
-			from mgi_emaps_mapping m, acc_accession e
-			where m.emapsID = e.accID
-			and e._MGIType_key = 13
-		)
-		select a._Structure_key, e._Emaps_key
-		into temporary table gxd_structure_map
-		from ad a, emaps e
-		where a._mapping_key = e._mapping_key'''	
-
-	cmd1 = 'create index ad1 on gxd_structure_map (_Structure_key)'
-	cmd2 = 'create index emaps1 on gxd_structure_map (_Emaps_key)'
-
-	for cmd in [ cmd0, cmd1, cmd2 ]:
-		dbAgnostic.execute(cmd)
-	logger.debug('Computed mapping table from AD to EMAPS')
-
 	# create a temp table which maps from expression strength values to a
 	# simple 0 for absent-ish values (absent, ambiguous, not specified) or
 	# a 1 for present-ish values (all the others).
@@ -222,18 +193,23 @@ def setupGxdCacheTables():
 			where s._Assay_key = gaa._Assay_key
 			),
 		results as (select r._Specimen_key, r._Strength_key,
-				r._Result_key, rs._Structure_key
+				r._Result_key, rs._emapa_term_Key, rs._stage_key
 			from gxd_insituresult r, gxd_isresultstructure rs
 			where r._Result_key = rs._Result_key
 		)
 		select s._Assay_key, s._Genotype_key, p.is_present,
-			r._Result_key, r._Structure_key, s._Specimen_key
+			r._Result_key, r._emapa_term_key, r._stage_key,
+			vte._term_key as _emaps_key, s._Specimen_key
 		into temporary table gxd_insitu_results
-		from specimens s, results r, gxd_present p
+		from specimens s, results r, gxd_present p,
+		voc_term_emaps vte
 		where s._Specimen_key = r._Specimen_key
-		and r._Strength_key = p._Strength_key'''
+		and r._Strength_key = p._Strength_key
+		and vte._emapa_term_key = r._emapa_term_key
+		and vte._stage_key = r._stage_key
+		'''
 
-	cmd7 = 'create index isr1 on gxd_insitu_results (_Structure_key)'
+	cmd7 = 'create index isr1 on gxd_insitu_results (_emaps_key)'
 	cmd8 = 'create index isr2 on gxd_insitu_results (_Assay_key)'
 
 	for cmd in [ cmd6, cmd7, cmd8 ]:
@@ -250,7 +226,7 @@ def setupGxdCacheTables():
 	# substantially (8 seconds to 4)
 	cmd9 = '''with lanes as (
 			select g._Assay_key, g._Genotype_key, g._GelLane_key,
-				gs._Structure_key
+				gs._emapa_term_key, gs._stage_key
 			from gxd_gellane g, gxd_gellanestructure gs,
 				gxd_assays ga
 			where ga._Assay_key = g._Assay_key
@@ -258,14 +234,18 @@ def setupGxdCacheTables():
 				and g._GelControl_key = 1
 			)
 		select g._Assay_key, g._Genotype_key, g._GelLane_key,
-			g._Structure_key, max(p.is_present) as is_present
+			g._emapa_term_key, g._stage_key, vte._term_key as _emaps_key,
+			max(p.is_present) as is_present
 		into temporary table gxd_gel_results
-		from lanes g, gxd_gelband b, gxd_present p
+		from lanes g, gxd_gelband b, gxd_present p,
+			voc_term_emaps vte
 		where g._GelLane_key = b._GelLane_key
 			and b._Strength_key = p._Strength_key
+			and vte._emapa_term_key = g._emapa_term_key
+			and vte._stage_key = g._stage_key
 		group by 1, 2, 3, 4'''
 
-	cmd10 = 'create index gg1 on gxd_gel_results (_Structure_key)'
+	cmd10 = 'create index gg1 on gxd_gel_results (_emaps_key)'
 	cmd11 = 'create index gg2 on gxd_gel_results (_Assay_key)'
 
 	for cmd in [ cmd9, cmd10, cmd11 ]:
@@ -285,19 +265,17 @@ def setupGxdCacheTables():
 
 	cmd13 = '''insert into %s
 		select ga._Marker_key, isr._Assay_key, isr._Genotype_key,
-			e._Emaps_key, isr.is_present, 0
-		from gxd_insitu_results isr, gxd_structure_map e,
+			isr._Emaps_key, isr.is_present, 0
+		from gxd_insitu_results isr,
 			gxd_assay ga
-		where isr._Structure_key = e._Structure_key
-			and isr._Assay_key = ga._Assay_key''' % GXD_CACHE
+		where isr._Assay_key = ga._Assay_key''' % GXD_CACHE
 
 	cmd14 = '''insert into %s
 		select ga._Marker_key, ggr._Assay_key, ggr._Genotype_key,
-			e._Emaps_key, ggr.is_present, 0
-		from gxd_gel_results ggr, gxd_structure_map e,
+			ggr._Emaps_key, ggr.is_present, 0
+		from gxd_gel_results ggr,
 			gxd_assay ga
-		where ggr._Assay_key = ga._Assay_key
-			and ggr._Structure_key = e._Structure_key''' % \
+		where ggr._Assay_key = ga._Assay_key''' % \
 				GXD_CACHE
 
 	cmd15 = 'create index gc1 on %s (_Marker_key)' % GXD_CACHE
