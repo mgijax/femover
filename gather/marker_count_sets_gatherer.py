@@ -488,7 +488,7 @@ cmds = [
 	where ge.isForGXD = 1
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = ge._Marker_key)
-	group by ge._Marker_key, vte._term_key
+	group by ge._Marker_key, vte._term_key, ge._stage_key
 	order by ge._Marker_key, vte._term_key''' % COUNT,
 
 	# 1. expression assays by type
