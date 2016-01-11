@@ -403,7 +403,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                         out.append ( (key, alleleSystemOtherMap[key]['row'][keyCol],
                                 alleleSystemOtherMap[key]['row'][idCol],
-                                convert(alleleSystemOtherMap[key]['row'][sysCol]),
+                                "test system",
 				1, # _system_key
                                 alleleSystemOtherMap[key]['e1'],
                                 alleleSystemOtherMap[key]['e2'],
@@ -961,16 +961,16 @@ cmds = [
 	# all allele / system / structure / age information
 	# make sure 'expression' is ordered descending so that the '1' are encountered first
 	#
-	'''select c._Allele_key, c.accID, c.system, vte._term_key as _emaps_key, struct.term as structure,
+	'''select c._Allele_key, c.accID, c._stage_key, vte._term_key as _emaps_key, struct.term as structure,
 		c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
 		c.hasImage
 	from all_cre_cache c
 		join voc_term_emaps vte on
 			vte._emapa_term_key = c._emapa_term_key
 			and vte._stage_key = c._stage_key
-		joint voc_term struct on
+		join voc_term struct on
 			struct._term_key = vte._term_key
-	order by c._Allele_key, c.system, c.expressed desc''',
+	order by c._Allele_key, c.expressed desc''',
 
 	#
 	# genetic strain/background info by genotype
@@ -1045,7 +1045,7 @@ cmds = [
 	#
 	# main cre assay result data
 	#
-	'''select distinct c._Allele_key, vte._term_key as _emaps_key, struct.term as structure,
+	'''select distinct c._Allele_key, c._stage_key, vte._term_key as _emaps_key, struct.term as structure,
 		a._AssayType_key, a._ReporterGene_key, a._Refs_key,
 		a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
 		s.age, s.sex, s.specimenNote, s._Genotype_key,
