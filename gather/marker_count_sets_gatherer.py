@@ -479,7 +479,7 @@ cmds = [
 	# 0. expression results by theiler stages 
 	'''select ge._Marker_key,
 		vte._term_key as _emaps_key,
-		ge._stage_key
+		ge._stage_key,
 		count(distinct ge._Expression_key) as %s
 	from gxd_expression ge
 		join voc_term_emaps vte on
