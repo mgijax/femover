@@ -243,7 +243,7 @@ def setupGxdCacheTables():
 			and b._Strength_key = p._Strength_key
 			and vte._emapa_term_key = g._emapa_term_key
 			and vte._stage_key = g._stage_key
-		group by 1, 2, 3, 4'''
+		group by 1, 2, 3, 4, 5, 6'''
 
 	cmd10 = 'create index gg1 on gxd_gel_results (_emaps_key)'
 	cmd11 = 'create index gg2 on gxd_gel_results (_Assay_key)'
@@ -358,11 +358,10 @@ def setupGxdCacheTables():
 	# clean up now-unneeded temp tables
 
 	cmd21 = 'drop table gxd_insitu_results'
-	cmd22 = 'drop table gxd_structure_map'
 	cmd23 = 'drop table gxd_present'
 	cmd24 = 'drop table gxd_gel_results'
 
-	for cmd in [ cmd21, cmd22, cmd23, cmd24 ]:
+	for cmd in [ cmd21, cmd23, cmd24 ]:
 		dbAgnostic.execute(cmd)
 	logger.debug('Removed unneded temp tables')
 
