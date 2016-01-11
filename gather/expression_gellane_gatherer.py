@@ -35,7 +35,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		
 		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
 		stageKeyCol = Gatherer.columnNumber (cols, '_stage_key')
-		printnameCol = Gatherer.columnNumber (cols, 'printname')
+		printnameCol = Gatherer.columnNumber (cols, 'structure')
 		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
 
 		rowCount = 0
@@ -43,7 +43,6 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			rowCount += 1
 			laneKey = row[laneKeyCol]
 			stageKey = row[stageKeyCol]
-			structureKey = row[structureKeyCol]
 			printname = row[printnameCol]
 			emapsKey = row[emapsKeyCol]
 
@@ -217,7 +216,7 @@ cmds = [
 	''',
 	# 1. Gather all the lane structures
 	'''
-	select s.printName,
+	select struct.term as structure,
 		gs._gellane_key,
 		vte._term_key as _emaps_key,
 		gs._stage_key
@@ -225,6 +224,8 @@ cmds = [
 		join voc_term_emaps vte on
 			vte._emapa_term_key = gs._emapa_term_key
 			and vte._stage_key = gs._stage_key
+		join voc_term struct on
+			struct._term_key = vte._term_key
 	''',
 	]
 
