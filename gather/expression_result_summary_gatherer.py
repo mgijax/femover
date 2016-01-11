@@ -1229,7 +1229,7 @@ cmds = [
 		st.strength,
 		vte._term_key as _emaps_key,
 		gs._stage_key,
-		struct.term as structure
+		struct.term as structure,
 		g.ageMin,
 		g.ageMax,
 		g._GelLane_key
