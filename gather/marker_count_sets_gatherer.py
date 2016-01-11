@@ -78,7 +78,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 
 		markerCol = Gatherer.columnNumber (cols, MARKER_KEY)
 		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
-		stageCol = Gatherer.columnNmber (cols, '_stage_key')
+		stageCol = Gatherer.columnNumber (cols, '_stage_key')
 		countCol = Gatherer.columnNumber (cols, COUNT)
 
 
