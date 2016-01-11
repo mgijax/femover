@@ -27,10 +27,10 @@ TempTables = [
         create index tmp_emaps_ad_ekey on tmp_emaps_ad (_emaps_key)
         """,
         """
-        create index tmp_emaps_ad_ekey on tmp_emaps_ad (_emapa_term_key)
+        create index tmp_emaps_emapa_ekey on tmp_emaps_ad (_emapa_term_key)
         """,
         """
-        create index tmp_emaps_ad_ekey on tmp_emaps_ad (_stage_key)
+        create index tmp_emaps_stage_ekey on tmp_emaps_ad (_stage_key)
         """,
 	# temp table combining emaps terms with their synonyms for searching
         """
