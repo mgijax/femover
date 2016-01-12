@@ -35,6 +35,7 @@ FLAGS = [
 	'extraembryonic component',
 	'embryo other',
 	'postnatal other',
+	'test system'
 	]
 
 ###--- Functions ---###
@@ -64,13 +65,11 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 			'_Allele_key')
 		expCol = Gatherer.columnNumber (self.results[0][0],
 			'expressed')
-		sysCol = Gatherer.columnNumber (self.results[0][0],
-			'system')
 
 		for row in self.results[0][1]:
 			expressed = row[expCol]
 			allele = row[keyCol]
-			pre = prefix(row[sysCol])
+			pre = 'test system'
 
 			if not results.has_key(allele):
 				results[allele] = {}
@@ -90,7 +89,8 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 			notDetected = 0
 
 			for flag in FLAGS:
-				pre = prefix(flag)
+				#pre = prefix(flag)
+				pre = flag
 
 				if results[allele].has_key(pre):
 					flagValue = results[allele][pre]
@@ -119,9 +119,9 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 cmds = [
 	# items from Cre cache; ordering implies that expressed (1) will
 	# override not expressed (0)
-	'''select distinct _Allele_key, system, expressed
+	'''select distinct _Allele_key, expressed
 		from all_cre_cache
-		order by _Allele_key, system, expressed''',
+		order by _Allele_key, expressed''',
 	]
 
 # order of fields (from the query results) to be written to the
