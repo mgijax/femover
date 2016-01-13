@@ -493,6 +493,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		vocabs = upEdges.keys()
 		for voc in vocabs:
 			terms = upEdges[voc].keys()
+			
+			logger.debug("processing _vocab_key = %s" % voc)
 
 			# we now write partial results out to 'writer'
 			# roughly every 'threshold' terms
