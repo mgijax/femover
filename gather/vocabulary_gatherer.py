@@ -1023,14 +1023,16 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			# post-process results (if needed)
 
 			self.postprocessResults()
-
-			logger.debug('Finished %s (%d)' % (vocabName,
+            
+           	self.writeFiles(files)	
+           	logger.debug('Finished %s (%d)' % (vocabName,
 				vocabKey))
 
 		TermCounts.reset()
 
 		self.resetInstanceVariables(-1)
 	
+    
 		# close output files
 
 		i = 0
