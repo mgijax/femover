@@ -962,7 +962,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 	def writeFiles (self, files):
 		# write out data to files
-
 		i = 0
 		for (filename, fieldOrder, tableName) in self.files:
 
@@ -1026,15 +1025,15 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 			self.postprocessResults()
             
-           	self.writeFiles(files)	
-           	logger.debug('Finished %s (%d)' % (vocabName,
+			self.writeFiles(files)	
+			logger.debug('Finished %s (%d)' % (vocabName,
 				vocabKey))
 
 		TermCounts.reset()
 
 		self.resetInstanceVariables(-1)
 	
-    
+		#self.writeFiles(files)
 		# close output files
 
 		i = 0
