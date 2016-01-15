@@ -50,7 +50,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 			seqnum = 0
 			
 			# sort group by printname
-			group.sort(key=lambda x: x[printnameCol])
+			group.sort(key=lambda x: (x[stageKeyCol], x[printnameCol]))
 			
 			for row in group:
 				

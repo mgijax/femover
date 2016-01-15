@@ -61,80 +61,97 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 		resultNoteCol = Gatherer.columnNumber (cols, 'resultnote')
 		resultSeqCol = Gatherer.columnNumber (cols, 'result_seq')
 		imagepaneKeyCol = Gatherer.columnNumber (cols, '_imagepane_key')
-	
+		
+		
+		# group by specimen
+		specimenGroups = {}
 		for row in rows:
-			assayKey = row[assayKeyCol]
-			specimenKey = row[specKeyCol]
-			genotypeKey = row[genotypeKeyCol]
-			specimenLabel = row[specLabelCol]
-			isConditionalGenotype = row[conditionalGenotypeCol]
-			sex = row[sexCol]
-			age = row[ageCol]
-			fixation = row[fixationCol]
-			embedding = row[embeddingCol]
-			hybridization = row[hybridizationCol]
-			ageNote = row[ageNoteCol]
-			specimenNote = row[specimenNoteCol]
-			specimenSeq = row[specSeqCol]
-
-			resultKey = row[resultKeyCol]
-
-			#structure = row[structureCol]
-			#stage = row[stageCol]
-
-			emapsKey = row[emapsKeyCol]
-			structure = row[structureCol]
-			stage = row[stageCol]
-
-			if (not emapsKey) or (not stage) or (not structure):
-				continue
-
-			# strength = detection level
-			strength = row[strengthCol]
-			pattern = row[patternCol]
-			resultNote = row[resultNoteCol]
-			resultSeq = row[resultSeqCol]
-
-			imagepaneKey = row[imagepaneKeyCol]
+			specimenGroups.setdefault(row[specKeyCol], []).append(row)
+		
+		
+		for specimenKey, group in specimenGroups.items():
+			
+			
+			# specimen result + structure sequence num
+			seqnum = 0
+			
+			# sort rows by resultSeq + printname
+			group.sort(key = lambda x: (x[resultSeqCol], x[stageCol], x[structureCol]) )
 	
-			# assign default text to null specimenLabels
-			specimenLabel = not specimenLabel and "%s"%specimenSeq or specimenLabel
-
-			# hide not specified fixation method
-			if fixation in NOT_SPECIFIED_VALUES:
-				fixation = ""
-			# hide note specified embedding method
-			if embedding in NOT_SPECIFIED_VALUES:
-				embedding = ""
-
-			# hide not specified pattern
-			if pattern in NOT_SPECIFIED_VALUES:
-				pattern = ""
+			for row in group:
+				
+				seqnum += 1
+				assayKey = row[assayKeyCol]
+				genotypeKey = row[genotypeKeyCol]
+				specimenLabel = row[specLabelCol]
+				isConditionalGenotype = row[conditionalGenotypeCol]
+				sex = row[sexCol]
+				age = row[ageCol]
+				fixation = row[fixationCol]
+				embedding = row[embeddingCol]
+				hybridization = row[hybridizationCol]
+				ageNote = row[ageNoteCol]
+				specimenNote = row[specimenNoteCol]
+				specimenSeq = row[specSeqCol]
 	
-			# structure format is TS26: brain
-			tsStructure = "TS%s: %s"%(int(stage),structure)
-
-			# add conditional genotype note, if applicable
-			if isConditionalGenotype == 1:
-				specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
-
-			if specimenKey not in uniqueSpecimenKeys:
-				uniqueSpecimenKeys.add(specimenKey)
-				# make a new specimen row
-				self.addRow('assay_specimen', (specimenKey,assayKey,genotypeKey,specimenLabel,sex,
-					age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
-
-			# we need to generate a unique result key, because result=>structure is not 1:1 relationship
-			resultGenKey = (resultKey,emapsKey)
-			if resultGenKey not in uniqueResultKeys:
-				resultCount += 1
-				uniqueResultKeys[resultGenKey] = resultCount
-				# make a new specimen result row
-				self.addRow('specimen_result', (resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,resultSeq))
-			if imagepaneKey:
-				imagepaneCount += 1
-				# make a new imagepane row
-				self.addRow('specimen_result_to_imagepane', (imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
+				resultKey = row[resultKeyCol]
+	
+				#structure = row[structureCol]
+				#stage = row[stageCol]
+	
+				emapsKey = row[emapsKeyCol]
+				structure = row[structureCol]
+				stage = row[stageCol]
+	
+				if (not emapsKey) or (not stage) or (not structure):
+					continue
+	
+				# strength = detection level
+				strength = row[strengthCol]
+				pattern = row[patternCol]
+				resultNote = row[resultNoteCol]
+				resultSeq = row[resultSeqCol]
+	
+				imagepaneKey = row[imagepaneKeyCol]
+		
+				# assign default text to null specimenLabels
+				specimenLabel = not specimenLabel and "%s"%specimenSeq or specimenLabel
+	
+				# hide not specified fixation method
+				if fixation in NOT_SPECIFIED_VALUES:
+					fixation = ""
+				# hide note specified embedding method
+				if embedding in NOT_SPECIFIED_VALUES:
+					embedding = ""
+	
+				# hide not specified pattern
+				if pattern in NOT_SPECIFIED_VALUES:
+					pattern = ""
+		
+				# structure format is TS26: brain
+				tsStructure = "TS%s: %s"%(int(stage),structure)
+	
+				# add conditional genotype note, if applicable
+				if isConditionalGenotype == 1:
+					specimenNote = specimenNote and "%s %s"%(CONDITIONAL_GENOTYPE_NOTE,specimenNote) or CONDITIONAL_GENOTYPE_NOTE
+	
+				if specimenKey not in uniqueSpecimenKeys:
+					uniqueSpecimenKeys.add(specimenKey)
+					# make a new specimen row
+					self.addRow('assay_specimen', (specimenKey,assayKey,genotypeKey,specimenLabel,sex,
+						age,fixation,embedding,hybridization,ageNote,specimenNote,specimenSeq))
+	
+				# we need to generate a unique result key, because result=>structure is not 1:1 relationship
+				resultGenKey = (resultKey,emapsKey)
+				if resultGenKey not in uniqueResultKeys:
+					resultCount += 1
+					uniqueResultKeys[resultGenKey] = resultCount
+					# make a new specimen result row
+					self.addRow('specimen_result', (resultCount,specimenKey,tsStructure,emapsKey,strength,pattern,resultNote,seqnum))
+				if imagepaneKey:
+					imagepaneCount += 1
+					# make a new imagepane row
+					self.addRow('specimen_result_to_imagepane', (imagepaneCount,uniqueResultKeys[resultGenKey],imagepaneKey,imagepaneCount))
 	
 		return
 
