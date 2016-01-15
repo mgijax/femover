@@ -38,19 +38,34 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		printnameCol = Gatherer.columnNumber (cols, 'structure')
 		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
 
-		rowCount = 0
+		# group rows by gel lane
+		gellaneGroups = {}
 		for row in rows:
-			rowCount += 1
-			laneKey = row[laneKeyCol]
-			stageKey = row[stageKeyCol]
-			printname = row[printnameCol]
-			emapsKey = row[emapsKeyCol]
-
-			# structure format is TS26: brain
-			tsStructure = "TS%s: %s"%(int(stageKey),printname)
-
-			# TODO: if GXD wants these sorted, you would need to do that in here
-			sRows.append((rowCount,laneKey,emapsKey,tsStructure,1))
+			gellaneGroups.setdefault(row[laneKeyCol], []).append(row)
+		
+		rowCount = 0
+		for laneKey, group in gellaneGroups.items():
+			
+			# structure_seq column
+			seqnum = 0
+			
+			# sort group by printname
+			group.sort(key=lambda x: x[printnameCol])
+			
+			for row in group:
+				
+				seqnum += 1
+				
+				rowCount += 1
+				laneKey = row[laneKeyCol]
+				stageKey = row[stageKeyCol]
+				printname = row[printnameCol]
+				emapsKey = row[emapsKeyCol]
+	
+				# structure format is TS26: brain
+				tsStructure = "TS%s: %s"%(int(stageKey),printname)
+	
+				sRows.append((rowCount,laneKey,emapsKey,tsStructure,seqnum))
 	
 		return (sCols,sRows)
 
