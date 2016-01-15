@@ -933,7 +933,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				seqNum = VocabSorter.getSequenceNum(emapsKey)
 				
 				counts = countInfo['counts']
-				stage = countInfo['stage']
+				# add leading zero to stage (for tissue counts only)
+				stage = "%02d" % countInfo['stage']
 				structure = countInfo['structure']
 
 				FILES.addRow(mtFile, [ markerKey, emapsKey,
