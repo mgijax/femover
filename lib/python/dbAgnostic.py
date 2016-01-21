@@ -24,9 +24,14 @@ SQL_LOG_FILE = None		# file pointer; where to log SQL commands
 # set up our database connectivity
 
 if SOURCE_DB == 'postgres':
+	import db
 	DBM = dbManager.postgresManager (config.SOURCE_HOST,
 		config.SOURCE_DATABASE, config.SOURCE_USER,
 		config.SOURCE_PASSWORD)
+	db.set_sqlUser(config.SOURCE_USER)
+	db.set_sqlPassword(config.SOURCE_PASSWORD)
+	db.set_sqlServer(config.SOURCE_HOST)
+	db.set_sqlDatabase(config.SOURCE_DATABASE)
 	logger.debug ('Created postgresManager')
 
 elif SOURCE_DB == 'mysql':
