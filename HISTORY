@@ -1,7 +1,8 @@
-TAG: femover-6-0-2-5, femover-6-0-2-6
+TAG: femover-6-0-2-5, femover-6-0-2-6, femover-6-0-2-7
 DATE: 01/19/2016
 STAFF: kstone
 1) Obsoleting marker_links "homology gene links" data, as it is no longer used.
+1b) - EDIT - Reverting previous commit. homology links were not really obsolete
 2) Fixing database connection issue with annotation gatherer
 
 
