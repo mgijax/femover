@@ -9,7 +9,6 @@
 
 import Gatherer
 import logger
-import MarkerSnpAssociations
 import ADMapper
 import InteractionUtils
 import MarkerUtils
@@ -277,37 +276,45 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		self.writeSoFar()
 		return
 
-	def collatePolymorphisms (self, resultIndex):
+	def collatePolymorphisms (self, resultIndex, snpIndex):
 		logger.debug ('Retrieving SNP data')
-		markersWithSNPs = MarkerSnpAssociations.getAllMarkerCounts()
-		logger.debug ('Found %d markers with SNPs' % \
-			len(markersWithSNPs))
+
+		# assume SNP and marker coordinates are in sync.  If not, then
+		# change the message.
+
+		snpMsg = 'SNPs within 2kb'
+		try:
+			if config.BUILDS_IN_SYNC == 0:
+				snpMsg = 'SNPs'
+		except:
+			pass
+
+		byMarker = {}			# byMarker[marker key] = {}
+
+		cols, rows = self.results[snpIndex]
+
+		markerCol = Gatherer.columnNumber(cols, '_Marker_key')
+		snpCol = Gatherer.columnNumber(cols, 'snp_count')
+
+		for row in rows:
+			byMarker[row[markerCol]] = { snpMsg : int(row[snpCol]) } 
+
+		self.results[snpIndex] = (cols, [])
+		del rows
+		gc.collect()
+
+		logger.debug ('Found %d markers with SNPs' % len(byMarker))
+
+		# move on to the other polymorphisms
 
 		(columns, rows) = self.results[resultIndex]
 		keyCol = Gatherer.columnNumber (columns, MARKER_KEY)
 		termCol = Gatherer.columnNumber (columns, 'term')
 		countCol = Gatherer.columnNumber (columns, 'myCount')
 
-		byMarker = {}			# byMarker[marker key] = {}
-
 		all = 'All PCR and RFLP'	# keys per marker in byMarker
 		pcr = 'PCR'
 		rflp = 'RFLP'
-
-		if MarkerSnpAssociations.isInSync():
-			snp = 'SNPs within 2kb'
-		else:
-			snp = 'SNPs'		# not counted in 'all'
-
-		MarkerSnpAssociations.unload()
-		gc.collect()
-
-		# first populate SNP counts for markers with SNPs (and include
-		# the various locations for SNPs with multiple locations)
-
-		for key in markersWithSNPs.keys():
-			snpCount, multiSnpCount = markersWithSNPs[key]
-			byMarker[key] = { snp : snpCount + multiSnpCount }
 
 		# collate counts per marker
 
@@ -320,7 +327,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 				# note that it has no SNPs (they would have
 				# already been populated otherwise)
 
-				byMarker[key] = { snp : 0 }
+				byMarker[key] = { snpMsg : 0 }
 
 			if term == 'primer':
 				byMarker[key][pcr] = ct
@@ -344,7 +351,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 			
 		# generate rows, one per marker/count pair
 
-		orderedTerms = [ all, pcr, rflp, snp ]
+		orderedTerms = [ all, pcr, rflp, snpMsg ]
 		for key in byMarker.keys():
 			for term in orderedTerms:
 				if byMarker[key].has_key(term):
@@ -474,7 +481,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
 		ADMapper.unload()		# free unneeded memory
 
 		self.collateReagents(3)
-		self.collatePolymorphisms(4)
+		self.collatePolymorphisms(4, 5)
 		self.collateMarkerInteractions()
 		self.collateAlleleCounts()
 
@@ -570,6 +577,28 @@ cmds = [
 		and exists (select 1 from mrk_marker m
 			where m._Marker_key = rflv._Marker_key)
 	group by rflv._Marker_key, t.term''',
+
+	# 5. counts of SNPs per marker (really, SNP locations.  A SNP that is
+	# within 2kb of a marker will have all of its locations counted, even
+	# if some are not within 2 kb of that marker.)  Only count SNPs with a
+	# variation class of "SNP" for now.
+	'''with coord_counts as (
+			select _ConsensusSNP_key,
+				count(distinct startCoordinate) as coord_count
+			from snp_coord_cache
+			where isMultiCoord = 0
+			group by _ConsensusSNP_key),
+		pairs as (select distinct m._Marker_key, m._ConsensusSNP_key
+			from snp_consensussnp_marker m, snp_coord_cache c,
+				snp_consensussnp s
+			where m._ConsensusSNP_key = c._ConsensusSNP_key
+			and m._ConsensusSNP_key = s._ConsensusSNP_key
+			and s._VarClass_key = 1878510
+			and m.distance_from <= 2000)
+	select m._Marker_key, sum(f.coord_count) as snp_count
+	from pairs m, coord_counts f
+	where m._ConsensusSNP_key = f._ConsensusSNP_key
+	group by m._Marker_key''',
 	]
 
 # order of fields (from the query results) to be written to the

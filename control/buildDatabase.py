@@ -41,12 +41,13 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
 	-b : Batch Query tables
 	-c : Cre (Recombinases)
+	-C : Print out the config used without running
 	-d : Disease tables (disease detail page)
 	-g : Genotypes
 	-l : Glossary Index
@@ -66,6 +67,23 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gathere
     If no data sets are specified, the whole front-end database will be
     (re)generated.  Any existing contents of the database will be wiped.
 ''' % sys.argv[0]
+
+CONFIG = '''This is the configuration:
+
+Source Database Info:
+Driver:   %s
+Server:   %s
+Database: %s
+User:     %s
+Password: %s
+
+Target Database Info:
+Driver:   %s
+Server:   %s
+Database: %s
+User:     %s
+Password: %s
+''' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE, config.SOURCE_USER, config.SOURCE_PASSWORD, config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE, config.TARGET_USER, config.TARGET_PASSWORD)
 
 # databaseInfoTable object
 dbInfoTable = database_info.table
@@ -179,7 +197,10 @@ DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
 	'disease', 'marker_to_genotype',
 	]
-HDPORTAL = [ 'hdp_annotation', 'hdp_marker_to_reference' ]
+#HDPORTAL = [ 'hdp_annotation', 'hdp_marker_to_reference' ]
+HDPORTAL = [ 'hdp_annotation', 'hdp_marker_to_reference', 'hdp_genocluster',
+		'hdp_gridcluster', 'hdp_term_to_reference'
+	]
 EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_index_map', 'expression_index_sequence_num',
 		'expression_index_counts', 'expression_assay',
@@ -240,7 +261,7 @@ SINGLE_PRIORITY_TABLES = os.environ['SINGLE_PRIORITY_TABLES'].split(' ')
 
 # dictionary mapping each command-line flag to the list of gatherers that it
 # would regenerate
-FLAGS = { '-c' : CRE,		'-m' : MARKERS,		'-r' : REFERENCES,
+FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-s' : SEQUENCES,	'-a' : ALLELES,		'-p' : PROBES,
 	'-i' : IMAGES,		'-v' : VOCABULARIES,	'-x' : EXPRESSION,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
@@ -294,13 +315,12 @@ def processCommandLine():
 
 	try:
 		flags = ''.join (map (lambda x : x[1], FLAGS.keys()) )
-		options, args = getopt.getopt (sys.argv[1:], flags + 'G:')
+		options, args = getopt.getopt (sys.argv[1:], flags + 'CG:')
 	except getopt.GetoptError:
 		bailout ('Invalid command-line arguments')
 
 	if args:
-		bailout ('Extra command-line argument(s): %s' % \
-			' '.join (args))
+		bailout ('Extra command-line argument(s): %s' % ' '.join (args))
 
 	# list of gatherer names (strings), allowing for duplicates
 	withDuplicates = []
@@ -314,8 +334,12 @@ def processCommandLine():
 			if option == '-G':
 				gatherer = value.replace('_gatherer', '').replace ('.py', '')
 				withDuplicates.append (gatherer)
+			elif option == '-C':
+				sys.stderr.write ('Configuration: %s\n' % CONFIG)
+				sys.exit(0)
 			else:
 				withDuplicates = withDuplicates + FLAGS[option]
+
 
 		FULL_BUILD = False
 

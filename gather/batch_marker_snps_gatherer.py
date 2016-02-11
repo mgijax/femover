@@ -1,100 +1,61 @@
 #!/usr/local/bin/python
 # 
 # gathers data for the 'batch_marker_snps' table in the front-end database.
-# Revised in March 2015 to customize and reduce memory footprint.
+# This table stores the SNP IDs that will be shown in the batch query output
+# for each marker (when SNPs are requested).
 
 import Gatherer
 import config
-import MarkerSnpAssociations
-import OutputFile
-import dbAgnostic
-import logger
-import gc
 
-###--- Globals ---###
+###--- Classes ---###
 
-cacheSize = 50000	# rough number of output rows to cache in memory
+class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
+	def collateResults (self):
+		(cols, rows) = self.results[0]
 
-outFile = OutputFile.OutputFile('batch_marker_snps')	# output data file
+		markerCol = Gatherer.columnNumber(cols, '_Marker_key')
+		idCol = Gatherer.columnNumber(cols, 'accID')
 
-###--- Functions ---###
+		for row in rows:
+			self.addRow ('batch_marker_snps', (row[markerCol], row[idCol]) )
+		return
 
-def getChromosomes():
-	# retrieve the ordered list of mouse chromosomes
+###--- Setup for Gatherer ---###
 
-	cmd0 = '''select chromosome
-		from mrk_chromosome
-		where _Organism_key = 1
-		order by chromosome'''
-	(cols, rows) = dbAgnostic.execute(cmd0)
+cmds = [
+	# 0. gather the SNPs within 2kb of the markers in this group; only
+	# include SNPs with variation class "SNP" for now.
+	'''select distinct m._Marker_key, a.accID
+		from mrk_marker m, snp_consensussnp_marker s, snp_accession a,
+			snp_coord_cache c, snp_consensussnp p
+		where m._Marker_key = s._Marker_key
+			and m._Marker_key >= %d
+			and m._Marker_key < %d
+			and s.distance_from <= 2000
+			and s._ConsensusSNP_key = a._Object_key
+			and a._MGIType_key = 30		-- consensus SNP
+			and s._ConsensusSNP_key = c._ConsensusSNP_key
+			and c.isMultiCoord = 0
+			and s._ConsensusSNP_key = p._ConsensusSNP_key
+			and p._VarClass_key = 1878510
+	''',
+	]
 
-	chromosomes = []	# list of mouse chromosomes
-	for row in rows:
-		chromosomes.append(row[0])
-	logger.debug('Got %d mouse chromosomes' % len(chromosomes))
-	return chromosomes
+files = [
+	('batch_marker_snps',
+		[ '_Marker_key', 'accID' ],
+		[ Gatherer.AUTO, '_Marker_key', 'accID' ],
+		),
+	]
 
-def getMarkers(chromosome):
-	# get the markers for the given chromosome
+gatherer = BatchMarkerSnpsGatherer (files, cmds)
+gatherer.setupChunking (
+	'select min(_Marker_key) from snp_consensussnp_marker',
+	'select max(_Marker_key) from snp_consensussnp_marker',
+	10000
+	)
 
-	markers = []
-
-	cmd1 = '''select distinct m._Marker_key
-		from mrk_marker m
-		where m._Organism_key = 1
-			and m._Marker_Type_key != 6
-			and not exists(select 1 from mrk_mcv_cache mcv where mcv._marker_key=m._marker_key and mcv._mcvterm_key=6238170)
-			and m._Marker_Status_key in (1,3)
-			and m.chromosome = '%s'
-		order by m._Marker_key''' % chromosome
-	(cols, rows) = dbAgnostic.execute(cmd1)
-
-	for row in rows:
-		markers.append(row[0])
-
-	del rows
-	gc.collect()
-
-	logger.debug('Got %d markers on chromosome %s' % (len(markers),
-		chromosome)) 
-	return markers
-
-def main():
-	chromosomes = getChromosomes()
-
-	outCols = [ Gatherer.AUTO, '_Marker_key', 'snpID' ]
-	cols = [ '_Marker_key', 'snpID' ]
-	rows = []
-
-	# We walk through the markers of each chromosome, collecting the SNP
-	# IDs for each marker, writing them out periodically to save space.
-
-	for chrom in chromosomes:
-		markers = getMarkers(chrom)
-
-		for markerKey in markers:
-			snps = MarkerSnpAssociations.getSnpIDs(markerKey, chrom)
-			for snpID in snps:
-				rows.append( (markerKey, snpID) )
-
-			# Our cache size is approximate, so we check it only
-			# after each marker, as this is close enough.
-
-			if len(rows) >= cacheSize:
-				outFile.writeToFile(outCols, cols, rows)
-				rows = []
-				gc.collect()
-
-	# If any unwritten rows, we need to write them out.
-
-	if rows:
-		outFile.writeToFile(outCols, cols, rows)
-		rows = []
-		gc.collect() 
-
-	outFile.close()
-	print '%s %s' % (outFile.getPath(), 'batch_marker_snps')
-	return
+###--- main program ---###
 
 if __name__ == '__main__':
-	main()
+	Gatherer.main(gatherer)

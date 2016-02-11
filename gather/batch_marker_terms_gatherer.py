@@ -11,24 +11,67 @@ import gc
 
 ###--- Functions ---###
 def createTempTables():
+	# for SNPs, only include those SNPs which have a variation class of
+	# "SNP" for now.
 	tempTable1="""
 		select a.accid as term,
 			varchar 'RefSNP' as term_type,
 			m._Marker_key as marker_key
-			into temp table tmp_snp_id
-		from snp_consensussnp_marker m,
-			snp_accession a
+		into temp table tmp_snp_id
+		from snp_consensussnp_marker m, snp_accession a,
+			snp_coord_cache c, snp_consensussnp s
 		where m._ConsensusSnp_key = a._Object_key
 			and a._MGIType_key = 30		
+			and m.distance_from <= 2000
+			and c._ConsensusSNP_key = m._ConsensusSNP_key
+			and c.isMultiCoord = 0
+			and c._ConsensusSNP_key = s._ConsensusSNP_key
+			and s._VarClass_key = 1878510
+		order by m._Marker_key
 	"""
-	tempIdx1="""
-		create index idx_snp_mrk_key on tmp_snp_id (marker_key)
-	"""
+	tempIdx1='create index idx_snp_mrk_key on tmp_snp_id (marker_key)'
+	analyzeTable = 'analyze tmp_snp_id'
+
 	logger.debug("creating temp table for SNP IDs")
 	dbAgnostic.execute(tempTable1)
 	logger.debug("indexing temp table for SNP IDs")
 	dbAgnostic.execute(tempIdx1)
+	logger.debug("analyzing stats of temp table")
+	dbAgnostic.execute(analyzeTable)
+
+	tempTable2 = '''select a.accID as term,
+			case
+				when l.name = 'Sequence DB' then 'GenBank'
+				else l.name
+			end as term_type,
+			m._Marker_key as marker_key
+		into temp table tmp_seq_id
+		from seq_marker_cache s,
+			mrk_marker m,
+			acc_accession a,
+			acc_logicaldb l
+		where s._Marker_key = m._Marker_key
+			and m._Marker_Status_key in (1,3)
+			and m._Organism_key = 1
+			and s._Sequence_key = a._Object_key
+			and a._MGIType_key = 19
+			and a.private = 0
+			and a._LogicalDB_key in (9, 13, 27, 41)
+			and a._LogicalDB_key = l._LogicalDB_key
+		order by m._Marker_key'''
+	
+	tempIdx2 = 'create index idx_seq_mrk_key on tmp_seq_id (marker_key)'
+	analyzeTable2 = 'analyze tmp_seq_id'
+
+	logger.debug("creating temp table for seq IDs")
+	dbAgnostic.execute(tempTable2)
+	logger.debug("indexing temp table for seq IDs")
+	dbAgnostic.execute(tempIdx2)
+	logger.debug("analyzing stats of temp table")
+	dbAgnostic.execute(analyzeTable2)
+
 	logger.debug("done creating temp tables")
+	return
 	
 def loadCaches():
 	ids={}
@@ -278,8 +321,6 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
-caseEnd = 'end as term_type'
-
 cmds = [
 	# 0. nomenclature for current mouse markers, including symbol, name,
 	# synonyms, old symbols, old names, human synonyms, related
@@ -321,44 +362,13 @@ cmds = [
 
 	# 2. Genbank (9), RefSeq (27), and Uniprot (13 and 41) IDs for
 	# sequences associated to current mouse markers.
-	'''select a.accID as term,
-			case
-				when l.name = 'Sequence DB' then 'GenBank'
-				else l.name
-			%s,
-			m._Marker_key as marker_key
-		from seq_marker_cache s,
-			mrk_marker m,
-			acc_accession a,
-			acc_logicaldb l
-		where s._Marker_key = m._Marker_key
-			and m._Marker_Status_key in (1,3)
-			and m._Organism_key = 1
-			and s._Sequence_key = a._Object_key
-			and a._MGIType_key = 19
-			and a.private = 0
-			and m._Marker_key >= %s
-			and m._Marker_key < %s
-			and a._LogicalDB_key in (9, 13, 27, 41)
-			and a._LogicalDB_key = l._LogicalDB_key''' % (
-				caseEnd, '%d', '%d'),
+	'''select * from tmp_seq_id
+		where marker_key >= %d
+			and marker_key < %d''',
 
-	# 3. RefSNP IDs for RefSNPs that are directly associated with markers
-	# (no SubSNPs, no distance-based associations in a region around a
-	# marker -- just direct associations)
-	#'''select a.accid as term,
-	#	ldb.name as term_type,
-	#	m._Marker_key as marker_key
-	#from snp_consensussnp_marker m,
-	#	snp_accession a,
-	#	acc_logicaldb ldb
-	#where a._LogicalDB_key = ldb._LogicalDB_key
-	#	and m._Marker_key >= %d
-	#	and m._Marker_key < %d
-	#	and m._ConsensusSnp_key = a._Object_key
-	#	and a._MGIType_key = 30''',
-	'''
-		select * from tmp_snp_id 
+	# 3. RefSNP IDs for RefSNPs that are associated with markers either by
+	# dbSNP or are within 2kb (as computed by MGI)
+	''' select * from tmp_snp_id 
 		where marker_key >= %d
 			and marker_key < %d
 	''',
@@ -375,9 +385,6 @@ cmds = [
 			and _Object_key >= %d
 			and _Object_key < %d
 			and _AnnotType_key = 1000''', 
-
-	# need to do RefSNP IDs (will require resolving how to access the SNP
-	# database or how to integrate SNP data into mgd)
 	]
 
 # order of fields (from the query results) to be written to the
