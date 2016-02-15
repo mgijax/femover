@@ -1,5 +1,5 @@
 diff --git a/Install b/Install
-index 7bd0f77..8d28cd9 100755
+index 2bef023..ca9f811 100755
 --- a/Install
 +++ b/Install
 @@ -10,14 +10,14 @@ TOP=`pwd`
@@ -53,4 +53,4 @@ index 7bd0f77..8d28cd9 100755
 +chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*
  echo "Granted execute permissions for gatheres and control scripts"
  
- echo "Finished"
+ 
