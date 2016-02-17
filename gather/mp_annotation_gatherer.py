@@ -1376,6 +1376,7 @@ cmds = [
                 from acc_accession
                 where _mgitype_key=12
                     and preferred=1
+                    and _logicaldb_key=1
         )
         select ag._allele_key,ag._genotype_key,gid.genotype_id,'mp' 
         from gxd_allelegenotype ag,genotype_ids gid
