@@ -125,7 +125,7 @@ def _populateSymbolCache():
 
     global symbolCache
 
-	cmd = '''select _Marker_key, symbol
+    cmd = '''select _Marker_key, symbol
 		from mrk_marker
 		where _Organism_key in (1, 2)
 			and _Marker_Status_key in (1,3)'''
