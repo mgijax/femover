@@ -1425,6 +1425,7 @@ cmds = [
                 and ar.prefixpart = 'J:'
                 and ag._object_key=va._object_key
                 and ag._mgitype_key=12
+                and ag._logicaldb_key=1
                 and ag.preferred=1
 		and exists (select 1 from voc_annot va2 where va2._object_key=va._object_key and va2._annottype_key=1002)
 	''',
