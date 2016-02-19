@@ -1319,6 +1319,7 @@ cmds = [
                 and ar.prefixpart = 'J:'
                 and ag._object_key=va._object_key
                 and ag._mgitype_key=12
+             	and ag._logicaldb_key=1
                 and ag.preferred=1
 		and ve._annotevidence_key=vep._annotevidence_key
                 and vep._propertyterm_key=%s
@@ -1376,6 +1377,7 @@ cmds = [
                 from acc_accession
                 where _mgitype_key=12
                     and preferred=1
+                    and _logicaldb_key=1
         )
         select ag._allele_key,ag._genotype_key,gid.genotype_id,'mp' 
         from gxd_allelegenotype ag,genotype_ids gid
@@ -1424,6 +1426,7 @@ cmds = [
                 and ar.prefixpart = 'J:'
                 and ag._object_key=va._object_key
                 and ag._mgitype_key=12
+                and ag._logicaldb_key=1
                 and ag.preferred=1
 		and exists (select 1 from voc_annot va2 where va2._object_key=va._object_key and va2._annottype_key=1002)
 	''',
