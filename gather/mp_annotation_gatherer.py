@@ -1319,6 +1319,7 @@ cmds = [
                 and ar.prefixpart = 'J:'
                 and ag._object_key=va._object_key
                 and ag._mgitype_key=12
+             	and ag._logicaldb_key=1
                 and ag.preferred=1
 		and ve._annotevidence_key=vep._annotevidence_key
                 and vep._propertyterm_key=%s
