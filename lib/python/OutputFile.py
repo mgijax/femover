@@ -4,12 +4,12 @@
 
 import os
 import tempfile
+import string
 import config
 import logger
 import dbAgnostic
 import gc
 
-from string
 
 ###--- Globals ---###
 
