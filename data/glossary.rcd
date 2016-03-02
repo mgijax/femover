@@ -2390,24 +2390,6 @@ normal and the other is abnormal).
 ]
 
 [ 
-key=hierarchical 
-displayName=Hierarchical 
-definition=A description of a structure in which things are organized into a \ 
-<A HREF="!FEWI_URL!glossary/hierarchy">hierarchy</A>. 
-]
-
-[ 
-key=hierarchy 
-displayName=Hierarchy 
-definition=An organization with few things, or one thing, at the top and with several things below each other thing. An inverted \
-tree structure. An example in computing is a directory hierarchy where each directory may contain files or other directories. In \ 
-<A HREF="!javaWI!WIFetch?page=glossaryTerm&key=mgi">MGI</A>, it refers to terms in a \
-<A HREF="!javaWI!WIFetch?page=glossaryTerm&key=controlled_vocabulary">controlled vocabulary</A> such as ones containing \
-<A HREF="!javaWI!WIFetch?page=glossaryTerm&key=gene_ontology">Gene Ontology (GO)</A> terms or to the \
-<a href="!FEWI_URL!/vocab/gxd/anatomy/">Mouse Developmental Anatomy Browser</a>. 
-]
-
-[ 
 key=homogametic 
 displayName=Homogametic 
 definition=Producing a single type of <A HREF="!FEWI_URL!glossary/euploid">euploid</A> \ 
