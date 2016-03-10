@@ -228,6 +228,7 @@ cmds = [
 		and gb._gelrow_key=gr._gelrow_key
 		and gb._strength_key=gstr._strength_key
 		and gl._genotype_key=gg._genotype_key
+		and exists (select 1 from gxd_expression e where gl._assay_key = e._assay_key)
 	''',
 	# 1. Gather all the lane structures
 	'''
