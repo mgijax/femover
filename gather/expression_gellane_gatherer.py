@@ -4,6 +4,9 @@
 #
 # HISTORY
 #
+# 03/10/2016	lec
+#	- TR12281/add exists statement for gxd_expression
+#
 # 02/07/2013    kstone
 #	Initial add for TR11248 (Assay Detail revamp)
 #
