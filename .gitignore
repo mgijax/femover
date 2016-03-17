@@ -4,3 +4,6 @@
 *.pyc
 *.tmp
 Configuration
+control/config.py
+gather/config.py
+schema/config.py
