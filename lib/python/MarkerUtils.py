@@ -6,12 +6,19 @@ import dbAgnostic
 import logger
 import gc
 import Lookup
+import utils
 
 ###--- globals ---###
 
 # marker key -> (genetic chrom, genomic chrom, start coord, end coord,
 #    chromosome sequence number)
 coordCache = {}    
+
+# marker key -> organism
+organismCache = {}
+
+# organism -> organism key
+organismKeyCache = {}
 
 # marker key -> symbol
 symbolCache = {}
@@ -82,15 +89,46 @@ def _populateCoordCache():
     logger.debug ('Cached %d locations' % len(coordCache))
     return
 
+def _populateOrganismCache():
+	# populate the global 'organismCache' with organisms for all current
+	# and pending markers
+
+	global organismCache, organismKeyCache
+
+	cmd = '''select m._Marker_key, o.commonName, o._Organism_key
+		from mrk_marker m, mgi_organism o
+		where m._Organism_key = o._Organism_key
+			and m._Marker_Status_key in (1,3)'''
+
+	(cols, rows) = dbAgnostic.execute(cmd)
+
+	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+	orgCol = dbAgnostic.columnNumber (cols, 'commonName')
+	orgKeyCol = dbAgnostic.columnNumber (cols, '_Organism_key')
+
+	for row in rows:
+		organism = utils.cleanupOrganism(row[orgCol])
+		organismCache[row[keyCol]] = organism
+		organismKeyCache[organism] = row[orgKeyCol]
+
+	del cols
+	del rows
+	gc.collect()
+
+	logger.debug ('Cached %d marker organisms' % len(organismCache))
+	logger.debug ('Cached %d organism keys' % len(organismKeyCache))
+	return
+
 def _populateSymbolCache():
-    # populate the global 'symbolCache' with symbols for mouse markers
+	# populate the global 'symbolCache' with symbols for mouse markers
+	# (and human markers)
 
     global symbolCache
 
     cmd = '''select _Marker_key, symbol
-        from mrk_marker
-        where _Organism_key = 1
-            and _Marker_Status_key in (1,3)'''
+		from mrk_marker
+		where _Organism_key in (1, 2)
+			and _Marker_Status_key in (1,3)'''
 
     (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -445,9 +483,29 @@ def getNonMouseEGMarkerKey (accID):
 
 ###--- functions dealing with nomenclature ---###
 
+def getOrganismKey (markerKey):
+	# return the _Organism_key for the marker's organism, or None if the
+	# marker key is not for a current or pending marker
+
+	org = getOrganism(markerKey)
+	if (not org) or (not organismKeyCache.has_key(org)):
+		return None
+	return organismKeyCache[org] 
+
+def getOrganism (markerKey):
+	# return the organism for the given marker key, or None if the key is
+	# not for a current or pending marker
+
+	if len(organismCache) == 0:
+		_populateOrganismCache()
+
+	if organismCache.has_key(markerKey):
+		return organismCache[markerKey]
+	return None
+
 def getSymbol (markerKey):
-    # return the symbol for the given marker key, or None if the key is
-    # not for a mouse marker
+	# return the symbol for the given marker key, or None if the key is
+	# not for a mouse or human marker
 
     if len(symbolCache) == 0:
         _populateSymbolCache()

@@ -1,3 +1,23 @@
+TAG: femover-6-0-3-1
+DATE: 03/7/2016
+STAFF: lnh
+CHANGES: 
+1)data/glossary.rcd : David Shaw removed section of the page
+  refering to javawi
+
+TAG: femover-6-0-3-0
+DATE: 02/22/2016
+STAFF: oblod
+CHANGES: Release 6-0-3-0 for femover
+
+TAG: femover-6-0-2-5, femover-6-0-2-6, femover-6-0-2-7
+DATE: 01/19/2016
+STAFF: kstone
+1) Obsoleting marker_links "homology gene links" data, as it is no longer used.
+1b) - EDIT - Reverting previous commit. homology links were not really obsolete
+2) Fixing database connection issue with annotation gatherer
+
+
 TAG: femover-tr12223-BP
 DATE: 01/07/2016
 STAFF: kstone

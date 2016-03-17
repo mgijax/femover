@@ -18,13 +18,8 @@ class QFOptionGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for primary data for query form
 	#	options, collates results, writes tab-delimited text file
 
-	def collateResults (self):
-		self.finalColumns = [ 'formName', 'fieldName', 'displayValue',
-			'submitValue', 'helpText', 'sequenceNum', 'indentLevel',
-			'objectCount', 'objectType', 'showExpanded', ]
-		self.finalResults = []
-
-		# 0. marker QF and allele QF : chromosome field
+	def processBasicChromosomeQuery (self):
+		# process query 0 : marker and allele QF chromosome field
 
 		cols, rows = self.results[0]
 
@@ -53,9 +48,12 @@ class QFOptionGatherer (Gatherer.Gatherer):
 
 		soFar = len(self.finalResults)
 		logger.debug ('Added %d chromosome rows' % soFar)
+		return
 
-		# 3. marker QF : definitions for MCV (marker type) field
+	def processFeatureTypeQueries (self):
+		# process queries 3 (MCV definitions) and 1 (MCV terms)
 
+		soFar = len(self.finalResults)
 		cols, rows = self.results[3]
 
 		termCol = Gatherer.columnNumber (cols, '_Term_key')
@@ -161,11 +159,13 @@ class QFOptionGatherer (Gatherer.Gatherer):
 					toDo.insert(0, (child, indent + 1) )
 
 		increment = len(self.finalResults) - soFar
-		soFar = len(self.finalResults)
 		logger.debug ('Added %s MCV term rows' % increment)
+		return
 
-		# 2. allele QF : phenotype popup field
+	def processPhenotypePopupQuery (self):
+		# process query 2 (phenotype popup on allele query form)
 
+		soFar = len(self.finalResults)
 		cols, rows = self.results[2]
 
 		headerCol = Gatherer.columnNumber (cols, 'shortHeader')
@@ -187,10 +187,11 @@ class QFOptionGatherer (Gatherer.Gatherer):
 				None, None, 0 ] )
 
 		increment = len(self.finalResults) - soFar
-		soFar = len(self.finalResults)
 		logger.debug ('Added %s MP header rows' % increment) 
+		return
 
-		# 4. genome build number for mouse markers
+	def processBuildNumberQuery (self):
+		# process query 4 (genome build number for mouse markers)
 
 		cols, rows = self.results[4]
 
@@ -203,7 +204,75 @@ class QFOptionGatherer (Gatherer.Gatherer):
 
 		self.finalResults.append ( [ 'marker', 'build_number',
 			version, version, None, 1, None, None, None, 0 ] )
+		logger.debug('Added row for genome build %s' % version)
+		return
 
+	def processSnpQueries (self):
+		# process queries 5-8 for SNP QF options
+
+		queries = [ (5, 'strain'), (6, 'chromosome'),
+			(7, 'function class'), (8, 'variation class'),
+			(9, 'build number') ]
+
+		for (qry, field) in queries:
+			cols, rows = self.results[qry]
+			termCol = Gatherer.columnNumber(cols, 'term')
+			seqNum = 0
+
+			for row in rows:
+				seqNum = seqNum + 1
+				term = row[termCol]
+				self.finalResults.append ( [ 'snp', field, 
+					term, term, None, seqNum, None,
+					None, None, 0 ] )
+
+			logger.debug('Added %d rows for SNPs %s' % (
+				seqNum, field))
+		return
+
+	def processSnpExtras (self):
+		# a couple of extra option lists that aren't based in a db
+
+		coordRanges = [
+			('within the gene(s)', 0),
+			('include 2 kb upstream and downstream of the gene(s)', 2000),
+			('include 10 kb upstream and downstream of the gene(s)', 10000),
+			]
+
+		directions = [
+			('EITHER', 'EITHER'),
+			('upstream', 'upstream'),
+			('downstream', 'downstream'),
+			]
+
+		lists = [ ('coordinate range', coordRanges),
+			('direction', directions),
+			]
+
+		for (field, values) in lists:
+			seqNum = 0
+			for (display, submit) in values:
+				seqNum = seqNum + 1
+				self.finalResults.append ( [ 'snp', field,
+					display, submit, None, seqNum, None,
+					None, None, 0 ] )
+
+			logger.debug('Added %d rows for SNPs %s' % (
+				len(values), field))
+		return
+
+	def collateResults (self):
+		self.finalColumns = [ 'formName', 'fieldName', 'displayValue',
+			'submitValue', 'helpText', 'sequenceNum', 'indentLevel',
+			'objectCount', 'objectType', 'showExpanded', ]
+		self.finalResults = []
+
+		self.processBasicChromosomeQuery()
+		self.processFeatureTypeQueries()
+		self.processPhenotypePopupQuery()
+		self.processBuildNumberQuery()
+		self.processSnpQueries() 
+		self.processSnpExtras()
 		return
 
 ###--- globals ---###
@@ -311,6 +380,38 @@ cmds = [
 	where _Organism_key = 1
 		and version is not null
 	order by version desc''', 
+
+	# 5. SNP QF : distinct list of strains
+	'''select distinct strain as term, sequenceNum
+	from snp_strain
+	order by sequenceNum''',
+
+	# 6. SNP QF : chromosomes with SNP data
+	'''select distinct chromosome as term, sequenceNum
+	from snp_coord_cache
+	order by sequenceNum''',
+
+	# 7. SNP QF : dbSNP function classes (skip ones we added)
+	'''select t.term
+	from voc_term t
+	where _Vocab_key = 49
+		and t.term != 'within coordinates of'
+		and t.term != 'within distance of'
+		and exists (select 1 from snp_consensussnp_marker c
+		where t._Term_key = c._Fxn_key)
+	order by t.term''',
+
+	# 8. SNP QF : variation classes
+	'''select t.term, t.sequenceNum
+	from voc_term t
+	where _Vocab_key = 50
+		and exists (select 1 from snp_consensussnp c
+		where t._Term_key = c._VarClass_key)
+	order by t.sequenceNum''',
+
+	# 9. SNP QF : SNP build version
+	'''select snp_data_version as term
+	from snp.mgi_dbinfo''',
 	]
 
 # order of fields (from the query results) to be written to the

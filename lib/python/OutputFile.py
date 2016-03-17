@@ -4,12 +4,12 @@
 
 import os
 import tempfile
+import string
 import config
 import logger
 import dbAgnostic
 import gc
 
-from string import maketrans
 
 ###--- Globals ---###
 
@@ -18,8 +18,6 @@ AUTO = 'OutputFile.AUTO'
 Error = 'OutputFile.error'
 ColumnMismatch = 'Mismatching number of columns: (%d vs %d)'
 ClosedFile = 'File was already closed'
-
-CONTROL_CHARS = ''.join(map(chr, range(0,9) + range(11,13) + range(14,32) + range(127,160)))
 
 # standard settings for cache size in CachingOutputFile:
 
@@ -258,13 +256,13 @@ class CachingOutputFileFactory:
 
 ###--- Functions ---###
 
-def clean(string):
-   string = string.translate(maketrans('', ''), CONTROL_CHARS)
-   string = string.replace("\r", " ")
-   string = string.replace("\\", "\\\\")
-   string = string.replace("\t", "\\\t")
-   string = string.replace("\n", "\\\n")
-   return string
+def clean(dirtystring):
+   dirtystring = filter(lambda x: x in string.printable, dirtystring)
+   dirtystring = dirtystring.replace("\r", " ")
+   dirtystring = dirtystring.replace("\\", "\\\\")
+   dirtystring = dirtystring.replace("\t", "\\\t")
+   cleanstring = dirtystring.replace("\n", "\\\n")
+   return cleanstring
 
 def createAndWrite (filePrefix, fieldOrder, columns, rows):
 	# create a file for filePrefix, write out the data, close it, and
