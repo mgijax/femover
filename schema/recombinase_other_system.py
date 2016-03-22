@@ -18,7 +18,6 @@ createStatement = '''CREATE TABLE %s  (
 	allele_system_key	int		not null,
 	allele_id		text	null,
 	other_system		text	null,
-	other_system_key	int		null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -43,7 +42,6 @@ comments = {
 		'allele_system_key' : 'identifies the allele/system pair',
 		'allele_id' : 'primary ID of the allele, cached here for convenience',
 		'other_system' : 'name of another system in which the allele has shown recombinase activity, cached for convenience',
-		'other_system_key' : 'term key for the other system',
 		},
 	Table.INDEX : {
 		'allele_system_key' : 'clusters data so that all other system for an allele/system pair are grouped together on disk to aid efficiency',

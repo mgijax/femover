@@ -8,35 +8,6 @@ import logger
 
 ###--- Globals ---###
 
-# flags for "detected vs not detected" in order by columns in the destination
-# table
-FLAGS = [
-	'adipose tissue',
-	'alimentary system',
-	'branchial arches',
-	'cardiovascular system',
-	'cavities and linings',
-	'endocrine system',
-	'head',
-	'hemolymphoid system',
-	'integumental system',
-	'limbs',
-	'liver and biliary system',
-	'mesenchyme',
-	'muscle',
-	'nervous system',
-	'renal and urinary system',
-	'reproductive system',
-	'respiratory system',
-	'sensory organs',
-	'skeletal system',
-	'tail',
-	'early embryo',
-	'extraembryonic component',
-	'embryo other',
-	'postnatal other',
-	'test system'
-	]
 
 ###--- Functions ---###
 
@@ -63,18 +34,20 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 
 		keyCol = Gatherer.columnNumber (self.results[0][0],
 			'_Allele_key')
+		systemCol = Gatherer.columnNumber (self.results[0][0],
+			'cresystemlabel')
 		expCol = Gatherer.columnNumber (self.results[0][0],
 			'expressed')
 
 		for row in self.results[0][1]:
 			expressed = row[expCol]
 			allele = row[keyCol]
-			pre = 'test system'
+			system = row[systemCol]
 
 			if not results.has_key(allele):
 				results[allele] = {}
 
-			results[allele][pre] = expressed
+			results[allele][system] = expressed
 
 		logger.debug ('Processed %d rows' % len(self.results[0][1]))
 
@@ -83,29 +56,19 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 
 		self.finalResults = []
 
-		for allele in results.keys():
-			flagValues = []
+		for alleleKey, systemMap in results.items():
 			detected = 0
 			notDetected = 0
 
-			for flag in FLAGS:
-				#pre = prefix(flag)
-				pre = flag
+			for expressed in systemMap.values():
 
-				if results[allele].has_key(pre):
-					flagValue = results[allele][pre]
-					if flagValue == 1:
-						detected = detected + 1
-					else:
-						notDetected = notDetected + 1
+				if expressed:
+					detected += 1
 				else:
-					flagValue = None
+					notDetected += 1
 
-				flagValues.append (flagValue)
+			row = [ alleleKey, detected, notDetected, ]
 
-			row = [ allele, detected, notDetected, ]
-
-			logger.debug ('allele %d, %d flag values, %d cols' % (allele, len(flagValues), len(row)) )
 			self.finalResults.append (row)
 
 		self.finalColumns = [ '_Allele_key', 'detectedCount', 'notDetectedCount', ]
@@ -119,9 +82,10 @@ class AlleleRecombinaseSystemGatherer (Gatherer.Gatherer):
 cmds = [
 	# items from Cre cache; ordering implies that expressed (1) will
 	# override not expressed (0)
-	'''select distinct _Allele_key, expressed
+	'''select distinct _Allele_key, cresystemlabel, expressed
 		from all_cre_cache
-		order by _Allele_key, expressed''',
+		where cresystemlabel is not null
+		order by _Allele_key, cresystemlabel, expressed''',
 	]
 
 # order of fields (from the query results) to be written to the
