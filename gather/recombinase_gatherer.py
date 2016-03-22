@@ -383,21 +383,22 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		#
 		# all data has been read into dictionaries
-                #
-                # write all of the alleleSystemOther information into the output file
-                #
-                for allKey in alleleSystemOtherMap.keys():
+		#
+		# write all of the alleleSystemOther information into the output file
+		#
+		for allKey in alleleSystemOtherMap.keys():
 
-                        out.append ( (allKey, alleleSystemOtherMap[allKey]['row'][keyCol],
-                                alleleSystemOtherMap[allKey]['row'][idCol],
-                                system,
-                                alleleSystemOtherMap[allKey]['e1'],
-                                alleleSystemOtherMap[allKey]['e2'],
-                                alleleSystemOtherMap[allKey]['e3'],
-                                alleleSystemOtherMap[allKey]['p1'],
-                                alleleSystemOtherMap[allKey]['p2'],
-                                alleleSystemOtherMap[allKey]['p3'],
-                                alleleSystemOtherMap[allKey]['image']))
+			out.append ( (allKey, alleleSystemOtherMap[allKey]['row'][keyCol],
+                    alleleSystemOtherMap[allKey]['row'][idCol],
+                    alleleSystemOtherMap[allKey]['row'][systemCol],
+                    alleleSystemOtherMap[allKey]['e1'],
+                    alleleSystemOtherMap[allKey]['e2'],
+                    alleleSystemOtherMap[allKey]['e3'],
+                    alleleSystemOtherMap[allKey]['p1'],
+                    alleleSystemOtherMap[allKey]['p2'],
+                    alleleSystemOtherMap[allKey]['p3'],
+                    alleleSystemOtherMap[allKey]['image'])
+			)
 
 		columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
 			'system',
