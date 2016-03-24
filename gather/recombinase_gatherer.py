@@ -1110,13 +1110,13 @@ files = [
 			'paneLabel', ],
 		'recombinase_assay_result_imagepane'),
 
-	('allele_recombinase_affected_system',
+	('recombinase_affected_system',
 		[ Gatherer.AUTO, 'alleleKey', 'alleleSystemKey', 'system' ],
-		'allele_recombinase_affected_system'),
+		'recombinase_affected_system'),
 
-	('allele_recombinase_unaffected_system',
+	('recombinase_unaffected_system',
 		[ Gatherer.AUTO, 'alleleKey', 'alleleSystemKey', 'system' ],
-		'allele_recombinase_unaffected_system'),
+		'recombinase_unaffected_system'),
 
 	('recombinase_system_structure',
 		[ Gatherer.AUTO, 'alleleSystemKey', 'structure','structureSeq',
