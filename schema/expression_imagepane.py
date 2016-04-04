@@ -21,7 +21,9 @@ createStatement = '''CREATE TABLE %s  (
 	y	int		not null,
 	width	int		not null,
 	height	int		not null,
-	by_default	int		not null,
+	by_assay_type	int		not null,
+	by_marker	int		not null,
+	by_hybridization	int		not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(imagepane_key))''' % tableName
 
