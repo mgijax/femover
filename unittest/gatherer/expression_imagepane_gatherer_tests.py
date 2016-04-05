@@ -54,12 +54,19 @@ def getPaneKeysByMarker():
     """
     return _getPaneKeysBySeqMap(gatherer.byMarkerSeqMap)
 
-def getPaneKeysByHybridization():
+def getPaneKeysByHybridizationAsc():
     """
     return list of _imagepane_keys
-            from gatherer.byHybridizationSeqMap
+            from gatherer.byHybridizationAscSeqMap
     """
-    return _getPaneKeysBySeqMap(gatherer.byHybridizationSeqMap)
+    return _getPaneKeysBySeqMap(gatherer.byHybridizationAscSeqMap)
+    
+def getPaneKeysByHybridizationDesc():
+    """
+    return list of _imagepane_keys
+            from gatherer.byHybridizationDescSeqMap
+    """
+    return _getPaneKeysBySeqMap(gatherer.byHybridizationDescSeqMap)
     
 def _getPaneKeysBySeqMap(seqMap):
     """
@@ -288,19 +295,21 @@ class SortByHybridizationTestCase(unittest.TestCase):
         Sort by hybridization
         """
         # register hybridization strings in reverse order
+        # blots are represented by empty value
         assays = [
-                [1, IMMUNO_TYPE, 'pax1','A citation','not applicable'],
-                [2, IMMUNO_TYPE, 'pax1','A citation','not specified'],
-                [3, IMMUNO_TYPE, 'pax1','A citation','optical section'],
-                [4, IMMUNO_TYPE, 'pax1','A citation','section from whole mount'],
-                [5, IMMUNO_TYPE, 'pax1','A citation','section'],
-                [6, IMMUNO_TYPE, 'pax1','A citation','whole mount'],
+                [1, IMMUNO_TYPE, 'pax1','A citation',''],
+                [2, IMMUNO_TYPE, 'pax1','A citation','not applicable'],
+                [3, IMMUNO_TYPE, 'pax1','A citation','not specified'],
+                [4, IMMUNO_TYPE, 'pax1','A citation','optical section'],
+                [5, IMMUNO_TYPE, 'pax1','A citation','section from whole mount'],
+                [6, IMMUNO_TYPE, 'pax1','A citation','section'],
+                [7, IMMUNO_TYPE, 'pax1','A citation','whole mount'],
         ]
         
         sortAssays(assays)
             
-        sortedKeys = getPaneKeysByHybridization()
-        self.assertEqual([6,5,4,3,2,1], sortedKeys)
+        sortedKeys = getPaneKeysByHybridizationAsc()
+        self.assertEqual([7,6,5,4,3,2,1], sortedKeys)
         
         
     def test_sortWithinPaneByHybridization(self):
@@ -317,7 +326,7 @@ class SortByHybridizationTestCase(unittest.TestCase):
         
         sortAssays(assays)
             
-        sortedKeys = getPaneKeysByHybridization()
+        sortedKeys = getPaneKeysByHybridizationAsc()
         self.assertEqual([2,1], sortedKeys)
         
         
@@ -336,7 +345,7 @@ class SortByHybridizationTestCase(unittest.TestCase):
         
         sortAssays(assays)
             
-        sortedKeys = getPaneKeysByHybridization()
+        sortedKeys = getPaneKeysByHybridizationAsc()
         self.assertEqual([2,1], sortedKeys)
         
         
@@ -355,9 +364,56 @@ class SortByHybridizationTestCase(unittest.TestCase):
         
         sortAssays(assays)
             
-        sortedKeys = getPaneKeysByHybridization()
+        sortedKeys = getPaneKeysByHybridizationAsc()
         self.assertEqual([2,1], sortedKeys)
 
+
+    def test_sortNotSpecifiedAndBlots(self):
+            """
+            Not Specifieds are second to last, followed by blot assays
+                    which have no hybridization value
+            """
+            
+            # a blot assay has no hybridization value
+            #   it should sort last
+            assays = [
+                [1, IMMUNO_TYPE, 'pax1','A citation',''],
+                [2, IMMUNO_TYPE, 'pax1','A citation','Not Specified'],
+            ]
+            
+            sortAssays(assays)
+            
+            sortedKeys = getPaneKeysByHybridizationAsc()
+            self.assertEqual([2,1], sortedKeys)
+            
+            
+    def test_reverseSortOrder(self):
+            """
+            When sorting in reverse/desc mode
+                    all hybridization types sort reverse, except
+                    Not Specified is still second to last
+                    and blots, or empty values,  are still last
+            """
+            
+            # a blot assay has no hybridization value
+            #   it should sort last
+            assays = [
+                [1, IMMUNO_TYPE, 'pax1','A citation',''],
+                [2, IMMUNO_TYPE, 'pax1','A citation','not applicable'],
+                [3, IMMUNO_TYPE, 'pax1','A citation','not specified'],
+                [4, IMMUNO_TYPE, 'pax1','A citation','optical section'],
+                [5, IMMUNO_TYPE, 'pax1','A citation','section from whole mount'],
+                [6, IMMUNO_TYPE, 'pax1','A citation','section'],
+                [7, IMMUNO_TYPE, 'pax1','A citation','whole mount'],
+            ]
+            
+            sortAssays(assays)
+            
+            sortedKeys = getPaneKeysByHybridizationDesc()
+            # 3, 2 and 1 (not specified, not applicable, blots) still sort to bottom
+            #   which is same as in asc sort
+            self.assertEqual([4,5,6,7,3,2,1], sortedKeys)
+            
 
 def suite():
     suite = unittest.TestSuite()
