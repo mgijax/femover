@@ -446,6 +446,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
 		assayTypeCol = Gatherer.columnNumber (cols, 'assayType')
+                assayTypeKeyCol = Gatherer.columnNumber (cols, '_assaytype_key')
 		paneCol = Gatherer.columnNumber (cols, '_ImagePane_key')
 		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
 		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
@@ -454,6 +455,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		for row in rows:
 			assays.append ( [ row[assayCol], row[assayTypeCol],
+                                row[assayTypeKeyCol],
 				row[refsCol], row[markerCol], row[paneCol],
 				row[reporterCol], row[isGelCol] ] )
 
@@ -736,7 +738,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		# excerpt of summary data that will be used for sorting
 
-		sortCols = [ 'result_key', '_Assay_key', 'assayType',
+		sortCols = [ 'result_key', '_Assay_key', '_assaytype_key',
 			'symbol', 'stage', 'structureKey',
 			'isExpressed', '_Refs_key', '_Genotype_key',
 			]
@@ -765,7 +767,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		newKey = 0		# unique key for each result
 
-		for [ assayKey, assayType, refsKey, markerKey, imagepaneKey,
+		for [ assayKey, assayType, assayTypeKey, refsKey, markerKey, imagepaneKey,
 		    reporterGeneKey, isGel ] in assays:
 			
 		    #
@@ -855,7 +857,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			sortRow = [ newKey,
 			    assayKey,
-			    assayType,
+			    assayTypeKey,
 			    symbols[markerKey],
 			    stage,
 			    emapsKey,
@@ -950,25 +952,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		if self.symbolSequenceNum.has_key(symbol):
 			return self.symbolSequenceNum[symbol]
 		return len(self.symbolSequenceNum) + 1
-
-	def getAssayTypeSequenceNum (self, assayType):
-		if assayType == 'Immunohistochemistry':
-			return 1
-		elif assayType == 'RNA in situ':
-			return 2
-		elif assayType == 'In situ reporter (knock in)':
-			return 3
-		elif assayType == 'Northern blot':
-			return 4
-		elif assayType == 'Western blot':
-			return 5
-		elif assayType == 'RT-PCR':
-			return 6
-		elif assayType == 'RNase protection':
-			return 7
-		elif assayType == 'Nuclease S1':
-			return 8
-		return 9
+                
 
 	def getStageSequenceNum (self, stage):
 		return int(stage)
@@ -1017,7 +1001,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		resultKeyCol = Gatherer.columnNumber (sortCols, 'result_key')
 		assayKeyCol = Gatherer.columnNumber (sortCols, '_Assay_key')
-		assayTypeCol = Gatherer.columnNumber (sortCols, 'assayType')
+		assayTypeKeyCol = Gatherer.columnNumber (sortCols, '_assaytype_key')
 		symbolCol = Gatherer.columnNumber (sortCols, 'symbol')
 		stageCol = Gatherer.columnNumber (sortCols, 'stage')
 		expressedCol = Gatherer.columnNumber (sortCols, 'isExpressed')
@@ -1048,8 +1032,8 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		    ageMax = ageMinMax[resultKey][1]
 		    expressed = self.getExpressedSequenceNum (row[expressedCol])
 		    symbol = self.getSymbolSequenceNum (row[symbolCol])
-		    assay = VocabSorter.getAssayTypeSequenceNum (
-			row[assayTypeCol])
+		    assay = GXDUtils.getAssayTypeSeq (
+			row[assayTypeKeyCol])
 		    mutants = self.getGenotypeSequenceNum (row[genotypeKeyCol])
 		    refs = ReferenceCitations.getSequenceNum (row[refsKeyCol])
 
