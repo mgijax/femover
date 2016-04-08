@@ -5,7 +5,10 @@
 
 import Gatherer
 import logger
+import GXDUtils
 import SymbolSorter
+
+
 
 ###--- Classes ---###
 
@@ -18,19 +21,6 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 	#	files
 
 	def initSeqMaps(self):
-		
-		# map of assay type orderings for use in generating by_* sort columns
-		#   {_assaytype_key : sequence_num}
-		self.assayTypeSeqMap = {
-			6:1, # immuno
-			1:2, # RNA In situ
-			9:3, # in situ knockin
-			2:4, # northern blot
-			8:5, # western blot
-			5:6, # RT-PCR
-			4:7, # RNase Protection
-			3:8, # Nuclease S1
-		}
 		
 		# map of hybridization ordererings for use in generating by_* sort columns
 		#   {hybridization.lower() : sequence_num}
@@ -185,8 +175,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
                 
                 
 		# set a large seq num if we have an un-mapped assay type
-		assayTypeSeq = assayTypeKey in self.assayTypeSeqMap and self.assayTypeSeqMap[assayTypeKey] or 999
-		symbolSeq = SymbolSorter.getGeneSymbolSeq(markerSymbol) 
+		assayTypeSeq = GXDUtils.getAssayTypeSeq(assayTypeKey)
+                symbolSeq = SymbolSorter.getGeneSymbolSeq(markerSymbol) 
                 
 		hybridizationSeq = hybridization.lower() in self.hybridizationSeqMap and self.hybridizationSeqMap[hybridization.lower()] or 999
 		

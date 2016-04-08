@@ -8,6 +8,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../lib/python'))
 
 import unittest
 
+import GXDUtils
 import SymbolSorter
 import expression_imagepane_gatherer
 gatherer = expression_imagepane_gatherer.gatherer
@@ -78,6 +79,22 @@ def _getPaneKeysBySeqMap(seqMap):
     
     return l
     
+
+def initMockAssayTypeSorts():
+    """
+    Inject assay type sorts that we expect from the database
+    """
+    GXDUtils.ASSAY_TYPE_SEQMAP = {
+        IMMUNO_TYPE: 1,
+        RNA_TYPE: 2, 
+        KNOCKIN_TYPE: 3,
+        NORTHERN_TYPE: 4, 
+        WESTERN_TYPE: 5, 
+        RTPCR_TYPE: 6, 
+        RNASE_TYPE: 7, 
+        NUCLEASE_TYPE: 8 
+    }
+    
     
 ### Test cases ###
 
@@ -90,6 +107,8 @@ class SortByAssayTypeTestCase(unittest.TestCase):
     
     def setUp(self):
 	gatherer.initSeqMaps()
+        
+        initMockAssayTypeSorts()
     	
     	# Inject test markers into SymbolSorter
     	SymbolSorter.GENE_SYMBOL_SEQ_MAP = {
@@ -192,6 +211,8 @@ class SortByMarkerTestCase(unittest.TestCase):
     
     def setUp(self):
         gatherer.initSeqMaps()
+        
+        initMockAssayTypeSorts()
             
         # Inject test markers into SymbolSorter
         SymbolSorter.GENE_SYMBOL_SEQ_MAP = {
@@ -281,6 +302,8 @@ class SortByHybridizationTestCase(unittest.TestCase):
     def setUp(self):
         gatherer.initSeqMaps()
             
+        initMockAssayTypeSorts()
+        
         # Inject test markers into SymbolSorter
         SymbolSorter.GENE_SYMBOL_SEQ_MAP = {
                 'pax1': 1,
