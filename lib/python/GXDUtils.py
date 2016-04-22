@@ -15,21 +15,33 @@ QUALIFIERS = [ ('embryonic', 'E'), ('postnatal', 'P') ]
 
 ASSAY_TYPE_SEQMAP = None
 
-def getAssayTypeSeq(assayTypeKey):
+def getAssayTypeSeq(assayType):
         """
         returns GXD specified order for assay types
+        
+        assayType can be either _assaytype_key or assaytype name
+        
         """
         global ASSAY_TYPE_SEQMAP
         
         if ASSAY_TYPE_SEQMAP == None:
-                query = "select _assaytype_key, sequencenum from gxd_assaytype"
+                query = "select assaytype, _assaytype_key, sequencenum from gxd_assaytype"
                 (cols, rows) = dbAgnostic.execute(query)
                 ASSAY_TYPE_SEQMAP = {}
                 for row in rows:
-                       ASSAY_TYPE_SEQMAP[row[0]] = row[1]
+                        # assaytype name
+                       ASSAY_TYPE_SEQMAP[row[0].lower()] = row[2]
+                       # _assaytype_key
+                       ASSAY_TYPE_SEQMAP[row[1]] = row[2]
                        
-        return assayTypeKey in ASSAY_TYPE_SEQMAP \
-                and ASSAY_TYPE_SEQMAP[assayTypeKey] \
+                       
+        # check assayType.lower()
+        if not isinstance(assayType, int) \
+            and not isinstance(assayType, long):
+                assayType = assayType.lower()
+                
+        return assayType in ASSAY_TYPE_SEQMAP \
+                and ASSAY_TYPE_SEQMAP[assayType] \
                 or 999
                 
 
