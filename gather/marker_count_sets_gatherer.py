@@ -11,6 +11,7 @@ import Gatherer
 import logger
 import InteractionUtils
 import MarkerUtils
+import GXDUtils
 import OutputFile
 import gc
 
@@ -21,17 +22,6 @@ SET_TYPE = 'setType'
 COUNT_TYPE = 'countType'
 COUNT = 'count'
 SEQUENCE_NUM = 'sequenceNum'
-
-ASSAY_TYPE_ORDER = [
-	'Immunohistochemistry',
-	'RNA in situ',
-	'In situ reporter (knock in)',
-	'Northern blot',
-	'Western blot',
-	'RT-PCR',
-	'RNase protection',
-	'Nuclease S1',
-	]
 
 ###--- Functions ---###
 
@@ -48,7 +38,7 @@ def assayTypeSortVal (assayType):
 	return ASSAY_TYPE_ORDER.index(assayType)
 
 def assayTypeCompare (a, b):
-	return cmp(assayTypeSortVal(a), assayTypeSortVal(b))
+	return cmp(GXDUtils.getAssayTypeSeq(a), GXDUtils.getAssayTypeSeq(b))
 
 ###--- Classes ---###
 
