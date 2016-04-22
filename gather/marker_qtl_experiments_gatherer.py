@@ -3,6 +3,7 @@
 # gathers data for the 'marker_qtl_experiments' table in the front-end database
 
 import Gatherer
+import logger
 
 ###--- Classes ---###
 
@@ -12,35 +13,75 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for notes for QTL mapping
 	#	experiments for QTL markers, collates results, writes
 	#	tab-delimited text file
+        
+        def getMarkerNotes(self):
+                """
+                return list of marker QTL notes
+                notes = [(marker key, expt key, jnumID, note type, note),...]
+                """
+                
+                cols, rows = self.results[0]
+                
+                markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+                exptCol = Gatherer.columnNumber (cols, '_Expt_key')
+                jnumCol = Gatherer.columnNumber (cols, 'jnumid')
+                noteCol = Gatherer.columnNumber (cols, 'note')
+                noteTypeCol = Gatherer.columnNumber (cols, 'exptType')
+                
+                notes = set([])
+                
+                # add marker notes
+                for row in rows:
+                        markerKey = row[markerCol]
+                        exptKey = row[exptCol]
+                        jnumID = row[jnumCol]
+                        note = row[noteCol]
+                        noteType = row[noteTypeCol]
+
+                        notes.add((markerKey, exptKey, jnumID, noteType, note))
+                        
+                return notes
+        
+        
+        def getReferenceNotes(self):
+                """
+                return list of QTL reference notes
+                notes = [(marker key, expt key, jnumID, note type, note),...]
+                """
+                
+                cols, rows = self.results[1]
+                
+                markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+                exptCol = Gatherer.columnNumber (cols, '_Expt_key')
+                jnumCol = Gatherer.columnNumber (cols, 'jnumid')
+                noteCol = Gatherer.columnNumber (cols, 'note')
+                
+                notes = set([])
+                
+                # add marker notes
+                for row in rows:
+                        markerKey = row[markerCol]
+                        exptKey = row[exptCol]
+                        jnumID = row[jnumCol]
+                        note = row[noteCol]
+
+                        notes.add((markerKey, exptKey, jnumID, "Reference Note", note))
+                        
+                return notes
+        
 
 	def collateResults (self):
-		cols, rows = self.results[0]
 
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		exptCol = Gatherer.columnNumber (cols, '_Expt_key')
-		jnumCol = Gatherer.columnNumber (cols, 'accID')
-		noteCol = Gatherer.columnNumber (cols, 'note')
-		noteTypeCol = Gatherer.columnNumber (cols, 'exptType')
+		# notes = [(marker key, expt key, jnumID, note type, note),...]
+		notes = set([])
+                
+                notes = notes.union(self.getMarkerNotes())
+                
+                notes = notes.union(self.getReferenceNotes())
 
-		# (marker key, expt key, jnumID, note type) = note
-		notes = {}
 
-		for row in rows:
-			markerKey = row[markerCol]
-			exptKey = row[exptCol]
-			jnumID = row[jnumCol]
-			noteChunk = row[noteCol]
-			noteType = row[noteTypeCol]
-
-			key = (markerKey, exptKey, jnumID, noteType)
-
-			if notes.has_key(key):
-				notes[key] = notes[key] + noteChunk
-			else:
-				notes[key] = noteChunk
-
-		keys = notes.keys()
-		keys.sort()
+                notes = list(notes)
+                notes.sort()
 
 		seqNum = 0
 
@@ -48,20 +89,25 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
 			'note', 'noteType', 'sequenceNum' ]
 		self.finalResults = []
 
-		for (markerKey, exptKey, jnumID, noteType) in keys:
+		for (markerKey, exptKey, jnumID, noteType, note) in notes:
 			seqNum = seqNum + 1
 
 			self.finalResults.append ( [ markerKey, exptKey,
 				jnumID,
-				notes[(markerKey, exptKey, jnumID, noteType)],
+				note,
 				noteType, seqNum] )
 		return
 
 ###--- globals ---###
 
 cmds = [
-	'''select mem._Marker_key, me._Expt_key, me._Refs_key, ac.accID,
-		men.note, me.exptType
+        # 0. QTL marker notes
+	'''select mem._Marker_key, 
+	        me._Expt_key, 
+	        me._Refs_key, 
+	        ac.accID jnumid,
+		men.note, 
+		me.exptType
 	from MLD_Expt_Marker mem, MLD_Expts me, MLD_Expt_Notes men,
 		ACC_Accession ac
 	where mem._Expt_key = me._Expt_key 
@@ -73,6 +119,26 @@ cmds = [
 		and ac.preferred = 1
 	order by mem._Marker_key, mem.sequenceNum, me._Expt_key,
 		men.sequenceNum''',
+                
+        # 1. Reference notes by marker
+        '''select mem._marker_key,
+                me._expt_key,
+                me._refs_key,
+                ref_acc.accid jnumid,
+                mn.note,
+                me.expttype
+        from mld_expt_marker mem
+        join mld_expts me on
+                me._expt_key=mem._expt_key
+        join mld_notes mn on
+                mn._refs_key=me._refs_key
+        join acc_accession ref_acc on
+                ref_acc._object_key=me._refs_key
+                and ref_acc._mgitype_key=1
+                and ref_acc.preferred=1
+                and ref_acc.prefixpart='J:'
+        where me.exptType in ('TEXT-QTL')
+        ''',
 	]
 
 # order of fields (from the query results) to be written to the
