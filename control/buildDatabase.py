@@ -228,7 +228,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
 		'marker_microarray', 'marker_to_term', 'marker_related_marker',
-		'marker_interaction', 'marker_mp_annotation',
+		'marker_interaction', 'marker_mp_annotation','marker_minimap_markers'
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
@@ -1686,5 +1686,5 @@ if __name__ == '__main__':
 	logger.info ('Ending Date/Time: %s' % (time.asctime()))
 
 	if excType != None:
-		raise excType, excValue
+		raise Exception("%s %s" % (excType, excValue))
 	logger.close()
