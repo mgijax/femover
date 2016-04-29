@@ -96,32 +96,37 @@ class MarkerMinimapGatherer (Gatherer.Gatherer):
                 markerRows = []
                 
                 for row in rows:
-                        markerKey = row[markerKeyCol]
-                        symbol = row[symbolCol]
-                        chr = row[chrCol]
-                        cmOffset = row[cmOffsetCol]
+                    markerKey = row[markerKeyCol]
+                    symbol = row[symbolCol]
+                    chr = row[chrCol]
+                    cmOffset = row[cmOffsetCol]
                         
-                        if chr in anchorMap and chr in maxCmMap:
+                    if chr in anchorMap and chr in maxCmMap:
                                 
-                                maxCmOffset = maxCmMap[chr]
+                        maxCmOffset = maxCmMap[chr]
+                        
+                        markerRows.append(
+                         (markerKey, 
+                          markerKey,
+                          symbol,
+                          cmOffset,
+                          maxCmOffset)
+                        )
+                        
+                        for anchor in anchorMap[chr]:
                                 
-                                markerRows.append(
-                                 (markerKey, 
-                                  markerKey,
-                                  symbol,
-                                  cmOffset,
-                                  maxCmOffset)
-                                )
+                            # skip if primary is also an anchor
+                            if anchor['_marker_key'] == markerKey:
+                                    continue
+                            
+                            markerRows.append(
+                             (markerKey, 
+                              anchor['_marker_key'],
+                              anchor['symbol'],
+                              anchor['cmoffset'],
+                              maxCmOffset)
+                            )
                                 
-                                for anchor in anchorMap[chr]:
-                                        markerRows.append(
-                                         (markerKey, 
-                                          anchor['_marker_key'],
-                                          anchor['symbol'],
-                                          anchor['cmoffset'],
-                                          maxCmOffset)
-                                        )
-                                        
                 
                 self.finalColumns = [ 'marker_key', 
                                      'anchor_marker_key', 
