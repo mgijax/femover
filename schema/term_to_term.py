@@ -18,6 +18,8 @@ createStatement = '''CREATE TABLE %s  (
 	term_key_1		int	not null,
 	term_key_2		int	not null,
 	relationship_type	text	not null,
+	evidence		text	null,
+	cross_reference		text	null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -46,6 +48,8 @@ comments = {
 		'term_key_1' : 'the term at the left side of the association',
 		'term_key_2' : 'the term at the right side of the association',
 		'relationship_type' : 'describes the association, as read from left to right',
+		'evidence' : 'abbreviation for the evidence term supporting this association between terms (optional)',
+		'cross_reference' : 'ID from another resource that is a cross-reference supporting this association between terms (optional)',
 		},
 	Table.INDEX : {
 		'term_key_1' : 'index on the left term',
