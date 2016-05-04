@@ -191,7 +191,7 @@ BATCHQUERY = [ 'batch_marker_terms', 'batch_marker_alleles',
 		'batch_marker_snps', 'batch_marker_go_annotations',
 		'batch_marker_mp_annotations',
 	]
-CRE = [ 'allele_recombinase_systems', 'recombinase', 'driver'
+CRE = [ 'recombinase', 'driver'
 	]
 DISEASE = [ 'disease_detail' ]
 GENOTYPES = [ 'allele_to_genotype', 'genotype', 'genotype_sequence_num',
@@ -228,7 +228,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments',
 		'marker_microarray', 'marker_to_term', 'marker_related_marker',
-		'marker_interaction', 'marker_mp_annotation',
+		'marker_interaction', 'marker_mp_annotation','marker_minimap'
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
 	]
@@ -1686,5 +1686,5 @@ if __name__ == '__main__':
 	logger.info ('Ending Date/Time: %s' % (time.asctime()))
 
 	if excType != None:
-		raise excType, excValue
+		raise Exception("%s %s" % (excType, excValue))
 	logger.close()

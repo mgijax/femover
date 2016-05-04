@@ -10,11 +10,13 @@ import unittest
 
 # import all sub test suites
 from gatherer import annotation_gatherer_tests
+from gatherer import expression_imagepane_gatherer_tests
 
 # add the test suites
 def master_suite():
 	suites = []
 	suites.append(annotation_gatherer_tests.suite())
+	suites.append(expression_imagepane_gatherer_tests.suite())
 	
 	master_suite = unittest.TestSuite(suites)
 	return master_suite

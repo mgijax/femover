@@ -4,7 +4,6 @@
 
 import Gatherer
 import logger
-import ADVocab
 import VocabSorter
 
 ###--- Classes ---###
@@ -59,9 +58,6 @@ class TermSequenceNumGatherer (Gatherer.Gatherer):
 
 		logger.debug ('Compiled rows for %d terms' % \
 			len(self.finalResults))
-
-		self.finalResults = self.finalResults + \
-			ADVocab.getTermSequenceNumRows(self.finalColumns)
 
 		logger.debug ('Returned %d total rows' % \
 			len(self.finalResults))

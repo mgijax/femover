@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	mgd_expt_key	int		not null,
 	jnum_id		text	null,
 	note		text		null,
+	ref_note        text        null,
 	note_type	text	not null,
 	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
@@ -43,6 +44,7 @@ comments = {
 		'mgd_expt_key' : 'identifies the experiment key from the mgd database',
 		'jnum_id' : 'J: number for the reference of this experiment',
 		'note' : 'notes from this experiment',
+                'ref_note': 'Note from MLD_Notes associated with the reference',
 		'sequence_num' : 'used to order records for each marker',
 		},
 	Table.INDEX : {

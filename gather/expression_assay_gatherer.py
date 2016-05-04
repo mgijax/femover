@@ -12,6 +12,7 @@
 
 import Gatherer
 import logger
+import GXDUtils
 
 ###--- Classes ---###
 
@@ -210,6 +211,7 @@ class AssayGatherer (Gatherer.Gatherer):
 			self.addColumn ('_Antibody_key', antibodyKey, row, cols)
 			self.addColumn ('antibody', antibodyName, row, cols)
 			self.addColumn ('assay_type', assayType, row, cols)
+                        self.addColumn ('assay_type_seq', GXDUtils.getAssayTypeSeq(row[typeCol]), row, cols)
 			self.addColumn ('reporter_gene', reporter, row, cols)
 			self.addColumn ('has_image', image, row, cols)
 			self.addColumn ('gel_imagepane_key', row[gelImagePaneKeyCol], row, cols)
@@ -291,7 +293,7 @@ fieldOrder = [ '_Assay_key', 'assay_type', 'assay_id', '_Probe_key', 'probe_name
 	'probe_preparation', 'visualized_with', 'reporter_gene', 
 	'note',
 	'has_image', 'gel_imagepane_key','_Refs_key', 
-	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'modification_date',
+	'_Marker_key', 'marker_id', 'symbol', 'marker_name', 'assay_type_seq', 'modification_date',
 	]
 
 # prefix for the filename of the output file

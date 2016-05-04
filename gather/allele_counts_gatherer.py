@@ -148,11 +148,6 @@ cmds = [
 			gxd_expression ge
 		where gag._Genotype_key = ge._Genotype_key
 			and ge.isForGXD = 1
-			and exists (select 1
-				from acc_accession a, mgi_emaps_mapping e
-				where ge._Structure_key = a._Object_key
-					and a._MGIType_key = 38
-					and a.accID = e.accID)
 		group by gag._Allele_key''',
 
 	# 4. "mutation involves" relationships for an allele

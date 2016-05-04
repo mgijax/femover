@@ -120,11 +120,10 @@ def columnNumber (columns, columnName):
 
 	c = columnName.lower()
 	if c not in columns:
-		logger.info('1234columns = %s'%columns);
-		logger.info('column = %s'%c);
-		logger.error ('Column %s (%s) is not in %s' % (columnName, c, 
-			', '.join (columns) ) )
-		raise DbAgnosticError('Unknown column name: %s' % columnName)
+                msg = 'Column %s (%s) is not in %s' % (columnName, c, 
+                        ', '.join (columns) ) 
+		logger.error (msg)
+		raise DbAgnosticError(msg)
 
 	return columns.index(c)
 

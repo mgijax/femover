@@ -3,7 +3,6 @@
 # gathers data for the 'term_synonym' table in the front-end database
 
 import Gatherer
-import ADVocab
 
 ###--- Classes ---###
 
@@ -12,11 +11,7 @@ class TermSynonymGatherer (Gatherer.Gatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for term synonyms,
 	#	collates results, writes tab-delimited text file
-
-	def postprocessResults(self):
-		self.finalResults = self.finalResults + \
-			ADVocab.getSynonymRows (self.finalColumns)
-		return
+	pass
 
 ###--- globals ---###
 

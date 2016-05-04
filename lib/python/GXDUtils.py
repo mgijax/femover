@@ -13,6 +13,39 @@ TIMES = [ (' day ',''), ('week ','w '), ('month ','m '), ('year ','y ') ]
 # list of (old, new) pairs for use in seek-and-replace loops in abbreviate()
 QUALIFIERS = [ ('embryonic', 'E'), ('postnatal', 'P') ]
 
+ASSAY_TYPE_SEQMAP = None
+
+def getAssayTypeSeq(assayType):
+        """
+        returns GXD specified order for assay types
+        
+        assayType can be either _assaytype_key or assaytype name
+        
+        """
+        global ASSAY_TYPE_SEQMAP
+        
+        if ASSAY_TYPE_SEQMAP == None:
+                query = "select assaytype, _assaytype_key, sequencenum from gxd_assaytype"
+                (cols, rows) = dbAgnostic.execute(query)
+                ASSAY_TYPE_SEQMAP = {}
+                for row in rows:
+                        # assaytype name
+                       ASSAY_TYPE_SEQMAP[row[0].lower()] = row[2]
+                       # _assaytype_key
+                       ASSAY_TYPE_SEQMAP[row[1]] = row[2]
+                       
+                       
+        # check assayType.lower()
+        if not isinstance(assayType, int) \
+            and not isinstance(assayType, long):
+                assayType = assayType.lower()
+                
+        return assayType in ASSAY_TYPE_SEQMAP \
+                and ASSAY_TYPE_SEQMAP[assayType] \
+                or 999
+                
+
+
 def abbreviateAge (
         s               # string; specimen's age from gxd_expression.age
         ):

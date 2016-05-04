@@ -3,7 +3,6 @@
 # gathers data for the 'term_id' table in the front-end database
 
 import Gatherer
-import ADVocab
 
 ###--- Classes ---###
 
@@ -12,11 +11,7 @@ class TermIDGatherer (Gatherer.Gatherer):
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for term IDs,
 	#	collates results, writes tab-delimited text file
-
-	def postprocessResults(self):
-		self.finalResults = self.finalResults + \
-			ADVocab.getIDRows (self.finalColumns)
-		return
+	pass
 
 ###--- globals ---###
 

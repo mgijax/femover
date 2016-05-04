@@ -5,7 +5,7 @@
 
 import Gatherer
 import logger
-import VocabSorter
+import GXDUtils
 import ReferenceCitations
 import symbolsort
 
@@ -55,7 +55,7 @@ class AssaySeqNumGatherer (Gatherer.Gatherer):
 		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
 		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
 		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
-		typeCol = Gatherer.columnNumber (cols, 'assayType')
+                typeKeyCol = Gatherer.columnNumber (cols, '_assaytype_key')
 		
 		for row in rows:
 			assayKey = row[assayCol]
@@ -64,9 +64,7 @@ class AssaySeqNumGatherer (Gatherer.Gatherer):
 			refsPosition = \
 				ReferenceCitations.getSequenceNumByMini (
 					row[refsCol])
-			assayTypePosition = \
-				VocabSorter.getAssayTypeSequenceNum (
-					row[typeCol])
+			assayTypePosition = GXDUtils.getAssayTypeSeq(row[typeKeyCol])
 
 			bySymbol.append ( (markerPosition, assayTypePosition,
 				refsPosition, assayKey) )
@@ -139,11 +137,10 @@ cmds = [
 	'''select a._Assay_key,
 			a._Marker_key,
 			a._Refs_key,
-			t.assayType
-		from gxd_assay a,
-			gxd_assaytype t
+			a._assaytype_key
+		from gxd_assay a
 		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
-		and a._AssayType_key = t._AssayType_key''',
+        ''',
 	]
 
 # order of fields (from the query results) to be written to the
