@@ -34,6 +34,7 @@ createStatement = '''CREATE TABLE %s  (
 	marker_id		text	null,
 	marker_symbol		text	null,
 	marker_name		text	null,
+	assay_type_seq        int        not null,
         modification_date       text     null,
 	PRIMARY KEY(assay_key))''' % tableName
 
@@ -79,6 +80,7 @@ comments = {
 		'marker_id' : 'primary ID for the marker, cached here for convenience',
 		'marker_symbol' : 'symbol for the marker, cached here for convenience',
 		'marker_name' : 'name for the marker, cached here for convenience',
+                'assay_type_seq' : 'sequencenum from gxd_assaytype table',
 		'modification_date' : 'last time the assay record was modified, cached here for convenience',
 		},
 	Table.INDEX : {

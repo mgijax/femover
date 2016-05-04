@@ -5,7 +5,10 @@
 
 import Gatherer
 import logger
+import GXDUtils
 import SymbolSorter
+
+
 
 ###--- Classes ---###
 
@@ -17,21 +20,33 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 	#	expression assays, collates results, writes tab-delimited text
 	#	files
 
-	imagePaneSortFields = []
-	imagePaneSeqMap = {}
-	assayTypeSeqMap = {}
-
 	def initSeqMaps(self):
-		self.assayTypeSeqMap = {
-			6:1, # immuno
-			1:2, # RNA In situ
-			9:3, # in situ knockin
-			2:4, # northern blot
-			8:5, # western blot
-			5:6, # RT-PCR
-			4:7, # RNase Protection
-			3:8, # Nuclease S1
+		
+		# map of hybridization ordererings for use in generating by_* sort columns
+		#   {hybridization.lower() : sequence_num}
+		self.hybridizationSeqMap = {
+			'whole mount' : 1,
+			'section' : 2,
+			'section from whole mount' : 3,
+			'optical section' : 4,
+			'not specified' : 98,
+			'not applicable' : 99
 		}
+                
+		# maps that store {_imagepane_key : sequence_num} 
+		#  for various sort columns used by the GXD image summary
+		self.byAssayTypeSeqMap = {}
+		self.byMarkerSeqMap = {}
+		self.byHybridizationAscSeqMap = {}
+                self.byHybridizationDescSeqMap = {}
+		
+		# map of {_imagepane_key : {seqnum info}}
+		#   used to keep track of all sequence data for a given image pane
+		#	e.g. there could be multiple assay types, markers, etc for a given
+		#		image pane.
+		#	we keep track of all of them, so we can later select the best sequence_num
+		#	    for each.
+		self.paneSeqTracker = {}
 			
 	def cacheMarkers (self):
 		cols, rows = self.results[0]
@@ -49,6 +64,10 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		return
 
 	def getAssays (self, resultIndex, label):
+		"""
+		resultIndex == 1 # blots
+		resultIndex == 2 # in situs
+		"""
 		cols, rows = self.results[resultIndex]
 
 		imgKeyCol = Gatherer.columnNumber (cols, '_Image_key')
@@ -67,6 +86,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		thumbKeyCol = Gatherer.columnNumber (cols,
 			'_ThumbnailImage_key')
 		citationCol = Gatherer.columnNumber (cols,'short_citation')
+		hybridizationCol = Gatherer.columnNumber (cols, 'hybridization')
 
 		assays = []
 
@@ -81,6 +101,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 			paneHeight = row[paneHeightCol] or 0
 			assayID = row[idCol]
 			assayType = row[assayTypeCol]
+			hybridization = row[hybridizationCol]
 
 			if row[xDimCol]:
 				inPixeldb = 1
@@ -94,7 +115,12 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 				paneLabel, paneX, paneY, paneWidth, paneHeight, assayKey, assayID, symbol,
 				inPixeldb, markerID, row[paneKeyCol],
 				row[thumbKeyCol] ) )
-			self.registerImagePaneSortFields(row[paneKeyCol],row[assayTypeKeyCol],symbol,row[citationCol])
+			
+			self.registerImagePaneSortFields(row[paneKeyCol],
+											assayTypeKey=row[assayTypeKeyCol],
+											markerSymbol=symbol,
+											citation=row[citationCol],
+											hybridization=hybridization)
 
 		logger.debug ('Collected %d %s assays' % (len(assays), label))
 
@@ -109,8 +135,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 
 		# distinct set of unique pane keys
 		paneKeys = {}
-		for [ imageKey, paneLabel, paneKey, paneX, paneY, paneWidth, paneHeight, byDefault] in panes:
-			paneKeys[paneKey] = 1
+		for pane in panes:
+			paneKeys[pane[2]] = 1
 
 		cols, rows = self.results[3]
 
@@ -133,38 +159,114 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		return outputCols, outputRows
 
 
-	# keep track of the different sort fields for gxd image panes.
-	# it goes assay type, then symbol (for the highest assay type), then ref citation
-	# because of the weird symbol rule, we have to track symbol_seqs for each assay type
-	def registerImagePaneSortFields(self,paneKey,assay_type_key,symbol,ref_citation):
+	# 
+	def registerImagePaneSortFields(self,paneKey,
+								assayTypeKey='',
+								markerSymbol='',
+								citation='',
+								hybridization=''):
+		"""
+		keep track of the different sort fields for gxd image panes.
+		it goes assay type, then symbol (for the highest assay type), then ref citation
+		because of the weird symbol rule, we have to track symbol_seqs for each assay type
+		
+		NOTE: assume that only one citation per paneKey
+		"""
+                
+                
 		# set a large seq num if we have an un-mapped assay type
-		assay_type_seq = assay_type_key in self.assayTypeSeqMap and self.assayTypeSeqMap[assay_type_key] or 99
-		symbol_seq = SymbolSorter.getGeneSymbolSeq(symbol) 
-		seq_map = self.imagePaneSeqMap.setdefault(paneKey,{'citation':ref_citation})
-		seq_map.setdefault(assay_type_seq,[]).append(symbol_seq)
+		assayTypeSeq = GXDUtils.getAssayTypeSeq(assayTypeKey)
+                symbolSeq = SymbolSorter.getGeneSymbolSeq(markerSymbol) 
+                
+		hybridizationSeq = hybridization.lower() in self.hybridizationSeqMap and self.hybridizationSeqMap[hybridization.lower()] or 999
+		
+		
+		# track all above sequence nums so we can pick the best of each group later on
+		seqMap = self.paneSeqTracker.setdefault(paneKey, {
+				'citation': citation,
+				'assayTypeSeqs': [],
+				'symbolSeqs': [],
+				'hybridizationSeqs': []
+		})
+		seqMap['assayTypeSeqs'].append(assayTypeSeq)
+		seqMap['symbolSeqs'].append(symbolSeq)
+		seqMap['hybridizationSeqs'].append(hybridizationSeq)
 
 	def sortImagePaneFields(self):
-		tempPaneSeqMap = {}
-		tempPaneSortFields = []
-		for paneKey,obj in self.imagePaneSeqMap.items():
-			ref_citation = ""
-			if "citation" in obj:
-				ref_citation = obj["citation"]
-				del obj["citation"]
-			best_assay_seq = min(obj.keys())
-			best_symbol_seq = min(obj[best_assay_seq])
-			tempPaneSortFields.append((paneKey,best_assay_seq,best_symbol_seq,ref_citation))
+		"""
+		Sort all image panes using the 
+			self.paneSeqTracker which has all of the groups
+			of sequence nums for each attribute, assay types, markers, etc
+		Set sequence_num maps
+			self.byAssayTypeSeqMap
+			self.byMarkerSeqMap
+			self.byHybridizationAscSeqMap
+			self.byHybridizationDescSeqMap
+		"""
 		
+		sortedFields = []
+		for paneKey,tracker in self.paneSeqTracker.items():
+			
+			# sort citations
+			citation = ""
+			if "citation" in tracker:
+				citation = tracker["citation"]
+				del tracker["citation"]
+				
+			bestAssayType = min(tracker['assayTypeSeqs'])
+			bestSymbol = min(tracker['symbolSeqs'])
+			bestHybridization = min(tracker['hybridizationSeqs'])
+                        
+                        # for descending sort we need Not Specified and empty values to sort last
+                        #   no matter what
+                        # 999 = sequence for empty value or blot assay
+                        # 99 = sequence for Not Specified
+                        # When reversed these should be last, so we set them to low numbers
+                        hybridizationDescending = bestHybridization
+                        if hybridizationDescending > 900:
+                                hybridizationDescending = -1
+                        if hybridizationDescending > 90:
+                                hybridizationDescending = 0
+			
+			sortedFields.append((paneKey,bestAssayType,bestSymbol,citation, 
+                                             bestHybridization, hybridizationDescending))
+		
+		
+		def makePaneSeqMap(sortedList):
+			"""
+			return a new map of {_imagepane_key : sequence_num}
+			for a sorted list where first item is the _imagepane_key
+			"""
+			count = 0
+			seqMap = {}
+			for row in sortedList:
+				count += 1
+				seqMap[row[0]] = count
+			return seqMap
+			
+		# create by_assay_type sequence_num map
 		# sort by best assay_type, best symbol (in that assay type), then by ref citation
-		tempPaneSortFields.sort(key=lambda x: (x[1],x[2],x[3]))
-		count = 0
-		for sortField in tempPaneSortFields:
-			count += 1
-			tempPaneSeqMap[sortField[0]] = count
+		sortedFields.sort(key=lambda x: (x[1],x[2],x[3]))
+		self.byAssayTypeSeqMap = makePaneSeqMap(sortedFields)
+		
+		# create by_marker sequence_num map
+		# sort by best symbol (in that assay type), best assay type, then by ref citation
+		sortedFields.sort(key=lambda x: (x[2],x[1],x[3]))
+		self.byMarkerSeqMap = makePaneSeqMap(sortedFields)
+		
+		# create by_hybridization_asc sequence_num map
+		# sort by best hybridization, best assay type, best symbol (in that assay type), then by ref citation
+		sortedFields.sort(key=lambda x: (x[4], x[1],x[2],x[3]))
+		self.byHybridizationAscSeqMap = makePaneSeqMap(sortedFields)
+                
+                # create by_hybridization_desc sequence_num map
+                # sort by best hybridization (with Blot and Not Specified first), best assay type,
+                #     best symbol (in that assay type), then by ref citation
+                #     then reverse the list
+                sortedFields.sort(key=lambda x: (x[5], x[1],x[2],x[3]), reverse=True)
+                self.byHybridizationDescSeqMap = makePaneSeqMap(sortedFields)
 
-		self.imagePaneSeqMap = tempPaneSeqMap
-
-		logger.debug("sorted image panes by default sequence")
+		logger.debug("calculated image panes sequence maps")
 
 	def collateResults (self):
 		self.cacheMarkers()
@@ -182,7 +284,8 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 		details = []	# rows for expression_imagepane_details
 
 		# column names for rows in 'panes'
-		paneCols = [ '_Image_key', 'paneLabel', '_ImagePane_key','x','y','width','height','by_default',
+		paneCols = [ '_Image_key', 'paneLabel', '_ImagePane_key','x','y','width','height',
+			'by_assay_type', 'by_marker', 'by_hybridization_asc', 'by_hybridization_desc',
 			'sequenceNum' ]
 
 		# column names for rows in 'details'
@@ -210,9 +313,15 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 
 			i = i + 1
 			if not panesDone.has_key (paneKey):
+				
+				byAssayType = self.byAssayTypeSeqMap[paneKey]
+				byMarker = self.byMarkerSeqMap[paneKey]
+				byHybridizationAsc = self.byHybridizationAscSeqMap[paneKey]
+                                byHybridizationDesc = self.byHybridizationDescSeqMap[paneKey]
+				
 				# sequence num to be appended later:
 				panes.append ( [imageKey, paneLabel, paneKey, paneX,paneY,paneWidth,paneHeight,
-					self.imagePaneSeqMap[paneKey]] )
+					byAssayType, byMarker, byHybridizationAsc, byHybridizationDesc]  )
 				panesDone[paneKey] = 1
 
 			# sequence num to be appended later:
@@ -312,7 +421,8 @@ cmds = [
 		i.xDim,
 		p._ImagePane_key,
 		i._ThumbnailImage_key,
-		bcc.short_citation
+		bcc.short_citation,
+		'' as hybridization
 	from img_image i,
 		img_imagepane p,
 		gxd_assay a,
@@ -341,7 +451,8 @@ cmds = [
 		i.xDim,
 		p._ImagePane_key,
 		i._ThumbnailImage_key,
-		bcc.short_citation
+		bcc.short_citation,
+		s.hybridization 
 	from img_image i,
 		img_imagepane p,
 		gxd_assay a,
@@ -383,7 +494,8 @@ cmds = [
 # output file
 files = [
 	('expression_imagepane',
-		[ '_ImagePane_key', '_Image_key', 'paneLabel','x','y','width','height','by_default', 
+		[ '_ImagePane_key', '_Image_key', 'paneLabel','x','y','width','height',
+		'by_assay_type', 'by_marker', 'by_hybridization_asc', 'by_hybridization_desc',
 		'sequenceNum' ],
 		'expression_imagepane'),
 

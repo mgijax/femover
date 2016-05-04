@@ -16,7 +16,12 @@ TEMPLATE_CRE_STRUCTURE_SQL = """
                 WHERE EXISTS (SELECT 1 FROM struct s WHERE clo._ancestorobject_key = s._term_key) ),
         closure AS (SELECT * from struct UNION ALL SELECT * FROM child) 
         SELECT count(distinct cre._allele_key) FROM gxd_expression e,gxd_allelegenotype gag,all_cre_cache cre, closure s,tmp_emaps_ad tea
-	WHERE e._Structure_key = tea._structure_key and tea._emaps_key=s._term_key AND e.isrecombinase = 1 AND gag._genotype_key=e._genotype_key AND gag._allele_key=cre._allele_key;
+	WHERE e._emapa_term_key = tea._emapa_term_key
+	    and e._stage_key = tea._stage_key
+	    and tea._emaps_key=s._term_key 
+	    AND e.isrecombinase = 1 
+	    AND gag._genotype_key=e._genotype_key 
+	    AND gag._allele_key=cre._allele_key;
 """
 # The list of queries to generate GXD test data
 Queries = [

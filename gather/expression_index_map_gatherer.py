@@ -17,10 +17,10 @@ class ExpressionIndexMapsGatherer (Gatherer.MultiFileGatherer):
 	def collateResults (self):
 		cols1 = [ 'assay_type', 'full_coding_assay_type', 'seqNum' ]
 		rows1 = [
-			('In situ protein (section)',
+			('Immunohistochemistry (section)',
 				'Immunohistochemistry', 1),
 			('In situ RNA (section)', 'RNA in situ', 2),
-			('In situ protein (whole mount)',
+			('Immunohistochemistry (whole mount)',
 				'Immunohistochemistry', 3),
 			('In situ RNA (whole mount)', 'RNA in situ', 4),
 			('In situ reporter (knock in)',
@@ -79,7 +79,7 @@ class ExpressionIndexMapsGatherer (Gatherer.MultiFileGatherer):
 			('19.5', 26, 26, 39),
 			('20', 26, 26, 40),
 			('E', 1, 26, 41),
-			('A', 28, 28, 42),
+			('P', 28, 28, 42),
 			]
 
 		self.output.append ( (cols2, rows2) ) 

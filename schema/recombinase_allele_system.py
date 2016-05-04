@@ -18,7 +18,6 @@ createStatement = '''CREATE TABLE %s  (
 	allele_key		int		not null,
 	allele_id		text	null,
 	system			text	null,
-	system_key		int		null,
 	age_e1			int		null,
 	age_e2			int		null,
 	age_e3			int		null,

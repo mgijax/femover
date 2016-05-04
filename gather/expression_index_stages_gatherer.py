@@ -46,7 +46,12 @@ class ExpressionIndexStagesGatherer (Gatherer.Gatherer):
 			except:
 				age = adultAge
 
+                        ageString = row[ageCol]
+                        if ageString == 'A':
+                                ageString = 'P'
+                                
 			self.addColumn ('age', age, row, self.finalColumns)
+                        self.addColumn('ageString', ageString, row, self.finalColumns)
 			self.addColumn ('assayType',
 				row[assayTypeCol].strip(), row,
 				self.finalColumns)

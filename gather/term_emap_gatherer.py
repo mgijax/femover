@@ -26,7 +26,7 @@ cmds = [ '''select _Term_key,
 		null as startStage,
 		null as endStage,
 		_DefaultParent_key,
-		stage,
+		_stage_key as stage,
 		_Emapa_term_key
 	from voc_term_emaps'''	
 	]

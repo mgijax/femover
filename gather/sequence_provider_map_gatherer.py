@@ -13,8 +13,9 @@ class SequenceProviderMapGatherer (Gatherer.Gatherer):
 	#	provider abbreviation (for seqfetch) in the database
 
 	def postprocessResults (self):
-		# provider abbreviations are from the old javawi2 product's
-		# FormatHelper.java file (getShortenedProvider method)
+		"""
+		Provider abbreviations for certain logical DBs
+		"""
 
 		self.convertFinalResultsToList()
 

@@ -19,7 +19,6 @@ createStatement = '''CREATE TABLE %s  (
 	other_allele_key	int		not null,
 	other_allele_id		text	null,
 	other_allele_symbol	text	null,
-	system_key		int		null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -46,7 +45,6 @@ comments = {
 		'other_allele_key' : 'key of another allele',
 		'other_allele_id' : 'primary ID of the other allele, cached here for convenience',
 		'other_allele_symbol' : 'symbol of the other allele, cached here for convenience',
-		'system_key' : 'term key for the system, cached here for convenience',
 		},
 	Table.INDEX : {
 		'allele_system_key' : 'clusters data so that all other alleles for an allele/system pair are grouped together on disk to aid efficiency',

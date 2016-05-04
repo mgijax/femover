@@ -92,10 +92,6 @@ cmds = [
 		and ga._Assay_key = ge._Assay_key
 		and ge.isForGXD = 1
 		and ga._Marker_key = ge._Marker_key
-		and exists (select 1 from acc_accession a, mgi_emaps_mapping e
-			where ge._Structure_key = a._Object_key
-				and a._MGIType_key = 38
-				and a.accID = e.accID)
 	group by i._Index_key''',
 
 	# 2. number of fully-coded results for each index entry
@@ -109,10 +105,6 @@ cmds = [
 		and ga._Assay_key = ge._Assay_key
 		and ge.isForGXD = 1
 		and ga._Marker_key = ge._Marker_key
-		and exists (select 1 from acc_accession a, mgi_emaps_mapping e
-			where ge._Structure_key = a._Object_key
-				and a._MGIType_key = 38
-				and a.accID = e.accID)
 	group by i._Index_key''',
 	]
 

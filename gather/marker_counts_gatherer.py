@@ -315,12 +315,6 @@ cmds = [
 			count(distinct e._Expression_key) as resultCount
 		from gxd_expression e
 		where e.isForGXD = 1
-			and exists (select 1
-				from acc_accession a,
-					mgi_emaps_mapping m
-				where e._Structure_key = a._Object_key
-					and a._MGIType_key = 38
-					and a.accID = m.accID)
 		group by e._Marker_key''',
 
 	# 9. count of GXD Index entries for each marker
@@ -330,16 +324,18 @@ cmds = [
 
 	# 10. count of tissues associated with each marker
 	'''select e._Marker_key,
-			count(distinct m.emapsID) as tissueCount
-		from gxd_expression e, acc_accession a, mgi_emaps_mapping m
+			count(distinct vte._term_key) as tissueCount
+		from gxd_expression e
+			join voc_term_emaps vte on
+				vte._emapa_term_key = e._emapa_term_key
+				and vte._stage_key = e._stage_key
 		where e.isForGXD = 1
-			and e._Structure_key = a._Object_key
-			and a._MGIType_key = 38
-			and a.accID = m.accID
 		group by e._Marker_key''',
 
 	# 11. count of expression image panes associated with each marker
-	'''with imagePanes as (select a._Marker_key, a._ImagePane_key
+	'''with imagePanes as (
+	-- Gel Lanes
+	select a._Marker_key, a._ImagePane_key
 	from img_imagepane p, img_image i, voc_term t, gxd_assay a
 	where t.term = 'Expression'
 		and t._Term_key = i._ImageClass_key
@@ -347,15 +343,12 @@ cmds = [
 		and i.xDim is not null
 		and p._ImagePane_key = a._ImagePane_key
 		and exists (select 1
-			from gxd_expression e,
-				acc_accession aa,
-				mgi_emaps_mapping m
+			from gxd_expression e
 			where a._Assay_key = e._Assay_key
 				and e.isForGXD = 1
-				and e._Structure_key = aa._Object_key
-				and aa._MGIType_key = 38
-				and aa.accID = m.accID)
+		)
 	union
+	-- In Situ Results
 	select ga._Marker_key, gi._ImagePane_key
 	from img_imagepane p, img_image i, voc_term t, 
 		gxd_insituresultimage gi, gxd_insituresult gr, gxd_specimen s,
@@ -372,13 +365,8 @@ cmds = [
 			where ga._Assay_key = e._Assay_key
 				and e.isForGXD = 1)
 		and exists (select 1
-			from gxd_isresultstructure rs,
-				acc_accession aa,
-				mgi_emaps_mapping m
-			where gr._Result_key = rs._Result_key
-				and rs._Structure_key = aa._Object_key
-				and aa._MGIType_key = 38
-				and aa.accID = m.accID)
+			from gxd_isresultstructure rs
+			where gr._Result_key = rs._Result_key)
 		and s._Assay_key = ga._Assay_key)
 	select _Marker_key, count(distinct _ImagePane_key) as paneCount
 	from imagePanes

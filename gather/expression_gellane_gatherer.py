@@ -4,13 +4,15 @@
 #
 # HISTORY
 #
+# 03/10/2016	lec
+#	- TR12281/add exists statement for gxd_expression
+#
 # 02/07/2013    kstone
 #	Initial add for TR11248 (Assay Detail revamp)
 #
 
 import Gatherer
 import GXDUtils
-import ADMapper
 import logger
 
 ###--- Classes ---###
@@ -36,30 +38,37 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		
 		laneKeyCol = Gatherer.columnNumber (cols, '_gellane_key')
 		stageKeyCol = Gatherer.columnNumber (cols, '_stage_key')
-		printnameCol = Gatherer.columnNumber (cols, 'printname')
-		structureKeyCol = Gatherer.columnNumber (cols, '_structure_key')
+		printnameCol = Gatherer.columnNumber (cols, 'structure')
+		emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
 
-		rowCount = 0
+		# group rows by gel lane
+		gellaneGroups = {}
 		for row in rows:
-			rowCount += 1
-			laneKey = row[laneKeyCol]
-			stageKey = row[stageKeyCol]
-			structureKey = row[structureKeyCol]
-			printname = row[printnameCol]
-
-			emapsKey = ADMapper.getEmapsKey(structureKey)
-			if emapsKey:
-				structureKey = emapsKey
-				printname = ADMapper.getEmapsTerm(emapsKey)
-				stageKey = ADMapper.getStageByKey(emapsKey)
-			else:
-				continue
-
-			# structure format is TS26: brain
-			tsStructure = "TS%s: %s"%(int(stageKey),printname)
-
-			# TODO: if GXD wants these sorted, you would need to do that in here
-			sRows.append((rowCount,laneKey,structureKey,tsStructure,1))
+			gellaneGroups.setdefault(row[laneKeyCol], []).append(row)
+		
+		rowCount = 0
+		for laneKey, group in gellaneGroups.items():
+			
+			# structure_seq column
+			seqnum = 0
+			
+			# sort group by printname
+			group.sort(key=lambda x: (x[stageKeyCol], x[printnameCol]))
+			
+			for row in group:
+				
+				seqnum += 1
+				
+				rowCount += 1
+				laneKey = row[laneKeyCol]
+				stageKey = row[stageKeyCol]
+				printname = row[printnameCol]
+				emapsKey = row[emapsKeyCol]
+	
+				# structure format is TS26: brain
+				tsStructure = "TS%s: %s"%(int(stageKey),printname)
+	
+				sRows.append((rowCount,laneKey,emapsKey,tsStructure,seqnum))
 	
 		return (sCols,sRows)
 
@@ -222,16 +231,20 @@ cmds = [
 		and gb._gelrow_key=gr._gelrow_key
 		and gb._strength_key=gstr._strength_key
 		and gl._genotype_key=gg._genotype_key
+		and exists (select 1 from gxd_expression e where gl._assay_key = e._assay_key)
 	''',
 	# 1. Gather all the lane structures
 	'''
-	select s.printName,
+	select struct.term as structure,
 		gs._gellane_key,
-		gs._structure_key,
-		s._stage_key
-	from GXD_GelLaneStructure gs,
-		GXD_Structure s
-	where gs._Structure_key = s._Structure_key
+		vte._term_key as _emaps_key,
+		gs._stage_key
+	from GXD_GelLaneStructure gs
+		join voc_term_emaps vte on
+			vte._emapa_term_key = gs._emapa_term_key
+			and vte._stage_key = gs._stage_key
+		join voc_term struct on
+			struct._term_key = vte._term_key
 	''',
 	]
 

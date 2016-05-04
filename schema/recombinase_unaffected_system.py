@@ -3,7 +3,7 @@
 import Table
 
 # contains data definition information for the
-# allele_recombinase_unaffected_system table
+# recombinase_unaffected_system table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -11,7 +11,7 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'allele_recombinase_unaffected_system'
+tableName = 'recombinase_unaffected_system'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 

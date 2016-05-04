@@ -142,22 +142,15 @@ cmds = [
 		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
-			and exists (select 1
-				from acc_accession a, mgi_emaps_mapping m
-				where e._Structure_key = a._Object_key
-					and a._MGIType_key = 38
-					and a.accID = m.accID)
 		group by a._Refs_key''',
 
 	# count of structures with expression results
-	'''select _Refs_key, count(distinct _Structure_key) as numStructures
+	'''select _Refs_key, count(distinct vte._term_key) as numStructures
 		from gxd_expression e
+		join voc_term_emaps vte on
+			vte._emapa_term_key = e._emapa_term_key
+			and vte._stage_key = e._stage_key
 		where isForGXD = 1
-			and exists (select 1
-				from acc_accession a, mgi_emaps_mapping m
-				where e._Structure_key = a._Object_key
-					and a._MGIType_key = 38
-					and a.accID = m.accID)
 		group by _Refs_key''',
 
 	# count of expression assays
@@ -165,11 +158,6 @@ cmds = [
 		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
-			and exists (select 1
-				from acc_accession a, mgi_emaps_mapping m
-				where e._Structure_key = a._Object_key
-					and a._MGIType_key = 38
-					and a.accID = m.accID)
 		group by a._Refs_key''',
 
 	# count of alleles

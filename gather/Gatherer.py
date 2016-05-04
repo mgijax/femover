@@ -429,7 +429,7 @@ class MultiFileGatherer:
 			columns, rows)
 
 		print '%s %s' % (path, tableName)
-
+                
 		if deleteAfter:
 			self.output[self.lastWritten] = ([], [])
 			logger.info ('Removed data set %d after writing' % \
