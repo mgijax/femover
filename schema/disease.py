@@ -14,10 +14,11 @@ tableName = 'disease'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	disease_key	int		not null,
-	disease		text	not null,
-	primary_id	text	not null,
-	logical_db	text	not null,
+	disease_key		int		not null,
+	disease			text	not null,
+	primary_id		text	not null,
+	logical_db		text	not null,
+	disease_reference_count	int	not null,
 	PRIMARY KEY(disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -42,6 +43,7 @@ comments = {
 		'disease' : 'name of the disease, same as VOC_Term.term in mgd',
 		'primary_id' : 'primary ID for the disease',
 		'logical_db' : 'logical database assigning the ID',
+		'disease_reference_count' : 'count of references for annotations for this disease',
 		},
 	Table.INDEX : {
 		'disease' : 'case-sensitive searching by disease term',

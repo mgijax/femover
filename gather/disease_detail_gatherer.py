@@ -9,6 +9,7 @@ import logger
 import symbolsort
 import GenotypeClassifier
 import ReferenceCitations
+import DiseasePortalUtils
 
 ###--- Constants ---###
 
@@ -602,7 +603,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		global TERM_CACHE
 
-		outColumns = [ '_Term_key', 'term', 'accID', 'name' ]
+		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount' ]
 		outRows = []
 
 		cols, rows = self.results[0]
@@ -613,10 +614,18 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		TERM_CACHE = {}
 
+		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
+
 		for row in rows:
+			termKey = row[keyCol]
+
+			refsCount = 0
+			if termToRefs.has_key(termKey):
+				refsCount = len(termToRefs[termKey])
+
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
-				row[nameCol] ] )
+				row[nameCol], refsCount ] )
 
 			TERM_CACHE[row[keyCol]] = (row[termCol], row[idCol])
 
@@ -1327,7 +1336,7 @@ cmds = [
 # generated keys, so we'll just group them all here for simplicity.
 files = [
 	('disease',
-		[ '_Term_key', 'term', 'accID', 'name' ],
+		[ '_Term_key', 'term', 'accID', 'name', 'refCount' ],
 		'disease'),
 
 	('disease_synonym',

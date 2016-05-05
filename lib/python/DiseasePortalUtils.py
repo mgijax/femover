@@ -332,6 +332,66 @@ def getAnnotations(filterClause = ''):
 
 	return cols, rows
 
+def getReferencesByDiseaseKey():
+	# get a dictionary mapping from an OMIM disease term key to a list of 
+	# reference keys, excluding annotations with NOT qualifiers.  For
+	# disease/allele annotations, we only include the references if the
+	# term is also associated with a genocluster.
+
+	# collect a dictionary of term keys that were rolled up to markers
+
+	annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % \
+		OMIM_MARKER)
+
+	termCol = dbAgnostic.columnNumber(annotCols, '_Term_key')
+
+	rolledUpDiseases = {}
+	for row in annotRows:
+		rolledUpDiseases[row[termCol]] = 1
+
+	del annotCols, annotRows
+	gc.collect()
+
+	logger.debug('Got %d diseases that rolled up' % len(rolledUpDiseases))
+
+	# now collect a dictionary that maps from each rolled-up term to its
+	# references
+
+	# distinct set of references for positive annotations from a
+	# genotype to a disease term and from an allele directly to a disease
+	# term
+	cmd = '''select distinct v._Term_key, e._Refs_key
+		from VOC_Annot v, VOC_Evidence e
+		where (
+		    (v._AnnotType_key = %d and v._Qualifier_key != %d)
+		    or v._AnnotType_key = %d
+		    )
+		and v._Annot_key = e._Annot_key''' % (
+			OMIM_GENOTYPE, NOT_QUALIFIER, OMIM_ALLELE)
+
+	cols, rows = dbAgnostic.execute(cmd)
+
+	termCol = dbAgnostic.columnNumber(cols, '_Term_key')
+	refsCol = dbAgnostic.columnNumber(cols, '_Refs_key')
+
+	termToRefs = {}			# term key -> [ refs key 1, ... ]
+	for row in rows:
+		term = row[termCol]
+
+		# only include the reference if the term also survived the
+		# rollup rules
+
+		if rolledUpDiseases.has_key(term):
+			if termToRefs.has_key(term):
+				termToRefs[term].append(row[refsCol])
+			else:
+				termToRefs[term] = [ row[refsCol] ]
+
+	del cols, rows
+	gc.collect()
+
+	logger.debug('Got refs for %d diseases' % len(termToRefs))
+	return termToRefs
 
 ###---------------------###
 ###--- grid clusters ---###
