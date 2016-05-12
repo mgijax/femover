@@ -48,7 +48,6 @@ comments = {
 		'allele_key' : 'identifies the allele',
 		'allele_id' : 'primary accession ID for the allele, cached from the allele table for convenience',
 		'system' : 'name of the biological system, cached from the term table for convenience',
-		'system_key' : 'unique key for the biological system',
 		'age_e1' : 'embryonic age 0-8.9',
 		'age_e2' : 'embryonic age 8.91-13.9',
 		'age_e3' : 'embryonic age 14.0-21.0',
