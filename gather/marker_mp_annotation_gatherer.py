@@ -97,6 +97,88 @@ def cacheHeaders():
 
     return HEADERS
 
+def getOtherGenotypeInfo(genotypeKey, genotypes):
+	# If the allele cache loads haven't been run, then we may be missing
+	# allele combinations.  This method finds the needed info for genotypes
+	# with missing info, so this gatherer doesn't completely fail.
+
+	# find what the current highest genotype sequence number is and 
+	# increment it for this genotype
+	mySeqNum = max(map(lambda x : x[2], genotypes.values())) + 1
+
+	# assume we're now down to 1 note chunk per combination
+	cmd1 = '''select distinct mn._Object_key as _Genotype_key, mnc.note,
+			ps.strain, mnc.sequenceNum, a.accid
+		from gxd_genotype gg
+		left outer join mgi_note mn on (mn._MGIType_key = 12
+		 	and gg._Genotype_key = mn._Object_key)
+		left outer join mgi_notechunk mnc on (
+			mn._Note_key = mnc._Note_key)
+		left outer join mgi_notetype mnt on (
+			mn._NoteType_key = mnt._NoteType_key
+			and mnt.noteType = 'Combination Type 3')
+		left outer join prb_strain ps on (
+			gg._Strain_key = ps._Strain_key)
+		left outer join acc_accession a on (
+			gg._Genotype_key = a._Object_key
+			and a._MGIType_key = 12
+			and a._LogicalDB_key = 1)
+		where gg._Genotype_key = %d
+		order by mn._Object_key, mnc.sequenceNum''' % genotypeKey
+
+    	cols1, rows1 = dbAgnostic.execute(cmd1)
+
+	noteCol = Gatherer.columnNumber(cols1, 'note')
+	strainCol = Gatherer.columnNumber(cols1, 'strain')
+	idCol = Gatherer.columnNumber(cols1, 'accid')
+
+	note = None
+	strain = None
+	accid = None
+
+	for row in rows1:
+		note = row[noteCol]
+		strain = row[strainCol]
+		accid = row[idCol]
+
+	if note == None:
+		cmd2 = '''select gap._Genotype_key, a1.symbol as symbol1,
+				a2.symbol as symbol2
+			from gxd_allelepair gap	
+			left outer join all_allele a1 on (
+				gap._Allele_key_1 = a1._Allele_key)
+			left outer join all_allele a2 on (
+				gap._Allele_key_2 = a2._Allele_key)
+			where gap._Genotype_key = %d
+			order by gap.sequenceNum''' % genotypeKey
+
+	    	cols2, rows2 = dbAgnostic.execute(cmd2)
+
+		symbol1col = Gatherer.columnNumber(cols2, 'symbol1')
+		symbol2col = Gatherer.columnNumber(cols2, 'symbol2')
+
+		note = ''
+
+		for row in rows2:
+			symbol1 = row[symbol1col]
+			symbol2 = row[symbol2col]
+
+			if len(note) > 0:
+				note = note + '\n'
+
+			if symbol1:
+				note = note + symbol1
+			else:
+				note = note + '?'
+
+			if symbol2:
+				note = note + '/' + symbol2
+			else:
+				note = note + '/?'
+
+	genotypes[genotypeKey] = (note, strain, mySeqNum, accid)
+	return genotypes[genotypeKey]
+
 # Due to special regex meaning of the pipe (|) symbol, we're going to convert
 # them to be @ signs instead.
 alleleRegex = re.compile('Allele.[^@]+@([^@]+)@')
@@ -303,8 +385,12 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                 mpGenoKey = GENOTYPE_KG.getKey( (markerKey,
                     genotypeKey) )
 
-                (allelePairs, strain, genoSeqNum, accID) = \
-                    genotypes[genotypeKey]
+		if genotypes.has_key(genotypeKey):
+	                (allelePairs, strain, genoSeqNum, accID) = \
+        	            genotypes[genotypeKey]
+		else:
+			allelePairs, strain, genoSeqNum, accID = \
+			    getOtherGenotypeInfo(genotypeKey, genotypes)
 
                 self.addRow (self.genoTable, [ mpGenoKey,
                     markerKey, multigenic,
