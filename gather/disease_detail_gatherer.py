@@ -603,7 +603,8 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		global TERM_CACHE
 
-		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount' ]
+		outColumns = [ '_Term_key', 'term', 'accID', 'name',
+			'refCount', 'hpoCount' ]
 		outRows = []
 
 		cols, rows = self.results[0]
@@ -611,6 +612,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		termCol = Gatherer.columnNumber (cols, 'term')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		nameCol = Gatherer.columnNumber (cols, 'name')
+		hpoCol = Gatherer.columnNumber (cols, 'hpo_count')
 
 		TERM_CACHE = {}
 
@@ -625,7 +627,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
-				row[nameCol], refsCount ] )
+				row[nameCol], refsCount, row[hpoCol] ] )
 
 			TERM_CACHE[row[keyCol]] = (row[termCol], row[idCol])
 
@@ -1176,14 +1178,30 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. basic data for disease table
-	'''select t._Term_key, t.term, a.accID, d.name
-	from voc_term t, acc_accession a, acc_logicaldb d
-	where t._Term_key = a._Object_key
-		and t._Vocab_key = 44
-		and a.preferred = 1
-		and a.private = 0
-		and a._MGIType_key = 13
-		and a._LogicalDB_key = d._LogicalDB_key''',
+	'''with hpo as (
+		select a._Object_key as termKey1, a._Term_key as termKey2
+		from voc_annot a
+		where a._AnnotType_key = 1018
+	)
+	select t._Term_key, t.term, a.accID, d.name,
+		count(distinct hpo.termKey2) as hpo_count
+	from voc_term t
+	inner join acc_accession a on (t._Term_key = a._Object_key
+		and a.preferred = 1 and a.private = 0 and a._MGIType_key = 13)
+	inner join acc_logicaldb d on (a._LogicalDB_key = d._LogicalDB_key)
+	left outer join hpo on (t._Term_key = hpo.termKey1)
+	where t._Vocab_key = 44
+	group by 1,2,3,4''',
+
+# query prior to including HPO count:
+#	'''select t._Term_key, t.term, a.accID, d.name
+#	from voc_term t, acc_accession a, acc_logicaldb d
+#	where t._Term_key = a._Object_key
+#		and t._Vocab_key = 44
+#		and a.preferred = 1
+#		and a.private = 0
+#		and a._MGIType_key = 13
+#		and a._LogicalDB_key = d._LogicalDB_key''',
 
 	# 1. basic data for the disease_synonym table (synonyms need to be
 	# ordered in code)
@@ -1336,7 +1354,8 @@ cmds = [
 # generated keys, so we'll just group them all here for simplicity.
 files = [
 	('disease',
-		[ '_Term_key', 'term', 'accID', 'name', 'refCount' ],
+		[ '_Term_key', 'term', 'accID', 'name', 'refCount',
+			'hpoCount' ],
 		'disease'),
 
 	('disease_synonym',

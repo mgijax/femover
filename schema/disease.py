@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	primary_id		text	not null,
 	logical_db		text	not null,
 	disease_reference_count	int	not null,
+	hpo_term_count		int	not null,
 	PRIMARY KEY(disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -44,6 +45,7 @@ comments = {
 		'primary_id' : 'primary ID for the disease',
 		'logical_db' : 'logical database assigning the ID',
 		'disease_reference_count' : 'count of references for annotations for this disease',
+		'hpo_term_count' : 'count of Human Phenotype Ontology (HPO) terms associated with this disease',
 		},
 	Table.INDEX : {
 		'disease' : 'case-sensitive searching by disease term',
