@@ -87,7 +87,10 @@ class TooltipFinder:
         idCol = dbAgnostic.columnNumber(cols, 'accID')
         
         for row in rows:
-            self.idCache[row[idCol]] = 'Allele: %s\n%s\nGene: %s' % (row[alleleSymbolCol], row[nameCol], row[markerSymbolCol])
+            if row[alleleSymbolCol].startswith("Tg("):
+                self.idCache[row[idCol]] = 'Transgene: %s\n%s' % (row[alleleSymbolCol], row[nameCol])
+            else:
+                self.idCache[row[idCol]] = 'Allele: %s\n%s\nGene: %s' % (row[alleleSymbolCol], row[nameCol], row[markerSymbolCol])
 
         logger.debug("Cached %d allele tooltips" % len(rows))
 
