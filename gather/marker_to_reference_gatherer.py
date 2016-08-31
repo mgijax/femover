@@ -143,7 +143,7 @@ cmds = [
 	from mrk_reference mr, mrk_marker m, bib_refs r
 	where mr._Marker_key = m._Marker_key
 		and mr._Refs_key = r._Refs_key
-		and m._Marker_Status_key != 2
+		and m._Marker_Status_key = 1
 	order by mr._Marker_key, r.year, mr.jnum''',
 
 	# get the set of all references with data for strain-specific markers

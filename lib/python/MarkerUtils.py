@@ -98,7 +98,7 @@ def _populateOrganismCache():
 	cmd = '''select m._Marker_key, o.commonName, o._Organism_key
 		from mrk_marker m, mgi_organism o
 		where m._Organism_key = o._Organism_key
-			and m._Marker_Status_key in (1,3)'''
+			and m._Marker_Status_key = 1'''
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 
@@ -128,7 +128,7 @@ def _populateSymbolCache():
     cmd = '''select _Marker_key, symbol
 		from mrk_marker
 		where _Organism_key in (1, 2)
-			and _Marker_Status_key in (1,3)'''
+			and _Marker_Status_key = 1'''
 
     (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -153,7 +153,7 @@ def _populateIDCache():
     cmd = '''select m._Marker_key, a.accID
         from mrk_marker m, acc_accession a
         where m._Organism_key = 1
-            and m._Marker_Status_key in (1,3)
+            and m._Marker_Status_key = 1
             and m._Marker_key = a._Object_key
             and a._MGIType_key = 2
             and a.private = 0
@@ -187,7 +187,7 @@ def _populateNonMouseEGCache():
     cmd = '''select m._Marker_key, a.accID
         from mrk_marker m, acc_accession a
         where m._Organism_key != 1
-            and m._Marker_Status_key in (1,3)
+            and m._Marker_Status_key = 1
             and m._Marker_key = a._Object_key
             and a._MGIType_key = 2
             and a._LogicalDB_key = 55
@@ -218,7 +218,7 @@ def _populateMarkerTypeCache():
     cmd1 = '''select _Marker_key, _Marker_Type_key
         from mrk_marker
         where _Organism_key in (1, 2, 40)
-            and _Marker_Status_key in (1,3)'''
+            and _Marker_Status_key = 1'''
 
     (cols, rows) = dbAgnostic.execute(cmd1)
 

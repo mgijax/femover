@@ -64,14 +64,13 @@ def initialize():
 
 	global maxAlleleKey, rowsPerAllele, allAlleles, teasers
 
-	# find maximum allele key with interactions (with current and interim
-	# markers)
+	# find maximum allele key with interactions (with current markers)
 
 	cmd2 = '''select max(r._Object_key_1)
 		from mgi_relationship r, mrk_marker m
 		where r._Category_key in (%d, %d)
 		and r._Object_key_2 = m._Marker_key
-		and m._Marker_Status_key in (1,3)''' % (mutationInvolvesKey,
+		and m._Marker_Status_key = 1''' % (mutationInvolvesKey,
 			expressedComponentKey)
 
 	(cols, rows) = dbAgnostic.execute(cmd2)
@@ -79,13 +78,13 @@ def initialize():
 	logger.debug('Max allele key w/ relationships: %d' % maxAlleleKey)
 
 	# find number of relationships per allele, where the allele is the
-	# organizer and the markers are current or interim (not withdrawn)
+	# organizer and the markers are current (not withdrawn)
 
 	cmd3 = '''select r._Object_key_1, count(1) as ct
 		from mgi_relationship r, mrk_marker m
 		where r._Category_key in (%d, %d)
 		and r._Object_key_2 = m._Marker_key
-		and m._Marker_Status_key in (1,3)
+		and m._Marker_Status_key = 1
 		group by r._Object_key_1''' % (mutationInvolvesKey,
 			expressedComponentKey)
 
@@ -253,13 +252,13 @@ def getTeaserMarkers():
 		relatedMarkers = {}
 
 		# gather the related markers where the alleles in our group
-		# are the organizers (and the markers are current or interim)
+		# are the organizers (and the markers are current)
 
 		cmd1 = '''select r._Object_key_1, r._Object_key_2
 			from mgi_relationship r, mrk_marker m
 			where r._Category_key = %d
 			and r._Object_key_2 = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 			and r._Object_key_1 in (%s)''' % (mutationInvolvesKey,
 				alleles)
 
@@ -336,7 +335,7 @@ def getRelationshipRows(startAllele, endAllele):
 			and r._Object_key_1 >= %d
 			and r._Object_key_1 <= %d
 			and r._Object_key_2 = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 		order by r._Object_key_1''' % (mutationInvolvesKey,
 			expressedComponentKey, startAllele, endAllele)
 
@@ -365,7 +364,7 @@ def getPropertyRows(startAllele, endAllele):
 			and r._Object_key_1 >= %d
 			and r._Object_key_1 <= %d
 			and r._Object_key_2 = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 		order by p._Relationship_key, p.sequenceNum''' % (
 			mutationInvolvesKey, expressedComponentKey,
 			startAllele, endAllele)
@@ -376,7 +375,7 @@ def getPropertyRows(startAllele, endAllele):
 		len(rows1), startAllele, endAllele))
 
 	# notes for relationships in our allele range, where the associated
-	# markers are current or interim
+	# markers are current
 
 	cmd2 = '''select r._Relationship_key,
 			c._Note_key,
@@ -395,7 +394,7 @@ def getPropertyRows(startAllele, endAllele):
 			and r._Object_key_1 >= %d
 			and r._Object_key_1 <= %d
 			and r._Object_key_2 = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 		order by r._Relationship_key, c._Note_key, c.sequenceNum''' % (
 			mutationInvolvesKey, expressedComponentKey,
 			startAllele, endAllele)

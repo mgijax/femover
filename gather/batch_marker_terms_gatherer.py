@@ -51,7 +51,7 @@ def createTempTables():
 			acc_accession a,
 			acc_logicaldb l
 		where s._Marker_key = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 			and m._Organism_key = 1
 			and s._Sequence_key = a._Object_key
 			and a._MGIType_key = 19
@@ -154,12 +154,12 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 	def getMinKeyQuery (self):
 		return '''select min(_Marker_key) from mrk_marker
 			where _Organism_key = 1
-				and _Marker_Status_key in (1,3)'''
+				and _Marker_Status_key = 1'''
 
 	def getMaxKeyQuery (self):
 		return '''select max(_Marker_key) from mrk_marker
 			where _Organism_key = 1
-				and _Marker_Status_key in (1,3)'''
+				and _Marker_Status_key = 1'''
 
 	def collateResults (self):
 		if not self.ids:
@@ -333,7 +333,7 @@ cmds = [
 		from mrk_marker mm,
 			mrk_label ml
 		where mm._Organism_key = 1
-			and mm._Marker_Status_key in (1,3)
+			and mm._Marker_Status_key = 1
 			and mm._Marker_key = ml._Marker_key
 			and ml.labeltypename not in ('allele symbol','allele name')
 			and mm._Marker_key >= %d
@@ -352,7 +352,7 @@ cmds = [
 		where a._MGIType_key = 2
 			and a.private = 0
 			and a._Object_key = m._Marker_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 			and m._Organism_key = 1
 			and a._LogicalDB_key not in (9,13,27,41)
 			and a._LogicalDB_key = l._LogicalDB_key

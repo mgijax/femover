@@ -144,7 +144,7 @@ cmds = [
 	from mrk_marker m
 	left outer join MRK_Offset o on (m._Marker_key = o._Marker_key
 		and o.%s >= 0)
-	where m._Marker_Status_key in (1,3)
+	where m._Marker_Status_key = 1
 		and not exists (select 1 from mrk_location_cache c
 			where m._Marker_key = c._Marker_key)''' % (offset,
 				offset),

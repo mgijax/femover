@@ -562,7 +562,7 @@ cmds = [
         where _Marker_key >= %d
         and _Marker_key < %d
         and _Organism_key = 1
-        and _Marker_Status_key in (1,3)
+        and _Marker_Status_key = 1
         ),
     genotypes as (
         select mag._Marker_key, mag._Genotype_key
@@ -603,7 +603,7 @@ cmds = [
         where _Marker_key >= %d
         and _Marker_key < %d
         and _Organism_key = 1
-        and _Marker_Status_key in (1,3)
+        and _Marker_Status_key = 1
         ),
     annotations as (
         select a._Marker_key,
@@ -664,11 +664,11 @@ gatherer.setupChunking (
     '''select min(_Marker_key)
         from mrk_marker
         where _Organism_key = 1
-            and _Marker_Status_key in (1,3)''',
+            and _Marker_Status_key = 1''',
     '''select max(_Marker_key)
         from mrk_marker
         where _Organism_key = 1
-            and _Marker_Status_key in (1,3)''',
+            and _Marker_Status_key = 1''',
     )
 gatherer.initialized = False
 cacheHeaders()
