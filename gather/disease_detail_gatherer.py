@@ -1234,7 +1234,7 @@ cmds = [
 		and m._Organism_key = mo._Organism_key''' % (
 			DISEASE_MARKER, NOT_QUALIFIER),
 
-	# 4. all current and interim mouse and human markers' basic data,
+	# 4. all current mouse and human markers' basic data,
 	# using the MGI-computed set of hybrid data from HGNC and HomoloGene
 	
 	'''with hg_clusters as (

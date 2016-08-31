@@ -2750,13 +2750,6 @@ definition=Between <A HREF="!FEWI_URL!glossary/gene">genes</A>.
 ]
 
 [ 
-key=interim 
-displayName=Interim 
-definition=In <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, a term appended to a \
-<A HREF="!FEWI_URL!glossary/gene_symbol">gene symbol</A> that is under review. 
-]
-
-[ 
 key=interpro 
 displayName=InterPro domain 
 definition=One of a collection of <A HREF="!FEWI_URL!glossary/amino_acid">amino acid</A> \ 

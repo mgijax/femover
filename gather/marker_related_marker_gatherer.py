@@ -269,8 +269,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. basic marker-to-marker relationship data (only for categories
-	# where both objects are markers, and only for markers which are
-	# current or interim)
+	# where both objects are markers, and only for markers which are current
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_1 as marker_key,
@@ -319,7 +318,7 @@ cmds = [
 
 	# 1. reversed marker-to-marker relationship data (only for categories
 	# with markers for both object types, and only including data for
-	# markers which are current or interim)
+	# markers which are current)
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_2 as marker_key,
@@ -367,8 +366,7 @@ cmds = [
 		order by r._Object_key_2''',
 
 	# 2. properties (for relationships involving two markers -- except
-	# interaction relationships -- where those two markers are either
-	# current or interim)
+	# interaction relationships -- where those two markers are either current )
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
@@ -393,7 +391,7 @@ cmds = [
 
 	# 3. properties for reverse relationships (for relationships involving
 	# two markers -- except interaction relationships -- where those two
-	# markers are either current or interim)
+	# markers are either current )
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
