@@ -212,6 +212,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 	]
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
 	'expression_ht_experiment_note', 'expression_ht_experiment_property',
+	'expression_ht_experiment_variable',
 	]
 GLOSSARY = [ 'glossary',
 	]
