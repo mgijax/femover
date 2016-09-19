@@ -78,3 +78,15 @@ def getExperimentIDs(onlyPrimaryIDs = False):
                     %s''' % (getExperimentTempTable(), C.MGITYPE_EXPERIMENT, preferredClause)
                     
     return dbAgnostic.execute(cmd0)
+
+# TODO -- get rid of this hack, as it's only temporary until we have curated data
+def getStudyTypeHack(studyType, description):
+    if studyType:
+        return studyType
+
+	if description and description.find('baseline') >= 0:
+		studyType = 'baseline'
+	else:
+		studyType = 'differential'
+
+    return studyType

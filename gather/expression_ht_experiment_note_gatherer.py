@@ -17,6 +17,16 @@ HTExperimentNoteGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
+	# TODO - revert this back to the non-hacked version
+#	'''select t._Experiment_key, y.notetype, c.note
+#		from %s t, mgi_note n, mgi_notetype y, mgi_notechunk c
+#		where t._Experiment_key = n._Object_key
+#			and n._MGIType_key = %d
+#			and n._NoteType_key = y._NoteType_key
+#			and n._Note_key = c._Note_key
+#			and y.private = 0
+#		order by t._Experiment_key, y.notetype''' % (
+#				experiments.getExperimentTempTable(), C.MGITYPE_EXPERIMENT)
 	'''select t._Experiment_key, y.notetype, c.note
 		from %s t, mgi_note n, mgi_notetype y, mgi_notechunk c
 		where t._Experiment_key = n._Object_key
@@ -24,7 +34,15 @@ cmds = [
 			and n._NoteType_key = y._NoteType_key
 			and n._Note_key = c._Note_key
 			and y.private = 0
-		order by t._Experiment_key, y.notetype''' % (
+		union
+		select t._Experiment_key, 'auto note',
+			'Temporary auto-generated note for experiment key ' || t._Experiment_key::text
+		from %s t
+		where not exists (select 1 from mgi_note n
+			where t._Experiment_key = n._Object_key
+			and n._MGIType_key = %d)
+		order by 1, 2''' % (
+				experiments.getExperimentTempTable(), C.MGITYPE_EXPERIMENT,
 				experiments.getExperimentTempTable(), C.MGITYPE_EXPERIMENT)
 	]
 

@@ -17,10 +17,21 @@ HTExperimentVariableGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
+	# TODO - revert back to unhacked form
+#	'''select t._Experiment_key, n.term 
+#		from %s t, gxd_htexperimentvariable v, voc_term n
+#		where t._Experiment_key = v._Experiment_key
+#			and v._Term_key = n._Term_key''' % experiments.getExperimentTempTable()
 	'''select t._Experiment_key, n.term 
 		from %s t, gxd_htexperimentvariable v, voc_term n
 		where t._Experiment_key = v._Experiment_key
-			and v._Term_key = n._Term_key''' % experiments.getExperimentTempTable()
+			and v._Term_key = n._Term_key
+		union
+		select e._Experiment_key, 'temporary variable for experiment key ' || e._Experiment_key::text
+		from %s e
+		where not exists (select 1 from gxd_htexperimentvariable v
+			where e._Experiment_key = v._Experiment_key)''' % (experiments.getExperimentTempTable(),
+				experiments.getExperimentTempTable())
 	]
 
 # order of fields (from the query results) to be written to the

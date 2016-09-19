@@ -48,15 +48,10 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 			if experimentKey in primaryIDs:
 				primaryID = primaryIDs[experimentKey]
 				
-			studyType = getTerm(row[studyTypeKeyCol])
+# TODO - revert this back to the real version, not the hacked one
+#			studyType = getTerm(row[studyTypeKeyCol])
+			studyType = experiments.getStudyTypeHack(getTerm(row[studyTypeKeyCol]), row[descriptionCol])
 			
-			# TODO -- remove this hack when we have actual curated data
-			if not studyType:
-				if row[descriptionCol] and row[descriptionCol].find('baseline') >= 0:
-					studyType = 'baseline'
-				else:
-					studyType = 'differential'
-
 			self.finalResults.append ([ experimentKey, primaryID, getTerm(row[sourceKeyCol]),
 				row[nameCol], row[descriptionCol], row[releaseDateCol], row[lastUpdateDateCol],
 				studyType, sampleCounts[experimentKey] ])
