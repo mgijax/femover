@@ -211,6 +211,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'antigen', 'marker_to_antibody',
 	]
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
+	'expression_ht_experiment_note', 'expression_ht_experiment_property',
 	]
 GLOSSARY = [ 'glossary',
 	]
