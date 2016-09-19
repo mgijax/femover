@@ -213,6 +213,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
 	'expression_ht_experiment_note', 'expression_ht_experiment_property',
 	'expression_ht_experiment_variable',
+	'expression_ht_experiment_sequence_num',
 	]
 GLOSSARY = [ 'glossary',
 	]
@@ -1444,7 +1445,7 @@ def logProfilingData():
 
 		fp.close()
 	except:
-		logger.debug('Could not write gatherer_profilers.txt')
+		logger.debug('Could not write gatherer_profiles.txt')
 	return
 
 def readTimings():
