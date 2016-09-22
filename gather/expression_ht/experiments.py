@@ -52,7 +52,7 @@ def getExperimentTempTable():
 
     dbAgnostic.execute(cmd1)
     logger.debug('Populated %s with %d rows' % (experimentTable, getRowCount(experimentTable)))
-                 
+                
     dbAgnostic.execute(cmd2)
     logger.debug('Indexed %s' % experimentTable)
     return experimentTable
@@ -79,6 +79,23 @@ def getExperimentIDs(onlyPrimaryIDs = False):
                     
     return dbAgnostic.execute(cmd0)
 
+# TODO -- get rid of this hack, as it's only temporary until we have curated data
+allIDs = None
+def getExperimentKey(experimentID):
+    global allIDs
+    if allIDs == None:
+        cols, rows = getExperimentIDs()
+        keyCol = dbAgnostic.columnNumber(cols, '_Experiment_key')
+        idCol = dbAgnostic.columnNumber(cols, 'accID')
+        
+        allIDs = {}
+        for row in rows:
+            allIDs[row[idCol]] = row[keyCol]
+    
+    if experimentID in allIDs:
+        return allIDs[experimentID]
+    return None 
+    
 # TODO -- get rid of this hack, as it's only temporary until we have curated data
 def getStudyTypeHack(studyType, description):
     if studyType:
