@@ -37,6 +37,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 		releaseDateCol = Gatherer.columnNumber(cols, 'release_date')
 		lastUpdateDateCol = Gatherer.columnNumber(cols, 'lastupdate_date')
 		studyTypeKeyCol = Gatherer.columnNumber(cols, '_StudyType_key')
+		methodKeyCol = Gatherer.columnNumber(cols, '_ExperimentType_key')
 
 		self.finalColumns = fieldOrder
 		self.finalResults = []
@@ -52,9 +53,11 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 #			studyType = getTerm(row[studyTypeKeyCol])
 			studyType = experiments.getStudyTypeHack(getTerm(row[studyTypeKeyCol]), row[descriptionCol])
 			
+			method = getTerm(row[methodKeyCol])
+
 			self.finalResults.append ([ experimentKey, primaryID, getTerm(row[sourceKeyCol]),
 				row[nameCol], row[descriptionCol], row[releaseDateCol], row[lastUpdateDateCol],
-				studyType, sampleCounts[experimentKey] ])
+				studyType, method, sampleCounts[experimentKey] ])
 
 		logger.debug ('Compiled %d data rows' % len(self.finalResults))
 		return
@@ -64,7 +67,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. basic experiment data
 	'''select e._Experiment_key, e._Source_key, e.name, e.description, e.release_date, e.lastupdate_date,
-			e._StudyType_key
+			e._StudyType_key, e._ExperimentType_key
 		from %s t, gxd_htexperiment e
 		where t._Experiment_key = e._Experiment_key''' % experiments.getExperimentTempTable()
 	]
@@ -73,7 +76,7 @@ cmds = [
 # output file
 fieldOrder = [
 	'_Experiment_key', 'accID', 'source', 'name', 'description', 'release_date',
-	'lastupdate_date', 'study_type', 'sample_count'
+	'lastupdate_date', 'study_type', 'method', 'sample_count'
 	]
 
 # prefix for the filename of the output file

@@ -22,6 +22,7 @@ createStatement = '''CREATE TABLE %s  (
 	release_date		timestamp	null,
 	lastupdate_date		timestamp	null,
 	study_type			text		null,
+	method				text		null,
 	sample_count		int			not null,
 	PRIMARY KEY(experiment_key))''' % tableName
 
@@ -52,6 +53,7 @@ comments = {
 		'release_date' : 'date on which the experiment was initially released into the source',
 		'lastupdate_date' : 'date on which the experiment was most recently updated at the source (as of the time we downloaded it)',
 		'study_type' : 'baseline or differential study?',
+		'method' : 'type of experiment',
 		'sample_count' : 'number of curated samples for the experiment',
 		},
 	Table.INDEX : {
