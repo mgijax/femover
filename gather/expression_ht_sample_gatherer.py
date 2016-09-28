@@ -81,6 +81,11 @@ class HTSampleGatherer (Gatherer.Gatherer):
 		sampleKey = 0
 		for experimentID in samples.getExperimentsWithSamples():
 			experimentKey = samples.getExperimentKey(experimentID)
+			if not experimentKey:
+				# sample file has more experiments than we have in latest data load, so skip any
+				# that aren't in the database
+				continue
+			
 			for sample in samples.getSamples(experimentID):
 				sampleKey = sampleKey + 1
 				
