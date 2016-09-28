@@ -143,8 +143,8 @@ class SampleFile:
                 if 'accession' in experiment['experiment']:
                     experimentID = experiment['experiment']['accession']
 
-                if experimentID and ('sample' in experiment['experiment']):
-                    self.samples[experimentID] = experiment['experiment']['sample']
+                    if experimentID and ('sample' in experiment['experiment']):
+                        self.samples[experimentID] = experiment['experiment']['sample']
 
             # if we can reclaim 1MB of memory, do it
             if (lastGcSize - len(self.s)) >= 1000000:
@@ -198,37 +198,50 @@ class SampleFile:
         # pop the first experiment off string s
         # returns (experiment, remainder of s)
         
+        # no input string?  no output experiment
         if not s:
             return None, None
+
+        # no opening curly brace?  no output experiment
         start = s.find('{')
-        if not start:
+        if start < 0:
             return None, None
-        openCount = 1
-        nextPos = start + 1
-        halt = False
+
+        openCount = 1           # count of open braces (nesting level within the braces)
+        nextPos = start + 1     # next position to examine in s
+        halt = False            # did we find the end of the experiment?
 
         while not halt:
             openBracket = s.find('{', nextPos)
             closeBracket = s.find('}', nextPos)
             quote = s.find('"', nextPos)
 
+            # if the next thing of note is a quote, find its mate and continue after that point
+            # (allows for curly braces appearing within quoted strings)
             if quote < openBracket and quote < closeBracket:
                 closeQuote = s.find('"', quote + 1)
                 nextPos = closeQuote + 1
 
-            elif openBracket > start:
+            # still have an opening curly brace?
+            elif openBracket >= 0: 
+                
+                # if it comes before the next closing curly brace, count the nesting and move on
                 if openBracket < closeBracket:
                     openCount = openCount + 1
                     nextPos = openBracket + 1
+                    
+                # closing brace comes first, so decrement.  If nesting reaches 0, we found the
+                # end of the experiment.
                 else:
                     openCount = openCount - 1
                     nextPos = closeBracket + 1
                     if openCount == 0:
                         halt = True
 
-            elif closeBracket > start:
+            # no opening; do we still have a closing curly brace?
+            elif closeBracket >= 0:
                 openCount = openCount - 1
-                nextPost = closeBracket + 1
+                nextPos = closeBracket + 1
                 halt = True
 
         if openCount == 0 and start != nextPos:
