@@ -46,6 +46,9 @@ def getAgeMinMax(age):
     # convert the textual age to its ageMin and ageMax equivalents, if the format is recognized
     # Returns: (ageMin, ageMax) or (None, None) if age cannot be converted
     
+    if age == None:
+        return None, None, None
+    
     ageString = str(age).lower().strip()
     ageString = tweakAge(ageString)           # TODO: remove once we have curated samples
     

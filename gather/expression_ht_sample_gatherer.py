@@ -45,19 +45,6 @@ def getCharacteristic(sample, name):
 					return characteristic['value'] 
 	return None
 
-#import re
-#ageRegex = re.compile('^E([0-9]{1,2}\.?[0-9]?)$')
-#def getAge(ageString):
-#	# returns (age as a string, ageMin, ageMax)
-#	if not ageString:
-#		return None, 24, 28
-#	
-#	match = ageRegex.match(str(ageString))
-#	if not match:
-#		return ageString, 24, 28
-#	
-#	return ageString, float(match.group(1)), float(match.group(1))
-
 ###--- functions to keep ---###
 
 expKeyCol = None
@@ -122,16 +109,6 @@ def compareSamples(a, b):
 	elif b[ageMaxCol]:
 		return 1
 
-	if a[structureCol]:								# structure, sorted topologically
-		if b[structureCol]:
-			byStructure = cmp(VocabSorter.getSequenceNum(a[structureCol]), VocabSorter.getSequenceNum(b[structureCol]))
-			if byStructure != 0:
-				return byStructure
-		else:
-			return -1
-	elif b[structureCol]:
-		return 1
-	
 	if a[tsCol]:								# Theiler Stage
 		if b[tsCol]:
 			byTS = cmp(int(a[tsCol]), int(b[tsCol]))
@@ -140,6 +117,16 @@ def compareSamples(a, b):
 		else:
 			return -1
 	elif b[tsCol]:
+		return 1
+	
+	if a[structureCol]:								# structure, sorted topologically
+		if b[structureCol]:
+			byStructure = cmp(VocabSorter.getSequenceNum(a[structureCol]), VocabSorter.getSequenceNum(b[structureCol]))
+			if byStructure != 0:
+				return byStructure
+		else:
+			return -1
+	elif b[structureCol]:
 		return 1
 	
 	if a[organismCol]:							# organism, preferred organisms above, others alphabetical
@@ -194,6 +181,10 @@ class HTSampleGatherer (Gatherer.Gatherer):
 			
 			for sample in samples.getSamples(experimentID):
 				sampleKey = sampleKey + 1
+
+				isRelevant = False
+				if str(row[4]).lower().find('mouse') >= 0:
+					isRelevant = True
 				
 				row = [ sampleKey, experimentKey ]
 				
@@ -205,19 +196,24 @@ class HTSampleGatherer (Gatherer.Gatherer):
 				
 				row.append(-1)		# genotype key: not specified
 
-				row.append(cleanUpOrganism(getCharacteristic(sample, 'organism')))
-				row.append(getCharacteristic(sample, 'sex'))
+				if isRelevant:
+					row.append(cleanUpOrganism(getCharacteristic(sample, 'organism')))
+					row.append(getCharacteristic(sample, 'sex'))
+					age = getCharacteristic(sample, 'age')
+					row.append(age)
 
-#				age, ageMin, ageMax = getAge(getCharacteristic(sample, 'age'))
-#				row = row + [ age, ageMin, ageMax ]
-				age = getCharacteristic(sample, 'age')
-				row.append(age)
-
-				emapaKey, startStage = samples.getEmapa(getCharacteristic(sample, 'organism part'))
-				row.append(emapaKey)
-				row.append(startStage)
+					emapaKey, startStage = samples.getEmapa(getCharacteristic(sample, 'organism part'))
+					row.append(emapaKey)
+					row.append(startStage)
 				
-				if str(row[4]).lower().find('mouse') >= 0:
+				else:
+					row.append(None)
+					row.append(None)
+					row.append(None)
+					row.append(None)
+					row.append(None)
+
+				if isRelevant:
 					row.append("Yes")
 				else:
 					row.append("Non-mouse sample: no data stored")
@@ -236,7 +232,6 @@ class HTSampleGatherer (Gatherer.Gatherer):
 		ageCol = Gatherer.columnNumber(self.finalColumns, 'age')
 		
 		for row in self.finalResults:
-#			age, ageMin, ageMax = getAge(row[ageCol])
 			age, ageMin, ageMax = AgeUtils.getAgeMinMax(row[ageCol])
 			row[ageCol] = age
 			row.append(ageMin)
