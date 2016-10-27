@@ -182,8 +182,9 @@ class HTSampleGatherer (Gatherer.Gatherer):
 			for sample in samples.getSamples(experimentID):
 				sampleKey = sampleKey + 1
 
+				organism = cleanUpOrganism(getCharacteristic(sample, 'organism'))
 				isRelevant = False
-				if str(row[4]).lower().find('mouse') >= 0:
+				if str(organism).lower().find('mouse') >= 0:
 					isRelevant = True
 				
 				row = [ sampleKey, experimentKey ]
@@ -197,7 +198,7 @@ class HTSampleGatherer (Gatherer.Gatherer):
 				row.append(-1)		# genotype key: not specified
 
 				if isRelevant:
-					row.append(cleanUpOrganism(getCharacteristic(sample, 'organism')))
+					row.append(organism)
 					row.append(getCharacteristic(sample, 'sex'))
 					age = getCharacteristic(sample, 'age')
 					row.append(age)
