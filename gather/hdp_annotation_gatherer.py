@@ -326,7 +326,7 @@ cmds = [
 		VOC_Vocab vv,
 		ACC_Accession a,
 		MRK_Marker m
-        where v._AnnotType_key in (%d, %d)
+        where v._AnnotType_key in (%d)
 		and v._Term_key = t._Term_key
 		and v._Qualifier_key = t2._Term_key
 		and v._Term_key = a._Object_key
@@ -335,8 +335,7 @@ cmds = [
 		and a.preferred = 1
 		and t._Vocab_key = vv._Vocab_key
 		and v._Object_key = m._Marker_key''' % (
-			DPU.OMIM_HUMAN_MARKER,
-			DPU.OMIM_HUMAN_PHENO_MARKER,
+			DPU.DO_HUMAN_MARKER,
 			DPU.VOCAB),
 
 	# 1. term sequencenum values for MP

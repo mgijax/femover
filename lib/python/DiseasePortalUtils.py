@@ -11,18 +11,15 @@ import gc
 ###---------------###
 
 MP_GENOTYPE = 1002		# annot type for MP-genotype annotations
-OMIM_GENOTYPE = 1005		# annot type for disease-genotype annotations
-OMIM_ALLELE = 1012		# annot type for disease-allele annotations
+DO_GENOTYPE = 1020        # annot type for disease-genotype annotations
+DO_ALLELE = 1021        # annot type for disease-allele annotations
 MP_MARKER = 1015		# annot type for rolled-up MP annotations
-OMIM_MARKER = 1016		# annot type for rolled-up disease annot.
+DO_MARKER = 1024		# annot type for rolled-up disease annot.
 NOT_QUALIFIER = 1614157		# term key for NOT qualifier for disease annot.
 VOCAB = 13			# MGI type for vocabulary terms
 HYBRID = 13764519		# cluster source for hybrid homology
 HOMOLOGY = 9272150		# homology cluster type for MRK_Cluster
-OMIM_HUMAN_MARKER = 1006	# annot type for OMIM/human marker
-
-# this annot type is obsolete and should be removed asap
-OMIM_HUMAN_PHENO_MARKER = 1013	# annot type for OMIM/human phenotypic marker
+DO_HUMAN_MARKER = 1022	# annot type for disease/human marker
 
 
 ###-------------------------###
@@ -257,7 +254,7 @@ def getSourceAnnotationsTable():
 				and va._Qualifier_key != %s
 				and t.term = '_SourceAnnot_key' ''' % (
 					sourceAnnotationTable,
-					MP_MARKER, OMIM_MARKER, NOT_QUALIFIER)
+					MP_MARKER, DO_MARKER, NOT_QUALIFIER)
 
 		dbAgnostic.execute(cmd1)
 		logger.debug('Built temp table %s' % sourceAnnotationTable)
@@ -321,7 +318,7 @@ def getAnnotations(filterClause = ''):
 			and t._Vocab_key = v._Vocab_key
 			%s''' % (
 				getSourceAnnotationsTable(),
-				OMIM_MARKER, MP_MARKER, VOCAB, NOT_QUALIFIER,
+				DO_MARKER, MP_MARKER, VOCAB, NOT_QUALIFIER,
 				filterClause)
 
 	cols, rows = dbAgnostic.execute(cmd)
@@ -343,7 +340,7 @@ def getReferencesByDiseaseKey():
 	# collect a dictionary of term keys that were rolled up to markers
 
 	annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % \
-		OMIM_MARKER)
+		DO_MARKER)
 
 	termCol = dbAgnostic.columnNumber(annotCols, '_Term_key')
 
@@ -369,7 +366,7 @@ def getReferencesByDiseaseKey():
 		    or v._AnnotType_key = %d
 		    )
 		and v._Annot_key = e._Annot_key''' % (
-			OMIM_GENOTYPE, NOT_QUALIFIER, OMIM_ALLELE)
+			DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE)
 
 	cols, rows = dbAgnostic.execute(cmd)
 
@@ -451,7 +448,7 @@ def getRollupWithClustersTable():
 		from MRK_ClusterMember c, VOC_Annot v, MRK_Cluster mc,
 			VOC_Term t, ACC_Accession a
 		where c._Marker_key = v._Object_key
-			and v._AnnotType_key in (%d, %d)
+			and v._AnnotType_key in (%d)
 			and c._Cluster_key = mc._Cluster_key
 			and mc._ClusterSource_key = %d
 			and mc._ClusterType_key = %d
@@ -460,9 +457,9 @@ def getRollupWithClustersTable():
 			and a._MGIType_key = %d
 			and v._Qualifier_key != %d
 			and a.preferred = 1''' % (rollupWithClustersTable,
-				MP_MARKER, OMIM_MARKER, HYBRID, HOMOLOGY,
-				VOCAB, NOT_QUALIFIER, OMIM_HUMAN_MARKER,
-				OMIM_HUMAN_PHENO_MARKER, HYBRID, HOMOLOGY,
+				MP_MARKER, DO_MARKER, HYBRID, HOMOLOGY,
+				VOCAB, NOT_QUALIFIER, DO_HUMAN_MARKER,
+				HYBRID, HOMOLOGY,
 				VOCAB, NOT_QUALIFIER)
 
 	dbAgnostic.execute(cmd)
@@ -512,7 +509,7 @@ def getRollupNoClustersTable():
 			t.term, a.accID
 		from MRK_Marker c, VOC_Annot v, VOC_Term t, ACC_Accession a
 		where c._Marker_key = v._Object_key
-			and v._AnnotType_key in (%d, %d)
+			and v._AnnotType_key in (%d)
 			and v._Term_key = t._Term_key
 			and v._Term_key = a._Object_key
 			and a._MGIType_key = %d
@@ -521,8 +518,8 @@ def getRollupNoClustersTable():
 			and not exists (select 1 from %s tc
 				where c._Marker_key = tc._Marker_key)''' % (
 			rollupNoClustersTable, getRollupWithClustersTable(),
-			MP_MARKER, OMIM_MARKER, NOT_QUALIFIER, VOCAB,
-			OMIM_HUMAN_MARKER, OMIM_HUMAN_PHENO_MARKER, VOCAB,
+			MP_MARKER, DO_MARKER, NOT_QUALIFIER, VOCAB,
+			DO_HUMAN_MARKER, VOCAB,
 			NOT_QUALIFIER, getRollupWithClustersTable())
 
 	dbAgnostic.execute(cmd)

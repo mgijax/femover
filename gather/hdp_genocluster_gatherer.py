@@ -45,7 +45,7 @@ def getBackgroundSensitivityTableName():
 		from VOC_Annot a
 		where a._AnnotType_key in (%d, %d)''' % (BG_TABLE,
 			DPU.MP_GENOTYPE,
-			DPU.OMIM_GENOTYPE)
+			DPU.DO_GENOTYPE)
 
 	cmd2 = 'create index %s on %s (_Genotype_key)' % (
 		DPU.nextIndex(), BG_TABLE)
@@ -67,7 +67,7 @@ def getBackgroundSensitivityTableName():
 				and n._MGIType_key = 25
 				and n._NoteType_key = 1015)''' % (BG_TABLE,
 					DPU.MP_GENOTYPE,
-					DPU.OMIM_GENOTYPE)
+					DPU.DO_GENOTYPE)
 
 	dbAgnostic.execute(cmd1)
 	logger.debug('Built background sensitivity table')
@@ -533,7 +533,7 @@ cmds = [
 	order by a._Object_key, a._Term_key, a._Qualifier_key, q.term desc
 	''' % (getBackgroundSensitivityTableName(),
 		DPU.MP_GENOTYPE,
-		DPU.OMIM_GENOTYPE,
+		DPU.DO_GENOTYPE,
 		DPU.VOCAB,
 		DPU.NOT_QUALIFIER),
 
@@ -551,7 +551,7 @@ cmds = [
 		and v._Qualifier_key != %d
 	group by v._Object_key, v._Term_key, v._Qualifier_key''' % (
 		DPU.MP_GENOTYPE,
-		DPU.OMIM_GENOTYPE,
+		DPU.DO_GENOTYPE,
 		DPU.NOT_QUALIFIER,
 		NO_PHENOTYPIC_ANALYSIS,
 		DPU.NOT_QUALIFIER),
@@ -578,7 +578,7 @@ cmds = [
 		and c._AnnotType_key in (%d, %d)
 		and c._Qualifier_key != %d''' % (
 			DPU.MP_GENOTYPE, 
-			DPU.OMIM_GENOTYPE, 
+			DPU.DO_GENOTYPE, 
 			DPU.NOT_QUALIFIER),
 	]
 
