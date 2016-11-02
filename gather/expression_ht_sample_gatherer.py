@@ -30,6 +30,10 @@ def cleanUpOrganism(organism):
 	t = organism.strip().lower().replace('_', ' ').replace('.', ' ')
 	if t in organismMap:
 		return organismMap[t]
+	if organism.find(',') >= 0:
+		pieces = map(lambda x : x.strip(), organism.split(','))
+		pieces.reverse()
+		organism = ' '.join(pieces)
 	return organism
 
 def getCharacteristic(sample, name):
@@ -72,8 +76,6 @@ def cacheColumns(cols):
 
 preferredOrganisms = {
 	'mouse, laboratory' : 1,
-	'human' : 2,
-	'rat'	: 3,
 	}
 def compareSamples(a, b):
 	# sort samples by:
@@ -140,6 +142,11 @@ def compareSamples(a, b):
 					return -1
 			elif b[organismCol] in preferredOrganisms:
 				return 1
+			else:
+				# neither a nor b has a preferred organism, so sort them alphabetically
+				byOrg = cmp(a[organismCol].lower(), b[organismCol].lower())
+				if byOrg != 0:
+					return byOrg
 		else:
 			return -1
 	elif b[organismCol]:
@@ -197,8 +204,8 @@ class HTSampleGatherer (Gatherer.Gatherer):
 				
 				row.append(-1)		# genotype key: not specified
 
+				row.append(organism)
 				if isRelevant:
-					row.append(organism)
 					row.append(getCharacteristic(sample, 'sex'))
 					age = getCharacteristic(sample, 'age')
 					row.append(age)
@@ -208,7 +215,6 @@ class HTSampleGatherer (Gatherer.Gatherer):
 					row.append(startStage)
 				
 				else:
-					row.append(None)
 					row.append(None)
 					row.append(None)
 					row.append(None)
