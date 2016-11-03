@@ -47,14 +47,14 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
 ###--- globals ---###
 
 cmds = [
-	# 0. OMIM terms to their HPO terms (top of union), plus
+	# 0. DO terms to their HPO terms (top of union), plus
 	#	MP headers to HPO terms (bottom of union).  Note that the
 	#	cross-references are left null, as they are to come later.
 	'''select a._Object_key as termKey1, a._Term_key as termKey2,
-		'OMIM to HPO' as relationship_type,
+		'DO to HPO' as relationship_type,
 		e.abbreviation as evidence, null as cross_reference
 	from voc_annot a, voc_evidence ve, voc_term e
-	where a._AnnotType_key = 1018
+	where a._AnnotType_key = 1024
 		and a._Annot_key = ve._Annot_key
 		and ve._EvidenceTerm_key = e._Term_key
 	union
