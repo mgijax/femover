@@ -6,52 +6,12 @@ import Gatherer
 import logger
 import VocabSorter
 import AgeUtils
+import symbolsort
 from expression_ht import samples
 
-###--- Functions ---###
-###--- TODO : eliminate this section once we have real sample data (It's a hack.) ---###
+###--- Globals ---###
 
-organismMap = {
-	'mus musculus' : 'mouse',
-	'mus musculus domesticus' : 'mouse',
-	'mus musculus musculus' : 'mouse',
-	'mouse' : 'mouse',
-	'house mouse' : 'mouse',
-	'c57bl/6 mouse' : 'mouse',
-	'homo sapien' : 'human',
-	'homo sapiens' : 'human',
-	'rattus norvegicus' : 'rat',
-	}
-
-def cleanUpOrganism(organism):
-	if not organism:
-		return organism
-
-	t = organism.strip().lower().replace('_', ' ').replace('.', ' ')
-	if t in organismMap:
-		return organismMap[t]
-	if organism.find(',') >= 0:
-		pieces = map(lambda x : x.strip(), organism.split(','))
-		pieces.reverse()
-		organism = ' '.join(pieces)
-	return organism
-
-def getCharacteristic(sample, name):
-	if 'characteristic' in sample:
-		lowerName = name.lower()
-		characteristics = sample['characteristic']
-		if type(characteristics) != type([]):
-			characteristics = [ characteristics ]
-			
-		for characteristic in characteristics:
-			if 'category' in characteristic:
-				if str(characteristic['category']).lower() == lowerName:
-					return characteristic['value'] 
-	return None
-
-###--- functions to keep ---###
-
-expKeyCol = None
+expKeyCol = None		# column indexes populated by cacheColumns()
 relevanceCol = None
 ageMinCol = None
 ageMaxCol = None
@@ -59,7 +19,20 @@ structureCol = None
 tsCol = None
 organismCol = None
 nameCol = None
+
+###--- Functions ---###
+
+def cleanOrganism(organism):
+	# switches ordering on organism, if a comma separates words
+	# (eg- "mouse, laboratory" becomes "laboratory mouse")
+	
+	if not organism:
+		return organism
+	pieces = map(lambda x: x.strip(), organism.split(','))
+	return ' '.join(pieces)
+	
 def cacheColumns(cols):
+	# populate the global variables for which columns are where in the final results
 	global expKeyCol, relevanceCol, ageMaxCol, ageMinCol, structureCol, tsCol, organismCol, nameCol
 	
 	expKeyCol = Gatherer.columnNumber(cols, '_Experiment_key')
@@ -76,11 +49,12 @@ def cacheColumns(cols):
 
 preferredOrganisms = {
 	'mouse, laboratory' : 1,
+	'laboratory mouse' : 1,
 	}
 def compareSamples(a, b):
 	# sort samples by:
 	#	0. experiment key, 1. relevance (yes first), 2. ageMin, 3. ageMax, 4. structure (topologically),
-	#   5. Theiler stage, 6. organism (mouse, human, rat, others), 7. sample name
+	#   5. Theiler stage, 6. organism (mouse then others alphabetically), 7. sample name
 	# assumes: cacheColumns() was called previously
 	
 	byExpKey = cmp(a[expKeyCol], b[expKeyCol])				# experiment key
@@ -91,70 +65,72 @@ def compareSamples(a, b):
 	if byRelevance != 0:
 		return byRelevance
 
-	if a[ageMinCol]:								# ageMin
-		if b[ageMinCol]:
-			byAgeMin = cmp(a[ageMinCol], b[ageMinCol])
-			if byAgeMin != 0:
-				return byAgeMin 
-		else:
-			return -1
-	elif b[ageMinCol]:
-		return 1
+	# relevances match at this point; only check displayed fields for sorting
+	if a[relevanceCol].lower() == 'yes':
+		if a[ageMinCol]:								# ageMin
+			if b[ageMinCol]:
+				byAgeMin = cmp(a[ageMinCol], b[ageMinCol])
+				if byAgeMin != 0:
+					return byAgeMin 
+			else:
+				return -1
+		elif b[ageMinCol]:
+			return 1
 		
-	if a[ageMaxCol]:								# ageMax
-		if b[ageMaxCol]:
-			byAgeMax = cmp(a[ageMaxCol], b[ageMaxCol])
-			if byAgeMax != 0:
-				return byAgeMax
-		else:
-			return -1
-	elif b[ageMaxCol]:
-		return 1
+		if a[ageMaxCol]:								# ageMax
+			if b[ageMaxCol]:
+				byAgeMax = cmp(a[ageMaxCol], b[ageMaxCol])
+				if byAgeMax != 0:
+					return byAgeMax
+			else:
+				return -1
+		elif b[ageMaxCol]:
+			return 1
 
-	if a[tsCol]:								# Theiler Stage
-		if b[tsCol]:
-			byTS = cmp(int(a[tsCol]), int(b[tsCol]))
-			if byTS != 0:
-				return byTS
-		else:
-			return -1
-	elif b[tsCol]:
-		return 1
+		if a[tsCol]:								# Theiler Stage
+			if b[tsCol]:
+				byTS = cmp(int(a[tsCol]), int(b[tsCol]))
+				if byTS != 0:
+					return byTS
+			else:
+				return -1
+		elif b[tsCol]:
+			return 1
 	
-	if a[structureCol]:								# structure, sorted topologically
-		if b[structureCol]:
-			byStructure = cmp(VocabSorter.getSequenceNum(a[structureCol]), VocabSorter.getSequenceNum(b[structureCol]))
-			if byStructure != 0:
-				return byStructure
-		else:
-			return -1
-	elif b[structureCol]:
-		return 1
+		if a[structureCol]:								# structure, sorted topologically
+			if b[structureCol]:
+				byStructure = cmp(VocabSorter.getSequenceNum(a[structureCol]), VocabSorter.getSequenceNum(b[structureCol]))
+				if byStructure != 0:
+					return byStructure
+			else:
+				return -1
+		elif b[structureCol]:
+			return 1
 	
-	if a[organismCol]:							# organism, preferred organisms above, others alphabetical
-		if b[organismCol]:
-			if a[organismCol] in preferredOrganisms:
-				if b[organismCol] in preferredOrganisms:
-					byOrg = cmp(preferredOrganisms[a[organismCol]], preferredOrganisms[b[organismCol]])
+		if a[organismCol]:							# organism, preferred organisms above, others alphabetical
+			if b[organismCol]:
+				if a[organismCol] in preferredOrganisms:
+					if b[organismCol] in preferredOrganisms:
+						byOrg = cmp(preferredOrganisms[a[organismCol]], preferredOrganisms[b[organismCol]])
+						if byOrg != 0:
+							return byOrg
+					else:
+						return -1
+				elif b[organismCol] in preferredOrganisms:
+					return 1
+				else:
+					# neither a nor b has a preferred organism, so sort them alphabetically
+					byOrg = cmp(a[organismCol].lower(), b[organismCol].lower())
 					if byOrg != 0:
 						return byOrg
-				else:
-					return -1
-			elif b[organismCol] in preferredOrganisms:
-				return 1
 			else:
-				# neither a nor b has a preferred organism, so sort them alphabetically
-				byOrg = cmp(a[organismCol].lower(), b[organismCol].lower())
-				if byOrg != 0:
-					return byOrg
-		else:
-			return -1
-	elif b[organismCol]:
-		return 1
+				return -1
+		elif b[organismCol]:
+			return 1
 	
 	if a[nameCol]:								# sample name
 		if b[nameCol]:
-			return cmp(str(a[nameCol]).lower(), str(b[nameCol]).lower())
+			return symbolsort.nomenCompare(str(a[nameCol]), str(b[nameCol]))
 		else:
 			return -1
 	elif b[nameCol]:
@@ -170,66 +146,15 @@ class HTSampleGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for primary data for high-throughput expression
 	#	samples, collates results, writes tab-delimited text file
 
-	def getFakeData(self):
-		# TODO -- remove this method and go back to the superclass method; This is a hack until we have
-		# curated sample data.
+	def cleanOrganisms(self):
+		# go through the organism column and swap the pieces of any organisms containing a comma
+		# (eg- "mouse, laboratory" becomes "laboratory mouse")
+
+		organismCol = Gatherer.columnNumber(self.finalColumns, 'organism')
+		for row in self.finalResults:
+			row[organismCol] = cleanOrganism(row[organismCol])
+		return
 		
-		cols = [ '_Sample_key', '_Experiment_key', 'name', '_Genotype_key', 'organism', 'sex', 'age',
-			'_EMAPA_key', 'theiler_stage', 'relevancy', ]
-		rows = []
-
-		sampleKey = 0
-		for experimentID in samples.getExperimentsWithSamples():
-			experimentKey = samples.getExperimentKey(experimentID)
-			if not experimentKey:
-				# sample file has more experiments than we have in latest data load, so skip any
-				# that aren't in the database
-				continue
-			
-			for sample in samples.getSamples(experimentID):
-				sampleKey = sampleKey + 1
-
-				organism = cleanUpOrganism(getCharacteristic(sample, 'organism'))
-				isRelevant = False
-				if str(organism).lower().find('mouse') >= 0:
-					isRelevant = True
-				
-				row = [ sampleKey, experimentKey ]
-				
-				name = 'Been through the desert on a sample with no name (%d)' % sampleKey
-				if 'source' in sample:
-					if 'name' in sample['source']:
-						name = sample['source']['name']
-				row.append(name)
-				
-				row.append(-1)		# genotype key: not specified
-
-				row.append(organism)
-				if isRelevant:
-					row.append(getCharacteristic(sample, 'sex'))
-					age = getCharacteristic(sample, 'age')
-					row.append(age)
-
-					emapaKey, startStage = samples.getEmapa(getCharacteristic(sample, 'organism part'))
-					row.append(emapaKey)
-					row.append(startStage)
-				
-				else:
-					row.append(None)
-					row.append(None)
-					row.append(None)
-					row.append(None)
-
-				if isRelevant:
-					row.append("Yes")
-				else:
-					row.append("Non-mouse sample: no data stored")
-
-				rows.append(row)
-				
-		logger.debug("Hacked in %d sample rows" % len(self.finalResults))
-		return cols, rows
-
 	def addAgeMinMax(self):
 		# compute and add the ageMin and ageMax fields, adding them to the list of 'cols' and to each
 		# sample in 'rows'
@@ -271,6 +196,8 @@ class HTSampleGatherer (Gatherer.Gatherer):
 		self.finalColumns = cols
 		self.finalResults = rows
 		
+		self.convertFinalResultsToList()
+		self.cleanOrganisms()
 		self.addAgeMinMax()
 		self.applySequenceNumbers()
 		return
@@ -280,12 +207,12 @@ class HTSampleGatherer (Gatherer.Gatherer):
 cmds = [
 	'''select t._Experiment_key, r.term as relevancy, t._Sample_key, s.name, s._Genotype_key,
 			o.commonName as organism, x.term as sex, s.age, s._Emapa_key, g.stage as theiler_stage
-		from %s t, gxd_htsample s, voc_term r, mgi_organism o, voc_term x, gxd_theilerstage g
-		where t._Sample_key = s._Sample_key
-			and s._Organism_key = o._Organism_key
-			and s._Sex_key::integer = x._Term_key
-			and s._Stage_key = g._Stage_key
-			and s._Relevance_key = r._Term_key
+		from %s t
+		inner join gxd_htsample s on (t._Sample_key = s._Sample_key)
+		inner join voc_term r on (s._Relevance_key = r._Term_key)
+		inner join mgi_organism o on (s._Organism_key = o._Organism_key)
+		inner join voc_term x on (s._Sex_key = x._Term_key)
+		left outer join gxd_theilerstage g on (s._Stage_key = g._Stage_key)
 		order by t._Experiment_key, s.name''' % samples.getSampleTempTable()
 	]
 

@@ -33,17 +33,11 @@ def getExperimentTempTable():
                 _Experiment_key    int    not null
                 )''' % experimentTable
                 
-# TODO:
-#    cmd1 = '''insert into %s
-#        select e._Experiment_key
-#        from gxd_htexperiment e, voc_term t
-#        where e._CurationState_key = t._Term_key
-#            and t.term = '%s' ''' % (experimentTable, C.DONE)
-    
-    # replace with above command to switch to only-curated data
     cmd1 = '''insert into %s
-                select e._Experiment_key
-                from gxd_htexperiment e''' % experimentTable
+        select e._Experiment_key
+        from gxd_htexperiment e, voc_term t
+        where e._CurationState_key = t._Term_key
+            and t.term = '%s' ''' % (experimentTable, C.DONE)
     
     cmd2 = 'create unique index getm1 on %s (_Experiment_key)' % experimentTable
 
@@ -78,32 +72,3 @@ def getExperimentIDs(onlyPrimaryIDs = False):
                     %s''' % (getExperimentTempTable(), C.MGITYPE_EXPERIMENT, preferredClause)
                     
     return dbAgnostic.execute(cmd0)
-
-# TODO -- get rid of this hack, as it's only temporary until we have curated data
-allIDs = None
-def getExperimentKey(experimentID):
-    global allIDs
-    if allIDs == None:
-        cols, rows = getExperimentIDs()
-        keyCol = dbAgnostic.columnNumber(cols, '_Experiment_key')
-        idCol = dbAgnostic.columnNumber(cols, 'accID')
-        
-        allIDs = {}
-        for row in rows:
-            allIDs[row[idCol]] = row[keyCol]
-    
-    if experimentID in allIDs:
-        return allIDs[experimentID]
-    return None 
-    
-# TODO -- get rid of this hack, as it's only temporary until we have curated data
-def getStudyTypeHack(studyType, description):
-    if studyType:
-        return studyType
-
-	if description and description.find('baseline') >= 0:
-		studyType = 'baseline'
-	else:
-		studyType = 'differential'
-
-    return studyType

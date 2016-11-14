@@ -34,8 +34,6 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 		sourceKeyCol = Gatherer.columnNumber(cols, '_Source_key')
 		nameCol = Gatherer.columnNumber(cols, 'name')
 		descriptionCol = Gatherer.columnNumber(cols, 'description')
-		releaseDateCol = Gatherer.columnNumber(cols, 'release_date')
-		lastUpdateDateCol = Gatherer.columnNumber(cols, 'lastupdate_date')
 		studyTypeKeyCol = Gatherer.columnNumber(cols, '_StudyType_key')
 		methodKeyCol = Gatherer.columnNumber(cols, '_ExperimentType_key')
 
@@ -49,15 +47,11 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 			if experimentKey in primaryIDs:
 				primaryID = primaryIDs[experimentKey]
 				
-# TODO - revert this back to the real version, not the hacked one
-#			studyType = getTerm(row[studyTypeKeyCol])
-			studyType = experiments.getStudyTypeHack(getTerm(row[studyTypeKeyCol]), row[descriptionCol])
-			
+			studyType = getTerm(row[studyTypeKeyCol])
 			method = getTerm(row[methodKeyCol])
 
 			self.finalResults.append ([ experimentKey, primaryID, getTerm(row[sourceKeyCol]),
-				row[nameCol], row[descriptionCol], row[releaseDateCol], row[lastUpdateDateCol],
-				studyType, method, sampleCounts[experimentKey] ])
+				row[nameCol], row[descriptionCol], studyType, method, sampleCounts[experimentKey] ])
 
 		logger.debug ('Compiled %d data rows' % len(self.finalResults))
 		return
@@ -66,8 +60,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 
 cmds = [
 	# 0. basic experiment data
-	'''select e._Experiment_key, e._Source_key, e.name, e.description, e.release_date, e.lastupdate_date,
-			e._StudyType_key, e._ExperimentType_key
+	'''select e._Experiment_key, e._Source_key, e.name, e.description, e._StudyType_key, e._ExperimentType_key
 		from %s t, gxd_htexperiment e
 		where t._Experiment_key = e._Experiment_key''' % experiments.getExperimentTempTable()
 	]
@@ -75,8 +68,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Experiment_key', 'accID', 'source', 'name', 'description', 'release_date',
-	'lastupdate_date', 'study_type', 'method', 'sample_count'
+	'_Experiment_key', 'accID', 'source', 'name', 'description', 'study_type', 'method', 'sample_count'
 	]
 
 # prefix for the filename of the output file

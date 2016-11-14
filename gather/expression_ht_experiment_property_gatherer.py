@@ -28,11 +28,13 @@ class HTExperimentPropertyGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
+	# note that we only move PubMed IDs to the front-end, no other properties
 	'''select p._Property_key, t._Experiment_key, n.term as name, p.value, p.sequenceNum as initialSeqNum
 		from %s t, mgi_property p, voc_term n
 		where t._Experiment_key = p._Object_key
 			and p._MGIType_key = %d
 			and p._PropertyTerm_key = n._Term_key
+			and n.term = 'PubMed ID'
 		order by t._Experiment_key, p.sequenceNum, n.term, p.value''' % (
 				experiments.getExperimentTempTable(), C.MGITYPE_EXPERIMENT)
 	]

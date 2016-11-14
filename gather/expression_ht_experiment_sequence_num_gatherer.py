@@ -76,11 +76,7 @@ class HTExperimentSequenceNumGatherer (Gatherer.Gatherer):
 			experimentKey = row[keyCol]
 			names.append( (row[nameCol], experimentKey) )
 			descriptions.append( (row[descriptionCol], experimentKey) )
-			
-			# TODO - revert this back to the non-hacked version
-#			studyTypes.append( (row[studyTypeCol], row[nameCol], experimentKey) )
-			studyTypes.append( (experiments.getStudyTypeHack(row[studyTypeCol], row[descriptionCol]),
-				row[nameCol], experimentKey) )
+			studyTypes.append( (row[studyTypeCol], row[nameCol], experimentKey) )
 			
 		logger.debug('Collected %d names, descriptions, study types' % len(rows))
 
