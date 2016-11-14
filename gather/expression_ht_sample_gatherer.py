@@ -67,24 +67,24 @@ def compareSamples(a, b):
 
 	# relevances match at this point; only check displayed fields for sorting
 	if a[relevanceCol].lower() == 'yes':
-		if a[ageMinCol]:								# ageMin
-			if b[ageMinCol]:
+		if a[ageMinCol] != None:						# ageMin
+			if b[ageMinCol] != None:
 				byAgeMin = cmp(a[ageMinCol], b[ageMinCol])
 				if byAgeMin != 0:
 					return byAgeMin 
 			else:
 				return -1
-		elif b[ageMinCol]:
+		elif b[ageMinCol] != None:
 			return 1
 		
-		if a[ageMaxCol]:								# ageMax
-			if b[ageMaxCol]:
+		if a[ageMaxCol] != None:						# ageMax
+			if b[ageMaxCol] != None:
 				byAgeMax = cmp(a[ageMaxCol], b[ageMaxCol])
 				if byAgeMax != 0:
 					return byAgeMax
 			else:
 				return -1
-		elif b[ageMaxCol]:
+		elif b[ageMaxCol] != None:
 			return 1
 
 		if a[tsCol]:								# Theiler Stage
@@ -107,26 +107,26 @@ def compareSamples(a, b):
 		elif b[structureCol]:
 			return 1
 	
-		if a[organismCol]:							# organism, preferred organisms above, others alphabetical
-			if b[organismCol]:
-				if a[organismCol] in preferredOrganisms:
-					if b[organismCol] in preferredOrganisms:
-						byOrg = cmp(preferredOrganisms[a[organismCol]], preferredOrganisms[b[organismCol]])
-						if byOrg != 0:
-							return byOrg
-					else:
-						return -1
-				elif b[organismCol] in preferredOrganisms:
-					return 1
-				else:
-					# neither a nor b has a preferred organism, so sort them alphabetically
-					byOrg = cmp(a[organismCol].lower(), b[organismCol].lower())
+	if a[organismCol]:							# organism, preferred organisms above, others alphabetical
+		if b[organismCol]:
+			if a[organismCol] in preferredOrganisms:
+				if b[organismCol] in preferredOrganisms:
+					byOrg = cmp(preferredOrganisms[a[organismCol]], preferredOrganisms[b[organismCol]])
 					if byOrg != 0:
 						return byOrg
+				else:
+					return -1
+			elif b[organismCol] in preferredOrganisms:
+				return 1
 			else:
-				return -1
-		elif b[organismCol]:
-			return 1
+				# neither a nor b has a preferred organism, so sort them alphabetically
+				byOrg = cmp(a[organismCol].lower(), b[organismCol].lower())
+				if byOrg != 0:
+					return byOrg
+		else:
+			return -1
+	elif b[organismCol]:
+		return 1
 	
 	if a[nameCol]:								# sample name
 		if b[nameCol]:
