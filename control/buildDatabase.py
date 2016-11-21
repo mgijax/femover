@@ -722,7 +722,7 @@ def checkForFinishedGathering():
 				if not FULL_BUILD:
 					dropTables( [table] )
 				createTables (table)
-				scheduleConversion (table, inputFile)
+				#scheduleConversion (table, inputFile)
 
 				logger.debug (
 					'Scheduled conversion of %s for %s' \

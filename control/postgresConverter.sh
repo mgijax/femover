@@ -1,30 +1,9 @@
 #!/bin/sh
 
-# Purpose: to make any bcp file tweaks, in preparation for bulk load into
-#	Postgres:
-#		1. trim milliseconds from timestamps
-#		2. escape any instances of the characters we will use for tabs
-#			and newlines for Postgres
-#		3. convert tabs and newline characters to the one-character
-#			ones we will use for Postgres
-# Assumes: bcp file format is from FreeTDS (hh:mm:ss:uuu)
+# Purpose: currently a no-op; in the future, if processing of text files is
+#	needed before loading them into Postgres, this is where it would go
+#
+# this used to do some sybase-to-postgres conversions, but now it does nothing
 
-# 1. trim milliseconds
-# 2. escape embedded tabs and newlines, remove bad characters, convert FreeTDS
-#	record separators
-# 3. convert FreeTDS tabs to traditional tab characters
-
-#sed 's/\([0-9][0-9]:[0-9][0-9]:[0-9][0-9]\).[0-9][0-9][0-9]/\1/g' $1 | \
-#postgresTextCleaner.py | \
-#sed 's/	/\\	/g' | \
-#sed 's/$/\\/g' | \
-#sed 's/#=#\\$//g' | \
-#sed 's/&=&/	/g' > $1.new
-
-#cat "$1" | $MGI_PYTHONLIB/postgresTextCleaner.py > "$1".new
-
-# replace the original file
-#cp "$1" "$1".newmod
-
-# report back the file to be loaded
-echo "$1"
+# just report back the filename that should be loaded
+echo $1
