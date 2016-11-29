@@ -698,7 +698,7 @@ def checkForFinishedGathering():
 				scheduleLoad(table, inputFile)
 
 				logger.debug (
-					'Scheduled conversion of %s for %s' \
+					'Scheduled load of %s into %s' \
 						% (inputFile, table) )
 		i = i - 1
 
@@ -856,7 +856,7 @@ def checkForFinishedLoad():
 	# if the file conversion stage finished and there are no more
 	# unfinished loads, then the load stage has finished -- report it
 
-	if not BCPIN_IDS:
+	if (GATHER_STATUS == ENDED) and (not BCPIN_IDS):
 		BCPIN_STATUS = ENDED
 		logger.debug ('Last bulk load finished')
 		dbInfoTable.setInfo ('status', 'finished loading data')

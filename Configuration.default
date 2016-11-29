@@ -29,8 +29,8 @@ export FILE_DIR LOG_DIR DATA_DIR
 CONCURRENT_CREATE=3           # create statements
 CONCURRENT_DROP=1             # drop statements for target tables (should
                               #   now be 1 to prevent deadlocks with FK)
-CONCURRENT_GATHER=4	      # number of gatherers (extracting data from mgd)
-CONCURRENT_BCPIN=1            # bcp in statements
+CONCURRENT_GATHER=3	      # number of gatherers (extracting data from mgd)
+CONCURRENT_BCPIN=2            # bcp in statements
 CONCURRENT_CLUSTERED_INDEX=1  # create clustered index statements
 CONCURRENT_CLUSTER=1          # cluster data statements
 CONCURRENT_OPTIMIZE=1         # table optimization statements
