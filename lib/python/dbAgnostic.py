@@ -25,11 +25,6 @@ SQL_LOG_FILE = None		# file pointer; where to log SQL commands
 
 if SOURCE_DB == 'postgres':
 	import db
-	print "DB Configuration:"
-	print "\tHost:" + config.SOURCE_HOST
-	print "\tDB:" + config.SOURCE_DATABASE
-	print "\tUser:" + config.SOURCE_USER
-	print "\tPass:" + config.SOURCE_PASSWORD
 	DBM = dbManager.postgresManager (config.SOURCE_HOST, config.SOURCE_DATABASE, config.SOURCE_USER, config.SOURCE_PASSWORD)
 	db.set_sqlUser(config.SOURCE_USER)
 	db.set_sqlPassword(config.SOURCE_PASSWORD)
