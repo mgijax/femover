@@ -73,7 +73,7 @@ cmds = [
 		from mrk_marker mm,
 			mrk_label ml
 		where mm._Organism_key = 1
-			and mm._Marker_Status_key in (1,3)
+			and mm._Marker_Status_key = 1
 			and mm._Marker_key = ml._Marker_key
 		order by mm._Marker_key, ml.priority, ml.labelTypeName''',
 	]

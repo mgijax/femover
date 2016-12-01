@@ -9,7 +9,7 @@ Queries = [
 {	ID:"allMarkers",
 	DESCRIPTION:"Count of all mouse markers",
 	SQLSTATEMENT:"""
-	select count(*) from mrk_marker where _organism_key in (1) and _marker_status_key!=2 ;
+	select count(*) from mrk_marker where _organism_key in (1) and _marker_status_key = 1 ;
 	"""
 },
 ]
@@ -20,7 +20,7 @@ Queries.extend([
 	SQLSTATEMENT:"""
 	select count(distinct m._marker_key) 
 	from mrk_marker m join mrk_mcv_cache mcv on mcv._marker_key=m._marker_key 
-	where m._marker_status_key!=2 
+	where m._marker_status_key = 1
 		and mcv._mcvterm_key=7288449 
 	"""
 },
@@ -29,7 +29,7 @@ Queries.extend([
 	SQLSTATEMENT:"""
 	select count(distinct m._marker_key) 
 	from mrk_marker m join mrk_mcv_cache mcv on mcv._marker_key=m._marker_key 
-	where m._marker_status_key!=2 
+	where m._marker_status_key = 1
 		and mcv._mcvterm_key in (7288449,6238182,6238183) 
 	"""
 },
@@ -43,7 +43,7 @@ Queries.extend([
 	SQLSTATEMENT:"""
 	select count(*) 
 	from mrk_marker m 
-	where m._marker_status_key!=2 
+	where m._marker_status_key = 1
 		and _organism_key=1 
 		and m.chromosome in ('19')
 	"""
@@ -53,7 +53,7 @@ Queries.extend([
 	SQLSTATEMENT:"""
 	select count(*) 
 	from mrk_marker m 
-	where m._marker_status_key!=2 
+	where m._marker_status_key = 1
 		and _organism_key=1 
 		and m.chromosome in ('Y')
 	"""
@@ -63,7 +63,7 @@ Queries.extend([
 	SQLSTATEMENT:"""
 	select count(*) 
 	from mrk_marker m 
-	where m._marker_status_key!=2 
+	where m._marker_status_key = 1
 		and _organism_key=1 
 		and m.chromosome in ('19','Y')
 	"""

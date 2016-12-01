@@ -269,8 +269,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
 cmds = [
 	# 0. basic marker-to-marker relationship data (only for categories
-	# where both objects are markers, and only for markers which are
-	# current or interim)
+	# where both objects are markers, and only for markers which are current
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_1 as marker_key,
@@ -296,11 +295,11 @@ cmds = [
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_1 = m2._Marker_key
-			and m2._Marker_Status_key in (1,3)
+			and m2._Marker_Status_key = 1
 			and r._Object_key_2 = m._Marker_key
 			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
@@ -319,7 +318,7 @@ cmds = [
 
 	# 1. reversed marker-to-marker relationship data (only for categories
 	# with markers for both object types, and only including data for
-	# markers which are current or interim)
+	# markers which are current)
 	'''select r._Relationship_key,
 			c.name as relationship_category,
 			r._Object_key_2 as marker_key,
@@ -345,11 +344,11 @@ cmds = [
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_2 = m2._Marker_key
-			and m2._Marker_Status_key in (1,3)
+			and m2._Marker_Status_key = 1
 			and r._Object_key_1 = m._Marker_key
 			and r._RelationshipTerm_key = s._Object_key
 			and m._Marker_key = a._Object_key
-			and m._Marker_Status_key in (1,3)
+			and m._Marker_Status_key = 1
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1
@@ -367,8 +366,7 @@ cmds = [
 		order by r._Object_key_2''',
 
 	# 2. properties (for relationships involving two markers -- except
-	# interaction relationships -- where those two markers are either
-	# current or interim)
+	# interaction relationships -- where those two markers are either current )
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
@@ -386,14 +384,14 @@ cmds = [
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_1 = m1._Marker_key
-			and m1._Marker_Status_key in (1,3)
+			and m1._Marker_Status_key = 1
 			and r._Object_key_2 = m2._Marker_key
-			and m2._Marker_Status_key in (1,3)
+			and m2._Marker_Status_key = 1
                 order by p._Relationship_key, p.sequenceNum''',
 
 	# 3. properties for reverse relationships (for relationships involving
 	# two markers -- except interaction relationships -- where those two
-	# markers are either current or interim)
+	# markers are either current )
 	'''select p._Relationship_key,
                         t.term as name,
                         p.value,
@@ -411,9 +409,9 @@ cmds = [
 			and c._MGIType_key_1 = 2
 			and c._MGIType_key_2 = 2
 			and r._Object_key_1 = m1._Marker_key
-			and m1._Marker_Status_key in (1,3)
+			and m1._Marker_Status_key = 1
 			and r._Object_key_2 = m2._Marker_key
-			and m2._Marker_Status_key in (1,3)
+			and m2._Marker_Status_key = 1
                 order by p._Relationship_key, p.sequenceNum''',
 
 	# 4. relationship notes (if needed for display)

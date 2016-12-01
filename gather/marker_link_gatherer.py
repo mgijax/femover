@@ -503,7 +503,7 @@ cmds = [
         za.accID as zfin_entrezgene_id
     from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
         mrk_clustermember zcm, mrk_marker zm, acc_accession za
-    where m._Marker_Status_key in (1,3)
+    where m._Marker_Status_key = 1
         and m._Organism_key = %d
         and m._Marker_key = mcm._Marker_key
         and mcm._Cluster_key = mc._Cluster_key
@@ -526,7 +526,7 @@ cmds = [
         za.accID as geisha_entrezgene_id
     from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
         mrk_clustermember zcm, mrk_marker zm, acc_accession za
-    where m._Marker_Status_key in (1,3)
+    where m._Marker_Status_key = 1
         and m._Organism_key = %d
         and m._Marker_key = mcm._Marker_key
         and mcm._Cluster_key = mc._Cluster_key
@@ -549,7 +549,7 @@ cmds = [
         za.accID as xenbase_entrezgene_id
     from mrk_marker m, mrk_clustermember mcm, mrk_cluster mc,
         mrk_clustermember zcm, mrk_marker zm, acc_accession za
-    where m._Marker_Status_key in (1,3)
+    where m._Marker_Status_key = 1
         and m._Organism_key = %d
         and m._Marker_key = mcm._Marker_key
         and mcm._Cluster_key = mc._Cluster_key

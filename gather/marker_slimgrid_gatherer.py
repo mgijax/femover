@@ -968,7 +968,7 @@ cmds = [
 		where _Marker_key >= %d
 			and _Marker_key < %d
 			and _Organism_key = 1
-			and _Marker_Status_key in (1,3)
+			and _Marker_Status_key = 1
 	),
 	annotations as (
 		select va._Object_key, mhk._Term_key, vep.value as _Annot_key,
@@ -1005,7 +1005,7 @@ cmds = [
 		where _Marker_key >= %d
 			and _Marker_key < %d
 			and _Organism_key = 1
-			and _Marker_Status_key in (1,3)
+			and _Marker_Status_key = 1
 	),
 	annotations as (
 		select distinct gh._Term_key, k._Marker_key, k._DAG_key,
@@ -1034,7 +1034,7 @@ cmds = [
 		where _Marker_key >= %d
 			and _Marker_key < %d
 			and _Organism_key = 1
-			and _Marker_Status_key in (1,3)
+			and _Marker_Status_key = 1
 	),
 	annotations as (
 		select dc._Emapa_Header_key as _Term_key, gc._Marker_key,

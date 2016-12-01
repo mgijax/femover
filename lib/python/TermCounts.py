@@ -210,7 +210,7 @@ def _extraOmimQueries(vocabKey):
   			and mc._Cluster_key = mcm._Cluster_key
   			and mcm._Marker_key = m._Marker_key
   			and m._Organism_key = 1
-  			and m._Marker_Status_key in (1,3)''' % (HOMOLOGY,
+  			and m._Marker_Status_key = 1''' % (HOMOLOGY,
 				HYBRID),
 		]
 	return cmds 

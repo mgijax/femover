@@ -258,7 +258,7 @@ cmds = [
 		null as startcoordinate, null as endcoordinate, null as strand,
 		null as cmoffset, m.cytogeneticOffset, null as version, m._marker_type_key
             from mrk_marker m
-            where _Marker_Status_key in (1,3)
+            where _Marker_Status_key = 1
 		  and cytogeneticOffset is not null
 		  and not exists (select 1 from mrk_location_cache l
 			where m._Marker_key = l._Marker_key)''',

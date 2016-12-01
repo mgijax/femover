@@ -20,6 +20,8 @@ VOCAB = 13			# MGI type for vocabulary terms
 HYBRID = 13764519		# cluster source for hybrid homology
 HOMOLOGY = 9272150		# homology cluster type for MRK_Cluster
 OMIM_HUMAN_MARKER = 1006	# annot type for OMIM/human marker
+
+# this annot type is obsolete and should be removed asap
 OMIM_HUMAN_PHENO_MARKER = 1013	# annot type for OMIM/human phenotypic marker
 
 

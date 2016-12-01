@@ -1255,9 +1255,7 @@ definition=The occurrence of <A HREF="!FEWI_URL!glossary/synteny">synteny</A> of
 <A HREF="!FEWI_URL!glossary/gene">genes</A> in two different organisms. \
 Conserved synteny between mouse and human does not usually extend over entire \ 
 <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A>, with the exception of the \ 
-<A HREF="!FEWI_URL!glossary/x_chromosome">X chromosome</A>. See the \ 
-<A HREF="http://www.informatics.jax.org/reports/homologymap/mouse_human.shtml">Orthology Map</A> \
-for a graphical display of conserved synteny. 
+<A HREF="!FEWI_URL!glossary/x_chromosome">X chromosome</A>. 
 ]
 
 [ 
@@ -2432,8 +2430,7 @@ definition=The relationship of any two characters that have descended from a com
 <A HREF="!FEWI_URL!glossary/ancestor">ancestor</A>. This term can apply to a morphological structure, a \ 
 <A HREF="!FEWI_URL!glossary/chromosome">chromosome</A> or an individual \
 <A HREF="!FEWI_URL!glossary/gene">gene</A> or \
-<A HREF="!FEWI_URL!glossary/dna_segment">DNA segment</A>. See the \ 
-following <A HREF="http://genomebiology.com/2001/2/8/interactions/1002/figure/F1">Figure</A>. <BR>See also: <UL> <LI>\ 
+<A HREF="!FEWI_URL!glossary/dna_segment">DNA segment</A>. <BR>See also: <UL> <LI>\ 
 <A HREF="!FEWI_URL!glossary/homolog">Homolog</A></LI> <LI>\ 
 <A HREF="!FEWI_URL!glossary/orthology">Orthology</A></LI><LI>\
 <A HREF="!FEWI_URL!glossary/paralogy">Paralogy</A></LI></UL> 
@@ -2747,13 +2744,6 @@ definition=A <A HREF="!FEWI_URL!glossary/cross">cross</A> between two identicall
 key=intergenic 
 displayName=Intergenic 
 definition=Between <A HREF="!FEWI_URL!glossary/gene">genes</A>.
-]
-
-[ 
-key=interim 
-displayName=Interim 
-definition=In <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, a term appended to a \
-<A HREF="!FEWI_URL!glossary/gene_symbol">gene symbol</A> that is under review. 
 ]
 
 [ 
@@ -3588,8 +3578,7 @@ Examples include the <A HREF="!FEWI_URL!glossary/nucleus">nucleus</A>, \
 key=ortholog 
 displayName=Ortholog 
 definition=One of a set of homologous <A HREF="!FEWI_URL!glossary/gene">genes</A> that have diverged \
-from each other as a consequence of speciation. For example, the alpha globin genes of mouse and chick are orthologs. See the following \ 
-<A HREF="http://genomebiology.com/2001/2/8/interactions/1002/figure/F1" target="_blank">Figure</A> . <BR>See also:<UL><LI>\ 
+from each other as a consequence of speciation. For example, the alpha globin genes of mouse and chick are orthologs.  <BR>See also:<UL><LI>\ 
 <A HREF="!FEWI_URL!glossary/homolog">Homolog</A></LI><LI>\ 
 <A HREF="!FEWI_URL!glossary/paralog">Paralog</A></LI><LI>\
 <A HREF="!FEWI_URL!glossary/orthology">Orthology</A></LI></UL>
