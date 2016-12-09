@@ -32,7 +32,11 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+    'annotation_key' : 'create index %s on %s (annotation_key)',
+    'annotation_type' : 'create index %s on %s (annotation_type)',
+    'term_id' : 'create index %s on %s (term_id)',
+}
 
 # index used to cluster data in the table
 clusteredIndex = None
