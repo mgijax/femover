@@ -3,6 +3,7 @@
 .pydevproject
 *.pyc
 *.tmp
+*.swp
 Configuration
 control/config.py
 gather/config.py
