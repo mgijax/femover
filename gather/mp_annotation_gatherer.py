@@ -1413,7 +1413,7 @@ cmds = [
 		acc_accession ar,
 		acc_accession ag
 	where
-		va._AnnotType_key in (1005)
+		va._AnnotType_key in (1020)
 		and va._Term_key = vt._Term_key
 		and va._Qualifier_key = vq._Term_key
 		and va._Term_key = aa._Object_key
