@@ -40,7 +40,7 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
@@ -61,7 +61,6 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <g
 	-r : References
 	-v : Vocabularies
 	-x : eXpression (GXD Data plus GXD Literature Index)
-	-X : high-throughput expression data (from ArrayExpress)
 	-t : Test data
 	-G : run a single, specified gatherer (useful for testing)
     If no data sets are specified, the whole front-end database will be
@@ -206,11 +205,6 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'expression_specimen','expression_gellane', 'antibody',
 		'antigen', 'marker_to_antibody',
 	]
-HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
-	'expression_ht_experiment_note', 'expression_ht_experiment_property',
-	'expression_ht_experiment_variable', 'expression_ht_sample_note',
-	'expression_ht_experiment_sequence_num', 'expression_ht_sample',
-	]
 GLOSSARY = [ 'glossary',
 	]
 IMAGES = [ 'image', 'image_sequence_num', 'image_alleles',
@@ -269,7 +263,6 @@ FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
-	'-X' : HT_EXPRESSION,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
@@ -1377,7 +1370,7 @@ def logProfilingData():
 
 		fp.close()
 	except:
-		logger.debug('Could not write gatherer_profiles.txt')
+		logger.debug('Could not write gatherer_profilers.txt')
 	return
 
 def readTimings():

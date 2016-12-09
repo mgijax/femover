@@ -29,7 +29,6 @@ usage()
     echo "    -r : References"
     echo "    -v : Vocabularies"
     echo "    -x : eXpression (GXD Data plus GXD Literature Index)"
-    echo "    -X : high-throughput expression data (from ArrayExpress)"
     echo "    -G : run a single, specified gatherer (name specified afterward)"
     echo "  If no data set flags are specified, the whole front-end database"
     echo "  will be (re)generated.  Any existing contents of the database"
@@ -56,7 +55,7 @@ export TARGET_TYPE
 # handle the other (optional) parameters
 
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -n -o -p -s -t -r -v -x -X -G"
+POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -n -o -p -s -t -r -v -x -G"
 while [ $# -gt 0 ]; do
     found=0
     for flag in ${POSSIBLE_FLAGS}

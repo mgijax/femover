@@ -16,7 +16,7 @@ createStatement = '''CREATE TABLE %s  (
 	annotation_key		int		NOT NULL,
 	logical_db		text	NULL,
 	acc_id			text	NULL,
-	tooltip			text	NULL,
+	organism		text	NULL,
 	sequence_num		int		NOT NULL,
 	PRIMARY KEY(unique_key))''' % tableName
 
@@ -38,7 +38,6 @@ comments = {
 		'annotation_key' : 'identifies the annotation',
 		'logical_db' : 'entity assigning this ID',
 		'acc_id' : 'accession ID used to infer the annotation',
-		'tooltip' : 'tooltip to display when user hovers over this inferred-from ID',
 		'sequence_num' : 'used for ordering rows for a given annotation',
 		},
 	Table.INDEX : {

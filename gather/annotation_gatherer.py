@@ -20,7 +20,6 @@ from annotation import transform
 from annotation import constants as C
 from annotation import sequence_num
 from annotation.organism import OrganismFinder
-from annotation.tooltip import TooltipFinder
 
 ###--- Constants ---###
 
@@ -264,14 +263,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		Query all inferredfrom IDs for 
 			_annot_key from BATCH_TEMP_TABLE
 		
-		Return map { _annotevidence_key: [{ id, tooltip, logicaldb}] }
+		Return map { _annotevidence_key: [{ id, organism, logicaldb}] }
 		"""
 		
 		# initialize an organism finder for the inferredfrom ID data
 		organismFinder = OrganismFinder(annotBatchTableName=BATCH_TEMP_TABLE)
-		
-		# initialize a tooltip finder for the the other inferredfrom tooltips
-		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
 				
 		# These sequences will be mapped to MGI logicaldb for linking
 		mgi_sequence_logicaldbs = set(['Sequence DB','SWISS-PROT','NCBI Query'])
@@ -293,6 +289,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		evidenceKeyCol = dbAgnostic.columnNumber (cols, '_annotevidence_key')
 		accidCol = dbAgnostic.columnNumber (cols, 'accid')
+		ldbKeyCol = dbAgnostic.columnNumber (cols, '_logicaldb_key')
 		ldbCol = dbAgnostic.columnNumber (cols, 'logicaldb')
 		
 		
@@ -300,19 +297,17 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		for row in rows:
 			evidenceKey = row[evidenceKeyCol]
 			accid = row[accidCol]
+			ldbKey = row[ldbKeyCol]
 			ldb = row[ldbCol]
 			
 			# Some sequences will be mapped to MGI logicaldb for URL linking
 			if ldb in mgi_sequence_logicaldbs:
 				ldb = 'MGI'
 			
-			# prefer object-specific tooltip, fall back on general organism tooltip
-			tooltip = tooltipFinder.getTooltip(accid)
-			if not tooltip:
-				tooltip = organismFinder.getOrganism(accid)
+			organism = organismFinder.getOrganism(accid)
 			
 			inferredfromObj = {'id':accid, 
-							'tooltip': tooltip,
+							'organism': organism, 
 							'logicaldb': ldb
 			}
 			
@@ -590,13 +585,13 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				
 				logicalDb = idObj['logicaldb']
 				id = idObj['id']
-				tooltip = idObj['tooltip']
+				organism = idObj['organism']
 				
 				inferredIdRows.append((
 					newAnnotationKey,
 					logicalDb,
 					id,
-					tooltip,
+					organism,
 					seqnum
 				))
 				
@@ -971,9 +966,9 @@ files = [
 
 	('annotation_inferred_from_id',
 		[ 'annotation_key', 'logical_db', 'acc_id',
-			'tooltip', 'sequence_num' ],
+			'organism', 'sequence_num' ],
 		[ Gatherer.AUTO, 'annotation_key', 'logical_db', 'acc_id',
-			'tooltip', 'sequence_num' ]
+			'organism', 'sequence_num' ]
 	),
 
 	('annotation_reference',

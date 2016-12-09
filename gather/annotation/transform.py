@@ -95,9 +95,6 @@ def groupAnnotations(cols, rows,
                             propKey
                             )
                 
-            elif annotType == C.OMIM_MARKER_TYPE_NAME:
-                uniqueFactor = (objectKey, qualifier, termKey, evidenceCode, inferredfrom)
-                
             elif annotType == C.MP_GENOTYPE_TYPE:
                 uniqueFactor = (objectKey, termKey, qualifier)
                 
