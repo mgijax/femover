@@ -34,8 +34,10 @@ def getPassword (passwordFile, username):
 	return lines[0].strip() 
 
 ###--- directories and paths ---###
-
-INSTALL_DIR = os.environ['FEMOVER']
+if os.environ.has_key('GO_GRAPH_PATH'):
+	INSTALL_DIR = os.environ['FEMOVER']
+else:
+	INSTALL_DIR = ".."
 
 GATHER_DIR = os.path.join(INSTALL_DIR, 'gather/')
 POPULATE_DIR = os.path.join(INSTALL_DIR, 'populate/')
@@ -52,24 +54,58 @@ if os.environ.has_key('GO_GRAPH_PATH'):
 else:
 	GO_GRAPH_PATH = '/data/GOgraphs'
 
-FULL_TEXT_LINKS = os.environ['FULL_TEXT_LINKS_PATH']
+if os.environ.has_key('FULL_TEXT_LINKS_PATH'):
+	FULL_TEXT_LINKS = os.environ['FULL_TEXT_LINKS_PATH']
+else:
+	FULL_TEXT_LINKS_PATH = "fullTextLinks.txt"
 
-INCIDENTAL_MUTS_FILE = os.environ['INCIDENTAL_MUTS_FILE']
+if os.environ.has_key('INCIDENTAL_MUTS_FILE'):
+	INCIDENTAL_MUTS_FILE = os.environ['INCIDENTAL_MUTS_FILE']
+else:
+	INCIDENTAL_MUTS_FILE="/bhmgiapp01data/loads/mgi/incidental_muts/curator_INC.txt"
 
-GLOSSARY_FILE = os.environ['GLOSSARY_PATH']
+if os.environ.has_key('GLOSSARY_PATH'):
+	GLOSSARY_FILE = os.environ['GLOSSARY_PATH']
+else:
+	GLOSSARY_PATH="glossary.rcd"
 
 ###--- general ---###
+if os.environ.has_key('CHUNK_SIZE'):
+	CHUNK_SIZE = int(os.environ['CHUNK_SIZE'])
+else:
+	CHUNK_SIZE = 100000
 
-CHUNK_SIZE = int(os.environ['CHUNK_SIZE'])
-IMSR_COUNT_TIMEOUT = int(os.environ['IMSR_COUNT_TIMEOUT'])
-IMSR_COUNT_URL = os.environ['IMSR_COUNT_URL']
-BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])
-VISTA_POINT_URL = os.environ['VISTA_POINT_URL']
-GENE_TREE_URL = os.environ['GENE_TREE_URL']
+if os.environ.has_key('IMSR_COUNT_TIMEOUT'):
+	IMSR_COUNT_TIMEOUT = int(os.environ['IMSR_COUNT_TIMEOUT'])
+else:
+	IMSR_COUNT_TIMEOUT = 300
+
+if os.environ.has_key('IMSR_COUNT_URL'):
+	IMSR_COUNT_URL = os.environ['IMSR_COUNT_URL']
+else:
+	IMSR_COUNT_URL = "http://www.findmice.org/report/mgiCounts.txt"
+
+if os.environ.has_key('BUILDS_IN_SYNC'):
+	BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])
+else:
+	BUILDS_IN_SYNC = 1
+
+if os.environ.has_key('VISTA_POINT_URL'):
+	VISTA_POINT_URL = os.environ['VISTA_POINT_URL']
+else:
+	VISTA_POINT_URL = "http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
+
+if os.environ.has_key('GENE_TREE_URL'):
+	GENE_TREE_URL = os.environ['GENE_TREE_URL']
+else:
+	GENE_TREE_URL = "http://useast.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=@@@@"
 
 ###--- source database connection (read-only) ---###
 
-SOURCE_TYPE = os.environ['SOURCE_TYPE'].lower()
+if os.environ.has_key('SOURCE_TYPE'):
+	SOURCE_TYPE = os.environ['SOURCE_TYPE'].lower()
+else:
+	SOURCE_TYPE = 'postgres'
 
 if SOURCE_TYPE == 'postgres':
 	prefix = 'PG'
@@ -83,8 +119,7 @@ else:
 SOURCE_HOST = os.environ['%s_DBSERVER' % prefix]
 SOURCE_DATABASE = os.environ['%s_DBNAME' % prefix]
 SOURCE_USER = os.environ['%s_DBUSER' % prefix]
-SOURCE_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefixPW],
-		SOURCE_USER)
+SOURCE_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefixPW], SOURCE_USER)
 
 ###--- target database connection (read-write) ---###
 
