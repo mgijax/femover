@@ -47,6 +47,9 @@ def getTerm(termKey):
 
 	global termCache
 
+	if termKey == None:
+		return None
+	
 	if not termCache.has_key(termKey):
 		cmd = '''select term
 			from voc_term
