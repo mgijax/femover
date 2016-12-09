@@ -33,7 +33,6 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-    'annotation_key' : 'create index %s on %s (annotation_key)',
     'annotation_type' : 'create index %s on %s (annotation_type)',
     'term_id' : 'create index %s on %s (term_id)',
 }
