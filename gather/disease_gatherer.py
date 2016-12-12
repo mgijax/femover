@@ -476,7 +476,7 @@ cmds = [
 		o.headerFootnote,
 		o.genotypeFootnote,
 		t.isConditional
-	from mrk_omim_cache o,
+	from mrk_do_cache o,
 		gxd_allelegenotype g, 
 		all_allele a,
 		gxd_genotype t
