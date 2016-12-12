@@ -47,6 +47,7 @@ clusteredIndex = ('clusteredIndex', 'create index %s on %s (marker_key, assay_ke
 
 indexes = {
 	'assay_key' : 'create index %s on %s (assay_key)',
+	'assay_type' : 'create index %s on %s (assay_type)',
 	'marker_key' : 'create index %s on %s (marker_key)',
 	'structure_key' : 'create index %s on %s (structure_key)',
 	'reference_key' : 'create index %s on %s (reference_key)',
