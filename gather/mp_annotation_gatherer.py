@@ -205,7 +205,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			allele_key=row[0]
 			genotype_key=row[1]
 			genotype_id=row[2]
-			# annot type can be either mp or omim
+			# annot type can be either mp or do
 			annot_type=row[3]
 			seq = GenotypeClassifier.getSequenceNum (allele_key,genotype_key)
 			disease_only = 0
@@ -232,7 +232,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				dGenotypeRows.append([count,allele_key,genotype_key,genotype_seq])
 		return dGenotypeRows
 
-	# keeps track of genotypes that have omim annotations but no mp annotations
+	# keeps track of genotypes that have do annotations but no mp annotations
 	# will return true until a 0 is passed in
 	def registerGenotypeDiseaseOnly(self,genotype_key,has_disease):
 		if genotype_key not in self.genotypeDiseaseOnly:
