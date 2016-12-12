@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	allele_key		int		not null,
 	disease		text	null,
 	disease_seq			int	null,
-	omim_id		text	null,
+	disease_id		text	null,
 	is_header			int	null,
 	PRIMARY KEY(diseasetable_disease_key))''' % tableName
 
@@ -38,9 +38,9 @@ comments = {
 	Table.COLUMN : {
 		'diseasetable_disease_key' : 'unique key identifying this row',
 		'allele_key' : 'key for the corresponding allele',
-		'disease' : 'an OMIM term',
+		'disease' : 'an Disease term',
 		'disease_seq' : 'alpha sort',
-		'omim_id' : 'an OMIM term ID',
+		'disease_id' : 'an Disease term ID',
 		'is_header' : '1 or 0',
 		},
 	}

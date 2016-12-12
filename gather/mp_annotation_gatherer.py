@@ -852,8 +852,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
 		jnumCol = Gatherer.columnNumber (cols, 'jnum')
 		seqCol = Gatherer.columnNumber (cols, 'sequencenum')
-		annotTypeKeyCol = Gatherer.columnNumber (cols,
-			'_AnnotType_key')
+		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 
 		logger.debug("looping through OMIM annotation rows")
 		systemDict = {}
@@ -1204,7 +1203,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		dGenotypeRows = self.buildDiseaseGenotypes()
 		logger.debug("done building disease genotypes")
 
-		diseaseCols = ['diseasetable_disease_key','allele_key','disease','disease_seq','omim_id','is_header']
+		diseaseCols = ['diseasetable_disease_key','allele_key','disease','disease_seq','disease_id','is_header']
 		diseaseRows = []
 		dCellCols = ['diseasetable_disease_cell_key','diseasetable_disease_key','call',
 			'genotype_id','cell_seq','genotype_seq']
@@ -1516,7 +1515,7 @@ files = [
 		['diseasetable_genotype_key','allele_key','genotype_key','genotype_seq'],
 		'diseasetable_to_genotype'),
 	('diseasetable_disease',
-		['diseasetable_disease_key','allele_key','disease','disease_seq','omim_id','is_header'],
+		['diseasetable_disease_key','allele_key','disease','disease_seq','disease_id','is_header'],
 		'diseasetable_disease'),
 	('diseasetable_disease_cell',
 		['diseasetable_disease_cell_key','diseasetable_disease_key','call',
