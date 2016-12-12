@@ -38,6 +38,7 @@ indexes = {
 	'mi_key' : 'create index %s on %s (mi_key)',
 	'marker_key' : 'create index %s on %s (marker_key)',
 	'interacting_marker_key' : 'create index %s on %s (interacting_marker_key)',
+	'is_reversed' : 'create index %s on %s (is_reversed)',
 	}
 
 # column name -> (related table, column in related table)
