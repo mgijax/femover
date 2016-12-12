@@ -210,7 +210,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 			seq = GenotypeClassifier.getSequenceNum (allele_key,genotype_key)
 			disease_only = 0
 			# add the list of genotypes with disease models
-			if annot_type=='omim':
+			if annot_type=='do':
 				self.diseaseGenotypeMap.setdefault(allele_key,[]).append(genotype_key)
 				#disease_only = 1
 			#disease_only = self.registerGenotypeDiseaseOnly(genotype_key,disease_only)
@@ -1383,9 +1383,9 @@ cmds = [
 	where exists (select 1 from voc_annot va where va._object_key=ag._genotype_key and va._annottype_key=1002)
 		and gid._object_key=ag._genotype_key
 	UNION
-	select ag._allele_key,ag._genotype_key,gid.genotype_id,'omim'
+	select ag._allele_key,ag._genotype_key,gid.genotype_id,'do'
 	from gxd_allelegenotype ag,genotype_ids gid
-	where exists (select 1 from mrk_omim_cache o where o._genotype_key=ag._genotype_key)
+	where exists (select 1 from mrk_do_cache o where o._genotype_key=ag._genotype_key)
 		and exists (select 1 from voc_annot va where va._object_key=ag._genotype_key and va._annottype_key=1002)
 		and gid._object_key=ag._genotype_key
 	''',
