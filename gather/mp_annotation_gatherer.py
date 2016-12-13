@@ -854,7 +854,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		seqCol = Gatherer.columnNumber (cols, 'sequencenum')
 		annotTypeKeyCol = Gatherer.columnNumber (cols, '_AnnotType_key')
 
-		logger.debug("looping through OMIM annotation rows")
+		logger.debug("looping through DO annotation rows")
 		systemDict = {}
 		systemSet = set([])
 		disease_set = set([])
@@ -918,13 +918,13 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		annotTypeKeyCol = Gatherer.columnNumber (cols,
 			'_AnnotType_key')
 
-		logger.debug("looping through OMIM annotation rows")
+		logger.debug("looping through DO annotation rows")
 		systemDict = {}
 		systemSet = set([])
 		disease_count = 0
 		disease_cell_count = 0
 		disease_row_map = {}
-		# loop through the OMIM annotations for the second time to gather all the data cells
+		# loop through the DO annotations for the second time to gather all the data cells
 		for row in rows:
 			# base values that we'll need later
 			annotKey = row[annotCol]
@@ -1389,7 +1389,7 @@ cmds = [
 		and exists (select 1 from voc_annot va where va._object_key=ag._genotype_key and va._annottype_key=1002)
 		and gid._object_key=ag._genotype_key
 	''',
-	# 7. get OMIM  annotations made to genotypes
+	# 7. get DO annotations made to genotypes
 	'''
 	select va._Annot_key,
 		va._object_key genotype_key,
