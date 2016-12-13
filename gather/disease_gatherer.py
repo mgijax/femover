@@ -470,7 +470,6 @@ cmds = [
 		o.termID,
 		o._Refs_key,
 		o.jnumID,
-		o.omimCategory1,
 		o.omimCategory3,
 		o.header,
 		o.headerFootnote,
@@ -483,7 +482,6 @@ cmds = [
 	where a._Allele_key = g._Allele_key
 		and g._Genotype_key = o._Genotype_key
 		and a._Marker_key = o._Marker_key
-		and o.omimCategory1 > -1
 		and g._Genotype_key = t._Genotype_key
 	order by a._Allele_key, o.omimCategory3, o.term, g._Genotype_key'''
 	]
