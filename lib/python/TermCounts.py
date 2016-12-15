@@ -49,7 +49,7 @@ initializedMarkerSets = False
 
 MP = 5		# vocab key for 'Mammalian Phenotype'
 PRO = 77	# vocab key for 'Protein Ontology'
-OMIM = 44	# vocab key for 'OMIM'
+DO = 125	# vocab key for 'DO'
 
 ###--- Private Functions ---###
 
@@ -170,10 +170,10 @@ def _vocabDefaultQueries(vocabKey):
 		]
 	return cmds
 
-def _extraOmimQueries(vocabKey):
+def _extraDoQueries(vocabKey):
 	cmds = [
 		# mouse markers with alleles which are directly annotated
-		# to OMIM terms (no restriction on qualifier)
+		# to DO terms (no restriction on qualifier)
 ## US25 : We no longer include markers in the count due to directly annotated
 ## alleles. (Oct 2014)
 ##		'''select distinct va._Term_key,
@@ -188,7 +188,7 @@ def _extraOmimQueries(vocabKey):
 
 		# mouse markers which are associated with human markers via
 		# a homology relationship, where those human markers are
-		# associated with OMIM diseases
+		# associated with DO diseases
 		'''select m._Marker_key,
   			a._Term_key
   		from voc_annot a,
@@ -198,7 +198,7 @@ def _extraOmimQueries(vocabKey):
   			mrk_cluster mc,
   			mrk_clustermember mcm,
   			mrk_marker m
-  		where a._AnnotType_key = 1006
+  		where a._AnnotType_key = 1022
   			and a._Qualifier_key = q._Term_key
   			and q.term is null
   			and a._Object_key = h._Marker_key
@@ -218,7 +218,7 @@ def _extraOmimQueries(vocabKey):
 def _rollupQueries(vocabKey):
 	# queries to extract marker/term relationships that were computed
 	# using rollup rules (in the rollupload product) and stored in the
-	# database.  Currently valid for MP and OMIM.
+	# database.  Currently valid for MP and DO.
 
 	cmds = [
 		# annotations rolled up to the terms themselves
@@ -313,8 +313,8 @@ def _initializeVocab (termKey):
 	if vocabKey == MP:
 		cmds = _rollupQueries(vocabKey)
 
-	elif vocabKey == OMIM:
-		cmds = _rollupQueries(vocabKey) + _extraOmimQueries(vocabKey)
+	elif vocabKey == DO:
+		cmds = _rollupQueries(vocabKey) + _extraDoQueries(vocabKey)
 
 	elif vocabKey == PRO:
 		cmds = _proteinOntologyQueries(vocabKey)

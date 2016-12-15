@@ -617,7 +617,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		TERM_CACHE = {}
 
 		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
-
+		print termToRefs
 		for row in rows:
 			termKey = row[keyCol]
 
@@ -1190,14 +1190,14 @@ cmds = [
 		and a.preferred = 1 and a.private = 0 and a._MGIType_key = 13)
 	inner join acc_logicaldb d on (a._LogicalDB_key = d._LogicalDB_key)
 	left outer join hpo on (t._Term_key = hpo.termKey1)
-	where t._Vocab_key = 44
+	where t._Vocab_key = 125
 	group by 1,2,3,4''',
 
 # query prior to including HPO count:
 #	'''select t._Term_key, t.term, a.accID, d.name
 #	from voc_term t, acc_accession a, acc_logicaldb d
 #	where t._Term_key = a._Object_key
-#		and t._Vocab_key = 44
+#		and t._Vocab_key = 125
 #		and a.preferred = 1
 #		and a.private = 0
 #		and a._MGIType_key = 13
@@ -1209,7 +1209,7 @@ cmds = [
 	from mgi_synonym s, voc_term t
 	where s._MGIType_key = 13
 		and s._Object_key = t._Term_key
-		and t._Vocab_key = 44
+		and t._Vocab_key = 125 
 	order by t._Term_key''',
 
 	# 2. all disease annotations to human markers
