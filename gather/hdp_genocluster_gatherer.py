@@ -36,7 +36,7 @@ def getBackgroundSensitivityTableName():
 
 	BG_TABLE = 'has_background_note'
 
-	# identify the set of unique genotypes with MP/OMIM annotations and
+	# identify the set of unique genotypes with MP/DO annotations and
 	# assume that none have background-sensitivity notes
 
 	cmd1 = '''select distinct a._Object_key as _Genotype_key,

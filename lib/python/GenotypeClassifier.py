@@ -36,7 +36,7 @@ def _specialSort (a, b):
 	# a and b are both (allele key, sequence num, genotype key)
 	# sorting rules:
 	# 1. sort by allele key
-	# 2. genotypes with MP or OMIM annotations come before those that
+	# 2. genotypes with MP or DO annotations come before those that
 	#	don't
 	# 3. prioritize by designation (order from TYPES)
 	# 4. sort by sequence num
@@ -58,7 +58,7 @@ def _specialSort (a, b):
 			return 1
 
 	# at this point, we have the same allele in both, and either both
-	# have or both don't have MP/OMIM annotations.  sort based on
+	# have or both don't have MP/DO annotations.  sort based on
 	# genotype type, preference in global TYPES.
 
 	typeA = TYPES.index(GENOTYPE_TYPES[genotypeA])
@@ -142,13 +142,13 @@ def _initialize():
 
 	diseaseQuery = '''select distinct _Object_key
 		from voc_annot
-		where _AnnotType_key = 1005'''
+		where _AnnotType_key = 1020'''
 
 	phenoQuery = '''select distinct _Object_key
 		from voc_annot
 		where _AnnotType_key = 1002'''
 
-	queries = [ (diseaseQuery, DISEASE_MODEL, 'OMIM'),
+	queries = [ (diseaseQuery, DISEASE_MODEL, 'DO'),
 			(phenoQuery, HAS_PHENO_DATA, 'MP') ]
 
 	for (query, d, vocab) in queries:
@@ -162,7 +162,7 @@ def _initialize():
 			len(d), vocab) )
 
 	# get the sequence number for each genotype for each allele, and build
-	# the abbreviations at the same time.  note that those with MP or OMIM
+	# the abbreviations at the same time.  note that those with MP or DO
 	# annotations must come before those that don't.
 
 	SEQUENCE_NUM = {}
@@ -194,7 +194,7 @@ def _initialize():
 		tuples.append ( ( allele, seqNum, genotype ) )
 
 	tuples.sort (_specialSort)
-	logger.debug ('Prioritized genotypes with MP/OMIM annotations')
+	logger.debug ('Prioritized genotypes with MP/DO annotations')
 
 	for (allele, seqNum, genotype) in tuples:
 		abbrev = GENOTYPE_TYPES[genotype]

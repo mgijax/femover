@@ -9,7 +9,7 @@ import gc
 ###--- Globals ---###
 
 MP_MARKER = 1015	# VOC_AnnotType : MP/Marker (Derived)
-OMIM_MARKER = 1016	# VOC_AnnotType : OMIM/Marker (Derived)
+DO_MARKER = 1023	# VOC_AnnotType : DO/Marker (Derived)
 NOT_QUALIFIER = 1614157	# VOC_Term NOT
 ANNOT_EVIDENCE = 25	# MGI Type for annotation evidence
 VOCAB_TERM = 13		# MGI Type for vocabulary terms
@@ -205,7 +205,7 @@ cmds = [
 			where m._Marker_key = n._Marker_key)
 		order by _Marker_key, sequenceNum''',
 
-	# 2. searchable notes for rolled-up OMIM and MP annotations
+	# 2. searchable notes for rolled-up DO and MP annotations
 	'''with rolled_up_annotations as (
 		select distinct va._Annot_key,
 			va._Term_key,
@@ -241,7 +241,7 @@ cmds = [
 		and n._Note_key = c._Note_key
 		and t._MGIType_key = %d
 	order by r._Marker_key, n._Note_key, c.sequenceNum''' % (MP_MARKER,
-		OMIM_MARKER, NOT_QUALIFIER, ANNOT_EVIDENCE)
+		DO_MARKER, NOT_QUALIFIER, ANNOT_EVIDENCE)
 	]
 
 # order of fields (from the query results) to be written to the

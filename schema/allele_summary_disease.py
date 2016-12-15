@@ -17,7 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	allele_disease_key		int		not null,
 	allele_key		int		not null,
 	disease		text		null,
-	omim_id		text		null,
+	do_id		text		null,
 	PRIMARY KEY(allele_disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -37,7 +37,7 @@ comments = {
 		'allele_disease_key' : 'unique key identifying this row',
 		'allele_key' : 'key for the allele',
 		'disease' : 'Non-Not disease for allele',
-		'omim_id' : 'ID from OMIM',
+		'do_id' : 'ID from DO',
 		},
 	}
 

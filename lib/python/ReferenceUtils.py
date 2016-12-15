@@ -67,7 +67,7 @@ def _populateDiseaseRelevantReferenceCache():
 		[ MarkerUtils.ec, MarkerUtils.mi ], 'pairs_ec_mi')
 
 	# query returns all references for disease annotations that have been
-	# made to genotypes (annotation type 1005) which can be tied to a
+	# made to genotypes (annotation type 1020) which can be tied to a
 	# marker though the allele/marker relationships in the temp table.
 
 	cmdMain = '''select distinct ma._Marker_key, e._Refs_key
@@ -75,7 +75,7 @@ def _populateDiseaseRelevantReferenceCache():
 			voc_evidence e,
 			gxd_allelegenotype gag,
 			%s ma
-		where a._AnnotType_key = 1005
+		where a._AnnotType_key = 1020
 			and a._Annot_key = e._Annot_key
 			and a._Object_key = gag._Genotype_key
 			and gag._Allele_key = ma._Allele_key''' % \

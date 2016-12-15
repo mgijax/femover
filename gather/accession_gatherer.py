@@ -54,7 +54,7 @@ MARKER_CLUSTER_KEY = 39	# ACC_MGIType
 ORTHOLOGY_TYPE = 18
 HOMOLOGENE_CLASS = 'HomoloGene Class'	# display type
 
-OMIM = 15		# ACC_LogicalDB
+DO = 191		# ACC_LogicalDB
 ENTREZ_GENE = 55
 HGNC = 64
 
@@ -112,8 +112,8 @@ TYPES = {}
 def displayTypeNum (displayType):
 	global TYPES
 
-	# alter the text to appear for OMIM vocab terms
-	if displayType == 'OMIM':
+	# alter the text to appear for DO vocab terms
+	if displayType == 'DO':
 		displayType = 'Disease'
 
 	if not TYPES.has_key(displayType):
@@ -275,10 +275,10 @@ class AccessionGatherer:
 				and m._Organism_key != 1
 				and a._LogicalDB_key = %d''' % HGNC
 
-# only use HGNC for now, because of OMIM/EG/HomoloGene overlaps (they do not
+# only use HGNC for now, because of DO/EG/HomoloGene overlaps (they do not
 # use prefixes)
 #				and a._LogicalDB_key in (%d, %d, %d)''' % (
-#					OMIM, ENTREZ_GENE, HGNC)
+#					DO, ENTREZ_GENE, HGNC)
 
 		cols, rows = dbAgnostic.execute(cmd)
 
@@ -1125,7 +1125,7 @@ class AccessionGatherer:
 
 	def buildGenotypeDescriptionCache(self):
 		# build a cache of description strings for genotypes (only
-		# includes genotypes with MP/OMIM annotations
+		# includes genotypes with MP/DO annotations
 
 		cmd = '''select distinct g._Genotype_key, s.strain, m.symbol
 			from gxd_genotype g

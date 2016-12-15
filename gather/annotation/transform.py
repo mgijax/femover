@@ -24,8 +24,8 @@ def transformAnnotationType(cols, rows):
         if annotType == 'Mammalian Phenotype/Marker (Derived)':
             row[annotTypeCol] = 'Mammalian Phenotype/Marker'
             
-        elif annotType == 'OMIM/Marker (Derived)':
-            row[annotTypeCol] = 'OMIM/Marker'
+        elif annotType == 'DO/Marker (Derived)':
+            row[annotTypeCol] = 'DO/Marker'
             
 
 def removeGONoDataAnnotations(cols, rows):

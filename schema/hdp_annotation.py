@@ -18,7 +18,7 @@ tableName = 'hdp_annotation'
 #
 # hdp (human disease portal)
 #	. defines human or mouse markers that are annotated
-#	  to a term (OMIM id (human), OMIM id (mouse), MP id)
+#	  to a term (DO id (human), DO id (mouse), MP id)
 #
 #	. The human/mouse marker may/may not contain a genotype 
 #

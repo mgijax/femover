@@ -18,7 +18,7 @@ tableName = 'hdp_genocluster_annotation'
 #
 # hdp (human disease portal)
 #
-# This table represents the cluster -> annotations (OMIM/MP) relationships
+# This table represents the cluster -> annotations (DO/MP) relationships
 # of the compressed genotype clusters for hdp-specific
 # super-simple genotypes
 #

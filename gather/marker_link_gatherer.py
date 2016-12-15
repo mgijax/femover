@@ -12,13 +12,13 @@ import MarkerUtils
 
 # logical db
 MGI = 1                
-OMIM = 15
+DO = 191
 ENTREZ_GENE = 55
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
 
 # preferred ordering for human/mouse links, by logical database
-LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
+LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, DO, ENSEMBL_GENE_MODEL ]
 
 # organism 
 MOUSE = 1            
@@ -433,7 +433,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 # 1. links for human genes:
 #    a. HGNC (HGNC ID)
 #    b. EntrezGene (EntrezGene ID)
-#    c. OMIM (OMIM gene ID)
+#    c. DO (DO gene ID)
 # 2. links for mouse genes:
 #    a. MGI marker detail (MGI ID)
 #    b. EntrezGene (EntrezGene ID)
@@ -454,7 +454,7 @@ cmds = [
         and a._LogicalDB_key in (%d, %d, %d)
         and a.private = 0
         and a.preferred = 1''' % (
-            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
+            HUMAN, MARKER, HGNC, ENTREZ_GENE, DO),
 
     # 1. mouse markers' IDs
     '''select a._LogicalDB_key,
