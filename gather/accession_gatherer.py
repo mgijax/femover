@@ -1131,7 +1131,7 @@ class AccessionGatherer:
 			from gxd_genotype g
 			inner join voc_annot a on (
 				g._Genotype_key = a._Object_key
-				and a._AnnotType_key in (1002, 1005) )
+				and a._AnnotType_key in (1002, 1020) )
 			inner join prb_strain s on (
 				g._Strain_key = s._Strain_key)
 			left outer join gxd_allelegenotype gag on (
@@ -1205,7 +1205,7 @@ class AccessionGatherer:
 	    		a._Object_key as _Genotype_key
 		from voc_annot a,
 			acc_accession aa
-		where a._AnnotType_key in (1002, 1005)
+		where a._AnnotType_key in (1002, 1020)
 		and a._Object_key = aa._Object_key
 		and aa._MGIType_key = %d
 		and aa._LogicalDB_key = %d

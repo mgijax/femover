@@ -11,7 +11,7 @@ import logger
 
 ###--- Constants ---###
 MP_ANNOTTYPE_KEY=1002
-OMIM_ANNOTTYPE_KEY=1005
+DO_ANNOTTYPE_KEY=1020
 NORMAL_PHENOTYPE="no abnormal phenotype observed"
 NOT_ANALYZED="not analyzed"
 
@@ -50,7 +50,7 @@ def createTempTables():
 	gmc = 'genotype_marker_counts'
 
 	# 1. build temp table gpc, mapping from a genotype key to its count
-	# of allele pairs.  Includes only genotypes with OMIM/MP annotations
+	# of allele pairs.  Includes only genotypes with DO/MP annotations
 	# and to terms other than 'no phenotypic analysis'.
 
 	q1 = '''select p._Genotype_key, count(1) as pair_count
@@ -61,7 +61,7 @@ def createTempTables():
 			and v._Term_key != %d
 			and v._Object_key = p._Genotype_key)
 		group by p._Genotype_key''' % (gpc, MP_ANNOTTYPE_KEY,
-			OMIM_ANNOTTYPE_KEY, NO_PHENOTYPIC_ANALYSIS)
+			DO_ANNOTTYPE_KEY, NO_PHENOTYPIC_ANALYSIS)
 	dbAgnostic.execute(q1)
 
 	q1index = 'create index q1 on %s(_Genotype_key)' % gpc
@@ -259,23 +259,23 @@ class AlleleSummaryGatherer (Gatherer.MultiFileGatherer):
 		return cols,rows
 
 	def buildSummaryDiseases(self):
-		cols=["allele_disease_key","allele_key","disease","omim_id"]
+		cols=["allele_disease_key","allele_key","disease","do_id"]
 		rows=[]
 		uniqueKey=0
 		uniqueRows=set([])
 		for r in self.results[1][1]:
 			allKey=r[0]
 			disease=r[1]
-			omimId=r[2]
+			doId=r[2]
 
 			# test uniqueness
-			uniqueId=(allKey,omimId)
+			uniqueId=(allKey,doId)
 			if uniqueId in uniqueRows:
 				continue
 			uniqueRows.add(uniqueId)
 
 			uniqueKey+=1
-			rows.append((uniqueKey,allKey,disease,omimId))
+			rows.append((uniqueKey,allKey,disease,doId))
 		return cols,rows
 
 	def buildSummaryGenotypes(self):
@@ -334,7 +334,7 @@ cmds = [
 	'''
 	select tag._allele_key,
 		vt.term,
-		aa.accID omimId,
+		aa.accID doId,
 		vt._term_key
 	from %s tag,
 		VOC_Annot va,
@@ -350,7 +350,7 @@ cmds = [
 		AND aa._MGIType_key = 13 
 		AND aa.preferred = 1
 		AND aa.private = 0
-	'''% (TEMP_TABLE, OMIM_ANNOTTYPE_KEY),
+	'''% (TEMP_TABLE, DO_ANNOTTYPE_KEY),
 	# 2. allele summary genotypes
 	'''
 	select _allele_key,_genotype_key
@@ -380,7 +380,7 @@ files = [
 		['allele_system_key','allele_key','system'],
 		'allele_summary_system'),
 	('allele_summary_disease',
-		['allele_disease_key','allele_key','disease','omim_id'],
+		['allele_disease_key','allele_key','disease','do_id'],
 		'allele_summary_disease'),
 	('allele_summary_genotype',
 		['allele_genotype_key','allele_key','genotype_key'],

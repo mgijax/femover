@@ -13,9 +13,9 @@ import DiseasePortalUtils
 
 ###--- Constants ---###
 
-OMIM_GENOTYPE = 1005		# VOC_AnnotType for 'OMIM/Genotype'
-OMIM_HUMAN_MARKER = 1006	# VOC_AnnotType for 'OMIM/Human Marker'
-DISEASE_MARKER = 1016		# VOC_AnnotType for 'OMIM/Marker (Derived)'
+DO_GENOTYPE = 1020		# VOC_AnnotType for 'DO/Genotype'
+DO_HUMAN_MARKER = 1022	# VOC_AnnotType for 'DO/Human Marker'
+DISEASE_MARKER = 1023		# VOC_AnnotType for 'DO/Marker (Derived)'
 
 MUTATION_INVOLVES = 1003	# MGI_Relationship_Category for m.i.
 EXPRESSES_COMPONENT = 1004	# MGI_Relationship_Category for e.c.
@@ -1220,9 +1220,9 @@ cmds = [
 		and mm._Marker_Status_key = 1
 		and va._Qualifier_key != %d
 		and mm._Organism_key = mo._Organism_key''' % \
-			(OMIM_HUMAN_MARKER, NOT_QUALIFIER),
+			(DO_HUMAN_MARKER, NOT_QUALIFIER),
 
-	# 3. pull in the pre-computed OMIM annotations, where we have rolled
+	# 3. pull in the pre-computed DO annotations, where we have rolled
 	# up genotype-level annotations to their respective markers.  We must
 	# exclude 'not' annotations for this query.
 	'''select distinct m._Marker_key, a._Term_key, mo.commonName
@@ -1296,7 +1296,7 @@ cmds = [
 		and a._Marker_key = m._Marker_key
 		and m._Organism_key = mo._Organism_key
 	order by gag._Marker_key''' % \
-		OMIM_GENOTYPE,
+		DO_GENOTYPE,
 
 	# 6. pull out all disease models (including complex, not conditionals)
 	# so we can find those that we don't already have tied to a disease
@@ -1319,13 +1319,13 @@ cmds = [
 		and a._Marker_key = m._Marker_key
 		and m._Organism_key = mo._Organism_key
 	order by gag._Marker_key''' % \
-		OMIM_GENOTYPE,
+		DO_GENOTYPE,
 
-	# 7. pull out all OMIM term keys used in annotations
+	# 7. pull out all DO term keys used in annotations
 	'''select distinct _Term_key
 	from voc_annot
-	where _AnnotType_key in (%d, %d)''' % (OMIM_GENOTYPE,
-		OMIM_HUMAN_MARKER),
+	where _AnnotType_key in (%d, %d)''' % (DO_GENOTYPE,
+		DO_HUMAN_MARKER),
 
 	# 8. like query 5, but brings in disease models for markers associated
 	# with alleles via 'expresses component' and 'mutation involves'
@@ -1345,7 +1345,7 @@ cmds = [
 		and a.isWildType = 0
 		and a._Allele_key = r._Object_key_1
 		and r._Category_key = %d
-	order by r._Object_key_2''' % (OMIM_GENOTYPE, 
+	order by r._Object_key_2''' % (DO_GENOTYPE, 
 		EXPRESSES_COMPONENT),	
 	]
 
