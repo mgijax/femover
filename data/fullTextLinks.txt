@@ -1,3 +1,4 @@
+J:72465 ftp://ftp.informatics.jax.org/pub/Reference_texts/J72465.pdf
 J:78801 http://www.informatics.jax.org/wksilvers/
 J:78986 ftp://ftp.informatics.jax.org/pub/Reference_texts/J78986.pdf
 J:79041 ftp://ftp.informatics.jax.org/pub/Reference_texts/J79041.pdf
@@ -6,9 +7,11 @@ J:79858 ftp://ftp.informatics.jax.org/pub/Reference_texts/J79858.pdf
 J:81272 ftp://ftp.informatics.jax.org/pub/Reference_texts/J81272.pdf
 J:81344 ftp://ftp.informatics.jax.org/pub/Reference_texts/J81344.pdf
 J:81354 ftp://ftp.informatics.jax.org/pub/Reference_texts/J81354.pdf
+J:81516 ftp://ftp.informatics.jax.org/pub/Reference_texts/J81516.pdf
 J:82451 ftp://ftp.informatics.jax.org/pub/Reference_texts/J82451.pdf
 J:82799 ftp://ftp.informatics.jax.org/pub/Reference_texts/J82799.pdf
 J:82800 ftp://ftp.informatics.jax.org/pub/Reference_texts/J82800.pdf
+J:82812 ftp://ftp.informatics.jax.org/pub/Reference_texts/J82812.pdf
 J:83048 ftp://ftp.informatics.jax.org/pub/Reference_texts/J83048.pdf
 J:83049 ftp://ftp.informatics.jax.org/pub/Reference_texts/J83049.pdf
 J:83105 ftp://ftp.informatics.jax.org/pub/Reference_texts/J83105.pdf
@@ -17,6 +20,7 @@ J:83427 ftp://ftp.informatics.jax.org/pub/Reference_texts/J83427.pdf
 J:83757 ftp://ftp.informatics.jax.org/pub/Reference_texts/J83757.pdf
 J:84609 ftp://ftp.informatics.jax.org/pub/Reference_texts/J84609.pdf
 J:84746 ftp://ftp.informatics.jax.org/pub/Reference_texts/J84746.pdf
+J:85239 ftp://ftp.informatics.jax.org/pub/Reference_texts/J85239.pdf
 J:85479 ftp://ftp.informatics.jax.org/pub/Reference_texts/J85479.pdf
 J:85852 ftp://ftp.informatics.jax.org/pub/Reference_texts/J85852.pdf
 J:86035 ftp://ftp.informatics.jax.org/pub/Reference_texts/J86035.pdf
@@ -70,6 +74,7 @@ J:109437 ftp://ftp.informatics.jax.org/pub/Reference_texts/J109437.pdf
 J:109438 ftp://ftp.informatics.jax.org/pub/Reference_texts/J109438.pdf
 J:110189 ftp://ftp.informatics.jax.org/pub/Reference_texts/J110189.pdf
 J:112552 ftp://ftp.informatics.jax.org/pub/Reference_texts/J112552.pdf
+J:112553 ftp://ftp.informatics.jax.org/pub/Reference_texts/J112553.pdf
 J:117339 ftp://ftp.informatics.jax.org/pub/Reference_texts/J117339.pdf
 J:117340 ftp://ftp.informatics.jax.org/pub/Reference_texts/J117340.pdf
 J:117543 ftp://ftp.informatics.jax.org/pub/Reference_texts/J117543.pdf
@@ -83,6 +88,7 @@ J:121997 ftp://ftp.informatics.jax.org/pub/Reference_texts/J121997.pdf
 J:122540 ftp://ftp.informatics.jax.org/pub/Reference_texts/J122540.pdf
 J:123049 ftp://ftp.informatics.jax.org/pub/Reference_texts/J123049.pdf
 J:123125 ftp://ftp.informatics.jax.org/pub/Reference_texts/J123125.pdf
+J:123265 ftp://ftp.informatics.jax.org/pub/Reference_texts/J123265.pdf
 J:123336 ftp://ftp.informatics.jax.org/pub/Reference_texts/J123336.pdf
 J:124363 ftp://ftp.informatics.jax.org/pub/Reference_texts/J124363.pdf
 J:124644 ftp://ftp.informatics.jax.org/pub/Reference_texts/J124644.pdf
