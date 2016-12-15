@@ -617,7 +617,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		TERM_CACHE = {}
 
 		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
-		print termToRefs
+		
 		for row in rows:
 			termKey = row[keyCol]
 
