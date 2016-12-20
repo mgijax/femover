@@ -24,6 +24,8 @@ CHEBI_LDB_KEY = 127            # logical database key for ChEBI
 
 GO_ANNOTTYPE = 'GO/Marker'
 MP_GENOTYPE_TYPE = 'Mammalian Phenotype/Genotype'
+OMIM_MARKER_TYPE_NAME = 'OMIM/Marker'
+DO_MARKER_TYPE_NAME = 'DO/Marker'
 
 TERM_SORT_TEMP_TABLE = "tmp_term_sort"
 VOCAB_SORT_TEMP_TABLE = "tmp_vocab_sort"

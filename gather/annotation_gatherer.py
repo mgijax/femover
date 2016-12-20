@@ -878,7 +878,7 @@ cmds = [
 	temp %s
 	from voc_annot va
 	order by va._annottype_key, va._object_key, va._term_key
-	limit 100000 		-- limit must match chunkSize
+	limit 250000 		-- limit must match chunkSize
 	offset %%d -- %%d
 	''' % BATCH_TEMP_TABLE,
 	'''
@@ -1015,7 +1015,7 @@ gatherer = AnnotationGatherer (files, cmds)
 gatherer.setupChunking(
 	minKeyQuery = '''select 0''',
 	maxKeyQuery = '''select count(*) from voc_annot''',
-	chunkSize = 100000				
+	chunkSize = 250000				
 	)
 
 ###--- main program ---###
