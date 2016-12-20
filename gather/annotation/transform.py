@@ -27,6 +27,8 @@ def transformAnnotationType(cols, rows):
         elif annotType == 'DO/Marker (Derived)':
             row[annotTypeCol] = 'DO/Marker'
             
+        elif annotType == 'OMIM/Marker (Derived)':
+            row[annotTypeCol] = 'OMIM/Marker'
 
 def removeGONoDataAnnotations(cols, rows):
     """

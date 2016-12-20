@@ -116,6 +116,9 @@ def displayTypeNum (displayType):
 	if displayType == 'DO':
 		displayType = 'Disease'
 
+	if displayType == 'OMIM':
+		displayType = 'Disease'
+
 	if not TYPES.has_key(displayType):
 		TYPES[displayType] = len(TYPES) + 1
 
