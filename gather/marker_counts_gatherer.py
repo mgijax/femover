@@ -249,10 +249,30 @@ cmds = [
 	''',
 
 	# 1. count of references for each marker (no longer de-emphasizing
-	# curatorial refs, load refs, etc.)
-	'''select r._Marker_key, count(r._Refs_key) as numRef
-	from mrk_reference r
-	group by r._Marker_key''',
+	# curatorial refs, load refs, etc.), and including allele references
+	# (both traditional marker-allele relationships and those for
+	# mutation involves and expresses component relationships).
+	'''with marker_alleles as (
+			select _Marker_key, _Allele_key 
+			from all_allele
+			where isWildType = 0
+			union
+			select r._Object_key_2 as _Marker_key, r._Object_key_1 as _Allele_key
+			from mgi_relationship r
+			where r._Category_key in (%d, %d)
+			),
+		marker_refs as (
+			select r._Marker_key, r._Refs_key
+			from mrk_reference r
+			union
+			select t._Marker_key, r._Refs_key
+			from marker_alleles t, mgi_reference_assoc r
+			where t._Allele_key = r._Object_key
+			and r._MGIType_key = 11)
+		select _Marker_key, count(distinct _Refs_key) as numRef
+		from marker_refs
+		where _Marker_key is not null
+		group by _Marker_key''' % (MUTATION_INVOLVES, EXPRESSES_COMPONENT),
 
 	# 2. count of sequences for each marker
 	'''select _Marker_key, count(distinct _Sequence_key) as numSeq
