@@ -196,7 +196,7 @@ def _initDiseaseHeaders():
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 	termKey = dbAgnostic.columnNumber (cols, '_descendent_key')
-	header = dbAgnostic.columnNumber (cols, 'synonym')
+	header = dbAgnostic.columnNumber (cols, 'term')
 	
 	for row in rows:
 		# map term_keys to their headers
