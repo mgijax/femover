@@ -195,7 +195,7 @@ def _initDiseaseHeaders():
 		and sm._Set_key=1048 '''
 
 	(cols, rows) = dbAgnostic.execute(cmd)
-	termKey = dbAgnostic.columnNumber (cols, '_Object_key')
+	termKey = dbAgnostic.columnNumber (cols, '_descendent_key')
 	header = dbAgnostic.columnNumber (cols, 'synonym')
 	
 	for row in rows:
