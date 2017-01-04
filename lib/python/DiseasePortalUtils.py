@@ -187,9 +187,19 @@ def _initDiseaseHeaders():
 	if diseaseHeadersLoaded:
 		return
 
-	cmd = '''select distinct s._Object_key, s.synonym
-		from MGI_Synonym s
-		where s._SynonymType_key = 1031'''
+	cmd = '''select dc._descendent_key, vt.term
+		from DAG_Closure dc, DAG_Node dn, VOC_Term vt
+		where dn._Node_key in (
+  			select _Node_key
+			from DAG_node
+			where _Object_key in (
+				select _Object_key 
+				from MGI_SetMember 
+				where _Set_key = 1048
+			)
+		)
+		and dc._ancestor_key = dn._Node_key
+		and dn._Object_key = vt._term_key'''
 
 	(cols, rows) = dbAgnostic.execute(cmd)
 	termKey = dbAgnostic.columnNumber (cols, '_Object_key')

@@ -6,6 +6,11 @@ import Gatherer
 import PrivateRefSet
 import logger
 
+###--- Globals ---###
+
+MUTATION_INVOLVES = 1003
+EXPRESSES_COMPONENT = 1004
+
 ###--- Classes ---###
 
 class MarkerToReferenceGatherer (Gatherer.Gatherer):
@@ -137,14 +142,33 @@ class MarkerToReferenceGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	# ordered (by year and numeric jnum) list of refs for each marker, so
-	# we can find the earliest and latest
-	'''select distinct mr._Marker_key, r.year, mr.jnum, mr._Refs_key
-	from mrk_reference mr, mrk_marker m, bib_refs r
-	where mr._Marker_key = m._Marker_key
-		and mr._Refs_key = r._Refs_key
-		and m._Marker_Status_key = 1
-	order by mr._Marker_key, r.year, mr.jnum''',
+	# ordered (by year and numeric jnum) list of references for each marker, so
+	# we can find the earliest and latest.  Also includes allele references
+	# (both traditional marker-allele relationships and those for
+	# mutation involves and expresses component relationships).
+	'''with marker_alleles as (
+			select _Marker_key, _Allele_key 
+			from all_allele
+			where isWildType = 0
+			union
+			select r._Object_key_2 as _Marker_key, r._Object_key_1 as _Allele_key
+			from mgi_relationship r
+			where r._Category_key in (%d, %d)
+			),
+		marker_refs as (
+			select r._Marker_key, r._Refs_key
+			from mrk_reference r
+			union
+			select t._Marker_key, r._Refs_key
+			from marker_alleles t, mgi_reference_assoc r
+			where t._Allele_key = r._Object_key
+			and r._MGIType_key = 11)
+		select m._Marker_key, r.year, c.numericPart as jnum, r._Refs_key
+		from marker_refs m, bib_refs r, bib_citation_cache c
+		where m._Refs_key = r._Refs_key
+		and m._Refs_key = c._Refs_key
+		and m._Marker_key is not null
+		order by m._Marker_key, r.year, c.numericPart''' % (MUTATION_INVOLVES, EXPRESSES_COMPONENT),
 
 	# get the set of all references with data for strain-specific markers
 	'''select m._Object_key as _Marker_key, m._Refs_key
