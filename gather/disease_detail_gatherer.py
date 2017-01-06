@@ -1181,7 +1181,7 @@ cmds = [
 	'''with hpo as (
 		select a._Object_key as termKey1, a._Term_key as termKey2
 		from voc_annot a
-		where a._AnnotType_key = 1018
+		where a._AnnotType_key = 1024
 	)
 	select t._Term_key, t.term, a.accID, d.name,
 		count(distinct hpo.termKey2) as hpo_count
