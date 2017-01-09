@@ -20,8 +20,8 @@ tableName = 'hdp_term_to_reference'
 #
 # A row in this table represents:
 #	a term -> reference association between:
-#		a) mouse marker/OMIM (1005)
-#		b) mouse marker/alle/OMIM (1012)
+#		a) mouse marker/DO (1020)
+#		b) mouse marker/alle/DO (1012)
 #
 # See gather for more information
 #
@@ -52,7 +52,7 @@ comments = {
 	Table.TABLE : 'central table for the term/reference petal, containing one row for each term/reference',
 	Table.COLUMN : {
 		'unique_key' : 'unique key for this record',
-		'term_key' : 'omim/disease term that is annotated to a mouse marker',
+		'term_key' : 'do/disease term that is annotated to a mouse marker',
 		'reference_key' : 'reference annotated to the term',
 		},
 	}

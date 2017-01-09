@@ -54,7 +54,7 @@ MARKER_CLUSTER_KEY = 39	# ACC_MGIType
 ORTHOLOGY_TYPE = 18
 HOMOLOGENE_CLASS = 'HomoloGene Class'	# display type
 
-OMIM = 15		# ACC_LogicalDB
+DO = 191		# ACC_LogicalDB
 ENTREZ_GENE = 55
 HGNC = 64
 
@@ -112,7 +112,10 @@ TYPES = {}
 def displayTypeNum (displayType):
 	global TYPES
 
-	# alter the text to appear for OMIM vocab terms
+	# alter the text to appear for DO vocab terms
+	if displayType == 'DO':
+		displayType = 'Disease'
+
 	if displayType == 'OMIM':
 		displayType = 'Disease'
 
@@ -275,10 +278,10 @@ class AccessionGatherer:
 				and m._Organism_key != 1
 				and a._LogicalDB_key = %d''' % HGNC
 
-# only use HGNC for now, because of OMIM/EG/HomoloGene overlaps (they do not
+# only use HGNC for now, because of DO/EG/HomoloGene overlaps (they do not
 # use prefixes)
 #				and a._LogicalDB_key in (%d, %d, %d)''' % (
-#					OMIM, ENTREZ_GENE, HGNC)
+#					DO, ENTREZ_GENE, HGNC)
 
 		cols, rows = dbAgnostic.execute(cmd)
 
@@ -1125,13 +1128,13 @@ class AccessionGatherer:
 
 	def buildGenotypeDescriptionCache(self):
 		# build a cache of description strings for genotypes (only
-		# includes genotypes with MP/OMIM annotations
+		# includes genotypes with MP/DO annotations
 
 		cmd = '''select distinct g._Genotype_key, s.strain, m.symbol
 			from gxd_genotype g
 			inner join voc_annot a on (
 				g._Genotype_key = a._Object_key
-				and a._AnnotType_key in (1002, 1005) )
+				and a._AnnotType_key in (1002, 1020) )
 			inner join prb_strain s on (
 				g._Strain_key = s._Strain_key)
 			left outer join gxd_allelegenotype gag on (
@@ -1205,7 +1208,7 @@ class AccessionGatherer:
 	    		a._Object_key as _Genotype_key
 		from voc_annot a,
 			acc_accession aa
-		where a._AnnotType_key in (1002, 1005)
+		where a._AnnotType_key in (1002, 1020)
 		and a._Object_key = aa._Object_key
 		and aa._MGIType_key = %d
 		and aa._LogicalDB_key = %d

@@ -6,8 +6,8 @@
 
 MARKER_MGITYPE = 2        # MGI Type for markers
 GENOTYPE_MGITYPE = 12        # MGI Type for genotypes
-OMIM_GENOTYPE_TYPE = 1005    # VOC_AnnotType : OMIM/Genotype
-OMIM_MARKER_TYPE = 1016    # VOC_AnnotType : OMIM/Marker (Derived)
+DO_GENOTYPE_TYPE = 1020    # VOC_AnnotType : DO/Genotype
+DO_MARKER_TYPE = 1023    # VOC_AnnotType : DO/Marker (Derived)
 MP_MARKER_TYPE = 1015    # VOC_AnnotType : MP/Marker (Derived)
 GT_ROSA_KEY = 37270        # marker Gt(ROSA)26Sor
 DRIVER_NOTE_TYPE = 1034    # MGI_NoteType Driver
@@ -24,6 +24,8 @@ CHEBI_LDB_KEY = 127            # logical database key for ChEBI
 
 GO_ANNOTTYPE = 'GO/Marker'
 MP_GENOTYPE_TYPE = 'Mammalian Phenotype/Genotype'
+OMIM_MARKER_TYPE_NAME = 'OMIM/Marker'
+DO_MARKER_TYPE_NAME = 'DO/Marker'
 
 TERM_SORT_TEMP_TABLE = "tmp_term_sort"
 VOCAB_SORT_TEMP_TABLE = "tmp_vocab_sort"

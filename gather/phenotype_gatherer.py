@@ -983,7 +983,7 @@ cmds = [
 	from gxd_allelegenotype gag,
 		voc_annot va
 	where va._Object_key = gag._Genotype_key
-		and va._AnnotType_key in (1002, 1005)''',
+		and va._AnnotType_key in (1002, 1020)''',
 
 	# 2. notes and refs for MP annotation evidence records:
 	#	1008 : General

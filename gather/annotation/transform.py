@@ -24,9 +24,11 @@ def transformAnnotationType(cols, rows):
         if annotType == 'Mammalian Phenotype/Marker (Derived)':
             row[annotTypeCol] = 'Mammalian Phenotype/Marker'
             
+        elif annotType == 'DO/Marker (Derived)':
+            row[annotTypeCol] = 'DO/Marker'
+            
         elif annotType == 'OMIM/Marker (Derived)':
             row[annotTypeCol] = 'OMIM/Marker'
-            
 
 def removeGONoDataAnnotations(cols, rows):
     """
@@ -97,7 +99,9 @@ def groupAnnotations(cols, rows,
                 
             elif annotType == C.MP_GENOTYPE_TYPE:
                 uniqueFactor = (objectKey, termKey, qualifier)
-                
+            
+            elif annotType == C.OMIM_MARKER_TYPE_NAME or annotType == C.DO_MARKER_TYPE_NAME:
+                uniqueFactor = (objectKey, qualifier, termKey, evidenceCode, inferredfrom)    
             
             groupMap.setdefault(uniqueFactor, []).append(row)
             

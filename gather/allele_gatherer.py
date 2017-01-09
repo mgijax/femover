@@ -319,7 +319,7 @@ cmds = [
 	# 6. alleles which have disease model genotypes
 	'''select distinct gag._Allele_key
 	from gxd_allelegenotype gag, voc_annot va
-	where va._AnnotType_key = 1005
+	where va._AnnotType_key = 1020
 		and va._Object_key = gag._Genotype_key''',
 
 	# 7. assume all alleles have an MGI ID

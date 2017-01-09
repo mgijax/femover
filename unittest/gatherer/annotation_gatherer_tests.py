@@ -26,22 +26,22 @@ class TransformationsTestCase(unittest.TestCase):
 	expected = 'Mammalian Phenotype/Marker'
 	self.assertEquals(expected, rows[0][0])
 
-    def test_transformAnnotTypeOMIMDerived(self):
+    def test_transformAnnotTypeDODerived(self):
 	cols = ['annottype']
-	rows = [['OMIM/Marker (Derived)']]
+	rows = [['DO/Marker (Derived)']]
 
 	transform.transformAnnotationType(cols, rows)
 
-	expected = 'OMIM/Marker'
+	expected = 'DO/Marker'
 	self.assertEquals(expected, rows[0][0])
 
     def test_transformAnnotTypeNotDerived(self):
 	cols = ['annottype']
-	rows = [['OMIM/Marker']]
+	rows = [['DO/Marker']]
 
 	transform.transformAnnotationType(cols, rows)
 
-	expected = 'OMIM/Marker'
+	expected = 'DO/Marker'
 	self.assertEquals(expected, rows[0][0])
 
 
@@ -88,14 +88,14 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
     def test_simple_one_group(self):
         rows = [self.makeRow(evidenceKey=1,
-                             annotType='OMIM/Genotype')]
+                             annotType='DO/Genotype')]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
         self.assertEquals(1, len(groupMap))
         values = groupMap.values()[0]
         self.assertEquals(1, len(values))
-        self.assertEquals('OMIM/Genotype', values[0][1])
+        self.assertEquals('DO/Genotype', values[0][1])
         
     
     

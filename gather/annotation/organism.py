@@ -40,7 +40,7 @@ class OrganismFinder:
                 and aa._LogicalDB_key != %d
                 and abt._annot_key = va._annot_key
                 and %%s
-        ''' % ( annotBatchTableName, C.OMIM_MARKER_TYPE, C.MP_MARKER_TYPE, \
+        ''' % ( annotBatchTableName, C.DO_MARKER_TYPE, C.MP_MARKER_TYPE, \
                 C.CHEBI_LDB_KEY)
         
         self.cacheYeast()

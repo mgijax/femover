@@ -335,15 +335,14 @@ def getAnnotations(filterClause = ''):
 	return cols, rows
 
 def getReferencesByDiseaseKey():
-	# get a dictionary mapping from an OMIM disease term key to a list of 
+	# get a dictionary mapping from an DO disease term key to a list of 
 	# reference keys, excluding annotations with NOT qualifiers.  For
 	# disease/allele annotations, we only include the references if the
 	# term is also associated with a genocluster.
 
 	# collect a dictionary of term keys that were rolled up to markers
 
-	annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % \
-		DO_MARKER)
+	annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % DO_MARKER)
 
 	termCol = dbAgnostic.columnNumber(annotCols, '_Term_key')
 

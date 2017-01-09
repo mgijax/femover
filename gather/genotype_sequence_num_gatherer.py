@@ -212,14 +212,14 @@ cmds = [
 
 	#
 	# sql (3)
-	# get list of genotypes that contain MP/OMIM annotations ONLY
+	# get list of genotypes that contain MP/DO annotations ONLY
 	#
 	'''
 	select distinct g._Genotype_key, t.term, g.isConditional, p._Allele_key_1, p._Allele_key_2
 	from GXD_Genotype g, GXD_AllelePair p, VOC_Term t
 	where g._Genotype_key = p._Genotype_key
 	and p._PairState_key = t._Term_key
-	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1005)
+	and exists (select 1 from VOC_Annot v where v._AnnotType_key in (1002, 1020)
 		and g._Genotype_key = v._Object_key)
 	order by term desc, isConditional
 	''',

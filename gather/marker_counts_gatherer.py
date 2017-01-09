@@ -24,9 +24,9 @@ GOFilter.removeAllND()
 
 ###--- Globals ---###
 
-OMIM_GENOTYPE = 1005		# from VOC_AnnotType
-OMIM_MARKER = 1016		# from VOC_AnnotType
-OMIM_HUMAN_MARKER = 1006	# from VOC_AnnotType
+DO_GENOTYPE = 1020		# from VOC_AnnotType
+DO_MARKER = 1023		# from VOC_AnnotType
+DO_HUMAN_MARKER = 1022	# from VOC_AnnotType
 NOT_QUALIFIER = 1614157		# from VOC_Term
 TERM_MGITYPE = 13		# from ACC_MGIType
 DRIVER_NOTE = 1034		# from MGI_NoteType
@@ -474,7 +474,7 @@ cmds = [
 		group by _Marker_key''' % (PHENOTYPE_IMAGE, PHENOTYPE_IMAGE,
 			EXPRESSES_COMPONENT),
 
-	# 18. get a count of distinct OMIM (disease) annotations which have
+	# 18. get a count of distinct DO (disease) annotations which have
 	# been associated with mouse markers via a set of rollup rules in
 	# the production database.
 	# Exclude: annotations with a NOT qualifier
@@ -483,7 +483,7 @@ cmds = [
 		from voc_annot va
 		where va._AnnotType_key = %d
 		and va._Qualifier_key != %d
-		group by va._Object_key''' % (OMIM_MARKER, NOT_QUALIFIER),
+		group by va._Object_key''' % (DO_MARKER, NOT_QUALIFIER),
 
 	# 19. count of alleles for the marker which are associated with
 	# human diseases.
@@ -494,7 +494,7 @@ cmds = [
 			voc_term vt
 		where a._Allele_key = gag._Allele_key
 			and gag._Genotype_key = va._Object_key
-			and va._AnnotType_key = 1005
+			and va._AnnotType_key = 1020
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key
 		union
@@ -510,14 +510,14 @@ cmds = [
 			and c._Category_key = r._Category_key
 			and a._Allele_key = r._Object_key_1
 			and gag._Genotype_key = va._Object_key
-			and va._AnnotType_key = 1005
+			and va._AnnotType_key = 1020
 			and a.isWildType = 0
 			and va._Qualifier_key = vt._Term_key)
 		select _Marker_key, count(distinct _Allele_key) as alleleCount
 		from tempTable
 		group by 1''',
 
-	# 20. OMIM annotations to human markers
+	# 20. DO annotations to human markers
 	'''select mm._Marker_key, count(q._Term_key) as diseaseCount
 	from voc_annot va,
 		mrk_marker mm,
@@ -526,7 +526,7 @@ cmds = [
 		and va._Object_key = mm._Marker_key
 		and va._Qualifier_key = q._Term_key
 		and q.term is null
-	group by mm._Marker_key''' % OMIM_HUMAN_MARKER,
+	group by mm._Marker_key''' % DO_HUMAN_MARKER,
 	
 	# 21. marker acc ids 
 	'''
