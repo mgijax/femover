@@ -233,7 +233,7 @@ class AlleleSummaryGatherer (Gatherer.MultiFileGatherer):
 				allSysMap.setdefault(allKey,[])
 				continue
 
-			# map headers to allele keys
+			# map abnormal headers to allele keys (We don't get here if isNorm == 1)
 			allSysMap.setdefault(allKey,[]).append(header)
 
 		uniqueKey=0
