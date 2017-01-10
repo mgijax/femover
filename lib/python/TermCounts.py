@@ -217,7 +217,7 @@ def _extraDoQueries(vocabKey):
 #				HYBRID),
      '''
      select m._Marker_key,
-         dc._ancestorobject_key
+         dc._ancestorobject_key as _Term_key
       from mgd.voc_annot a,
          mgd.voc_term q,
          mgd.mrk_marker h,
