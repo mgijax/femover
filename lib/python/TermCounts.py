@@ -17,6 +17,7 @@ HOMOLOGENE = 9272151
 HYBRID = 13764519
 HGNC = 13437099
 HOMOLOGY = 9272150
+DODAG = 50
 
 # We now process a single vocabulary at a time, so we need to keep track of
 # which vocab is currently cached in memory.
