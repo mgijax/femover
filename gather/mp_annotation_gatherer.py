@@ -21,6 +21,7 @@ import GenotypeClassifier
 import MPSorter
 import copy
 import gc
+import symbolsort
 
 ###--- Constants ---###
 
@@ -888,9 +889,9 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 				self.registerGenotypeSex(allele_key,gkey,sex)
 				# Done with cells / headers nonsense
 
-		# calculate the disease sorts (alpha)
+		# calculate the disease sorts (smart-alpha)
 		disease_set = list(disease_set)
-		disease_set.sort()
+		disease_set.sort(symbolsort.nomenCompare)
 		count = 0
 		for disease in disease_set:
 			count += 1
