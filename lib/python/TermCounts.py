@@ -17,6 +17,7 @@ HOMOLOGENE = 9272151
 HYBRID = 13764519
 HGNC = 13437099
 HOMOLOGY = 9272150
+DODAG = 50
 
 # We now process a single vocabulary at a time, so we need to keep track of
 # which vocab is currently cached in memory.
@@ -189,29 +190,80 @@ def _extraDoQueries(vocabKey):
 		# mouse markers which are associated with human markers via
 		# a homology relationship, where those human markers are
 		# associated with DO diseases
-		'''select m._Marker_key,
-  			a._Term_key
-  		from voc_annot a,
-  			voc_term q,
-  			mrk_marker h,
-  			mrk_clustermember hcm,
-  			mrk_cluster mc,
-  			mrk_clustermember mcm,
-  			mrk_marker m
-  		where a._AnnotType_key = 1022
-  			and a._Qualifier_key = q._Term_key
-  			and q.term is null
-  			and a._Object_key = h._Marker_key
-  			and h._Organism_key = 2
-  			and h._Marker_key = hcm._Marker_key
-  			and hcm._Cluster_key = mc._Cluster_key
-  			and mc._ClusterType_key = %d
-			and mc._ClusterSource_key in (%d)
-  			and mc._Cluster_key = mcm._Cluster_key
-  			and mcm._Marker_key = m._Marker_key
-  			and m._Organism_key = 1
-  			and m._Marker_Status_key = 1''' % (HOMOLOGY,
-				HYBRID),
+## US45 - 46 we need the DO terms to go down the dag
+#		'''
+#      select m._Marker_key,
+#  			a._Term_key
+#  		from voc_annot a,
+#  			voc_term q,
+#  			mrk_marker h,
+#  			mrk_clustermember hcm,
+#  			mrk_cluster mc,
+#  			mrk_clustermember mcm,
+#  			mrk_marker m
+#  		where a._AnnotType_key = 1022
+#  			and a._Qualifier_key = q._Term_key
+#  			and q.term is null
+#  			and a._Object_key = h._Marker_key
+#  			and h._Organism_key = 2
+#  			and h._Marker_key = hcm._Marker_key
+#  			and hcm._Cluster_key = mc._Cluster_key
+#  			and mc._ClusterType_key = %d
+#			and mc._ClusterSource_key in (%d)
+#  			and mc._Cluster_key = mcm._Cluster_key
+#  			and mcm._Marker_key = m._Marker_key
+#  			and m._Organism_key = 1
+#  			and m._Marker_Status_key = 1''' % (HOMOLOGY,
+#				HYBRID),
+     '''
+     select m._Marker_key,
+         dc._ancestorobject_key as _Term_key
+      from mgd.voc_annot a,
+         mgd.voc_term q,
+         mgd.mrk_marker h,
+         mgd.mrk_clustermember hcm,
+         mgd.mrk_cluster mc,
+         mgd.mrk_clustermember mcm,
+         mgd.mrk_marker m,
+         mgd.dag_closure dc
+      where a._AnnotType_key = 1022
+         and a._Qualifier_key = q._Term_key
+         and q.term is null
+         and a._Object_key = h._Marker_key
+         and h._Organism_key = 2
+         and h._Marker_key = hcm._Marker_key
+         and hcm._Cluster_key = mc._Cluster_key
+         and mc._ClusterType_key = %d
+         and mc._ClusterSource_key = %d
+         and mc._Cluster_key = mcm._Cluster_key
+         and mcm._Marker_key = m._Marker_key
+         and m._Organism_key = 1
+         and m._Marker_Status_key = 1
+         and a._Term_key = dc._descendentobject_key
+         and dc._dag_key = %d
+    union
+      select m._Marker_key,
+         a._Term_key
+      from mgd.voc_annot a,
+         mgd.voc_term q,
+         mgd.mrk_marker h,
+         mgd.mrk_clustermember hcm,
+         mgd.mrk_cluster mc,
+         mgd.mrk_clustermember mcm,
+         mgd.mrk_marker m
+      where a._AnnotType_key = 1022
+         and a._Qualifier_key = q._Term_key
+         and q.term is null
+         and a._Object_key = h._Marker_key
+         and h._Organism_key = 2
+         and h._Marker_key = hcm._Marker_key
+         and hcm._Cluster_key = mc._Cluster_key
+         and mc._ClusterType_key = %d
+         and mc._ClusterSource_key = %d
+         and mc._Cluster_key = mcm._Cluster_key
+         and mcm._Marker_key = m._Marker_key
+         and m._Organism_key = 1
+         and m._Marker_Status_key = 1''' % (HOMOLOGY, HYBRID, DODAG, HOMOLOGY, HYBRID),
 		]
 	return cmds 
 

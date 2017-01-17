@@ -323,15 +323,11 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 	def findTerms (self, ids, defs, isRoot, edges, goOntologies):
 		kCol = Gatherer.columnNumber (self.results[4][0], '_Term_key')
-		vCol = Gatherer.columnNumber (self.results[4][0],
-			'_Vocab_key')
+		vCol = Gatherer.columnNumber (self.results[4][0], '_Vocab_key')
 		tCol = Gatherer.columnNumber (self.results[4][0], 'term')
-		sCol = Gatherer.columnNumber (self.results[4][0],
-			'sequenceNum')
-		isObsoleteCol = Gatherer.columnNumber (self.results[4][0],
-			'isObsolete')
-		abbrevCol = Gatherer.columnNumber (self.results[4][0],
-			'abbreviation')
+		sCol = Gatherer.columnNumber (self.results[4][0], 'sequenceNum')
+		isObsoleteCol = Gatherer.columnNumber (self.results[4][0], 'isObsolete')
+		abbrevCol = Gatherer.columnNumber (self.results[4][0], 'abbreviation')
 
 		terms = {}		# terms[term key] = term
 
@@ -425,8 +421,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		return terms, sequenceNum, columns, rows
 
 	def collectDescendentCounts (self):
-		keyCol = Gatherer.columnNumber (self.results[5][0],
-			'_AncestorObject_key')
+		keyCol = Gatherer.columnNumber (self.results[5][0], '_AncestorObject_key')
 		ctCol = Gatherer.columnNumber (self.results[5][0], 'ct')
 
 		counts = {}
@@ -437,8 +432,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 	def findTermCounts (self, descendentCounts, edges, upEdges):
 		kCol = Gatherer.columnNumber (self.results[4][0], '_Term_key')
-		vCol = Gatherer.columnNumber (self.results[4][0],
-			'_Vocab_key')
+		vCol = Gatherer.columnNumber (self.results[4][0], '_Vocab_key')
 
 		rows = []
 		columns = [ 'termKey', 'pathCount', 'descendentCount',

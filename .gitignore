@@ -9,3 +9,4 @@ control/config.py
 gather/config.py
 schema/config.py
 *~
+gather/sql.log
