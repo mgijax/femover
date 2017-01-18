@@ -104,15 +104,14 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
 		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
 		termCol = Gatherer.columnNumber (cols, 'term')
+		termKeyCol = Gatherer.columnNumber (cols, 'termKey')
 		termIDCol = Gatherer.columnNumber (cols, 'termID')
 		refsCol = Gatherer.columnNumber (cols, '_Refs_key')
 		jnumCol = Gatherer.columnNumber (cols, 'jnumID')
 		categoryCol = Gatherer.columnNumber (cols, 'omimCategory3')
 		headerCol = Gatherer.columnNumber (cols, 'header')
-		headerFootnoteCol = Gatherer.columnNumber (cols,
-			'headerFootnote')
-		genotypeFootnoteCol = Gatherer.columnNumber (cols,
-			'genotypeFootnote')
+		headerFootnoteCol = Gatherer.columnNumber (cols, 'headerFootnote')
+		genotypeFootnoteCol = Gatherer.columnNumber (cols, 'genotypeFootnote')
 		conditionalCol = Gatherer.columnNumber (cols, 'isConditional')
 
 		# loop through the results to create build the output rows
@@ -141,6 +140,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 			genotype = row[genotypeCol]
 			qualifier = row[qualifierCol]
 			term = row[termCol]
+			termKey = row[termKeyCol]
 			termID = row[termIDCol]
 			refsKey = row[refsCol]
 			jnumID = row[jnumCol]
@@ -322,6 +322,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 					'isHeading' : 0,
 					'isNot' : isNot,
 					'term' : term,
+					'termKey' : termKey,
 					'termID' : termID,
 					'hasFootnote' : hasAnyFootnote,
 					'referenceCount' : 1,
@@ -376,7 +377,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		# definition of genotype_disease table rows
 
 		gdCols = [ 'genotypeDiseaseKey', 'genotypeKey',
-			'isHeading', 'isNot', 'term', 'termID',
+			'isHeading', 'isNot', 'term', 'termKey', 'termID',
 			'referenceCount', 'hasFootnote', 'sequenceNum' ]
 		gdRows = []
 
@@ -424,7 +425,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 			r = gdData[genotypeDisease]
 			gdRows.append ( [ genotypeDisease,
 				r['genotype'],r['isHeading'],
-				r['isNot'], r['term'], r['termID'],
+				r['isNot'], r['term'], r['termKey'], r['termID'],
 				r['referenceCount'], r['hasFootnote'],
 				r['sequenceNum'] ] )
 
@@ -467,6 +468,7 @@ cmds = [
 		g._Genotype_key,
 		o.qualifier,
 		o.term,
+		o._term_key as termKey,
 		o.termID,
 		o._Refs_key,
 		o.jnumID,
@@ -489,7 +491,7 @@ cmds = [
 files = [
 	('genotype_disease',
 		[ 'genotypeDiseaseKey', 'genotypeKey','isHeading',
-			'isNot', 'term', 'termID', 'referenceCount',
+			'isNot', 'term', 'termKey', 'termID', 'referenceCount',
 			'hasFootnote', 'sequenceNum' ],
 		'genotype_disease'),
 
