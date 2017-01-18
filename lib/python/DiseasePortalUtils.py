@@ -20,7 +20,7 @@ VOCAB = 13			# MGI type for vocabulary terms
 HYBRID = 13764519		# cluster source for hybrid homology
 HOMOLOGY = 9272150		# homology cluster type for MRK_Cluster
 DO_HUMAN_MARKER = 1022	# annot type for disease/human marker
-
+DO_SLIM_SET = 1048
 
 ###-------------------------###
 ###--- utility functions ---###
@@ -162,7 +162,7 @@ diseaseTermKeyToHeaders = {}		# disease term key : [ disease headers ]
 
 def getDiseaseHeaders (diseaseTermKey):
 	# returns a list of header terms for the given disease term key, or an
-	# empty list of the given key has no known headers
+	# empty list if the given key has no known headers
 
 	if not diseaseHeadersLoaded:
 		_initDiseaseHeaders()
@@ -187,16 +187,21 @@ def _initDiseaseHeaders():
 	if diseaseHeadersLoaded:
 		return
 
-	cmd = '''select distinct dc._descendent_key, vt.term
-		from DAG_Closure dc, DAG_Node dn, VOC_Term vt, MGI_SetMember sm
-		where dc._ancestor_key = dn._Node_key
-		and dn._Object_key = vt._term_key
-		and dn._Object_key = sm._Object_key
-		and sm._Set_key=1048 '''
+	# get the terms themselves plus any descendant terms that should roll up to them
+	cmd = '''select vt._Term_key, vt.term as slim_term
+		from mgi_setmember msm, voc_term vt
+		where msm._Set_key = %d
+			and msm._Object_key = vt._Term_key
+		union 
+		select dc._DescendentObject_key, vt.term
+		from dag_closure dc, mgi_setmember msm, voc_term vt
+		where msm._Set_key = %d
+			and msm._Object_key = dc._AncestorObject_key
+			and msm._Object_key = vt._Term_key''' % (DO_SLIM_SET, DO_SLIM_SET)
 
 	(cols, rows) = dbAgnostic.execute(cmd)
-	termKey = dbAgnostic.columnNumber (cols, '_descendent_key')
-	header = dbAgnostic.columnNumber (cols, 'term')
+	termKey = dbAgnostic.columnNumber (cols, '_Term_key')
+	header = dbAgnostic.columnNumber (cols, 'slim_term')
 	
 	for row in rows:
 		# map term_keys to their headers
