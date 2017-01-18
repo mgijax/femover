@@ -468,7 +468,7 @@ cmds = [
 		g._Genotype_key,
 		o.qualifier,
 		o.term,
-		o.term_key as termKey,
+		o._term_key as termKey,
 		o.termID,
 		o._Refs_key,
 		o.jnumID,
