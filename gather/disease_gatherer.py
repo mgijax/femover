@@ -6,7 +6,7 @@
 import Gatherer
 import logger
 import GenotypeClassifier
-
+import symbolsort
 
 ###--- Constants ---###
 CATEGORY3_HEADERS = {1:"Models with phenotypic similarity to human disease where etiologies involve orthologs.",
@@ -87,7 +87,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		for row in rows:
 			term = row[termCol]
 			terms.append(term)
-		terms.sort()
+		terms.sort(symbolsort.nomenCompare)
 		seq = 0
 		for term in terms:
 			seq += 1
