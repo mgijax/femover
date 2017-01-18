@@ -377,7 +377,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		# definition of genotype_disease table rows
 
 		gdCols = [ 'genotypeDiseaseKey', 'genotypeKey',
-			'isHeading', 'isNot', 'term', 'termID',
+			'isHeading', 'isNot', 'term', 'termKey', 'termID',
 			'referenceCount', 'hasFootnote', 'sequenceNum' ]
 		gdRows = []
 
