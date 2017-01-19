@@ -18,6 +18,7 @@ createStatement = '''CREATE TABLE %s  (
 	age			text	null,
 	tissue		text	null,
 	cell_line	text	null,
+	sequence_num	int	not null,
 	PRIMARY KEY(probe_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
