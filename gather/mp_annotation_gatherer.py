@@ -1516,7 +1516,7 @@ files = [
 		['diseasetable_genotype_key','allele_key','genotype_key','genotype_seq'],
 		'diseasetable_to_genotype'),
 	('diseasetable_disease',
-		['diseasetable_disease_key','allele_key','disease','disease_seq','disease_id','is_header'],
+		['diseasetable_disease_key','allele_key','disease','term_key','disease_seq','disease_id','is_header'],
 		'diseasetable_disease'),
 	('diseasetable_disease_cell',
 		['diseasetable_disease_cell_key','diseasetable_disease_key','call',
