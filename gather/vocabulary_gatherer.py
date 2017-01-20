@@ -512,7 +512,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 					# cache the parent and its path number
 					if len(path) > 1:
-						pathCache[term][path[-2]] = \
+						pathCache[term][path[-1]] = \
 							pathNum
 
 					# for each ancestor, add a record to
