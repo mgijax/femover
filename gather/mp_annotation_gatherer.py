@@ -944,7 +944,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 					disease_count += 1
 					disease_row_map[disease_row_key] = disease_count
 					# add disease row
-					diseaseRows.append([disease_count,allele_key,term,self.diseaseSeqMap[term],termID,0])
+					diseaseRows.append([disease_count,allele_key,term,termKey,self.diseaseSeqMap[term],termID,0])
 					# add all the cells
 					pheno_genos = self.getRegisteredCellCalls(allele_key,termID)
 					for item in pheno_genos.values():
@@ -1204,7 +1204,7 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
 		dGenotypeRows = self.buildDiseaseGenotypes()
 		logger.debug("done building disease genotypes")
 
-		diseaseCols = ['diseasetable_disease_key','allele_key','disease','disease_seq','disease_id','is_header']
+		diseaseCols = ['diseasetable_disease_key','allele_key','disease','term_key', 'disease_seq','disease_id','is_header']
 		diseaseRows = []
 		dCellCols = ['diseasetable_disease_cell_key','diseasetable_disease_key','call',
 			'genotype_id','cell_seq','genotype_seq']
