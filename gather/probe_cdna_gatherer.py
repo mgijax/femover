@@ -30,8 +30,15 @@ def cacheColumnIDs (columns):
 
 def compareClones (a, b):
 	# comparator for two clones.  Ordering is by tissue, age min, age max, cell line, name, and acc ID.
-	# does smart-alpha sorting on tissue, cell line, name, and acc ID.
+	# does smart-alpha sorting on tissue, cell line, name, and acc ID.  Of particular note, Not Specified
+	# tissues sink to the bottom.
 	
+	if a[tissueCol] == 'Not Specified':
+		if b[tissueCol] != 'Not Specified':
+			return 1 
+	elif b[tissueCol] == 'Not Specified':
+		return -1
+
 	t = symbolsort.nomenCompare(a[tissueCol], b[tissueCol])
 	if t:
 		return t
