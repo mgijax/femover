@@ -259,7 +259,7 @@ class AlleleSummaryGatherer (Gatherer.MultiFileGatherer):
 		return cols,rows
 
 	def buildSummaryDiseases(self):
-		cols=["allele_disease_key","allele_key","disease","do_id"]
+		cols=["allele_disease_key","allele_key","disease","do_id","term_key"]
 		rows=[]
 		uniqueKey=0
 		uniqueRows=set([])
@@ -267,6 +267,7 @@ class AlleleSummaryGatherer (Gatherer.MultiFileGatherer):
 			allKey=r[0]
 			disease=r[1]
 			doId=r[2]
+			termKey=r[3]
 
 			# test uniqueness
 			uniqueId=(allKey,doId)
@@ -275,7 +276,7 @@ class AlleleSummaryGatherer (Gatherer.MultiFileGatherer):
 			uniqueRows.add(uniqueId)
 
 			uniqueKey+=1
-			rows.append((uniqueKey,allKey,disease,doId))
+			rows.append((uniqueKey,allKey,disease,doId,termKey))
 		return cols,rows
 
 	def buildSummaryGenotypes(self):
