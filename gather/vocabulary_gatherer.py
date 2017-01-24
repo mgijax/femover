@@ -511,9 +511,8 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 					pathNum = pathNum + 1
 
 					# cache the parent and its path number
-					if len(path) > 1:
-						pathCache[term][path[-1]] = \
-							pathNum
+					pathCache[term][path[-1]] = \
+						pathNum
 
 					# for each ancestor, add a record to
 					# the set of rows
