@@ -9,18 +9,23 @@ import logger
 ###--- Constants ---###
 
 tissueCol = None
+ageCol = None
 ageMinCol = None
 ageMaxCol = None
 cellLineCol = None
 nameCol = None
 idCol = None
 
+NS = 'Not Specified'
+NA = 'Not Applicable'
+
 ###--- Functions ---###
 
 def cacheColumnIDs (columns):
-	global tissueCol, ageMaxCol, ageMinCol, cellLineCol, nameCol, idCol
+	global tissueCol, ageCol, ageMaxCol, ageMinCol, cellLineCol, nameCol, idCol
 	
 	tissueCol = Gatherer.columnNumber(columns, 'tissue')
+	ageCol = Gatherer.columnNumber(columns, 'age')
 	ageMinCol = Gatherer.columnNumber(columns, 'ageMin')
 	ageMaxCol = Gatherer.columnNumber(columns, 'ageMax')
 	cellLineCol = Gatherer.columnNumber(columns, 'cell_line')
@@ -28,23 +33,57 @@ def cacheColumnIDs (columns):
 	idCol = Gatherer.columnNumber(columns, 'accID')
 	return
 
+def preferentialCompare (aValue, bValue, fallbackCmp = None):
+	# compare the values of two fields, but show preferences so that:
+	#	1. any value other than Not Specified or Not Applicable is preferred
+	#	2. Not Applicable values are preferred over Not Specified
+	#	3. Not Specified values are last
+	# For rule 1, we use the given fallbackCmp function (if provided) to do the comparison.
+	# If no fallbackCmp and we reach rule 1, just return 0.
+	
+	if aValue == NS:
+		if bValue != NS:
+			return 1
+	elif bValue == NS:
+		return -1
+	
+	if aValue == NA:
+		if bValue != NA:
+			return 1
+	elif bValue == NA:
+		return -1
+	
+	if fallbackCmp == None:
+		return 0
+	
+	return fallbackCmp(aValue, bValue)
+
 def compareClones (a, b):
 	# comparator for two clones.  Ordering is by tissue, age min, age max, cell line, name, and acc ID.
-	# does smart-alpha sorting on tissue, cell line, name, and acc ID.
+	# does smart-alpha sorting on tissue, cell line, name, and acc ID.  Of particular note, Not Specified
+	# tissues sink to the bottom.  Likewise, we prefer actual ages to Not Specified ages (-1 ageMin).
 	
-	t = symbolsort.nomenCompare(a[tissueCol], b[tissueCol])
+	t = preferentialCompare(a[tissueCol], b[tissueCol], symbolsort.nomenCompare)
 	if t:
 		return t
 	
+	n = preferentialCompare(a[ageCol], b[ageCol])
+	if n:
+		return n
+
 	n = cmp(a[ageMinCol], b[ageMinCol])
 	if n:
+		if a[ageMinCol] < 0:	# 'a' has Not Specified age
+			return 1
+		if b[ageMinCol] < 0:	# 'b' has Not Specified age
+			return -1
 		return n
 	
 	x = cmp(a[ageMaxCol], b[ageMaxCol])
 	if x:
 		return x
 	
-	c = symbolsort.nomenCompare(a[cellLineCol], b[cellLineCol])
+	c = preferentialCompare(a[cellLineCol], b[cellLineCol], symbolsort.nomenCompare)
 	if c:
 		return c
 
