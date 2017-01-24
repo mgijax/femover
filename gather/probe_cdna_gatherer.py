@@ -31,7 +31,7 @@ def cacheColumnIDs (columns):
 def compareClones (a, b):
 	# comparator for two clones.  Ordering is by tissue, age min, age max, cell line, name, and acc ID.
 	# does smart-alpha sorting on tissue, cell line, name, and acc ID.  Of particular note, Not Specified
-	# tissues sink to the bottom.
+	# tissues sink to the bottom.  Likewise, we prefer actual ages to Not Specified ages (-1 ageMin).
 	
 	if a[tissueCol] == 'Not Specified':
 		if b[tissueCol] != 'Not Specified':
@@ -45,6 +45,10 @@ def compareClones (a, b):
 	
 	n = cmp(a[ageMinCol], b[ageMinCol])
 	if n:
+		if a[ageMinCol] < 0:	# 'a' has Not Specified age
+			return 1
+		if b[ageMinCol] < 0:	# 'b' has Not Specified age
+			return -1
 		return n
 	
 	x = cmp(a[ageMaxCol], b[ageMaxCol])
