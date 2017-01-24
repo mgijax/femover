@@ -381,7 +381,7 @@ files = [
 		['allele_system_key','allele_key','system'],
 		'allele_summary_system'),
 	('allele_summary_disease',
-		['allele_disease_key','allele_key','disease','do_id'],
+		['allele_disease_key','allele_key','disease','do_id','term_key'],
 		'allele_summary_disease'),
 	('allele_summary_genotype',
 		['allele_genotype_key','allele_key','genotype_key'],
