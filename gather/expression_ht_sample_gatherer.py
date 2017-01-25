@@ -190,8 +190,6 @@ class HTSampleGatherer (Gatherer.Gatherer):
 
 	def collateResults(self):
 		cols, rows = self.results[0]
-		if not rows:
-			cols, rows = self.getFakeData()
 		
 		self.finalColumns = cols
 		self.finalResults = rows
