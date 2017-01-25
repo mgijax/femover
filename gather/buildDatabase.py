@@ -6,6 +6,7 @@
 #	1. drop existing tables
 #	2. create new tables
 #	3. gather data into files (extract it from the source database)
+#	4. convert the files into an appropriate format for the target table
 #	5. load the data files into the new tables
 #	6. create the clustering index on the table (if it has one)
 #	7. cluster the data in the table (if it had a clustering index)
@@ -125,7 +126,7 @@ START_TIME = time.time()
 # float; time in seconds of last call to dispatcherReport()
 REPORT_TIME = time.time()
 
-# values for the GATHER_STATUS, BCPIN_STATUS, and INDEX_STATUS
+# values for the GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, and INDEX_STATUS
 # global variables
 NOTYET = 0		# this piece has not started yet
 WORKING = 1		# this piece is running
@@ -133,6 +134,7 @@ ENDED = 2		# this piece has finished
 
 # Dispatcher objects, for controlling the various sections running in parallel
 GATHER_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_GATHERER)
+CONVERT_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_CONVERT)
 BCPIN_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_BCPIN)
 INDEX_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_INDEX)
 FK_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_FK)
@@ -145,6 +147,7 @@ OPTIMIZE_DISPATCHER = Dispatcher.Dispatcher (config.CONCURRENT_OPTIMIZE)
 # lists of not-yet-finished processes for each type of operation.  Each list
 # item is a tuple of (descriptive string, dispatcher process id).
 GATHER_IDS = []
+CONVERT_IDS = []
 BCPIN_IDS = []
 INDEX_IDS = []
 FK_IDS = []
@@ -155,6 +158,7 @@ OPTIMIZE_IDS = []
 
 # integer status values for each type of operation.
 GATHER_STATUS = NOTYET
+CONVERT_STATUS = NOTYET
 BCPIN_STATUS = NOTYET
 INDEX_STATUS = NOTYET
 FK_STATUS = NOTYET
@@ -207,9 +211,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
 		'antigen', 'marker_to_antibody',
 	]
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
-	'expression_ht_experiment_note', 'expression_ht_experiment_property',
-	'expression_ht_experiment_variable', 'expression_ht_sample_note',
-	'expression_ht_experiment_sequence_num', 'expression_ht_sample',
+		'expression_ht_experiment_note',
 	]
 GLOSSARY = [ 'glossary',
 	]
@@ -233,7 +235,6 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_interaction', 'marker_mp_annotation','marker_minimap'
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
-		'probe_cdna',
 	]
 REFERENCES = [ 'reference', 'reference_abstract', 'reference_book', 
 		'reference_counts', 'reference_id', 'reference_sequence_num', 
@@ -584,6 +585,7 @@ def dispatcherReport():
 	# produce reports for the concurrent processes
 
 	dispatchers = [ ('gather', GATHER_DISPATCHER),
+			('convert', CONVERT_DISPATCHER),
 			('load', BCPIN_DISPATCHER),
 			('cluster index', CLUSTERED_INDEX_DISPATCHER),
 			('cluster', CLUSTER_DISPATCHER),
@@ -653,6 +655,28 @@ def scheduleGatherers (
 	logger.info ('Scheduled %d gatherers' % len(gatherers)) 
 	return
 
+def scheduleConversion (
+	table,		# string; table name for which to schedule load for
+	path		# string; path to file to load
+	):
+	global CONVERT_DISPATCHER, CONVERT_IDS, CONVERT_STATUS
+
+	# if this is our first conversion process, report it
+	if CONVERT_STATUS == NOTYET:
+		CONVERT_STATUS = WORKING
+		logger.debug ('Began converting files')
+
+	if config.TARGET_TYPE == 'postgres':
+		script = os.path.join (config.CONTROL_DIR, 
+			'postgresConverter.sh')
+	elif config.TARGET_TYPE == 'mysql':
+		script = os.path.join (config.CONTROL_DIR,
+			'mysqlConverter.sh')
+
+	id = CONVERT_DISPATCHER.schedule ([script, path])
+	CONVERT_IDS.append ( (table, path, id) )
+	return
+
 def checkForFinishedGathering():
 	# Purpose: look for finished data gatherers and schedule the data
 	#	load for any that have finished
@@ -703,10 +727,10 @@ def checkForFinishedGathering():
 				if not FULL_BUILD:
 					dropTables( [table] )
 				createTables (table)
-				scheduleLoad(table, inputFile)
+				scheduleConversion (table, inputFile)
 
 				logger.debug (
-					'Scheduled load of %s into %s' \
+					'Scheduled conversion of %s for %s' \
 						% (inputFile, table) )
 		i = i - 1
 
@@ -741,6 +765,47 @@ def scheduleLoad (
 
 	id = BCPIN_DISPATCHER.schedule ([script,"--lf",path])
 	BCPIN_IDS.append ( (table, path, id) )
+	return
+
+def checkForFinishedConversion():
+	# Purpose: look for finished data loads
+	# Returns: nothing
+	# Assumes: nothing
+	# Modifies: alters globals listed below; schedules index creation
+	# Throws: 'error' if a table failed to load
+
+	global CONVERT_DISPATCHER, CONVERT_STATUS, CONVERT_IDS
+
+	# walk backward through the list of unfinished file conversion
+	# processes, so as we delete some the loop is not disturbed
+
+	i = len(CONVERT_IDS) - 1
+	while (i >= 0):
+		(table, path, id) = CONVERT_IDS[i]
+
+		# if a file conversion operation finished, then remove it from
+		# the list of unfinished processes, schedule the file to be
+		# loaded
+
+		if CONVERT_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
+			del CONVERT_IDS[i]
+
+			checkStderr (CONVERT_DISPATCHER, id,
+				'Conversion failed for %s' % table)
+
+			logger.debug ('Finished conversion of %s' % table)
+			scheduleLoad(table, path)
+
+		i = i - 1
+
+	# if the gathering stage finished and there are no more unfinished
+	# conversions, then the conversion stage has finished -- report it
+
+	if (GATHER_STATUS == ENDED) and (not CONVERT_IDS):
+		CONVERT_STATUS = ENDED
+		dbInfoTable.setInfo ('status',
+			'finished file conversions')
+		logger.debug ('Last file conversion finished')
 	return
 
 def askTable (table, flag, description):
@@ -864,7 +929,7 @@ def checkForFinishedLoad():
 	# if the file conversion stage finished and there are no more
 	# unfinished loads, then the load stage has finished -- report it
 
-	if (GATHER_STATUS == ENDED) and (not BCPIN_IDS):
+	if (CONVERT_STATUS == ENDED) and (not BCPIN_IDS):
 		BCPIN_STATUS = ENDED
 		logger.debug ('Last bulk load finished')
 		dbInfoTable.setInfo ('status', 'finished loading data')
@@ -1378,7 +1443,7 @@ def logProfilingData():
 
 		fp.close()
 	except:
-		logger.debug('Could not write gatherer_profiles.txt')
+		logger.debug('Could not write gatherer_profilers.txt')
 	return
 
 def readTimings():
@@ -1524,9 +1589,11 @@ def main():
 	scheduleGatherers(gatherers)
 	dbInfoTable.setInfo ('status', 'gathering data')
 
-	while WORKING in (GATHER_STATUS, BCPIN_STATUS, INDEX_STATUS, CLUSTERED_INDEX_STATUS, CLUSTER_STATUS, OPTIMIZE_STATUS):
+	while WORKING in (GATHER_STATUS, CONVERT_STATUS, BCPIN_STATUS, INDEX_STATUS, CLUSTERED_INDEX_STATUS, CLUSTER_STATUS, OPTIMIZE_STATUS):
 		if GATHER_STATUS != ENDED:
 			checkForFinishedGathering()
+		if CONVERT_STATUS != ENDED:
+			checkForFinishedConversion()
 		if BCPIN_STATUS != ENDED:
 			checkForFinishedLoad()
 		if CLUSTERED_INDEX_STATUS != ENDED:
@@ -1545,6 +1612,7 @@ def main():
 	getMgiDbInfo()
 
 	GATHER_DISPATCHER.wait()
+	CONVERT_DISPATCHER.wait()
 	BCPIN_DISPATCHER.wait()
 	CLUSTERED_INDEX_DISPATCHER.wait()
 	CLUSTER_DISPATCHER.wait()
@@ -1592,6 +1660,7 @@ if __name__ == '__main__':
 		# terminate any existing subprocesses
 
 		GATHER_DISPATCHER.terminateProcesses()
+		CONVERT_DISPATCHER.terminateProcesses()
 		BCPIN_DISPATCHER.terminateProcesses()
 		CLUSTERED_INDEX_DISPATCHER.terminateProcesses()
 		CLUSTER_DISPATCHER.terminateProcesses()
