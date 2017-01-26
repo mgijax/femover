@@ -33,6 +33,19 @@ class ProbeGatherer (Gatherer.Gatherer):
 
 		self.cloneIDs = cloneIDs
 
+		# cache counts of GXD expression results
+		
+		columns, rows = self.results[2]
+		
+		keyCol = Gatherer.columnNumber (columns, '_Probe_key')
+		countCol = Gatherer.columnNumber (columns, 'ct')
+
+		self.gxdCounts = {}
+		for r in rows:
+			self.gxdCounts[r[keyCol]] = r[countCol]
+
+		logger.debug('Cached %d GXD counts' % len(self.gxdCounts))
+		
 		# the first query contains the bulk of the data we need, with
 		# the rest to come via post-processing
 
@@ -56,30 +69,55 @@ class ProbeGatherer (Gatherer.Gatherer):
 				'name'), r, self.finalColumns)
 
 			probeKey = r[keyCol]
-			if self.cloneIDs.has_key (probeKey):
-				self.addColumn ('cloneID',
-					self.cloneIDs[probeKey],
-					r, self.finalColumns)
-			else:
-				self.addColumn ('cloneID', None, r,
-					self.finalColumns)
+			
+			cloneID = None
+			if probeKey in self.cloneIDs:
+				cloneID = self.cloneIDs[probeKey]
+			self.addColumn ('cloneID', cloneID, r, self.finalColumns)
+				
+			gxdCount = 0
+			if probeKey in self.gxdCounts:
+				gxdCount = self.gxdCounts[probeKey]
+			self.addColumn ('gxd_count', gxdCount, r, self.finalColumns)
 		return
 
 ###--- globals ---###
 
 cmds = [
+	# 0. basic probe data
 	'''select p._Probe_key,
 		p.name,
 		t.term as segmentType,
 		a.accID as primaryID,
-		a._LogicalDB_key
-	from prb_probe p, voc_term t, acc_accession a
+		a._LogicalDB_key,
+		o.commonName as organism,
+		s.age,
+		x.term as sex,
+		c.term as cell_line,
+		v.term as vector,
+		p.insertSite as insert_site,
+		p.insertSize as insert_size,
+		p.productSize as product_size,
+		s.name as library,
+		pt.tissue,
+		regionCovered as region_covered,
+		st.strain
+	from prb_probe p, voc_term t, acc_accession a, prb_source s, mgi_organism o,
+		voc_term x, voc_term c, voc_term v, prb_tissue pt, prb_strain st
 	where p._Probe_key = a._Object_key
+		and p._Vector_key = v._Term_key
+		and p._Source_key = s._Source_key
+		and s._Tissue_key = pt._Tissue_key
+		and s._Strain_key = st._Strain_key
+		and s._Organism_key = o._Organism_key
+		and s._Gender_key = x._Term_key
+		and s._CellLine_key = c._Term_key
 		and a._MGIType_key = 3
 		and a.preferred = 1
 		and a._LogicalDB_key = 1
 		and p._SegmentType_key = t._Term_key''',
 
+	# 1. clone IDs
 	'''select p._Probe_key, a.accID as cloneID
 	from prb_probe p, acc_accession a, mgi_setmember msm, mgi_set ms
 	where p._Probe_key = a._Object_key
@@ -87,12 +125,21 @@ cmds = [
 		and a._LogicalDB_key = msm._Object_key
 		and msm._Set_key = ms._Set_key
 		and ms.name = 'Clone Collection (all)' ''',
+		
+	# 2. GXD expression result counts
+	'''select _Probe_key, count(distinct _Expression_key) as ct
+	from GXD_Expression e, GXD_Assay a, GXD_ProbePrep p
+	where e._Assay_key = a._Assay_key
+		and e.isForGXD = 1
+		and a._ProbePrep_key = p._ProbePrep_key
+	group by 1'''
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Probe_key', 'name', 'segmentType', 'primaryID', 'logicalDB',
-		'cloneID',
+fieldOrder = [ '_Probe_key', 'name', 'segmentType', 'primaryID', 'logicalDB', 'cloneID',
+		'organism', 'age', 'sex', 'cell_line', 'vector', 'insert_site', 'insert_size',
+		'product_size', 'library', 'tissue', 'region_covered', 'strain', 'gxd_count',
 	]
 
 # prefix for the filename of the output file
