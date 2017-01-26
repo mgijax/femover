@@ -232,8 +232,9 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_microarray', 'marker_to_term', 'marker_related_marker',
 		'marker_interaction', 'marker_mp_annotation','marker_minimap'
 	]
-PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence',
-		'probe_cdna',
+PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence', 'probe_relative', 'probe_id',
+		'probe_cdna', 'probe_primers', 'probe_sequence_num', 'probe_note', 'probe_to_reference',
+		'probe_alias',
 	]
 REFERENCES = [ 'reference', 'reference_abstract', 'reference_book', 
 		'reference_counts', 'reference_id', 'reference_sequence_num', 
