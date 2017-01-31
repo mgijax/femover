@@ -234,7 +234,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 	]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence', 'probe_relative', 'probe_id',
 		'probe_cdna', 'probe_primers', 'probe_sequence_num', 'probe_note', 'probe_to_reference',
-		'probe_alias', 'probe_polymorphism', 'probe_polymorphism_details',
+		'probe_alias', 'probe_polymorphism', 'probe_polymorphism_details', 'probe_reference_sequence',
 	]
 REFERENCES = [ 'reference', 'reference_abstract', 'reference_book', 
 		'reference_counts', 'reference_id', 'reference_sequence_num', 
