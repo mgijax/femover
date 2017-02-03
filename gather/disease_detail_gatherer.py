@@ -1373,16 +1373,18 @@ cmds = [
 	order by _Marker_key''' % DO_GENOTYPE,
 
         # 7. pull out all DO term keys used in annotations
-        '''select distinct v._Term_key
-        from voc_annot v
-        where v._AnnotType_key in (%d, %d)
-        union
-        select distinct t._Term_key
-        from voc_annot v, dag_closure dc, voc_term t
-        where v._AnnotType_key in (%d, %d)
-	and v._Term_key = dc._DescendentObject_key
-	and dc._AncestorObject_key = t._Term_key
-        ''' % (DO_GENOTYPE, DO_HUMAN_MARKER, DO_GENOTYPE, DO_HUMAN_MARKER),
+        #'''select distinct v._Term_key
+        #from voc_annot v
+        #where v._AnnotType_key in (%d, %d)
+        #union
+        #select distinct t._Term_key
+        #from voc_annot v, dag_closure dc, voc_term t
+        #where v._AnnotType_key in (%d, %d)
+	#and v._Term_key = dc._DescendentObject_key
+	#and dc._AncestorObject_key = t._Term_key
+        #''' % (DO_GENOTYPE, DO_HUMAN_MARKER, DO_GENOTYPE, DO_HUMAN_MARKER),
+
+        '''select distinct _Term_key from voc_term where _Vocab_key = 125''',
 
 	# 8. like query 5, but brings in disease models for markers associated
 	# with alleles via 'expresses component' and 'mutation involves'
