@@ -366,14 +366,18 @@ def getReferencesByDiseaseKey():
 	# distinct set of references for positive annotations from a
 	# genotype to a disease term and from an allele directly to a disease
 	# term
-	cmd = '''select distinct v._Term_key, e._Refs_key
+	cmd = '''
+	        select distinct v._Term_key, e._Refs_key
 		from VOC_Annot v, VOC_Evidence e
-		where (
-		    (v._AnnotType_key = %d and v._Qualifier_key != %d)
-		    or v._AnnotType_key = %d
-		    )
-		and v._Annot_key = e._Annot_key''' % (
-			DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE)
+		where v._AnnotType_key = %d 
+		    and v._Qualifier_key != %d
+		    and v._Annot_key = e._Annot_key
+		union
+	        select distinct v._Term_key, e._Refs_key
+		from VOC_Annot v, VOC_Evidence e
+		where v._AnnotType_key = %d
+		    and v._Annot_key = e._Annot_key
+		''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE)
 
 	cols, rows = dbAgnostic.execute(cmd)
 
