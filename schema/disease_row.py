@@ -18,7 +18,6 @@ createStatement = '''CREATE TABLE %s  (
 	disease_group_key	int	not null,
 	sequence_num		int	not null,
 	cluster_key		int	null,
-	annotated_disease_key	int	not null,
 	PRIMARY KEY(disease_row_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -26,13 +25,11 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'cluster_key' : 'create index %s on %s (cluster_key)',
-	'annotated_disease_key' : 'create index %s on %s (annotated_disease_key)',
 	}
 
 # column name -> (related table, column in related table)
 keys = { 'disease_group_key' : ('disease_group', 'disease_group_key'),
 	'cluster_key' : ('homology_cluster', 'cluster_key'), 
-	'annotated_disease_key' : ('term', 'term_key'),
 	}
 
 # index used to cluster data in the table
@@ -47,7 +44,6 @@ comments = {
 		'disease_group_key' : 'foreign key to disease_group to identify which group this row is part of',
 		'sequence_num' : 'orders the rows for each disease group',
 		'cluster_key' : 'foreign key to homology_cluster to identify the cluster for the markers in this row',
-		'annotated_disease_key' : 'foreign key to term',
 		},
 	Table.INDEX : {
 		'cluster_key' : 'allows quick lookup of rows for a given homology cluster (not likely often used)',
