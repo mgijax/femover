@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	disease			text	not null,
 	disease_id		text	not null,
 	is_not_model		int		not null,
+	annotated_disease	text	not null,
 	PRIMARY KEY(disease_model_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each

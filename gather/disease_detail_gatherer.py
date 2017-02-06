@@ -46,7 +46,7 @@ CLASS_KEY_TO_MARKERS = {}	# dict; class key -> [ marker keys ]
 
 TERM_CACHE = {}			# dict; term key -> (term, primary ID)
 
-DISEASE_MODEL_CACHE = {}	# dict; (genotype key, term key, annotated key, is not) -> DiseaseModel object
+DISEASE_MODEL_CACHE = {}	# dict; (genotype key, term key, is not) -> DiseaseModel object
 
 MARKER_TO_DISEASE_MODELS = {}	# dict; marker key -> [ DiseaseModel objects ]
 
@@ -126,7 +126,7 @@ def getAdditionalModels (termKey, markerKeys):
 
 def getDiseaseModelsByMarker (markerKey, termKey):
 	# assumes we will not be adding to DISEASE_MODEL_CACHE any more;
-	# look up disease models by marker/term/annotated key pair
+	# look up disease models by marker/term key pair
 
 	global MARKER_TO_DISEASE_MODELS
 
@@ -161,13 +161,13 @@ def getDiseaseModelsByMarker (markerKey, termKey):
 
 	return []
 
-def getDiseaseModel (genotypeKey, termKey, isNot = 0):
+def getDiseaseModel (genotypeKey, termKey, annottermKey, isNot = 0):
 	# get the DiseaseModel object for this trio of parameters -- a shared
 	# instance if we've seen this trio, or a new object if not
 
 	global DISEASE_MODEL_CACHE
 
-	key = (genotypeKey, termKey, isNot)
+	key = (genotypeKey, termKey, annottermKey, isNot)
 
 	# if we already have one for this trio, return the same one
 	if DISEASE_MODEL_CACHE.has_key(key):
@@ -175,7 +175,7 @@ def getDiseaseModel (genotypeKey, termKey, isNot = 0):
 
 	# otherwise, create a new one, cache it, and return it
 
-	dm = DiseaseModel (genotypeKey, termKey, isNot)
+	dm = DiseaseModel (genotypeKey, termKey, annottermKey, isNot)
 	DISEASE_MODEL_CACHE[key] = dm 
 	return dm
 
@@ -211,8 +211,7 @@ def markerKeys (desiredClassKey):
 				continue
 
 			if CLASS_KEY_TO_MARKERS.has_key(classKey):
-				CLASS_KEY_TO_MARKERS[classKey].append (
-					markerKey)
+				CLASS_KEY_TO_MARKERS[classKey].append ( markerKey)
 			else:
 				CLASS_KEY_TO_MARKERS[classKey] = [ markerKey ]
 
@@ -531,10 +530,11 @@ class DiseaseRow:
 		return ''
 
 class DiseaseModel:
-	def __init__ (self, genotypeKey, diseaseKey, isNot = 0):
+	def __init__ (self, genotypeKey, diseaseKey, annotateddiseaseKey, isNot = 0):
 		self.diseaseModelKey = nextDiseaseModelKey()
 		self.genotypeKey = genotypeKey
 		self.diseaseKey = diseaseKey
+		self.annotateddiseaseKey = annotateddiseaseKey
 		self.isNot = isNot
 		self.refs = []
 		self.markers = []
@@ -543,7 +543,7 @@ class DiseaseModel:
 		return
 
 	def __str__ (self):
-		return 'DiseaseModel [ DM key: %d, geno key: %d, term key: %d, annotated key : %d, isNot: %d, ref count: %d, marker count: %d ]' % (self.diseaseModelKey, self.genotypeKey, self.diseaseKey, self.isNot, len(self.refs), len(self.markers) )
+		return 'DiseaseModel [ DM key: %d, geno key: %d, term key: %d, annotateddiseaseKey: %d, isNot: %d, ref count: %d, marker count: %d ]' % (self.diseaseModelKey, self.genotypeKey, self.diseaseKey, self.annotateddiseaseKey, self.isNot, len(self.refs), len(self.markers) )
 
 	def addReferenceKey (self, refsKey):
 		if refsKey not in self.refs:
@@ -577,6 +577,9 @@ class DiseaseModel:
 
 	def getTerm (self):
 		return term(self.diseaseKey)
+
+	def getAnnotTerm (self):
+		return term(self.annotateddiseaseKey)
 
 	def getPrimaryID (self):
 		return primaryID(self.diseaseKey)
@@ -674,8 +677,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		for termKey in termKeys:
 			for synonym in synonyms[termKey]:
 				seqNum = seqNum + 1
-				outRows.append ( [ termKey, synonym, seqNum
-					] )
+				outRows.append ( [ termKey, synonym, seqNum ] )
 
 		return outColumns, outRows
 
@@ -696,8 +698,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 			if diseaseToMarkers.has_key(termKey):
 				if markerKey not in diseaseToMarkers[termKey]:
-					diseaseToMarkers[termKey].append (
-						markerKey)
+					diseaseToMarkers[termKey].append ( markerKey)
 			else:
 				diseaseToMarkers[termKey] = [ markerKey ]
 
@@ -737,6 +738,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		    cols, rows = self.results[query]
 
 		    termCol = Gatherer.columnNumber(cols, '_Term_key')
+		    annottermCol = Gatherer.columnNumber(cols, 'annotated_Term_key')
 		    markerCol = Gatherer.columnNumber(cols, '_Marker_key')
 		    genotypeCol = Gatherer.columnNumber(cols, '_Genotype_key')
 		    qualifierCol = Gatherer.columnNumber(cols, '_Qualifier_key')
@@ -747,12 +749,13 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		    for row in rows:
 			termKey = row[termCol]
 			markerKey = row[markerCol]
+			annottermKey = row[annottermCol]
 
 			isNot = 0
 			if row[qualifierCol] == NOT_QUALIFIER:
 				isNot = 1
 
-			dm = getDiseaseModel (row[genotypeCol], termKey, isNot)
+			dm = getDiseaseModel (row[genotypeCol], termKey, annottermKey, isNot)
 			dm.addReferenceKey (row[refsCol]) 
 
 			# The rollup rules already screened out ROSA and
@@ -760,7 +763,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			# model (so we can pick up even the NOT models).
 
 			dm.addMarkerKey (row[markerCol])
-
 			dm.setSequenceNum (row[seqNumCol])
 
 		    logger.debug('Handled %d rows for query %d' % (len(rows), query) )
@@ -1004,7 +1006,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		for dm in getAllDiseaseModels():
 			dmKey = dm.getKey()
 			dmRows.append ([ dmKey, dm.getGenotypeKey(),
-				dm.getTerm(), dm.getPrimaryID(), dm.getIsNot()
+				dm.getTerm(), dm.getPrimaryID(), dm.getIsNot(), dm.getAnnotTerm()
 				])
 
 			# references for a disease model are already sorted
@@ -1087,6 +1089,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# lists of rows for all diseases
 
 		allGroups = []		# rows for disease_group table
+		allGroupRows = []		# rows for disease_group table
 		allRows = []		# rows for disease_row table
 		allRowsToMarkers = []	# rows for disease_row_to_marker table
 
@@ -1109,30 +1112,33 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					self.buildRows (termKey, cmg, chg)
 
 			allGroups = allGroups + diseaseGroups
+			#allGroupRows = allGroupRows + diseaseGroupRows
 			allRows = allRows + diseaseRows
 			allRowsToMarkers = allRowsToMarkers + diseaseRowsToMarkers
 			allDiseaseRowObjects = allDiseaseRowObjects + diseaseRowObjects
 			allAdditionalModels = allAdditionalModels + additionalModelMap.items()
 
 		logger.debug ('Compiled %d disease groups' % len(allGroups))
+		logger.debug ('Compiled %d disease groups' % len(allGroupRows))
 		logger.debug ('Compiled %d disease rows' % len(allRows))
 		logger.debug ('Compiled %d disease row/marker pairs' % len(allRowsToMarkers))
 		logger.debug ('Collected %d DiseaseRow objects' % len(allDiseaseRowObjects))
 		logger.debug ('Found %d additional model rows' % len(allAdditionalModels))
 
 		# disease_group columns
-		dgc = [ 'diseaseGroupKey', 'diseaseKey', 'groupType',
-			'sequenceNum' ]
+		dgc = [ 'diseaseGroupKey', 'diseaseKey', 'groupType', 'sequenceNum' ]
+
+		# disease_group_row columns
+		dgrc = [ 'diseaseGroupRowKey', 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey' ]
 
 		# disease_row columns
-		drc = [ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum',
-			'_Cluster_key', 'annotatedDiseaseKey' ]
+		drc = [ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key', 'annotatedDiseaseKey' ]
 
 		# disease_row_to_marker columns
-		drtm = [ 'diseaseRowKey', '_Marker_key', 'sequenceNum',
-			'isCausative', 'organism' ]
+		drtm = [ 'diseaseRowKey', '_Marker_key', 'sequenceNum', 'isCausative', 'organism' ]
 
 		self.output.append ( (dgc, allGroups) )
+		self.output.append ( (dgrc, allGroupRows) )
 		self.output.append ( (drc, allRows) )
 		self.output.append ( (drtm, allRowsToMarkers) )
 
@@ -1148,7 +1154,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		dr2mod, dm, dm2ref = self.processDiseaseModels(allDiseaseRowObjects, allAdditionalModels)
 
 		# disease_model columns
-		dmc = [ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID', 'isNotModel' ]
+		dmc = [ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID', 'isNotModel', 'annotated_disease' ]
 
 		# disease_row_to_model columns
 		dr2modc = [ 'diseaseRowKey', 'diseaseModelKey', 'sequenceNum' ]
@@ -1159,6 +1165,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		self.output.append ( (dmc, dm) )
 		self.output.append ( (dr2modc, dr2mod) )
 		self.output.append ( (dm2refc, dm2ref) )
+
 		return
 
 ###--- globals ---###
@@ -1315,7 +1322,8 @@ cmds = [
         )
         (
         select distinct t.term, t._Term_key, a._Marker_key, a._Genotype_key,
-                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key
+                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key,
+		t._Term_key as annotated_Term_key
         from genotype_annotations a, voc_term t, dag_closure dc, voc_term tt
         where a._Term_key = t._Term_key
         and t._Term_key = dc._DescendentObject_key
@@ -1323,7 +1331,8 @@ cmds = [
         and tt._Vocab_key = 125
         union all
         select distinct tt.term, tt._Term_key, a._Marker_key, a._Genotype_key,
-                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key
+                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key,
+		t._Term_key as annotated_Term_key
         from genotype_annotations a, voc_term t, dag_closure dc, voc_term tt
         where a._Term_key = t._Term_key
         and t._Term_key = dc._DescendentObject_key
@@ -1412,7 +1421,8 @@ cmds = [
         select distinct t.term, t._Term_key, 
 	        a._Marker_key,
 		a._Genotype_key, a._Qualifier_key, a._Refs_key,
-		a.sequenceNum, a._Allele_key
+		a.sequenceNum, a._Allele_key,
+		t._Term_key as annotated_Term_key
         from model_annotations a, voc_term t, dag_closure dc, voc_term tt
         where a._Term_key = t._Term_key
         and t._Term_key = dc._DescendentObject_key
@@ -1422,7 +1432,8 @@ cmds = [
         select distinct tt.term, tt._Term_key, 
 	        a._Marker_key,
 		a._Genotype_key, a._Qualifier_key, a._Refs_key,
-		a.sequenceNum, a._Allele_key
+		a.sequenceNum, a._Allele_key,
+		t._Term_key as annotated_Term_key
         from model_annotations a, voc_term t, dag_closure dc, voc_term tt
         where a._Term_key = t._Term_key
         and t._Term_key = dc._DescendentObject_key
@@ -1449,6 +1460,10 @@ files = [
 		[ 'diseaseGroupKey', 'diseaseKey', 'groupType', 'sequenceNum' ],
 		'disease_group'),
 
+	('disease_group_row',
+		[ Gatherer.AUTO, 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey' ],
+		'disease_group_row'),
+
 	('disease_row',
 		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum',
 			'_Cluster_key' ],
@@ -1461,7 +1476,7 @@ files = [
 
 	('disease_model',
 		[ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID',
-			'isNotModel' ],
+			'isNotModel', 'annotated_disease' ],
 		'disease_model'),
 
 	('disease_row_to_model',
