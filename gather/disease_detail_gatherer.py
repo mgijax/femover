@@ -880,8 +880,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		dg = []
 
 		# disease_group_row rows, each 
-		#	(disease group row key, disease group key, disease row key, disease key, disease)
+		#	(disease group row key, disease group key, disease row key, disease key, disease, annotated_disease)
 		dgr = []
+		dgrKey = 1
 
 		# disease_row rows, each 
 		#	(disease row key, disease group key, sequence num, and homology class key)
@@ -892,8 +893,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		drtm = []
 
 		groupSeqNum = 0		# sequence number for disease groups
-
-		dgrKey = 1
 
 		for groupType in GROUP_ORDER:
 
@@ -922,18 +921,42 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					)
 
 				#
-				# diseae_group_row
+				# start: diseae_group_row
 				# iterate thru termToAncestor to add all terms and ancestors
+				#
+
+				#
+				# one disease_group_row for the annotated term
+				#
+				dgr.append( (dgrKey, diseaseGroupKey, drKey, termKey, term(termKey), term(termKey)) )
+				dgrKey += 1
+
+				#
+				# one disease_group_row for each ancestor
 				#
 				if termKey in termToAncestor:
 		                    for r in termToAncestor[termKey]:
+
 				        ancestorKey = r[2]
 				        ancestorTerm = r[3]
-		                        #logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
-				        dgr.append( (dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)) )
+
+					# if necessary, create new group for each ancestorKey
+					if (ancestorKey, groupType) not in saveAncestorGroupType:
+			                    diseaseGroupKey = nextDiseaseGroupKey()
+			                    dg.append ( (diseaseGroupKey, ancestorKey, groupType, groupSeqNum) )
+					    saveAncestorGroupType[(ancestorKey, groupType)] = []
+					    saveAncestorGroupType[(ancestorKey, groupType)].append(diseaseGroupKey)
+					# or get existing diseaseGroupKey
+					else:
+					    diseaseGroupKey = saveAncestorGroupType[(ancestorKey, groupType)][0]
+
+					# create new disease_group_row for each ancestorKey
+				        dgr.append( (dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm, term(termKey)) )
 				        dgrKey += 1
-				        dgr.append( (dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm) )
-				        dgrKey += 1
+
+				#
+				# end: diseae_group_row
+				#
 
 				# one row in disease_row_to_marker for each
 				# marker symbol to be displayed in the row
@@ -1031,7 +1054,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 	def collateResults (self):
 		# main method for pulling the various results sets together
 
+		# see self.buildRows()
 		global termToAncestor
+		global saveAncestorGroupType
 
 		# step 0 - disease table
 		columns, rows = self.buildDiseaseTable()
@@ -1116,6 +1141,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		allAdditionalModels = []	# (DiseaseRow key, DiseaseModel)
 
+		# save ancestor/group type
+		saveAncestorGroupType = {}
+
 		for termKey in termKeys:
 			cmg = []	# causative mouse genes
 			chg = []	# causative human genes
@@ -1148,7 +1176,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		dgc = [ 'diseaseGroupKey', 'diseaseKey', 'groupType', 'sequenceNum' ]
 
 		# disease_group_row columns
-		dgrc = [ 'diseaseGroupRowKey', 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease' ]
+		dgrc = [ 'diseaseGroupRowKey', 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease', 'annotated_disease' ]
 
 		# disease_row columns
 		drc = [ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key' ]
@@ -1378,7 +1406,7 @@ files = [
 		'disease_group'),
 
 	('disease_group_row',
-		[ Gatherer.AUTO, 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease' ],
+		[ Gatherer.AUTO, 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease', 'annotated_disease' ],
 		'disease_group_row'),
 
 	('disease_row',
