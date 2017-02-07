@@ -10,7 +10,6 @@ import symbolsort
 import GenotypeClassifier
 import ReferenceCitations
 import DiseasePortalUtils
-import db
 
 ###--- Constants ---###
 
@@ -32,8 +31,7 @@ NON_GENES = 'non-genes'
 NOT_OBSERVED = 'not observed'
 ADDITIONAL = 'additional'
 
-GROUP_ORDER = [ MOUSE_AND_HUMAN, MOUSE_ONLY, HUMAN_ONLY, NON_GENES,
-	ADDITIONAL, NOT_OBSERVED ]
+GROUP_ORDER = [ MOUSE_AND_HUMAN, MOUSE_ONLY, HUMAN_ONLY, NON_GENES, ADDITIONAL, NOT_OBSERVED ]
 
 DISEASE_GROUP_COUNTER = None	# generates primary keys for disease_group
 DISEASE_ROW_COUNTER = None	# generates primary keys for disease_row
@@ -373,7 +371,6 @@ class DiseaseRow:
 		self.mouseSorted = False
 		self.humanSorted = False
 		self.termKey = None
-		self.annotatedTerm = None
 		self.isNot = 0
 		return
 
@@ -392,17 +389,6 @@ class DiseaseRow:
 		# Returns: the disease term key for this DiseaseRow
 
 		return self.termKey
-
-	def setAnnotatedTerm (self, annotatedTerm):
-		# set the annoated disease term for this DiseaseRow
-
-		self.annotatedTerm = annotatedTerm
-		return
-
-	def getAnnotatedTerm (self):
-		# Returns: the annotated disease term for this DiseaseRow
-
-		return self.annotatedTerm
 
 	def setClassKey (self, classKey):
 		# set the HomoloGene class key for this DiseaseRow
@@ -779,7 +765,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 	def buildRows (self,
 		termKey,	# term key for this disease
-		annotatedDisease,
 		cmg, 		# causative mouse genes: [ marker keys ]
 		chg 		# causative human genes: [ marker keys ]
 		):
@@ -788,6 +773,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# disease_row_key, disease_model_key)
 
 		dg = []		# contents of disease_group for this disease
+		dgr = []
 		dr = []		# contents of disease_row for this disease
 		drtm = []	# contents of disease_row_to_marker for this disease
 
@@ -805,14 +791,12 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				else:
 					diseaseRow = DiseaseRow()
 					diseaseRow.setTermKey(termKey)
-					diseaseRow.setAnnotatedTerm(annotatedDisease)
 					diseaseRow.setClassKey(classKey)
 					classToDR[classKey] = diseaseRow
 					diseaseRows.append(diseaseRow)
 			else:
 				diseaseRow = DiseaseRow()
 				diseaseRow.setTermKey(termKey)
-				diseaseRow.setAnnotatedTerm(annotatedDisease)
 				diseaseRows.append(diseaseRow)
 
 			diseaseRow.addMouse (mouseKey, 1)
@@ -829,13 +813,11 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					diseaseRow = DiseaseRow()
 					diseaseRow.setClassKey(classKey)
 					diseaseRow.setTermKey(termKey)
-				        diseaseRow.setAnnotatedTerm(annotatedDisease)
 					classToDR[classKey] = diseaseRow
 					diseaseRows.append(diseaseRow)
 			else:
 				diseaseRow = DiseaseRow()
 				diseaseRow.setTermKey(termKey)
-				diseaseRow.setAnnotatedTerm(annotatedDisease)
 				diseaseRows.append(diseaseRow)
 
 			diseaseRow.addHuman (humanKey, 1) 
@@ -866,7 +848,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		for model in additionalModels:
 			diseaseRow = DiseaseRow()
 			diseaseRow.setTermKey(termKey)
-			diseaseRow.setAnnotatedTerm(annotatedDisease)
 			diseaseRows.append(diseaseRow)
 
 			additionalModelMap[diseaseRow.getKey()] = model
@@ -895,19 +876,25 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# each has their markers sorted.  So, we can start composing
 		# the rows we came here to build.
 
-		# disease_group rows, each (disease group key, disease term
-		# 	key, group type, and sequence num)
+		# disease_group rows, each 
+		#	(disease group key, disease term key, group type, and sequence num)
 		dg = []
 
-		# disease_row rows, each (disease row key, disease group key,
-		#	sequence num, and homology class key)
+		# disease_group_row rows, each 
+		#	(disease group row key, disease group key, disease row key, disease key, disease)
+		dgr = []
+
+		# disease_row rows, each 
+		#	(disease row key, disease group key, sequence num, and homology class key)
 		dr = []
 
-		# disease_row_to_marker rows, each (disease row key, marker
-		#	key, sequence num, is causative flag?, and organism)
+		# disease_row_to_marker rows, each 
+		#	(disease row key, marker key, sequence num, is causative flag?, and organism)
 		drtm = []
 
 		groupSeqNum = 0		# sequence number for disease groups
+
+		dgrKey = 1
 
 		for groupType in GROUP_ORDER:
 
@@ -932,8 +919,12 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				# appear in the displayed table
 				dr.append ( (drKey, diseaseGroupKey,
 					rowSeqNum, diseaseRow.getClassKey(),
-					diseaseRow.getTermKey(), diseaseRow.getAnnotatedTerm())
+					diseaseRow.getTermKey())
 					)
+
+				# new
+				dgr.append( (dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)) )
+				dgrKey += 1
 
 				# one row in disease_row_to_marker for each
 				# marker symbol to be displayed in the row
@@ -950,7 +941,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 						mrkSeqNum, isCausative,
 						organism(markerKey)) )
 
-		return dg, dr, drtm, diseaseRows, additionalModelMap
+		return dg, dgr, dr, drtm, diseaseRows, additionalModelMap
 
 	def processDiseaseModels(self, diseaseRows, allAdditionalModels):
 		dr2mod = []	# disease_row_to_model rows
@@ -1057,21 +1048,16 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# step 4 - get a list of distinct disease term keys
 
 		termKeys = []
-		termAnnotatedKeys = {}
 		cols, rows = self.results[7]
 
 		for row in rows:
 			key = row[0]
 			if key not in termKeys:
 			    termKeys.append (key)
-		        if key not in termAnnotatedKeys:
-			    termAnnotatedKeys[key]= row[3]
 		termKeys.sort()
 		#logger.debug ('termKeys: ' + str(termKeys))
-		#logger.debug ('termAnnotatedKeys: ' + str(termAnnotatedKeys))
 
 		logger.debug ('Found %d distinct diseases' % len(termKeys))
-		logger.debug ('Found %d distinct disease annotated' % len(termAnnotatedKeys))
 
 		# step 5 - cache basic data for mouse and human markers
 
@@ -1107,7 +1093,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# lists of rows for all diseases
 
 		allGroups = []		# rows for disease_group table
-		allGroupRows = []	# rows for disease_group table
+		allGroupRows = []	# rows for disease_group_row table
 		allRows = []		# rows for disease_row table
 		allRowsToMarkers = []	# rows for disease_row_to_marker table
 
@@ -1125,14 +1111,12 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			if termToHumanMarkers.has_key(termKey):
 				chg = termToHumanMarkers[termKey]
 
-			annotatedDisease = termAnnotatedKeys[termKey]
-
-			diseaseGroups, diseaseRows, diseaseRowsToMarkers, \
+			diseaseGroups, diseaseGroupRows, diseaseRows, diseaseRowsToMarkers, \
 				diseaseRowObjects, additionalModelMap = \
-					self.buildRows (termKey, annotatedDisease, cmg, chg)
+					self.buildRows (termKey, cmg, chg)
 
 			allGroups = allGroups + diseaseGroups
-			#allGroupRows = allGroupRows + diseaseGroupRows
+			allGroupRows = allGroupRows + diseaseGroupRows
 			allRows = allRows + diseaseRows
 			allRowsToMarkers = allRowsToMarkers + diseaseRowsToMarkers
 			allDiseaseRowObjects = allDiseaseRowObjects + diseaseRowObjects
@@ -1149,10 +1133,10 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		dgc = [ 'diseaseGroupKey', 'diseaseKey', 'groupType', 'sequenceNum' ]
 
 		# disease_group_row columns
-		dgrc = [ 'diseaseGroupRowKey', 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey' ]
+		dgrc = [ 'diseaseGroupRowKey', 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease' ]
 
 		# disease_row columns
-		drc = [ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key', 'annotated_disease' ]
+		drc = [ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key' ]
 
 		# disease_row_to_marker columns
 		drtm = [ 'diseaseRowKey', '_Marker_key', 'sequenceNum', 'isCausative', 'organism' ]
@@ -1399,30 +1383,8 @@ cmds = [
 	)
 	order by _Marker_key''' % DO_GENOTYPE,
 
-        # 7. pull out all DO term keys used in annotations
-        #'''select distinct v._Term_key
-        #from voc_annot v
-        #where v._AnnotType_key in (%d, %d)
-        #union
-        #select distinct t._Term_key
-        #from voc_annot v, dag_closure dc, voc_term t
-        #where v._AnnotType_key in (%d, %d)
-	#and v._Term_key = dc._DescendentObject_key
-	#and dc._AncestorObject_key = t._Term_key
-        #''' % (DO_GENOTYPE, DO_HUMAN_MARKER, DO_GENOTYPE, DO_HUMAN_MARKER),
-
-        #'''select distinct _Term_key from voc_term where _Vocab_key = 125''',
-	'''
-        select distinct t._term_key, t.term, t._Term_key as annotatedKey, t.term as annotatedTerm
-        from voc_term t
-        where t._Vocab_key = 125
-        union
-        select distinct t._term_key, t.term, tt._Term_key, tt.term 
-        from voc_term t, dag_closure dc, voc_term tt
-        where t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-	''',
+        # 7. pull out all DO term keys
+        '''select distinct _Term_key from voc_term where _Vocab_key = 125''',
 
 	# 8. like query 5, but brings in disease models for markers associated
 	# with alleles via 'expresses component' and 'mutation involves'
@@ -1488,12 +1450,12 @@ files = [
 		'disease_group'),
 
 	('disease_group_row',
-		[ Gatherer.AUTO, 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey' ],
+		[ Gatherer.AUTO, 'diseaseGroupKey', 'diseaseRowKey', 'diseaseKey', 'disease' ],
 		'disease_group_row'),
 
 	('disease_row',
 		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum',
-			'_Cluster_key', 'annotated_disease' ],
+			'_Cluster_key' ],
 		'disease_row'),
 
 	('disease_row_to_marker',
