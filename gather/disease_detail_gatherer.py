@@ -37,8 +37,7 @@ DISEASE_GROUP_COUNTER = None	# generates primary keys for disease_group
 DISEASE_ROW_COUNTER = None	# generates primary keys for disease_row
 DISEASE_MODEL_COUNTER = None	# generates primary keys for disease_model
 
-MARKER_DATA_CACHE = {}		# dict; marker key -> (organism, symbol,
-				#	marker type, homology class key)
+MARKER_DATA_CACHE = {}		# dict; marker key -> (organism, symbol, marker type, homology class key)
 
 CLASS_KEY_TO_MARKERS = {}	# dict; class key -> [ marker keys ]
 
@@ -931,9 +930,9 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				        ancestorKey = r[2]
 				        ancestorTerm = r[3]
 		                        #logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
-				        dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
+				        dgr.append( (dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)) )
 				        dgrKey += 1
-				        dgr.append((dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm))
+				        dgr.append( (dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm) )
 				        dgrKey += 1
 
 				# one row in disease_row_to_marker for each
@@ -1351,7 +1350,7 @@ cmds = [
 		and va._Term_key = t._Term_key
 	order by _Marker_key''' % (DO_GENOTYPE, EXPRESSES_COMPONENT),	
 
-	# 9. Ancestor
+	# 9. Term-to-Ancestor : see termToAncestor, disease_group_row 
         '''select t._Term_key, t.term, tt._Term_key as ancestorKey, tt.term as ancestorTerm
         from voc_term t, dag_closure dc, voc_term tt
         where t._Vocab_key = 125

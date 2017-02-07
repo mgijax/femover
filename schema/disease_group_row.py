@@ -49,8 +49,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+table = Table.Table (tableName, createStatement, indexes, keys, comments, clusteredIndex)
 
 ###--- Main program ---###
 
