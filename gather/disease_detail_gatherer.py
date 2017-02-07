@@ -922,10 +922,17 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					diseaseRow.getTermKey())
 					)
 
+				# new
 				# iterate thru DAG/Ancestor
 				# diseae_group_row
-				dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
-				dgrKey += 1
+		                for r in termToAncestor[termKey]:
+				    ancestorKey = r[2]
+				    ancestorTerm = r[3]
+		                    logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
+				    dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
+				    dgrKey += 1
+				    dgr.append((dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm))
+				    dgrKey += 1
 
 				# one row in disease_row_to_marker for each
 				# marker symbol to be displayed in the row
@@ -1023,6 +1030,8 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 	def collateResults (self):
 		# main method for pulling the various results sets together
 
+		global termToAncestor
+
 		# step 0 - disease table
 		columns, rows = self.buildDiseaseTable()
 		self.output.append ( (columns, rows) )
@@ -1051,15 +1060,26 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			if key not in termKeys:
 			    termKeys.append (key)
 		termKeys.sort()
-		#logger.debug ('termKeys: ' + str(termKeys))
-
 		logger.debug ('Found %d distinct diseases' % len(termKeys))
 
-		# step 5 - cache basic data for mouse and human markers
+		# step 5 - get a list of distinct disease term->ancestors
+		termToAncestor = {}
+		cols, rows = self.results[9]
+		for row in rows:
+			key = row[0]
+			value = row
+			if key not in termToAncestor:
+				termToAncestor[key] = []
+			termToAncestor[key].append(value)
+		for r in termToAncestor[27436061]:
+		    logger.debug (str(r[2]) + ',' + str(r[3]))
+		logger.debug ('Found %d distinct ancestors' % len(termToAncestor))
+			
+		# step 6 - cache basic data for mouse and human markers
 
 		self.buildMarkerCache()
 
-		# step 6 - build DiseaseModel objects and cache them
+		# step 7 - build DiseaseModel objects and cache them
 
 		self.buildDiseaseModelCache(termToMouseMarkers)
 
@@ -1083,7 +1103,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# pre-computed sequence number and a flag for whether that
 		# marker causes the disease.
 
-		# step 7 - build rows for each related table for each disease,
+		# step 8 - build rows for each related table for each disease,
 		# concatenating rows into a list for each table
 
 		# lists of rows for all diseases
@@ -1146,7 +1166,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		self.writeOneFile()
 		self.writeOneFile()
 
-		# step 8 - now we need to relate the DiseaseRow objects to the
+		# step 9 - now we need to relate the DiseaseRow objects to the
 		# DiseaseModel objects to be able to produce three more
 		# tables:  disease_row_to_model, disease_model, and
 		# disease_model_to_reference
@@ -1308,16 +1328,6 @@ cmds = [
 
         # 7. pull out all DO term keys
         '''select distinct _Term_key from voc_term where _Vocab_key = 125''',
-        #'''select distinct v._Term_key
-        #from voc_annot v
-        #where v._AnnotType_key in (%d, %d)
-        #union
-        #select distinct t._Term_key
-        #from voc_annot v, dag_closure dc, voc_term t
-        #where v._AnnotType_key in (%d, %d)
-        #and v._Term_key = dc._DescendentObject_key
-        #and dc._AncestorObject_key = t._Term_key
-        #''' % (DO_GENOTYPE, DO_HUMAN_MARKER, DO_GENOTYPE, DO_HUMAN_MARKER),
 
 	# 8. like query 5, but brings in disease models for markers associated
 	# with alleles via 'expresses component' and 'mutation involves'
@@ -1340,6 +1350,15 @@ cmds = [
 		and r._Category_key = %d
 		and va._Term_key = t._Term_key
 	order by _Marker_key''' % (DO_GENOTYPE, EXPRESSES_COMPONENT),	
+
+	# 9. Ancestor
+        '''select t._Term_key, t.term, tt._Term_key as ancestorKey, tt.term as ancestorTerm
+        from voc_term t, dag_closure dc, voc_term tt
+        where t._Vocab_key = 125
+        and t._Term_key = dc._DescendentObject_key
+        and dc._AncestorObject_key = tt._Term_key
+        ''',
+
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
