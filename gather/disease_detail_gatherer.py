@@ -926,14 +926,15 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				# diseae_group_row
 				# iterate thru termToAncestor to add all terms and ancestors
 				#
-		                for r in termToAncestor[termKey]:
-				    ancestorKey = r[2]
-				    ancestorTerm = r[3]
-		                    #logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
-				    dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
-				    dgrKey += 1
-				    dgr.append((dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm))
-				    dgrKey += 1
+				if termKey in termToAncestor:
+		                    for r in termToAncestor[termKey]:
+				        ancestorKey = r[2]
+				        ancestorTerm = r[3]
+		                        #logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
+				        dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
+				        dgrKey += 1
+				        dgr.append((dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm))
+				        dgrKey += 1
 
 				# one row in disease_row_to_marker for each
 				# marker symbol to be displayed in the row
@@ -1072,8 +1073,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			if key not in termToAncestor:
 				termToAncestor[key] = []
 			termToAncestor[key].append(value)
-		for r in termToAncestor[27436061]:
-		    logger.debug (str(r[2]) + ',' + str(r[3]))
 		logger.debug ('Found %d distinct ancestors' % len(termToAncestor))
 			
 		# step 6 - cache basic data for mouse and human markers
