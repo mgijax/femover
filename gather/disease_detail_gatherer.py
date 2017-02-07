@@ -935,6 +935,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				# one disease_group_row for each ancestor
 				#
 				if termKey in termToAncestor:
+
 		                    for r in termToAncestor[termKey]:
 
 				        ancestorKey = r[2]
@@ -942,16 +943,16 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 					# if necessary, create new group for each ancestorKey
 					if (ancestorKey, groupType) not in saveAncestorGroupType:
-			                    diseaseGroupKey = nextDiseaseGroupKey()
-			                    dg.append ( (diseaseGroupKey, ancestorKey, groupType, groupSeqNum) )
+			                    ancestorGroupKey = nextDiseaseGroupKey()
+			                    dg.append ( (ancestorGroupKey, ancestorKey, groupType, groupSeqNum) )
 					    saveAncestorGroupType[(ancestorKey, groupType)] = []
-					    saveAncestorGroupType[(ancestorKey, groupType)].append(diseaseGroupKey)
-					# or get existing diseaseGroupKey
+					    saveAncestorGroupType[(ancestorKey, groupType)].append(ancestorGroupKey)
+					# or get existing ancestorGroupKey
 					else:
-					    diseaseGroupKey = saveAncestorGroupType[(ancestorKey, groupType)][0]
+					    ancestorGroupKey = saveAncestorGroupType[(ancestorKey, groupType)][0]
 
 					# create new disease_group_row for each ancestorKey
-				        dgr.append( (dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm, term(termKey)) )
+				        dgr.append( (dgrKey, ancestorGroupKey, drKey, ancestorKey, ancestorTerm, term(termKey)) )
 				        dgrKey += 1
 
 				#
