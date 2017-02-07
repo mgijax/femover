@@ -7,6 +7,8 @@ import logger
 import symbolsort
 import gc
 
+NS = 'Not Specified'
+
 ###--- Functions ---###
 
 def nameCompare(a, b):
@@ -16,6 +18,12 @@ def nameCompare(a, b):
 	if n:
 		return n
 	
+	if a[1] == NS:		# sink not specified types to the bottom
+		if b[1] != NS:
+			return 1
+	elif b[1] == NS:
+		return -1
+	
 	t = symbolsort.nomenCompare(a[1], b[1])
 	if t:
 		return t
@@ -24,6 +32,12 @@ def nameCompare(a, b):
 
 def typeCompare(a, b):
 	# assumes a and b are [name, type, ID, key, ...]
+	
+	if a[1] == NS:		# sink not specified types to the bottom
+		if b[1] != NS:
+			return 1
+	elif b[1] == NS:
+		return -1
 	
 	t = symbolsort.nomenCompare(a[1], b[1])
 	if t:
