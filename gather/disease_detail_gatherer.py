@@ -928,7 +928,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		                for r in termToAncestor[termKey]:
 				    ancestorKey = r[2]
 				    ancestorTerm = r[3]
-		                    logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
+		                    #logger.debug (str(ancestorKey) + ',' + str(ancestorTerm))
 				    dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
 				    dgrKey += 1
 				    dgr.append((dgrKey, diseaseGroupKey, drKey, ancestorKey, ancestorTerm))
