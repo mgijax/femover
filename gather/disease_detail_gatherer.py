@@ -773,7 +773,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		# disease_row_key, disease_model_key)
 
 		dg = []		# contents of disease_group for this disease
-		dgr = []
+		dgr = []        # contents of disease_group_row for this disease
 		dr = []		# contents of disease_row for this disease
 		drtm = []	# contents of disease_row_to_marker for this disease
 
@@ -922,24 +922,20 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					diseaseRow.getTermKey())
 					)
 
-				# new
-				dgr.append( (dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)) )
+				# iterate thru DAG/Ancestor
+				# diseae_group_row
+				dgr.append((dgrKey, diseaseGroupKey, drKey, termKey, term(termKey)))
 				dgrKey += 1
 
 				# one row in disease_row_to_marker for each
 				# marker symbol to be displayed in the row
 
-				genes = diseaseRow.getMouseGenes() + \
-					diseaseRow.getHumanGenes()
+				genes = diseaseRow.getMouseGenes() + diseaseRow.getHumanGenes()
 
 				mrkSeqNum = 0
-
 				for (markerKey, isCausative) in genes:
 					mrkSeqNum = mrkSeqNum + 1
-
-					drtm.append ( (drKey, markerKey,
-						mrkSeqNum, isCausative,
-						organism(markerKey)) )
+					drtm.append ((drKey, markerKey, mrkSeqNum, isCausative, organism(markerKey)))
 
 		return dg, dgr, dr, drtm, diseaseRows, additionalModelMap
 
@@ -1200,59 +1196,25 @@ cmds = [
 	order by t._Term_key''',
 
 	# 2. all disease annotations to human markers
-	'''WITH human_annotations AS (
-	select va._Term_key, mm._Marker_key, mo.commonName
+	'''select va._Term_key, mm._Marker_key, mo.commonName
 	from voc_annot va, mrk_marker mm, mgi_organism mo
 	where va._AnnotType_key = %d
 		and va._Object_key = mm._Marker_key
 		and mm._Marker_Status_key = 1
 		and va._Qualifier_key != %d
 		and mm._Organism_key = mo._Organism_key
-	)
-	(
-        select distinct t.term, t._Term_key, a._Marker_key, a.commonName
-        from human_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        union all
-        select distinct tt.term, tt._Term_key, a._Marker_key, a.commonName
-        from human_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        )
 	''' % (DO_HUMAN_MARKER, NOT_QUALIFIER),
 
 	# 3. pull in the pre-computed DO annotations, where we have rolled
 	# up genotype-level annotations to their respective markers.  We must
 	# exclude 'not' annotations for this query.
-	'''WITH precomputed_annotations AS (
-	select distinct a._Term_key, m._Marker_key, mo.commonName
+	'''select distinct a._Term_key, m._Marker_key, mo.commonName
 	from voc_annot a, mrk_marker m, mgi_organism mo
 	where a._AnnotType_key = %d
 		and a._Qualifier_key != %d
 		and a._Object_key = m._Marker_key
 		and m._Marker_Status_key = 1
 		and m._Organism_key = mo._Organism_key
-	)
-	(
-        select distinct t.term, t._Term_key, a._Marker_key, a.commonName
-        from precomputed_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        union all
-        select distinct tt.term, tt._Term_key, a._Marker_key, a.commonName
-        from precomputed_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        )
 	''' % (DISEASE_MARKER, NOT_QUALIFIER),
 
 	# 4. all current mouse and human markers' basic data,
@@ -1303,9 +1265,7 @@ cmds = [
 	# 1) rows using the annotated term itself
 	# 2) rows using the parent disease term of the annotated term
 	#
-	'''
-        WITH genotype_annotations AS (
-        select distinct va._Term_key, gag._Marker_key, gg._Genotype_key,
+	'''select distinct va._Term_key, gag._Marker_key, gg._Genotype_key,
                 va._Qualifier_key, ve._Refs_key, gag.sequenceNum,
                 gag._Allele_key
         from gxd_genotype gg,
@@ -1323,30 +1283,11 @@ cmds = [
                 and a.isWildType = 0
                 and a._Marker_key = m._Marker_key
                 and m._Organism_key = mo._Organism_key
-        )
-        (
-        select distinct t.term, t._Term_key, a._Marker_key, a._Genotype_key,
-                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key
-        from genotype_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        union all
-        select distinct tt.term, tt._Term_key, a._Marker_key, a._Genotype_key,
-                a._Qualifier_key, a._Refs_key, a.sequenceNum, a._Allele_key
-        from genotype_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        )
 	order by _Marker_key''' % DO_GENOTYPE,
 
 	# 6. pull out all disease models (including complex, not conditionals)
 	# so we can find those that we don't already have tied to a disease row
-	'''WITH models AS (
-	select distinct va._Term_key, gag._Marker_key, gg._Genotype_key,
+	'''select distinct va._Term_key, gag._Marker_key, gg._Genotype_key,
 		va._Qualifier_key, ve._Refs_key, gag.sequenceNum
 	from gxd_genotype gg,
 		gxd_allelegenotype gag,
@@ -1363,34 +1304,25 @@ cmds = [
 		and a.isWildType = 0
 		and a._Marker_key = m._Marker_key
 		and m._Organism_key = mo._Organism_key
-	)
-	(
-	select distinct t.term, t._Term_key, m._Marker_key, m._Genotype_key,
-		m._Qualifier_key, m._Refs_key, m.sequenceNum
-	from models m, voc_term t, dag_closure dc, voc_term tt
-	where m._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        union all
-	select distinct tt.term, tt._Term_key, m._Marker_key, m._Genotype_key,
-		m._Qualifier_key, m._Refs_key, m.sequenceNum
-	from models m, voc_term t, dag_closure dc, voc_term tt
-        where m._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-	)
 	order by _Marker_key''' % DO_GENOTYPE,
 
         # 7. pull out all DO term keys
         '''select distinct _Term_key from voc_term where _Vocab_key = 125''',
+        #'''select distinct v._Term_key
+        #from voc_annot v
+        #where v._AnnotType_key in (%d, %d)
+        #union
+        #select distinct t._Term_key
+        #from voc_annot v, dag_closure dc, voc_term t
+        #where v._AnnotType_key in (%d, %d)
+        #and v._Term_key = dc._DescendentObject_key
+        #and dc._AncestorObject_key = t._Term_key
+        #''' % (DO_GENOTYPE, DO_HUMAN_MARKER, DO_GENOTYPE, DO_HUMAN_MARKER),
 
 	# 8. like query 5, but brings in disease models for markers associated
 	# with alleles via 'expresses component' and 'mutation involves'
 	# relationships
-	'''WITH model_annotations AS (
-	select distinct va._Term_key, r._Object_key_2 as _Marker_key,
+	'''select distinct va._Term_key, r._Object_key_2 as _Marker_key,
 		gag._Genotype_key, va._Qualifier_key, ve._Refs_key,
 		gag.sequenceNum, gag._Allele_key, t.term
 	from gxd_allelegenotype gag,
@@ -1407,28 +1339,6 @@ cmds = [
 		and a._Allele_key = r._Object_key_1
 		and r._Category_key = %d
 		and va._Term_key = t._Term_key
-        )
-        (
-        select distinct t.term, t._Term_key, 
-	        a._Marker_key,
-		a._Genotype_key, a._Qualifier_key, a._Refs_key,
-		a.sequenceNum, a._Allele_key
-        from model_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        union all
-        select distinct tt.term, tt._Term_key, 
-	        a._Marker_key,
-		a._Genotype_key, a._Qualifier_key, a._Refs_key,
-		a.sequenceNum, a._Allele_key
-        from model_annotations a, voc_term t, dag_closure dc, voc_term tt
-        where a._Term_key = t._Term_key
-        and t._Term_key = dc._DescendentObject_key
-        and dc._AncestorObject_key = tt._Term_key
-        and tt._Vocab_key = 125
-        )
 	order by _Marker_key''' % (DO_GENOTYPE, EXPRESSES_COMPONENT),	
 	]
 
