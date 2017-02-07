@@ -922,9 +922,10 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					diseaseRow.getTermKey())
 					)
 
-				# new
-				# iterate thru DAG/Ancestor
+				#
 				# diseae_group_row
+				# iterate thru termToAncestor to add all terms and ancestors
+				#
 		                for r in termToAncestor[termKey]:
 				    ancestorKey = r[2]
 				    ancestorTerm = r[3]
