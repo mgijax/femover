@@ -46,7 +46,9 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+	'gxd_literature_count' : 'create index %s on %s (gxd_literature_count)',
+}
 
 keys = { 'marker_key' : ('marker', 'marker_key') }
 
