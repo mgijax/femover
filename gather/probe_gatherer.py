@@ -99,23 +99,24 @@ cmds = [
 		p.insertSize as insert_size,
 		p.productSize as product_size,
 		s.name as library,
+		r.jnumID as library_jnum,
 		pt.tissue,
 		regionCovered as region_covered,
 		st.strain
-	from prb_probe p, voc_term t, acc_accession a, prb_source s, mgi_organism o,
-		voc_term x, voc_term c, voc_term v, prb_tissue pt, prb_strain st
-	where p._Probe_key = a._Object_key
-		and p._Vector_key = v._Term_key
-		and p._Source_key = s._Source_key
-		and s._Tissue_key = pt._Tissue_key
-		and s._Strain_key = st._Strain_key
-		and s._Organism_key = o._Organism_key
-		and s._Gender_key = x._Term_key
-		and s._CellLine_key = c._Term_key
-		and a._MGIType_key = 3
+	from prb_probe p
+	inner join voc_term t on (p._SegmentType_key = t._Term_key)
+	inner join acc_accession a on (p._Probe_key = a._Object_key
 		and a.preferred = 1
 		and a._LogicalDB_key = 1
-		and p._SegmentType_key = t._Term_key''',
+		and a._MGIType_key = 3)
+	inner join prb_source s on (p._Source_key = s._Source_key)
+	inner join mgi_organism o on (s._Organism_key = o._Organism_key)
+	inner join voc_term x on (s._Gender_key = x._Term_key)
+	inner join voc_term c on (s._CellLine_key = c._Term_key)
+	inner join voc_term v on (p._Vector_key = v._Term_key)
+	inner join prb_tissue pt on (s._Tissue_key = pt._Tissue_key)
+	inner join prb_strain st on (s._Strain_key = st._Strain_key)
+	left outer join bib_citation_cache r on (s._Refs_key = r._Refs_key)''',
 
 	# 1. clone IDs
 	'''select p._Probe_key, a.accID as cloneID
@@ -139,7 +140,7 @@ cmds = [
 # output file
 fieldOrder = [ '_Probe_key', 'name', 'segmentType', 'primaryID', 'logicalDB', 'cloneID',
 		'organism', 'age', 'sex', 'cell_line', 'vector', 'insert_site', 'insert_size',
-		'product_size', 'library', 'tissue', 'region_covered', 'strain', 'gxd_count',
+		'product_size', 'library', 'library_jnum', 'tissue', 'region_covered', 'strain', 'gxd_count',
 	]
 
 # prefix for the filename of the output file

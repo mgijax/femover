@@ -27,6 +27,9 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'emapa_term_key' : 'create index %s on %s (emapa_term_key)',
+	'start_stage' : 'create index %s on %s (start_stage)',
+	'end_stage' : 'create index %s on %s (end_stage)',
+	'stage' : 'create index %s on %s (stage)',
 	}
 
 # column name -> (related table, column in related table)

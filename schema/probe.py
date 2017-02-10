@@ -24,6 +24,7 @@ createStatement = '''CREATE TABLE %s  (
 	insert_size		text NULL,
 	product_size	text NULL,
 	library			text NULL,
+	library_jnum	text NULL,
 	tissue			text NULL,
 	region_covered	text NULL,
 	strain			text NULL,
