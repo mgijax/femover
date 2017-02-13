@@ -29,7 +29,8 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'term_key' : 'create index %s on %s (term_key)',
-	'term_key_depth' : 'create index %s on %s (term_key, depth)'
+	'term_key_depth' : 'create index %s on %s (term_key, depth)',
+	'ancestor_term_key' : 'create index %s on %s (ancestor_term_key)'
 	}
 
 keys = {
