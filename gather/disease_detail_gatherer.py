@@ -892,7 +892,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		#	(disease row key, marker key, sequence num, is causative flag?, and organism)
 		drtm = []
 
-		groupSeqNum = 0		# sequence number for disease groups
+		groupSeqNum = 1		# sequence number for disease groups
 
 		for groupType in GROUP_ORDER:
 
@@ -901,24 +901,26 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			if not groups.has_key(groupType):
 				continue
 
-			groupSeqNum = groupSeqNum + 1
-			diseaseGroupKey = nextDiseaseGroupKey()
-
 			# one disease_group row for this disease/group pair
-			dg.append ( (diseaseGroupKey, termKey, groupType, groupSeqNum) )
+		        diseaseGroupKey = nextDiseaseGroupKey()
+			if (termKey, groupType) not in saveAncestorGroupType:
+				dg.append ( (diseaseGroupKey, termKey, groupType, groupSeqNum) )
+		        	groupSeqNum = groupSeqNum + 1
+				saveAncestorGroupType[(termKey, groupType)] = []
+				saveAncestorGroupType[(termKey, groupType)].append(diseaseGroupKey)
+			else:
+				diseaseGroupKey = saveAncestorGroupType[(termKey, groupType)][0]
 
 			rowSeqNum = 0
 			for diseaseRow in groups[groupType]:
-				rowSeqNum = rowSeqNum + 1
 
+				rowSeqNum = rowSeqNum + 1
 				drKey = diseaseRow.getKey()
 
 				# one disease_row row for each row that will
 				# appear in the displayed table
-				dr.append ( (drKey, diseaseGroupKey,
-					rowSeqNum, diseaseRow.getClassKey(),
-					diseaseRow.getTermKey())
-					)
+				dr.append ( (drKey, diseaseGroupKey, rowSeqNum, 
+					diseaseRow.getClassKey(), diseaseRow.getTermKey()) )
 
 				#
 				# start: diseae_group_row
@@ -940,11 +942,17 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 				        ancestorKey = r[2]
 				        ancestorTerm = r[3]
+			                #ancestorGroupKey = diseaseGroupKey
+
+					if termKey == ancestorKey:
+					    continue
 
 					# if necessary, create new group for each ancestorKey
 					if (ancestorKey, groupType) not in saveAncestorGroupType:
 			                    ancestorGroupKey = nextDiseaseGroupKey()
-			                    dg.append ( (ancestorGroupKey, ancestorKey, groupType, groupSeqNum) )
+					    #ancestorSeqNum = 10
+					    ancestorSeqNum = groupSeqNum + 1
+			                    dg.append ( (ancestorGroupKey, ancestorKey, groupType, ancestorSeqNum) )
 					    saveAncestorGroupType[(ancestorKey, groupType)] = []
 					    saveAncestorGroupType[(ancestorKey, groupType)].append(ancestorGroupKey)
 					# or get existing ancestorGroupKey
