@@ -23,7 +23,7 @@ cmds = [
 	from acc_accession a, acc_logicaldb ldb
 	where a._MGIType_key = 3
 		and a._LogicalDB_key = ldb._LogicalDB_key
-		and ldb._LogicalDB_key != 9
+		and ldb._LogicalDB_key not in (9, 25)
 		and exists (select 1 from prb_probe aa
 			where a._Object_key = aa._probe_key)'''
 	]
