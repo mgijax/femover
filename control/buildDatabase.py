@@ -40,7 +40,7 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-M|-n|-o|-p|-r|-s|-x|-X] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
@@ -54,6 +54,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <g
 	-i : Images
 	-l : Other
 	-m : Markers
+	-M : mapping data
 	-n : Annotations
 	-o : Human Disease Portal
 	-p : Probes
@@ -221,6 +222,8 @@ OTHER = [ 'glossary', 'statistic'
 	]
 IMSR = [ 'imsr',
 	]
+MAPPING = [ 'mapping_experiment', 'mapping_id', 'mapping_link', 'mapping_to_marker', 'mapping_rirc',
+	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
 		'marker_location', 'marker_counts', 
@@ -271,7 +274,7 @@ FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
-	'-X' : HT_EXPRESSION,
+	'-X' : HT_EXPRESSION,	'-M' : MAPPING,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
