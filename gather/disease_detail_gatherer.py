@@ -917,8 +917,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 				rowSeqNum = rowSeqNum + 1
 				drKey = diseaseRow.getKey()
 
-				# one disease_row row for each row that will
-				# appear in the displayed table
+				# one disease_row row for each row that will appear in the displayed table
 				dr.append ( (drKey, diseaseGroupKey, rowSeqNum, 
 					diseaseRow.getClassKey(), diseaseRow.getTermKey()) )
 
@@ -950,7 +949,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 					# if necessary, create new group for each ancestorKey
 					if (ancestorKey, groupType) not in saveAncestorGroupType:
 			                    ancestorGroupKey = nextDiseaseGroupKey()
-					    #ancestorSeqNum = 10
 					    ancestorSeqNum = groupSeqNum + 1
 			                    dg.append ( (ancestorGroupKey, ancestorKey, groupType, ancestorSeqNum) )
 					    saveAncestorGroupType[(ancestorKey, groupType)] = []

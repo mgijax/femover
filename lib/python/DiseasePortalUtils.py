@@ -370,7 +370,7 @@ def getReferencesByDiseaseKey():
 	        select distinct v._Term_key, e._Refs_key
 		from VOC_Annot v, VOC_Evidence e
 		where v._AnnotType_key = %d 
-		    and v._Qualifier_key != %d
+		    and v._Qualifier_key not in (%d)
 		    and v._Annot_key = e._Annot_key
 		union
 	        select distinct v._Term_key, e._Refs_key
