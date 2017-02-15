@@ -20,7 +20,6 @@ createStatement = '''CREATE TABLE %s  (
 	reference_key		int		not null,
 	reference_note		text	null,
 	chromosome			text	not null,
-	modification_date	text	null,
 	primary_id			text	null,
 	PRIMARY KEY(experiment_key))''' % tableName
 
@@ -51,7 +50,6 @@ comments = {
 		'reference_key' : 'foreign key to reference table, identifying publication for this experiment',
 		'reference_note' : 'note for this reference regarding this experiment',
 		'chromosome' : 'chromosome studied in this experiment',
-		'modification_date' : 'date that data for this mapping experiment was last modified',
 		'primary_id' : 'primary MGI ID for the experiment',
 		},
 	Table.INDEX : {

@@ -53,7 +53,7 @@ class MappingExperimentGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. basic experiment data; notes fields only have one record, so sequenceNum restriction is just an extra
 	#	safety measure to make sure we don't get extra records.
-	'''select e._Expt_key, e._Refs_key, e.exptType, e.chromosome, e.modification_date::text as modification_date,
+	'''select e._Expt_key, e._Refs_key, e.exptType, e.chromosome, 
 		a.accID, rn.note as refsNote, en.note as exptNote, cs.alleleFromSegParent, cs.F1DirectionKnown
 	from mld_expts e
 	inner join acc_accession a on (e._Expt_key = a._Object_key and a._LogicalDB_key = 1
@@ -68,7 +68,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Expt_key', 'exptType', 'exptNote', '_Refs_key', 'refsNote', 'chromosome', 'modification_date', 'accID',
+	'_Expt_key', 'exptType', 'exptNote', '_Refs_key', 'refsNote', 'chromosome', 'accID',
 	]
 
 # prefix for the filename of the output file
