@@ -1412,47 +1412,42 @@ cmds = [
 	# 10. 
 	'''
         WITH term_reference AS (
-        select distinct v._term_key, e._Refs_key
-            from VOC_Annot v, VOC_Evidence e
-            where v._AnnotType_key = %d
-            and v._Qualifier_key not in (%d)
-            and v._Annot_key = e._Annot_key
+                select distinct t._term_key, e._Refs_key
+                from VOC_Term t, VOC_Annot v, VOC_Evidence e
+                where t._Vocab_key = 125
+                and t._Term_key = v._Term_key
+                and v._AnnotType_key = %d
+                and v._Qualifier_key not in (%d)
+                and v._Annot_key = e._Annot_key
         union
-        select distinct v._term_key, e._Refs_key
-            from VOC_Annot v, VOC_Evidence e
-            where v._AnnotType_key = %d
-            and v._Annot_key = e._Annot_key
+                select distinct t._term_key, e._Refs_key
+                from VOC_Term t, VOC_Annot v, VOC_Evidence e
+                where t._Vocab_key = 125
+                and t._Term_key = v._Term_key
+                and v._AnnotType_key = %d
+                and v._Annot_key = e._Annot_key
         union
-        select distinct v._term_key, ee._Refs_key
-            from VOC_Annot v, VOC_Evidence e, VOC_Term t, 
-		DAG_Closure dc, VOC_Term tt, VOC_Annot vv, VOC_Evidence ee
-            where v._AnnotType_key = %d
-            and v._Qualifier_key not in (%d) 
-            and v._Annot_key = e._Annot_key
-            and v._Term_key = t._Term_key
-            and t._Term_key = dc._AncestorObject_key
-            and dc._DescendentObject_key = tt._Term_key
-            and tt._term_key = vv._Term_key
-            and vv._AnnotType_key = %d
-            and vv._Qualifier_key not in (%d)
-            and vv._Annot_key = ee._Annot_key
-	union
-        select distinct v._term_key, ee._Refs_key
-            from VOC_Annot v, VOC_Evidence e, VOC_Term t, 
-		DAG_Closure dc, VOC_Term tt, VOC_Annot vv, VOC_Evidence ee
-            where v._AnnotType_key = %d
-            and v._Annot_key = e._Annot_key
-            and v._Term_key = t._Term_key
-            and t._Term_key = dc._AncestorObject_key
-            and dc._DescendentObject_key = tt._Term_key
-            and tt._term_key = vv._Term_key
-            and vv._AnnotType_key = %d
-            and vv._Annot_key = ee._Annot_key
+                select distinct t._term_key, e._Refs_key
+                from VOC_Term t, DAG_Closure dc, VOC_Annot v, VOC_Evidence e
+                where t._Vocab_key = 125
+                and t._Term_key = dc._AncestorObject_key
+                and dc._DescendentObject_key = v._Term_key
+                and v._AnnotType_key = %d
+                and v._Qualifier_key not in (%d)
+                and v._Annot_key = e._Annot_key
+        union
+                select distinct t._term_key, e._Refs_key
+                from VOC_Term t, DAG_Closure dc, VOC_Annot v, VOC_Evidence e
+                where t._Vocab_key = 125
+                and t._Term_key = dc._AncestorObject_key
+                and dc._DescendentObject_key = v._Term_key
+                and v._AnnotType_key = %d
+                and v._Annot_key = e._Annot_key
         )
         select _Term_key, count(_Refs_key) as refCount
-	from term_reference
-	group by _Term_key
-	''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_ALLELE),
+        from term_reference
+        group by _Term_key
+	''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE),
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
