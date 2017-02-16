@@ -223,7 +223,7 @@ OTHER = [ 'glossary', 'statistic'
 IMSR = [ 'imsr',
 	]
 MAPPING = [ 'mapping_experiment', 'mapping_id', 'mapping_link', 'mapping_to_marker', 'mapping_rirc',
-		'mapping_cross', 'mapping_hybrid', 'mapping_insitu',
+		'mapping_cross', 'mapping_hybrid', 'mapping_insitu', 'mapping_fish',
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
