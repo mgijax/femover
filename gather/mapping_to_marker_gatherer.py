@@ -15,7 +15,8 @@ MappingToMarkerGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-	'''select e._Expt_key, e._Marker_key, e._Allele_key, a.description as assay_type, e.description
+	'''select e._Expt_key, e._Marker_key, e._Allele_key, a.description as assay_type, e.description,
+			e.sequenceNum
 		from MLD_Expt_Marker e, MLD_Expts me, MLD_Assay_Types a
 		where e._Assay_Type_key = a._Assay_Type_key
 			and e._Expt_key = me._Expt_key
@@ -24,7 +25,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ Gatherer.AUTO, '_Expt_key', '_Marker_key', '_Allele_key', 'assay_type', 'description', ]
+fieldOrder = [ Gatherer.AUTO, '_Expt_key', '_Marker_key', '_Allele_key', 'assay_type', 'description', 'sequenceNum', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'mapping_to_marker'

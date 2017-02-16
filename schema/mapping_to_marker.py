@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	allele_key		int		null,
 	assay_type		text	not null,
 	description		text	null,
+	sequence_num	int		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -50,6 +51,7 @@ comments = {
 		'allele_key' : 'foreign key to allele table, identifies the allele object (where available)',
 		'assay_type' : 'type of assay for the marker',
 		'description' : 'extra description for the experiment/marker pair',
+		'sequence_num' : 'curator-assigned sequence number to order markers for an experiment',
 		},
 	Table.INDEX : {
 		'marker_key' : 'fast retrieval of experiments for a marker',
