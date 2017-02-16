@@ -1407,6 +1407,8 @@ cmds = [
 
 
 	# 10. Term counts by Reference ; going down the DAG
+	# terms who are annotated (DO_GENOTYPE, DO_ALLELE)
+	# terms whose descendents are annotated (DO_GENOTYPE, DO_ALLELE)
 	'''
         WITH term_reference AS (
                 select distinct t._term_key, e._Refs_key
