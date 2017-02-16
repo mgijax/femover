@@ -14,6 +14,7 @@ import DiseasePortalUtils
 ###--- Constants ---###
 
 DO_GENOTYPE = 1020		# VOC_AnnotType for 'DO/Genotype'
+DO_ALLELE = 1021		# VOC_AnnotType for 'DO/Allele'
 DO_HUMAN_MARKER = 1022	        # VOC_AnnotType for 'DO/Human Marker'
 DISEASE_MARKER = 1023		# VOC_AnnotType for 'DO/Marker (Derived)'
 
@@ -598,9 +599,23 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		global TERM_CACHE
 
-		outColumns = [ '_Term_key', 'term', 'accID', 'name',
-			'refCount', 'hpoCount' ]
+		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ]
 		outRows = []
+
+		#
+		# termToRefs count by DAG
+		#
+                termToRefs = {}                 # term key -> [ refs key 1, ... ]
+		cols, rows = self.results[10]
+		termCol = Gatherer.columnNumber (cols, '_Term_key')
+		refsCol = Gatherer.columnNumber (cols, 'refCount')
+                for row in rows:
+                    term = row[termCol]
+                    if termToRefs.has_key(term):
+                        termToRefs[term].append(row[refsCol])
+                    else:
+                        termToRefs[term] = [row[refsCol]]
+		logger.debug ('termToRefs: %s' % str(termToRefs))
 
 		cols, rows = self.results[0]
 		keyCol = Gatherer.columnNumber (cols, '_Term_key')
@@ -611,14 +626,15 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		TERM_CACHE = {}
 
-		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
+		#termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
 		
 		for row in rows:
 			termKey = row[keyCol]
 
 			refsCount = 0
 			if termToRefs.has_key(termKey):
-				refsCount = len(termToRefs[termKey])
+				#refsCount = len(termToRefs[termKey])
+				refsCount = termToRefs[termKey][0]
 
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
@@ -627,8 +643,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			TERM_CACHE[row[keyCol]] = (row[termCol], row[idCol])
 
 		logger.debug ('Count of disease terms: %d' % len(outRows))
-		logger.debug ('Cached %d diseases in TERM_CACHE' % \
-			len(TERM_CACHE) )
+		logger.debug ('Cached %d diseases in TERM_CACHE' % len(TERM_CACHE) )
 
 		return outColumns, outRows
 
@@ -1393,6 +1408,51 @@ cmds = [
         and dc._AncestorObject_key = tt._Term_key
         ''',
 
+
+	# 10. 
+	'''
+        WITH term_reference AS (
+        select distinct v._term_key, e._Refs_key
+            from VOC_Annot v, VOC_Evidence e
+            where v._AnnotType_key = %d
+            and v._Qualifier_key not in (%d)
+            and v._Annot_key = e._Annot_key
+        union
+        select distinct v._term_key, e._Refs_key
+            from VOC_Annot v, VOC_Evidence e
+            where v._AnnotType_key = %d
+            and v._Annot_key = e._Annot_key
+        union
+        select distinct v._term_key, ee._Refs_key
+            from VOC_Annot v, VOC_Evidence e, VOC_Term t, 
+		DAG_Closure dc, VOC_Term tt, VOC_Annot vv, VOC_Evidence ee
+            where v._AnnotType_key = %d
+            and v._Qualifier_key not in (%d) 
+            and v._Annot_key = e._Annot_key
+            and v._Term_key = t._Term_key
+            and t._Term_key = dc._AncestorObject_key
+            and dc._DescendentObject_key = tt._Term_key
+            and tt._term_key = vv._Term_key
+            and vv._AnnotType_key = %d
+            and vv._Qualifier_key not in (%d)
+            and vv._Annot_key = ee._Annot_key
+	union
+        select distinct v._term_key, ee._Refs_key
+            from VOC_Annot v, VOC_Evidence e, VOC_Term t, 
+		DAG_Closure dc, VOC_Term tt, VOC_Annot vv, VOC_Evidence ee
+            where v._AnnotType_key = %d
+            and v._Annot_key = e._Annot_key
+            and v._Term_key = t._Term_key
+            and t._Term_key = dc._AncestorObject_key
+            and dc._DescendentObject_key = tt._Term_key
+            and tt._term_key = vv._Term_key
+            and vv._AnnotType_key = %d
+            and vv._Annot_key = ee._Annot_key
+        )
+        select _Term_key, count(_Refs_key) as refCount
+	from term_reference
+	group by _Term_key
+	''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_ALLELE),
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
