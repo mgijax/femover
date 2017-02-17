@@ -366,26 +366,6 @@ def getReferencesByDiseaseKey():
 	# distinct set of references for positive annotations from a
 	# genotype to a disease term and from an allele directly to a disease
 	# term
-	#cmd = '''
-	#        select distinct v._Term_key, e._Refs_key
-	#	from VOC_Annot v, VOC_Evidence e
-	#	where v._AnnotType_key = %d 
-	#	    and v._Qualifier_key not in (%d)
-	#	    and v._Annot_key = e._Annot_key
-	#	union
-	#        select distinct v._Term_key, e._Refs_key
-	#	from VOC_Annot v, VOC_Evidence e
-	#	where v._AnnotType_key = %d
-	#	    and v._Annot_key = e._Annot_key
-	#	union
-	#        select distinct tt._Term_key, e._Refs_key
-	#	from VOC_Annot v, VOC_Evidence e, DAG_Closure dc, VOC_Term tt
-	#	where v._AnnotType_key = %d 
-	#	    and v._Qualifier_key not in (%d)
-	#	    and v._Annot_key = e._Annot_key
-	#	    and v._Term_key = dc._AncestorObject_key
-	#	    and dc._DescendentObject_key = tt._Term_key
-	#	''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER)
 
 	cmd = '''
 	WITH term_reference AS (

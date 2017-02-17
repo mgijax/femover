@@ -602,21 +602,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ]
 		outRows = []
 
-		#
-		# 10. Term counts by Reference ; going down the DAG
-		#
-                #termToRefs = {}                 # term key -> [ ref count ]
-		#cols, rows = self.results[10]
-		#termCol = Gatherer.columnNumber (cols, '_Term_key')
-		#refCountCol = Gatherer.columnNumber (cols, 'refCount')
-                #for row in rows:
-                #    term = row[termCol]
-                #    if termToRefs.has_key(term):
-                #        termToRefs[term].append(row[refCountCol])
-                #    else:
-                #        termToRefs[term] = [row[refCountCol]]
-		#logger.debug ('termToRefs: %s' % str(termToRefs))
-
 		cols, rows = self.results[0]
 		keyCol = Gatherer.columnNumber (cols, '_Term_key')
 		termCol = Gatherer.columnNumber (cols, 'term')
@@ -627,7 +612,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		TERM_CACHE = {}
 
 		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
-		logger.debug ('termToRefs: %s' % str(termToRefs))
+		#logger.debug ('termToRefs: %s' % str(termToRefs))
 
 		for row in rows:
 			termKey = row[keyCol]
@@ -635,7 +620,6 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			refsCount = 0
 			if termToRefs.has_key(termKey):
 				refsCount = len(termToRefs[termKey])
-				#refsCount = termToRefs[termKey][0]
 
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
@@ -1408,49 +1392,6 @@ cmds = [
         and t._Term_key = dc._DescendentObject_key
         and dc._AncestorObject_key = tt._Term_key
         ''',
-
-
-	# 10. Term counts by Reference ; going down the DAG
-	# terms who are annotated (DO_GENOTYPE, DO_ALLELE)
-	# terms whose descendents are annotated (DO_GENOTYPE, DO_ALLELE)
-	'''
-        WITH term_reference AS (
-                select distinct t._term_key, e._Refs_key
-                from VOC_Term t, VOC_Annot v, VOC_Evidence e
-                where t._Vocab_key = 125
-                and t._Term_key = v._Term_key
-                and v._AnnotType_key = %d
-                and v._Qualifier_key not in (%d)
-                and v._Annot_key = e._Annot_key
-        union
-                select distinct t._term_key, e._Refs_key
-                from VOC_Term t, VOC_Annot v, VOC_Evidence e
-                where t._Vocab_key = 125
-                and t._Term_key = v._Term_key
-                and v._AnnotType_key = %d
-                and v._Annot_key = e._Annot_key
-        union
-                select distinct t._term_key, e._Refs_key
-                from VOC_Term t, DAG_Closure dc, VOC_Annot v, VOC_Evidence e
-                where t._Vocab_key = 125
-                and t._Term_key = dc._AncestorObject_key
-                and dc._DescendentObject_key = v._Term_key
-                and v._AnnotType_key = %d
-                and v._Qualifier_key not in (%d)
-                and v._Annot_key = e._Annot_key
-        union
-                select distinct t._term_key, e._Refs_key
-                from VOC_Term t, DAG_Closure dc, VOC_Annot v, VOC_Evidence e
-                where t._Vocab_key = 125
-                and t._Term_key = dc._AncestorObject_key
-                and dc._DescendentObject_key = v._Term_key
-                and v._AnnotType_key = %d
-                and v._Annot_key = e._Annot_key
-        )
-        select _Term_key, count(_Refs_key) as refCount
-        from term_reference
-        group by _Term_key
-	''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE),
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
