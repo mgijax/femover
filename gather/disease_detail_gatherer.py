@@ -605,17 +605,17 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		#
 		# 10. Term counts by Reference ; going down the DAG
 		#
-                termToRefs = {}                 # term key -> [ ref count ]
-		cols, rows = self.results[10]
-		termCol = Gatherer.columnNumber (cols, '_Term_key')
-		refCountCol = Gatherer.columnNumber (cols, 'refCount')
-                for row in rows:
-                    term = row[termCol]
-                    if termToRefs.has_key(term):
-                        termToRefs[term].append(row[refCountCol])
-                    else:
-                        termToRefs[term] = [row[refCountCol]]
-		logger.debug ('termToRefs: %s' % str(termToRefs))
+                #termToRefs = {}                 # term key -> [ ref count ]
+		#cols, rows = self.results[10]
+		#termCol = Gatherer.columnNumber (cols, '_Term_key')
+		#refCountCol = Gatherer.columnNumber (cols, 'refCount')
+                #for row in rows:
+                #    term = row[termCol]
+                #    if termToRefs.has_key(term):
+                #        termToRefs[term].append(row[refCountCol])
+                #    else:
+                #        termToRefs[term] = [row[refCountCol]]
+		#logger.debug ('termToRefs: %s' % str(termToRefs))
 
 		cols, rows = self.results[0]
 		keyCol = Gatherer.columnNumber (cols, '_Term_key')
@@ -626,12 +626,16 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		TERM_CACHE = {}
 
+		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
+		logger.debug ('termToRefs: %s' % str(termToRefs))
+
 		for row in rows:
 			termKey = row[keyCol]
 
 			refsCount = 0
 			if termToRefs.has_key(termKey):
-				refsCount = termToRefs[termKey][0]
+				refsCount = len(termToRefs[termKey])
+				#refsCount = termToRefs[termKey][0]
 
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
