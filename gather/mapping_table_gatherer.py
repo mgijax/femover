@@ -17,6 +17,7 @@ RI_MATRIX = 'RI MATRIX'
 RI_2x2 = 'RI 2x2'
 HYBRID_MATRIX = 'HYBRID MATRIX'
 FISH_MATRIX = 'FISH MATRIX'
+INSITU_MATRIX = 'INSITU MATRIX'
 
 HEADER = 1						# flag for header vs. data row
 DATA = 0
@@ -450,6 +451,45 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 			self.addRow(CELLS, [ rowKey, None, row[doubleCol], 3 ])
 		return
 
+	def processInSituData(self):
+		# process results of the query 9, region and grains data for IN SITU displays
+
+		cols9, rows9 = self.results[9]
+
+		exptKeyCol = Gatherer.columnNumber(cols9, '_Expt_key')
+		regionCol = Gatherer.columnNumber(cols9, 'region')
+		grainsCol = Gatherer.columnNumber(cols9, 'grainCount')
+
+		tablesCreated = {}
+		rowKey = None
+		
+		for row in rows9:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, INSITU_MATRIX)
+
+			if tableKey not in tablesCreated:
+				# create table record
+				self.addRow(TABLES, [ tableKey, exptKey, INSITU_MATRIX, tableKey ])
+				
+				# create header row
+				rowKey = self.getNewRowKey()
+				self.addRow(ROWS, [ rowKey, tableKey, HEADER, rowKey ])
+				
+				# add standard column headers
+				self.addRow(CELLS, [ rowKey, None, 'Region', 1 ])
+				self.addRow(CELLS, [ rowKey, None, 'Count', 2 ])
+				
+				tablesCreated[tableKey] = True
+				
+			# create new row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, DATA, rowKey ])
+
+			# populate new row with cells
+			self.addRow(CELLS, [ rowKey, None, row[regionCol], 1 ])
+			self.addRow(CELLS, [ rowKey, None, row[grainsCol], 2 ])
+		return
+
 	def processRIData(self):
 		self.processRIMatrixHeaders()
 		self.processRIMatrixDataRows()
@@ -461,6 +501,7 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 		self.processRIData()
 		self.processHybridData()
 		self.processFishData()
+		self.processInSituData()
 		self.processStatistics()
 		return
 	
@@ -589,7 +630,14 @@ cmds = [
 		from MLD_FISH_Region h
 		where h._Expt_key >= %d
 			and h._Expt_key < %d
-		order by h._Expt_key, h.sequenceNum'''
+		order by h._Expt_key, h.sequenceNum''',
+		
+	# 9. region and grain count data for IN SITU experiments
+	'''select h._Expt_key, h.region, h.grainCount
+		from MLD_ISRegion h
+		where h._Expt_key >= %d
+			and h._Expt_key < %d
+		order by h.sequenceNum''',
 	]
 
 files = [
