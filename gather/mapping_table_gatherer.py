@@ -13,12 +13,14 @@ CELLS = 'mapping_table_cell'
 
 CROSS_MATRIX = 'CROSS MATRIX'	# table types
 CROSS_2x2 = 'CROSS 2x2'
-CROSS_STATISTICS = 'CROSS STATISTICS'
+RI_MATRIX = 'RI MATRIX'
+RI_2x2 = 'RI 2x2'
 
 HEADER = 1						# flag for header vs. data row
 DATA = 0
 
 CROSS_MATRIX_HEADER = 'MC #mice'	# leftmost cell of CROSS matrix header row
+RI_MATRIX_HEADER = 'Marker'			# leftmost cell of RI matrix header row
 
 ###--- Classes ---###
 
@@ -169,31 +171,35 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 			self.addRow(CELLS, [ rowKey, None, row[parentalsCol], 4 ])
 		return
 
-	def processCrossStatistics(self):
-		# process results of the query 3, statistics data for CROSS displays
+	def processStatistics(self):
+		# process results of the query 6, statistics data for all experiment types
 
-		cols3, rows3 = self.results[3]
+		cols6, rows6 = self.results[6]
 		
-		exptKeyCol = Gatherer.columnNumber(cols3, '_Expt_key')
-		symbol1Col = Gatherer.columnNumber(cols3, 'marker1')
-		markerID1Col = Gatherer.columnNumber(cols3, 'markerID1')
-		symbol2Col = Gatherer.columnNumber(cols3, 'marker2')
-		markerID2Col = Gatherer.columnNumber(cols3, 'markerID2')
-		recombinantsCol = Gatherer.columnNumber(cols3, 'recomb')
-		totalCol = Gatherer.columnNumber(cols3, 'total')
-		percentCol = Gatherer.columnNumber(cols3, 'pcntrecomb')
-		stderrCol = Gatherer.columnNumber(cols3, 'stderr')
+		exptKeyCol = Gatherer.columnNumber(cols6, '_Expt_key')
+		symbol1Col = Gatherer.columnNumber(cols6, 'marker1')
+		markerID1Col = Gatherer.columnNumber(cols6, 'markerID1')
+		symbol2Col = Gatherer.columnNumber(cols6, 'marker2')
+		markerID2Col = Gatherer.columnNumber(cols6, 'markerID2')
+		recombinantsCol = Gatherer.columnNumber(cols6, 'recomb')
+		totalCol = Gatherer.columnNumber(cols6, 'total')
+		percentCol = Gatherer.columnNumber(cols6, 'pcntrecomb')
+		stderrCol = Gatherer.columnNumber(cols6, 'stderr')
+		typeCol = Gatherer.columnNumber(cols6, 'exptType')
 
 		tablesCreated = {}
 		rowKey = None
 		
-		for row in rows3:
-			exptKey = row[exptKeyCol]
-			tableKey = self.getTableKey(exptKey, CROSS_STATISTICS)
+		for row in rows6:
+			exptType = row[typeCol]
+			tableType = '%s STATISTICS' % exptType
 
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, tableType)
+			
 			if tableKey not in tablesCreated:
 				# create table record
-				self.addRow(TABLES, [ tableKey, exptKey, CROSS_STATISTICS, tableKey ])
+				self.addRow(TABLES, [ tableKey, exptKey, tableType, tableKey ])
 				
 				# create header row
 				rowKey = self.getNewRowKey()
@@ -227,11 +233,127 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 		self.processCrossMatrixHeaders()
 		self.processCrossMatrixDataRows()
 		self.processCross2x2Data()
-		self.processCrossStatistics()
+		return
+	
+	def processRIMatrixHeaders(self):
+		# process results of the query 3, building header rows for RI matrix displays
+
+		# header rows for matrix data
+		cols3, rows3 = self.results[3]
+		
+		exptKeyCol = Gatherer.columnNumber(cols3, '_Expt_key')
+		idListCol = Gatherer.columnNumber(cols3, 'ri_idlist')
+
+		cellSeqNum = 0
+		rowKey = None
+		
+		for row in rows3:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, RI_MATRIX)
+
+			# create table record
+			self.addRow(TABLES, [ tableKey, exptKey, RI_MATRIX, tableKey ])
+				
+			# create header row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, HEADER, rowKey ])
+				
+			# add cells
+			cellSeqNum = 1
+			self.addRow(CELLS, [ rowKey, None, RI_MATRIX_HEADER, cellSeqNum ])
+
+			for cellValue in row[idListCol].split(): 
+				cellSeqNum = cellSeqNum + 1
+				self.addRow(CELLS, [ rowKey, None, cellValue, cellSeqNum ])
+		return
+	
+	def processRIMatrixDataRows(self):
+		# process results of the query 4, building data rows for CROSS matrix displays
+
+		cols4, rows4 = self.results[4]
+		
+		exptKeyCol = Gatherer.columnNumber(cols4, '_Expt_key')
+		allelesCol = Gatherer.columnNumber(cols4, 'alleleline')
+		symbolCol = Gatherer.columnNumber(cols4, 'symbol')
+		idCol = Gatherer.columnNumber(cols4, 'accID')
+
+		for row in rows4:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, RI_MATRIX)
+			
+			# create new row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, DATA, rowKey ])
+
+			# populate new row with cells (first is marker count, others are alleles)
+			cellSeqNum = 1
+			self.addRow(CELLS, [ rowKey, row[idCol], row[symbolCol], cellSeqNum ])
+			
+			for allele in row[allelesCol].split(' '):
+				cellSeqNum = cellSeqNum + 1
+				self.addRow(CELLS, [ rowKey, None, allele, cellSeqNum ])
+		return
+			
+	def processRI2x2Data(self):
+		# process results of the query 5, 2x2 data for RI/RC displays
+
+		cols5, rows5 = self.results[5]
+		
+		exptKeyCol = Gatherer.columnNumber(cols5, '_Expt_key')
+		symbol1Col = Gatherer.columnNumber(cols5, 'marker1')
+		markerID1Col = Gatherer.columnNumber(cols5, 'markerID1')
+		symbol2Col = Gatherer.columnNumber(cols5, 'marker2')
+		markerID2Col = Gatherer.columnNumber(cols5, 'markerID2')
+		recombinantsCol = Gatherer.columnNumber(cols5, 'numRecombinants')
+		numTotalCol = Gatherer.columnNumber(cols5, 'numTotal')
+		riLinesCol = Gatherer.columnNumber(cols5, 'RI_Lines')
+
+		tablesCreated = {}
+		rowKey = None
+		
+		for row in rows5:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, RI_2x2)
+
+			if tableKey not in tablesCreated:
+				# create table record
+				self.addRow(TABLES, [ tableKey, exptKey, RI_2x2, tableKey ])
+				
+				# create header row
+				rowKey = self.getNewRowKey()
+				self.addRow(ROWS, [ rowKey, tableKey, HEADER, rowKey ])
+				
+				# add standard column headers
+				self.addRow(CELLS, [ rowKey, None, 'Marker 1', 1 ])
+				self.addRow(CELLS, [ rowKey, None, 'Marker 2', 2 ])
+				self.addRow(CELLS, [ rowKey, None, 'Discordant', 3 ])
+				self.addRow(CELLS, [ rowKey, None, 'Strains', 4 ])
+				self.addRow(CELLS, [ rowKey, None, 'RI Sets', 5 ])
+				
+				tablesCreated[tableKey] = True
+				
+			# create new row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, DATA, rowKey ])
+
+			# populate new row with cells
+			self.addRow(CELLS, [ rowKey, row[markerID1Col], row[symbol1Col], 1 ])
+			self.addRow(CELLS, [ rowKey, row[markerID2Col], row[symbol2Col], 2 ])
+			self.addRow(CELLS, [ rowKey, None, row[recombinantsCol], 3 ])
+			self.addRow(CELLS, [ rowKey, None, row[numTotalCol], 4 ])
+			self.addRow(CELLS, [ rowKey, None, row[riLinesCol], 5 ])
+		return
+
+	def processRIData(self):
+		self.processRIMatrixHeaders()
+		self.processRIMatrixDataRows()
+		self.processRI2x2Data()
 		return
 
 	def collateResults(self):
 		self.processCrossData()
+		self.processRIData()
+		self.processStatistics()
 		return
 	
 ###--- globals ---###
@@ -264,7 +386,7 @@ cmds = [
 		
 	# 2. 2x2 data rows for CROSS experiments
 	'''select m._Expt_key, l1.symbol as marker1, a1.accID as markerID1, l2.symbol as marker2,
-			a2.accID as markerID2, numRecombinants, numParentals
+			a2.accID as markerID2, m.numRecombinants, m.numParentals
 		from MLD_MC2point m, MRK_Marker l1, MRK_Marker l2, ACC_Accession a1, ACC_Accession a2, MLD_Expts e
 		where m._Marker_key_1 = l1._Marker_key
 			and m._Expt_key = e._Expt_key
@@ -282,14 +404,51 @@ cmds = [
 			and m._Expt_key < %d
 		order by m._Expt_key, m.sequenceNum''',
 		
-	# 3. statistics table rows for CROSS experiments
+	# 3. header data for RI/RC experiments
+	'''select r._Expt_key, r.ri_idlist
+		from mld_ri r
+		where exists (select 1 from mld_ridata d where r._Expt_key = d._Expt_key)
+			and r._Expt_key >= %d
+			and r._Expt_key < %d''',
+	
+	# 4. primary data rows for RI/RC experiments
+	'''select r._Expt_key, l.symbol, a.accID, r.alleleLine
+		from MLD_RIData r, MRK_Marker l, ACC_Accession a
+		where l._Marker_key = r._Marker_key 
+			and l._Marker_key = a._Object_key
+			and a._MGIType_key = 2
+			and a.preferred = 1
+			and a._LogicalDB_key = 1
+			and r._Expt_key >= %d
+			and r._Expt_key < %d
+		order by r._Expt_key, r.sequenceNum''',
+		
+	# 5. 2x2 data rows for RI/RC experiments
+	'''select m._Expt_key, l1.symbol as marker1, a1.accID as markerID1,
+			l2.symbol as marker2, a2.accID as markerID2,
+			m.numRecombinants, m.numTotal, m.RI_Lines
+		from MLD_RI2Point m, MRK_Marker l1, MRK_Marker l2, ACC_Accession a1, ACC_Accession a2
+		where m._Marker_key_1 = l1._Marker_key
+			and m._Marker_key_2 = l2._Marker_key
+			and l1._Marker_key = a1._Object_key
+			and a1._LogicalDB_key = 1
+			and a1.preferred = 1
+			and a1._MGIType_key = 2
+			and l2._Marker_key = a2._Object_key
+			and a2._LogicalDB_key = 1
+			and a2.preferred = 1
+			and a2._MGIType_key = 2
+			and m._Expt_key >= %d
+			and m._Expt_key < %d
+		order by m._Expt_key, m.sequenceNum''',
+
+	# 6. statistics table rows for all experiments
 	'''select s._Expt_key, s.sequenceNum, l1.symbol as marker1, l2.symbol as marker2, a1.accID as markerID1,
-			a2.accID as markerID2, s.recomb, s.total, s.pcntrecomb, s.stderr
+			a2.accID as markerID2, s.recomb, s.total, s.pcntrecomb, s.stderr, e.exptType
 		from MLD_Statistics s, MRK_Marker l1, MRK_Marker l2, MLD_Expts e, ACC_Accession a1, ACC_Accession a2
 		where s._Marker_key_1 = l1._Marker_key
 			and s._Marker_key_2 = l2._Marker_key
 			and s._Expt_key = e._Expt_key
-			and e.exptType = 'CROSS'
 			and l1._Marker_key = a1._Object_key
 			and a1._MGIType_key = 2
 			and a1._LogicalDB_key = 1
