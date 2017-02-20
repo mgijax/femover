@@ -449,6 +449,7 @@ cmds = [
 		where s._Marker_key_1 = l1._Marker_key
 			and s._Marker_key_2 = l2._Marker_key
 			and s._Expt_key = e._Expt_key
+			and e.exptType != 'CONTIG'
 			and l1._Marker_key = a1._Object_key
 			and a1._MGIType_key = 2
 			and a1._LogicalDB_key = 1
