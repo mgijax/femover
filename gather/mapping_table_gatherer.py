@@ -15,12 +15,15 @@ CROSS_MATRIX = 'CROSS MATRIX'	# table types
 CROSS_2x2 = 'CROSS 2x2'
 RI_MATRIX = 'RI MATRIX'
 RI_2x2 = 'RI 2x2'
+HYBRID_MATRIX = 'HYBRID MATRIX'
 
 HEADER = 1						# flag for header vs. data row
 DATA = 0
 
 CROSS_MATRIX_HEADER = 'MC #mice'	# leftmost cell of CROSS matrix header row
 RI_MATRIX_HEADER = 'Marker'			# leftmost cell of RI matrix header row
+HYBRID_CHROMOSOMES = 'Chromosome'	# leftmost cell of HYBRID matrix header row, when concordance by chromosomes
+HYBRID_SYMBOLS = 'Symbols'			# leftmost cell of HYBRID matrix header row, when concordance by markers
 
 ###--- Classes ---###
 
@@ -344,6 +347,66 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 			self.addRow(CELLS, [ rowKey, None, row[riLinesCol], 5 ])
 		return
 
+	def processHybridData(self):
+		# process results of the query 7, concordance data for HYBRID displays
+
+		cols7, rows7 = self.results[7]
+
+		exptKeyCol = Gatherer.columnNumber(cols7, '_Expt_key')
+		flagCol = Gatherer.columnNumber(cols7, 'chrsOrGenes')
+		markerIDCol = Gatherer.columnNumber(cols7, 'markerID')
+		symbolCol = Gatherer.columnNumber(cols7, 'symbol')
+		chromosomeCol = Gatherer.columnNumber(cols7, 'chromosome')
+		cppCol = Gatherer.columnNumber(cols7, 'cpp')
+		cpnCol = Gatherer.columnNumber(cols7, 'cpn')
+		cnpCol = Gatherer.columnNumber(cols7, 'cnp')
+		cnnCol = Gatherer.columnNumber(cols7, 'cnn')
+
+		tablesCreated = {}
+		rowKey = None
+		
+		for row in rows7:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, HYBRID_MATRIX)
+			byChromosome = (row[flagCol] == 0)
+
+			if tableKey not in tablesCreated:
+				# create table record
+				self.addRow(TABLES, [ tableKey, exptKey, HYBRID_MATRIX, tableKey ])
+				
+				# create header row
+				rowKey = self.getNewRowKey()
+				self.addRow(ROWS, [ rowKey, tableKey, HEADER, rowKey ])
+				
+				# add standard column headers
+				if byChromosome:
+					self.addRow(CELLS, [ rowKey, None, HYBRID_CHROMOSOMES, 1 ])
+				else:
+					self.addRow(CELLS, [ rowKey, None, HYBRID_SYMBOLS, 1 ])
+
+				self.addRow(CELLS, [ rowKey, None, '+/+', 2 ])
+				self.addRow(CELLS, [ rowKey, None, '+/-', 3 ])
+				self.addRow(CELLS, [ rowKey, None, '-/+', 4 ])
+				self.addRow(CELLS, [ rowKey, None, '-/-', 5 ])
+				
+				tablesCreated[tableKey] = True
+				
+			# create new row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, DATA, rowKey ])
+
+			# populate new row with cells
+			if byChromosome:
+				self.addRow(CELLS, [ rowKey, None, row[chromosomeCol], 1 ])
+			else:
+				self.addRow(CELLS, [ rowKey, row[markerIDCol], row[symbolCol], 1 ])
+			
+			self.addRow(CELLS, [ rowKey, None, row[cppCol], 2 ])
+			self.addRow(CELLS, [ rowKey, None, row[cpnCol], 3 ])
+			self.addRow(CELLS, [ rowKey, None, row[cnpCol], 4 ])
+			self.addRow(CELLS, [ rowKey, None, row[cnnCol], 5 ])
+		return
+
 	def processRIData(self):
 		self.processRIMatrixHeaders()
 		self.processRIMatrixDataRows()
@@ -353,6 +416,7 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 	def collateResults(self):
 		self.processCrossData()
 		self.processRIData()
+		self.processHybridData()
 		self.processStatistics()
 		return
 	
@@ -442,7 +506,7 @@ cmds = [
 			and m._Expt_key < %d
 		order by m._Expt_key, m.sequenceNum''',
 
-	# 6. statistics table rows for all experiments
+	# 6. statistics table rows for all types of experiments
 	'''select s._Expt_key, s.sequenceNum, l1.symbol as marker1, l2.symbol as marker2, a1.accID as markerID1,
 			a2.accID as markerID2, s.recomb, s.total, s.pcntrecomb, s.stderr, e.exptType
 		from MLD_Statistics s, MRK_Marker l1, MRK_Marker l2, MLD_Expts e, ACC_Accession a1, ACC_Accession a2
@@ -461,6 +525,20 @@ cmds = [
 			and s._Expt_key >= %d
 			and s._Expt_key < %d
 		order by s._Expt_key, s.sequenceNum''',
+		
+	# 7. concordance data for HYBRID experiments
+	'''select h._Expt_key, h.chrsOrGenes, c.cpp, c.cpn, c.cnp, c.cnn, c.chromosome, a.accID as markerID, m.symbol
+		from MLD_Hybrid h
+		inner join MLD_Concordance c on (h._Expt_key = c._Expt_key)
+		left outer join MRK_Marker m on (c._Marker_key = m._Marker_key)
+		left outer join ACC_Accession a on (
+			c._Marker_key = a._Object_key
+			and a._LogicalDB_key = 1
+			and a._MGIType_key = 2
+			and a.preferred = 1)
+		where h._Expt_key >= %d
+			and h._Expt_key < %d
+		order by h._Expt_key, c.sequenceNum''',
 	]
 
 files = [
