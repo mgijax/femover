@@ -16,6 +16,7 @@ CROSS_2x2 = 'CROSS 2x2'
 RI_MATRIX = 'RI MATRIX'
 RI_2x2 = 'RI 2x2'
 HYBRID_MATRIX = 'HYBRID MATRIX'
+FISH_MATRIX = 'FISH MATRIX'
 
 HEADER = 1						# flag for header vs. data row
 DATA = 0
@@ -407,6 +408,48 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 			self.addRow(CELLS, [ rowKey, None, row[cnnCol], 5 ])
 		return
 
+	def processFishData(self):
+		# process results of the query 8, region and signal data for FISH displays
+
+		cols8, rows8 = self.results[8]
+
+		exptKeyCol = Gatherer.columnNumber(cols8, '_Expt_key')
+		regionCol = Gatherer.columnNumber(cols8, 'region')
+		singleCol = Gatherer.columnNumber(cols8, 'totalSingle')
+		doubleCol = Gatherer.columnNumber(cols8, 'totalDouble')
+
+		tablesCreated = {}
+		rowKey = None
+		
+		for row in rows8:
+			exptKey = row[exptKeyCol]
+			tableKey = self.getTableKey(exptKey, FISH_MATRIX)
+
+			if tableKey not in tablesCreated:
+				# create table record
+				self.addRow(TABLES, [ tableKey, exptKey, FISH_MATRIX, tableKey ])
+				
+				# create header row
+				rowKey = self.getNewRowKey()
+				self.addRow(ROWS, [ rowKey, tableKey, HEADER, rowKey ])
+				
+				# add standard column headers
+				self.addRow(CELLS, [ rowKey, None, 'Region', 1 ])
+				self.addRow(CELLS, [ rowKey, None, 'Single Signals', 2 ])
+				self.addRow(CELLS, [ rowKey, None, 'Double Signals', 3 ])
+				
+				tablesCreated[tableKey] = True
+				
+			# create new row
+			rowKey = self.getNewRowKey()
+			self.addRow(ROWS, [ rowKey, tableKey, DATA, rowKey ])
+
+			# populate new row with cells
+			self.addRow(CELLS, [ rowKey, None, row[regionCol], 1 ])
+			self.addRow(CELLS, [ rowKey, None, row[singleCol], 2 ])
+			self.addRow(CELLS, [ rowKey, None, row[doubleCol], 3 ])
+		return
+
 	def processRIData(self):
 		self.processRIMatrixHeaders()
 		self.processRIMatrixDataRows()
@@ -417,6 +460,7 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 		self.processCrossData()
 		self.processRIData()
 		self.processHybridData()
+		self.processFishData()
 		self.processStatistics()
 		return
 	
@@ -539,6 +583,13 @@ cmds = [
 		where h._Expt_key >= %d
 			and h._Expt_key < %d
 		order by h._Expt_key, c.sequenceNum''',
+	
+	# 8. region and signal data for FISH experiments
+	'''select h._Expt_key, h.region, h.totalSingle, h.totalDouble
+		from MLD_FISH_Region h
+		where h._Expt_key >= %d
+			and h._Expt_key < %d
+		order by h._Expt_key, h.sequenceNum'''
 	]
 
 files = [
