@@ -346,26 +346,19 @@ def getReferencesByDiseaseKey():
 	# term is also associated with a genocluster.
 
 	# collect a dictionary of term keys that were rolled up to markers
+	#annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % DO_MARKER)
+	#termCol = dbAgnostic.columnNumber(annotCols, '_Term_key')
+	#rolledUpDiseases = {}
+	#for row in annotRows:
+	#	rolledUpDiseases[row[termCol]] = 1
+	#del annotCols, annotRows
+	#gc.collect()
+	#logger.debug('Got %d diseases that rolled up' % len(rolledUpDiseases))
 
-	annotCols, annotRows = getAnnotations('s._AnnotType_key = %d' % DO_MARKER)
-
-	termCol = dbAgnostic.columnNumber(annotCols, '_Term_key')
-
-	rolledUpDiseases = {}
-	for row in annotRows:
-		rolledUpDiseases[row[termCol]] = 1
-
-	del annotCols, annotRows
-	gc.collect()
-
-	logger.debug('Got %d diseases that rolled up' % len(rolledUpDiseases))
-
-	# now collect a dictionary that maps from each rolled-up term to its
-	# references
+	# now collect a dictionary that maps from each rolled-up term to its references
 
 	# distinct set of references for positive annotations from a
-	# genotype to a disease term and from an allele directly to a disease
-	# term
+	# genotype to a disease term and from an allele directly to a disease term
 
 	cmd = '''
 	WITH term_reference AS (
@@ -414,7 +407,6 @@ def getReferencesByDiseaseKey():
 		term = row[termCol]
 
 		# only include the reference if the term also survived the rollup rules
-
 		#if rolledUpDiseases.has_key(term):
 		if termToRefs.has_key(term):
 			termToRefs[term].append(row[refsCol])

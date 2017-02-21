@@ -1399,8 +1399,7 @@ cmds = [
 # generated keys, so we'll just group them all here for simplicity.
 files = [
 	('disease',
-		[ '_Term_key', 'term', 'accID', 'name', 'refCount',
-			'hpoCount' ],
+		[ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ],
 		'disease'),
 
 	('disease_synonym',
@@ -1416,23 +1415,19 @@ files = [
 		'disease_group_row'),
 
 	('disease_row',
-		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum',
-			'_Cluster_key' ],
+		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key' ],
 		'disease_row'),
 
 	('disease_row_to_marker',
-		[ Gatherer.AUTO, 'diseaseRowKey', '_Marker_key', 'sequenceNum',
-			'isCausative', 'organism' ],
+		[ Gatherer.AUTO, 'diseaseRowKey', '_Marker_key', 'sequenceNum', 'isCausative', 'organism' ],
 		'disease_row_to_marker'),
 
 	('disease_model',
-		[ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID',
-			'isNotModel'],
+		[ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID', 'isNotModel'],
 		'disease_model'),
 
 	('disease_row_to_model',
-		[ Gatherer.AUTO, 'diseaseRowKey', 'diseaseModelKey',
-			'sequenceNum' ],
+		[ Gatherer.AUTO, 'diseaseRowKey', 'diseaseModelKey', 'sequenceNum' ],
 		'disease_row_to_model'),
 
 	('disease_model_to_reference',
