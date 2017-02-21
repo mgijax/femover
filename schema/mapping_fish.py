@@ -36,7 +36,7 @@ indexes = {
 
 # column name -> (related table, column in related table)
 keys = {
-	'experiment_key' : ('mapping_experient', 'experiment_key'),
+	'experiment_key' : ('mapping_experiment', 'experiment_key'),
 	}
 
 # index used to cluster data in the table
