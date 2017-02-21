@@ -82,7 +82,7 @@ class MappingCrossGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''with matrix_counts as (select c._Cross_key, count(1) as matrix_count
+	'''with matrix_counts as (select c._Cross_key, count(distinct m._Marker_key) as matrix_count
 			from crs_cross c
 			left outer join crs_matrix m on (c._Cross_key = m._Cross_key)
 			group by 1
