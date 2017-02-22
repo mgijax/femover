@@ -77,11 +77,18 @@ class ProbePolymorhpismDetailsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
+	# 0. need to exclude markers without current MGI IDs to avoid foreign key errors between
+	# probe_polymorphism and probe_polymorphism_details tables
 	'''select distinct r._RFLV_key, a.allele, a.fragments, s.strain
 		from prb_rflv r, prb_allele a, prb_allele_strain pas, prb_strain s
 		where r._RFLV_key = a._RFLV_key
 			and a._Allele_key = pas._Allele_key
-			and pas._Strain_key = s._Strain_key''',
+			and pas._Strain_key = s._Strain_key
+			and exists (select 1 from acc_accession aa
+				where r._Marker_key = aa._Object_key
+				and aa._LogicalDB_key = 1
+				and aa.preferred = 1
+				and aa._MGIType_key = 2)''',
 	]
 
 # order of fields (from the query results) to be written to the
