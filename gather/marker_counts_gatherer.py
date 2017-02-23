@@ -393,8 +393,10 @@ cmds = [
 	group by _Marker_key''',
 
 	# 12. count of mapping experiments associated with each marker
-	'''select _Marker_key, count(distinct _Expt_key) as mappingCount
-		from mld_expt_marker
+	'''select e._Marker_key, count(distinct e._Expt_key) as mappingCount
+		from mld_expt_marker e, mld_expts me
+		where e._Expt_key = me._Expt_key
+			and me.exptType != 'CONTIG'
 		group by _Marker_key''',
 
 	# 13. count of RefSeq sequences associated with each marker
