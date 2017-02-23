@@ -70,7 +70,7 @@ comments = {
 		},
 	Table.INDEX : {
 		'clone_id' : 'lookup by clone ID',
-		'id' : 'lookup by probe ID',
+		'primary_id' : 'lookup by probe ID',
 		},
 	}
 
