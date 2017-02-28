@@ -71,7 +71,7 @@ class MappingCrossGatherer (Gatherer.Gatherer):
 			
 			if whoseCross:
 				if row[matrixCountCol] > 0:
-					filename = whoseCross.replace(' ', '_').replace('(', '').replace(')', '') + '_Panel.rpt'
+					filename = 'MGI_' + whoseCross.replace(' ', '_').replace('(', '').replace(')', '') + '_Panel.rpt'
 				
 			row.append(whoseCross)
 			row.append(filename)
