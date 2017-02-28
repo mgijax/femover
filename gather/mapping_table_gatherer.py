@@ -215,8 +215,8 @@ class MappingTableGatherer (Gatherer.CachingMultiFileGatherer):
 				self.addRow(CELLS, [ rowKey, None, 'Marker 2', 2 ])
 				self.addRow(CELLS, [ rowKey, None, '# Recombinants', 3 ])
 				self.addRow(CELLS, [ rowKey, None, 'Total', 4 ])
-				self.addRow(CELLS, [ rowKey, None, '% Recombinants', 4 ])
-				self.addRow(CELLS, [ rowKey, None, 'Std Error', 4 ])
+				self.addRow(CELLS, [ rowKey, None, '% Recombinants', 5 ])
+				self.addRow(CELLS, [ rowKey, None, 'Std Error', 6 ])
 				
 				tablesCreated[tableKey] = True
 				
