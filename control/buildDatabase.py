@@ -227,8 +227,8 @@ MAPPING = [ 'mapping_experiment', 'mapping_id', 'mapping_link', 'mapping_to_mark
 	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
-		'marker_location', 'marker_counts', 
-		'marker_slimgrid',
+		'marker_location', 'marker_counts', 'marker_polymorphism',
+		'marker_slimgrid', 'marker_polymorphism_allele',
 		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
