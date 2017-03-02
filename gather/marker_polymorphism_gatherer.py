@@ -8,9 +8,10 @@ import symbolsort
 
 ###--- Functions ---###
 
-def tripleCompare(a, b):
-	# a and b are both (marker key, probe name, rflv key)
-	# sort by:  marker key (ascending), probe name (smart-alpha), rflv key (ascending)
+def tupleCompare(a, b):
+	# a and b are both (marker key, probe name, jnum ID, endonuclease, rflv key)
+	# sort by:  marker key (ascending), probe name (smart-alpha), jnum ID (smart-alpha),
+	#	endonuclease (smart-alpha), rflv key (ascending)
 	
 	m = cmp(a[0], b[0])
 	if m:
@@ -20,7 +21,23 @@ def tripleCompare(a, b):
 	if p:
 		return p
 	
-	return cmp(a[2], b[2])
+	j = symbolsort.nomenCompare(a[2], b[2])
+	if j:
+		return j
+	
+	if a[3] != None:
+		if b[3] != None:
+			e = symbolsort.nomenCompare(a[3], b[3])
+		else:
+			e = -1
+	elif b[3] != None:
+		e = 1
+	else:
+		e = 0
+	if e:
+		return e
+	
+	return cmp(a[4], b[4])
 			
 ###--- Classes ---###
 
@@ -40,23 +57,25 @@ class MarkerPolymorphismGatherer (Gatherer.Gatherer):
 		markerCol = Gatherer.columnNumber(self.finalColumns, '_Marker_key')
 		probeCol = Gatherer.columnNumber(self.finalColumns, 'name')
 		rflvCol = Gatherer.columnNumber(self.finalColumns, '_RFLV_key')
+		jnumCol = Gatherer.columnNumber(self.finalColumns, 'jnum_id')
+		endonucleaseCol = Gatherer.columnNumber(self.finalColumns, 'endonuclease')
 		
 		for row in self.finalResults:
-			seqNum[(row[markerCol], row[probeCol], row[rflvCol])] = 0
+			seqNum[(row[markerCol], row[probeCol], row[jnumCol], row[endonucleaseCol], row[rflvCol])] = 0
 		logger.debug('Collected data for %d rows' % len(seqNum))
 		
-		triples = seqNum.keys()
-		triples.sort(tripleCompare)
+		tuples = seqNum.keys()
+		tuples.sort(tupleCompare)
 		logger.debug('Sorted %d rows' % len(seqNum))
 		
 		i = 0
-		for triple in triples:
+		for myTuple in tuples:
 			i = i + 1
-			seqNum[triple] = i
+			seqNum[myTuple] = i
 		logger.debug('Computed sequence numbers')
 			
 		for row in self.finalResults:
-			row.append(seqNum[(row[markerCol], row[probeCol], row[rflvCol])])
+			row.append(seqNum[(row[markerCol], row[probeCol], row[jnumCol], row[endonucleaseCol], row[rflvCol])])
 		logger.debug('Appended sequence numbers')
 		return
 	
