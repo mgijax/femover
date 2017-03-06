@@ -10,20 +10,20 @@ import symbolsort
 
 def tupleCompare(a, b):
 	# a and b are both (marker key, probe name, jnum ID, endonuclease, rflv key)
-	# sort by:  marker key (ascending), probe name (smart-alpha), jnum ID (smart-alpha),
+	# sort by:  marker key (ascending), jnum ID (smart-alpha), probe name (smart-alpha),
 	#	endonuclease (smart-alpha), rflv key (ascending)
 	
 	m = cmp(a[0], b[0])
 	if m:
 		return m
 	
-	p = symbolsort.nomenCompare(a[1], b[1])
-	if p:
-		return p
-	
 	j = symbolsort.nomenCompare(a[2], b[2])
 	if j:
 		return j
+	
+	p = symbolsort.nomenCompare(a[1], b[1])
+	if p:
+		return p
 	
 	if a[3] != None:
 		if b[3] != None:
