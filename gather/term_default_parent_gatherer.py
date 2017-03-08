@@ -8,7 +8,7 @@
 #
 # Current vocabularies and their default-parent rules:
 #	1. Adult Mouse Anatomy
-#		a. prefer is-a relationships over part-of
+#		a. prefer part-of relationships over is-a
 #		b. use smart alpha to choose first parent
 
 import Gatherer
@@ -23,25 +23,26 @@ edgeLabelCol = None
 childKeyCol = None
 
 IS_A = 'is-a'
+PART_OF = 'part-of'
 
 ###--- Function ---###
 
 def amaCompare(a, b):
 	# compare tuples based on the AMA rules, which are a three-level sort:
 	#	1. sort by child term key
-	#	2. then by edge type (is-a relationships first)
+	#	2. then by edge type (part-of relationships first)
 	#	3. then smart-alpha by parent term
 	
 	t = cmp(a[childKeyCol], b[childKeyCol])
 	if t:
 		return t
 
-	# If one is an is-a relationship and the other is not, prefer the is-a one.  If neither or both are
-	# is-a relationships, move on to the next criteria.
-	if a[edgeLabelCol] == IS_A:
-		if b[edgeLabelCol] != IS_A:
+	# If one is a part-of relationship and the other is not, prefer the part-of one.  If neither or both are
+	# part-of relationships, move on to the next criteria.
+	if a[edgeLabelCol] == PART_OF:
+		if b[edgeLabelCol] != PART_OF:
 			return -1
-	elif b[edgeLabelCol] == IS_A:
+	elif b[edgeLabelCol] == PART_OF:
 		return 1
 	
 	return symbolsort.nomenCompare(a[parentTermCol], b[parentTermCol])
