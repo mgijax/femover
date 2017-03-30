@@ -4,7 +4,7 @@
 # Post-processing step for setting the proper tab counts in the 'disease' table
 #
 
-. ./Configuration
+. ../Configuration
 
 psql -h ${PG_FE_DBSERVER} -U ${PG_FE_DBUSER} -d ${PG_FE_DBNAME} <<EOSQL
 
@@ -36,7 +36,7 @@ FROM disease_row_to_model dm, disease_row r, disease_group_row gr, disease_group
         WHERE dm.disease_row_key = r.disease_row_key
         AND r.disease_row_key = gr.disease_row_key
         AND gr.disease_group_key = dg.disease_group_key
-        AND dg.group_type in ('mouse only', 'human only', 'mouse and human')
+        AND dg.group_type in ('mouse only', 'human only', 'mouse and human', 'additional')
         GROUP BY gr.disease_key
 )
 UPDATE disease
