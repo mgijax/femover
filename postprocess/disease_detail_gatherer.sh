@@ -28,7 +28,13 @@ WHERE tmp_genes_counts.disease_key = disease.disease_key
 
 select count(*) from disease where genes_tab_count > 0;
 
+--
 -- update disease.models_tab_count
+-- generate counts by unique:
+-- 	disease (disease_key)
+--	genotype (genotype.background_strain) 
+--	allele (genotype.combination_1)
+--
 
 SELECT gr.disease_key
 INTO TEMP tmp_models
