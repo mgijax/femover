@@ -8,7 +8,7 @@
 
 psql -h ${PG_FE_DBSERVER} -U ${PG_FE_DBUSER} -d ${PG_FE_DBNAME} <<EOSQL
 
--- update genes_tab_count
+-- update disease.genes_tab_count
 
 WITH tmp_genes_counts AS (
 SELECT gr.disease_key, count(gr.disease_key) AS genes_count
@@ -28,7 +28,7 @@ WHERE tmp_genes_counts.disease_key = disease.disease_key
 
 select count(*) from disease where genes_tab_count > 0;
 
--- update models_tab_count
+-- update disease.models_tab_count
 
 WITH tmp_models_counts AS (
 SELECT gr.disease_key, count(gr.disease_key) AS models_count
