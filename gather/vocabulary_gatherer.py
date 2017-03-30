@@ -20,7 +20,6 @@ TERM = 1
 TERM_CHILD = 2
 TERM_COUNTS = 3
 TERM_ANCESTOR = 4
-TERM_ANNOT_COUNTS = 5
 TERM_SIBLING = 6
 
 ###--- Functions ---###
@@ -557,258 +556,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Found %d ancestors' % len(rows))
 		return pathCache, columns, rows
 
-	def extractCountsToTerm (self):
-
-		# first, compile unique sets of objects and annotations from
-		# the query
-
-		columns, rows = self.results[6]
-
-		tKey = Gatherer.columnNumber (columns, '_Term_key')
-		mKey = Gatherer.columnNumber (columns, '_MGIType_key')
-		oKey = Gatherer.columnNumber(columns, '_Object_key')
-		eKey = Gatherer.columnNumber(columns, '_EvidenceTerm_key')
-		qKey = Gatherer.columnNumber(columns, '_Qualifier_key')
-
-		# objects[term key] = { mgitype key : { object key : 1 } }
-		objects = {}
-
-		# annots[term key] = { mgitype key : { annotation : 1 } }
-		annots = {}
-
-		for row in rows:
-			key = row[tKey]
-			object = row[oKey]
-			mgitype = row[mKey]
-
-			# an annotation is defined as a unique set of:
-			#	term, object, evidence term, qualifier
-			annotation = (key, object, row[eKey], row[qKey])
-
-			if not objects.has_key (key):
-				objects[key] = { mgitype : { object : 1 } }
-				annots[key] = { mgitype : { annotation : 1 } }
-
-			elif not objects[key].has_key (mgitype):
-				objects[key][mgitype] = { object : 1 }
-				annots[key][mgitype] = { annotation : 1 }
-			else:
-				objects[key][mgitype][object] = 1
-				annots[key][mgitype][annotation] = 1
-
-		# then, pull those unique sets into their respective counts
-
-		# dict[term key] = { mgi type key : (obj count, annot count) }
-		dict = {}
-
-		termKeys = objects.keys()
-		for term in termKeys:
-			mgitypes = objects[term].keys()
-
-			for mgitype in mgitypes:
-				if dict.has_key(term):
-					dict[term][mgitype] = (
-						len(objects[term][mgitype]),
-						len(annots[term][mgitype]) )
-				else:
-					dict[term] = { mgitype : (
-						len(objects[term][mgitype]),
-						len(annots[term][mgitype]) ) }
-
-		logger.debug ('Extracted counts to term')
-		return dict
-
-	def extractCountsDownDAG (self):
-
-		# first, compile the list of ancestors for each term
-
-		columns, rows = self.results[7]
-
-		aKey = Gatherer.columnNumber(columns, '_AncestorObject_key')
-		dKey = Gatherer.columnNumber(columns, '_DescendentObject_key')
-
-		# ancestors[descendent key] = [ ancestor key 1, ... a.k. n ]
-		ancestors = {}
-
-		for r in rows:
-			ancestorKey = r[aKey]
-			descendentKey = r[dKey]
-
-			if ancestors.has_key(descendentKey):
-				ancestors[descendentKey].append (ancestorKey)
-			else:
-				ancestors[descendentKey] = [ ancestorKey ]
-
-		logger.debug ('Found %d ancestors for %d terms' % (
-			len(rows), len(ancestors)) )
-
-		# second, go through each annotation.  for each annotation and
-		# each annotated object, add them to the set of each for the
-		# term
-
-		columns, rows = self.results[8]
-
-		tKey = Gatherer.columnNumber(columns, '_Term_key')
-		oKey = Gatherer.columnNumber(columns, '_Object_key')
-		mKey = Gatherer.columnNumber(columns, '_MGIType_key')
-		eKey = Gatherer.columnNumber(columns, '_EvidenceTerm_key')
-		qKey = Gatherer.columnNumber(columns, '_Qualifier_key')
-
-		# note that for the purposes of our annotation count, we
-		# define a distinct annotation to be a unique set of:
-		# 	object, term, qualifier, evidence term
-
-		# objects[term key] = { mgitype key :
-		#	GroupedList of object keys }
-		objects = {}
-
-		# annots[term key] = { mgitype key : GroupedList of tuples
-		#    (term key, object key, qeKey) }
-		annots = {}
-
-		# Both objects and annots have been converted to use lists
-		# inside rather than dictionaries, trading off space for
-		# performance.  (We need the space.)
-
-		# cache of (qualifier key, evidence term key) pairs, so we can
-		# consolidate two keys into a single integer and save a little
-		# memory for each row.  (There are only 58 of these pairs
-		# currently, so this will be small memory overhead for the
-		# cache itself.)
-		qeCache = {}
-
-		for r in rows:
-			termKey = r[tKey]
-			mgitypeKey = r[mKey]
-			objectKey = r[oKey]
-			qualifierKey = r[qKey]
-			evidenceTermKey = r[eKey]
-
-			pair = (qualifierKey, evidenceTermKey)
-			if qeCache.has_key(pair):
-				qeKey = qeCache[pair]
-			else:
-				qeKey = len(qeCache) + 1
-				qeCache[pair] = qeKey
-
-			# note that it is important to keep the term key in
-			# here, because the descendent key is differnt from
-			# the ancestor key and annotations to it need to be
-			# counted even if the ancestor is also annotated to
-			# the same object
-			annot = (termKey, objectKey, qeKey)
-
-			# track which objects are associated with which terms
-			# and each term's ancestors (do likewise for
-			# annotation keys)
-
-			if ancestors.has_key (termKey):
-				toDo = [ termKey ] + ancestors[termKey]
-			else:
-				toDo = [ termKey ]
-
-			for t in toDo:
-			    if not objects.has_key(t):
-				objects[t] = { mgitypeKey :
-				    GroupedList.GroupedList (100,
-					items = [objectKey]) }
-				annots[t] = { mgitypeKey :
-				    GroupedList.GroupedList (100,
-					items = [annot]) }
-
-			    elif not objects[t].has_key (mgitypeKey):
-				objects[t][mgitypeKey] = \
-				    GroupedList.GroupedList (100,
-					items = [ objectKey ])
-				annots[t][mgitypeKey] = \
-				    GroupedList.GroupedList (100,
-					items = [ annot ])
-
-			    else:
-				objects[t][mgitypeKey].add(objectKey)
-				annots[t][mgitypeKey].add(annot)
-
-		logger.debug ('Found objects and annotations for %d terms' \
-			% len(objects))
-
-		# third, compile those objects and annotations for each term
-		# into their respective counts
-
-		# dict[term key] = { mgi type key : (obj count, annot count) }
-		dict = {}
-
-		termKeys = objects.keys()
-		for termKey in termKeys:
-			mgitypes = objects[termKey].keys()
-			dict[termKey] = {}
-
-			for mgitype in mgitypes:
-				dict[termKey][mgitype] = (
-					len(objects[termKey][mgitype]),
-					len(annots[termKey][mgitype]) )
-
-		logger.debug ('Collated DAG counts for %d terms' % len(dict))
-		return dict
-
-	def findAnnotationCounts (self):
-		columns = [ 'termKey', 'mgitype', 'objectsToTerm',
-			'objectsWithDesc', 'annotToTerm', 'annotWithDesc' ]
-		rows = []
-
-		toTerm = self.extractCountsToTerm()
-
-		# This method needs to be fixed, as it uses tons of memory.
-		# For now, the data is not used, so we'll just skip it.  Ideas
-		# for a fix are documented in note 3 of TR11250.
-		#withDescendents = self.extractCountsDownDAG()
-		withDescendents = {}
-		
-		# get unified list of term keys which have annotations to
-		# themselves directly, or to their descendents, or both
-
-		termKeys = toTerm.keys()
-		for key in withDescendents.keys():
-			if not toTerm.has_key(key):
-				termKeys.append (key) 
-
-		for term in termKeys:
-			mgitypes = []
-
-			if toTerm.has_key(term):
-				mgitypes = toTerm[term].keys()
-
-			if withDescendents.has_key(term):
-				for mgitype in withDescendents[term].keys():
-					if mgitype not in mgitypes:
-						mgitypes.append (mgitype)
-
-			for mgitype in mgitypes:
-				typeText = Gatherer.resolve (mgitype,
-					'acc_mgitype', '_MGIType_key', 'name')
-
-				obj1 = 0
-				anno1 = 0
-				obj2 = 0
-				anno2 = 0
-
-				if toTerm.has_key(term):
-					if toTerm[term].has_key(mgitype):
-						obj1, anno1 = \
-							toTerm[term][mgitype]
-
-				if withDescendents.has_key(term):
-					if withDescendents[term].has_key (
-						mgitype):
-						obj2, anno2 = \
-						withDescendents[term][mgitype]
-
-				row = [ term, typeText, obj1, obj2, anno1,
-					anno2 ]
-				rows.append (row)
-			
-		logger.debug ('Collated %d rows for annot counts' % len(rows))
-		return columns, rows
-
 	def findSiblings (self, pathCache, terms, ids, edges, vocabs,
 			sequenceNum):
 		termList = pathCache.keys()
@@ -849,7 +596,7 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		return columns, rows
 
 	def getGOOntologies (self):
-		columns, rows = self.results[9]
+		columns, rows = self.results[6]
 
 		tKey = Gatherer.columnNumber (columns, '_Term_key')
 		ontologyKey = Gatherer.columnNumber (columns, 'dagShorthand')
@@ -921,10 +668,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		del upEdges
 		gc.collect()
-
-		# step 9 -- term_annotation_counts table
-		columns, rows = self.findAnnotationCounts ()
-		self.output.append ( (columns, rows) )
 
 		# step 10 -- term_sibling table
 		columns, rows = self.findSiblings (pathCache, terms, ids,
@@ -1100,37 +843,7 @@ cmds = [
 			and t._Vocab_key = %d
 		group by c._AncestorObject_key''',
 
-	# query 6 - annotation counts
-	'''select a._Term_key,
-			t._MGIType_key,
-			a._Object_key,
-			e._EvidenceTerm_key,
-			a._Qualifier_key
-		from voc_annot a, voc_annottype t, voc_evidence e, voc_term v
-		where a._AnnotType_key = t._AnnotType_key
-			and a._Term_key = v._Term_key
-			and v._Vocab_key = %d
-			and a._Annot_key = e._Annot_key''',
-
-	# query 7 - ancestor/descendent relationships from the DAG
-	'''select c._AncestorObject_key, c._DescendentObject_key
-		from dag_closure c, voc_term t
-		where c._AncestorObject_key = t._Term_key
-			and t._Vocab_key = %d''',
-
-	# query 8 - all annotations, so we can get counts "down the DAG".
-	 '''select a._Term_key,
-			t._MGIType_key,
-			a._Object_key,
-			e._EvidenceTerm_key,
-			a._Qualifier_key
-		from voc_annot a, voc_annottype t, voc_evidence e, voc_term v
-		where a._AnnotType_key = t._AnnotType_key
-			and a._Term_key = v._Term_key
-			and v._Vocab_key = %d
-			and a._Annot_key = e._Annot_key''',
-
-	# query 9 - shorthand notation for display (instead of vocab name)
+	# query 6 - shorthand notation for display (instead of vocab name)
 	# for GO terms
 	'''select t._Term_key, case
 			when d.abbreviation = 'C' then 'Component'
@@ -1172,11 +885,6 @@ files = [
 		[ Gatherer.AUTO, 'termKey', 'ancestorTermKey', 'ancestorTerm',
 			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ],
 		'term_ancestor'),
-
-	('term_annotation_counts',
-		[ Gatherer.AUTO, 'termKey', 'mgitype', 'objectsToTerm',
-			'objectsWithDesc', 'annotToTerm', 'annotWithDesc' ],
-		'term_annotation_counts'),
 
 	('term_sibling',
 		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
