@@ -48,6 +48,8 @@ comments = {
 		'logical_db' : 'logical database assigning the ID',
 		'disease_reference_count' : 'count of references for annotations for this disease',
 		'hpo_term_count' : 'count of Human Phenotype Ontology (HPO) terms associated with this disease',
+		'genes_tab_count' : 'count of rows in the Disease browser/Genes tab',
+		'models_tab_count' : 'count of rows in the Disease browser/Models tab',
 		},
 	Table.INDEX : {
 		'disease' : 'case-sensitive searching by disease term',
