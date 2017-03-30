@@ -76,8 +76,13 @@ class Collector:
 		self.directAnnotations = {} 	# term key -> set of annotations for just this term
 		self.dagObjects = {}			# term key -> set of object keys for term and its descendants
 		self.dagAnnotations = {}		# term key -> set of annotations for term and its descendants
+		self.nodesToSkip = set()		# term keys to skip when accumulating annotations
+		self.cacheNodesToSkip()
 		return
 		
+	def cacheNodesToSkip(self):
+		return
+	
 	def getObjectCountDirect (self, termKey):
 		if termKey in self.directObjects:
 			return len(self.directObjects[termKey])
@@ -101,6 +106,12 @@ class Collector:
 	def addAnnotation (self, termKey, objectKey, qualifier, evidenceCode):
 		annotation = self.getAnnotation(termKey, objectKey, qualifier, evidenceCode)
 
+		if termKey in self.nodesToSkip:
+			if termKey not in self.directObjects:
+				self.directObjects[termKey] = set()
+				self.directAnnotations[termKey] = set()
+			return 
+
 		if termKey not in self.directObjects:
 			self.directObjects[termKey] = set()
 		self.directObjects[termKey].add(objectKey)
@@ -110,6 +121,12 @@ class Collector:
 		self.directAnnotations[termKey].add(annotation)
 		
 		for ancestorKey in self.ancestorCache.getAncestors(termKey):
+			if ancestorKey in self.nodesToSkip:
+				if ancestorKey not in self.dagObjects:
+					self.dagObjects[ancestorKey] = set()
+					self.dagAnnotations[ancestorKey] = set()
+				continue
+			
 			if ancestorKey not in self.dagObjects:
 				self.dagObjects[ancestorKey] = set()
 			self.dagObjects[ancestorKey].add(objectKey)
@@ -131,13 +148,22 @@ class Collector:
 	def getTermKeys(self):
 		# retrieve a list of all term keys for which we have data
 		
-		termKeys = self.directObjects.keys()
+		termKeys = self.dagObjects.keys()
 		termKeys.sort()
 		return termKeys
 		
 class MPGenotypeCollector (Collector):
 	# Is: a collector that is specifically for MP/Genotype annotations, which do not consider qualifier or
 	#	evidence codes when defining unique annotations
+	
+	def cacheNodesToSkip(self):
+		cmd = '''select _Object_key from acc_accession where _MGIType_key = 13 and accID = 'MP:0000001' '''
+		cols, rows = dbAgnostic.execute(cmd)
+		
+		if rows:
+			self.nodesToSkip.add(rows[0][0])
+			logger.debug(' - added MP root node to set of terms to skip')
+		return
 	
 	def getAnnotation(self, termKey, objectKey, qualifier, evidenceCode):
 		return (termKey, objectKey)
