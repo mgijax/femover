@@ -96,13 +96,13 @@ class DefaultParentGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. parent data for each child term key, with a preliminary ordering.
 	# includes all parents of the children terms, so we can finalize the ordering in memory and then
-	# pick the first parent as the default one.  Includes only AMA at the moment.
+	# pick the first parent as the default one.
 	'''select child._Object_key as child_key, l.label,
 			parent._Object_key as parent_key, p.term as parent_term
 		from voc_vocab v, voc_term t, voc_vocabdag d, dag_node child, dag_edge e,
 			dag_node parent, voc_term p, dag_label l
 		where v._Vocab_key = t._Vocab_key
-			and v.name in ('Adult Mouse Anatomy', 'Mammalian Phenotype')
+			and v.name in ('Adult Mouse Anatomy', 'Mammalian Phenotype', 'GO')
 			and v._Vocab_key = d._Vocab_key
 			and d._DAG_key = child._DAG_key
 			and t._Term_key = child._Object_key
