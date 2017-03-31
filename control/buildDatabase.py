@@ -253,7 +253,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
-	'term_emap', 'term_emaps_child', 'go_evidence_category',
+	'term_emap', 'term_emaps_child', 'go_evidence_category', 'term_note',
 	'term_to_header', 'term_to_term', 'term_default_parent', 'term_annotation_counts',
 	]
 TESTS = ['test_stats']
