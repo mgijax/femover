@@ -146,13 +146,6 @@ class Collector:
 		
 		return (termKey, objectKey, self.termCache.getKey(qualifier), self.termCache.getKey(evidenceCode))
 	
-	def getTermKeys(self):
-		# retrieve a list of all term keys for which we have data
-		
-		termKeys = self.dagObjects.keys()
-		termKeys.sort()
-		return termKeys
-		
 class MPGenotypeCollector (Collector):
 	# Is: a collector that is specifically for MP/Genotype annotations, which do not consider qualifier or
 	#	evidence codes when defining unique annotations
@@ -207,6 +200,20 @@ class TACGatherer (Gatherer.Gatherer):
 		logger.debug(' - got %d annotations from database' % len(rows))
 		return rows
 	
+	def getAllTermKeys(self, vocabKey):
+		cmd = '''select _Term_key
+			from voc_term
+			where _Vocab_key = %d
+			and isObsolete = 0''' % vocabKey
+			
+		cols, rows = dbAgnostic.execute(cmd)
+		
+		termKeys = []
+		for row in rows:
+			termKeys.append(row[0])
+		logger.debug(' - got %d term keys' % len(termKeys))
+		return termKeys
+
 	def collateResults(self):
 		self.finalColumns = [ 'termKey', 'mgitype', 'objectsToTerm', 'objectsWithDesc', 'annotToTerm', 'annotWithDesc' ]
 		self.finalResults = []
@@ -238,7 +245,7 @@ class TACGatherer (Gatherer.Gatherer):
 			logger.debug(' - collated annotations by term')
 			
 			previousRowCount = len(self.finalResults)
-			for termKey in collector.getTermKeys():
+			for termKey in self.getAllTermKeys(vocabKey):
 				self.finalResults.append( (termKey, mgiType, collector.getObjectCountDirect(termKey),
 					collector.getObjectCountDag(termKey), collector.getAnnotationCountDirect(termKey),
 					collector.getAnnotationCountDag(termKey)) )
