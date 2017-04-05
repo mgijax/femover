@@ -14,6 +14,7 @@ import DiseasePortalUtils
 ###--- Constants ---###
 
 DO_GENOTYPE = 1020		# VOC_AnnotType for 'DO/Genotype'
+DO_ALLELE = 1021		# VOC_AnnotType for 'DO/Allele'
 DO_HUMAN_MARKER = 1022	        # VOC_AnnotType for 'DO/Human Marker'
 DISEASE_MARKER = 1023		# VOC_AnnotType for 'DO/Marker (Derived)'
 
@@ -598,8 +599,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		global TERM_CACHE
 
-		outColumns = [ '_Term_key', 'term', 'accID', 'name',
-			'refCount', 'hpoCount' ]
+		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ]
 		outRows = []
 
 		cols, rows = self.results[0]
@@ -612,7 +612,8 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 		TERM_CACHE = {}
 
 		termToRefs = DiseasePortalUtils.getReferencesByDiseaseKey()
-		
+		#logger.debug ('termToRefs: %s' % str(termToRefs))
+
 		for row in rows:
 			termKey = row[keyCol]
 
@@ -627,8 +628,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			TERM_CACHE[row[keyCol]] = (row[termCol], row[idCol])
 
 		logger.debug ('Count of disease terms: %d' % len(outRows))
-		logger.debug ('Cached %d diseases in TERM_CACHE' % \
-			len(TERM_CACHE) )
+		logger.debug ('Cached %d diseases in TERM_CACHE' % len(TERM_CACHE) )
 
 		return outColumns, outRows
 
@@ -1392,7 +1392,6 @@ cmds = [
         and t._Term_key = dc._DescendentObject_key
         and dc._AncestorObject_key = tt._Term_key
         ''',
-
 	]
 
 # Both the 'disease' and 'disease_synonym' tables could be split off into
@@ -1400,8 +1399,7 @@ cmds = [
 # generated keys, so we'll just group them all here for simplicity.
 files = [
 	('disease',
-		[ '_Term_key', 'term', 'accID', 'name', 'refCount',
-			'hpoCount' ],
+		[ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ],
 		'disease'),
 
 	('disease_synonym',
@@ -1417,23 +1415,19 @@ files = [
 		'disease_group_row'),
 
 	('disease_row',
-		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum',
-			'_Cluster_key' ],
+		[ 'diseaseRowKey', 'diseaseGroupKey', 'sequenceNum', '_Cluster_key' ],
 		'disease_row'),
 
 	('disease_row_to_marker',
-		[ Gatherer.AUTO, 'diseaseRowKey', '_Marker_key', 'sequenceNum',
-			'isCausative', 'organism' ],
+		[ Gatherer.AUTO, 'diseaseRowKey', '_Marker_key', 'sequenceNum', 'isCausative', 'organism' ],
 		'disease_row_to_marker'),
 
 	('disease_model',
-		[ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID',
-			'isNotModel'],
+		[ 'diseaseModelKey', 'genotypeKey', 'disease', 'primaryID', 'isNotModel'],
 		'disease_model'),
 
 	('disease_row_to_model',
-		[ Gatherer.AUTO, 'diseaseRowKey', 'diseaseModelKey',
-			'sequenceNum' ],
+		[ Gatherer.AUTO, 'diseaseRowKey', 'diseaseModelKey', 'sequenceNum' ],
 		'disease_row_to_model'),
 
 	('disease_model_to_reference',
