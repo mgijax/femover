@@ -55,12 +55,11 @@ fi
 export TARGET_TYPE
 
 # handle the other (optional) parameters
-
 FLAGS=""
 POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -n -o -p -s -t -r -v -x -X -G -S"
+skipPostProcess=0
 while [ $# -gt 0 ]; do
     found=0
-    skipPostProcess=0
     for flag in ${POSSIBLE_FLAGS}
     do
         if [ "${flag}" = "$1" ]; then
