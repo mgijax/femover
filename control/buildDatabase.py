@@ -40,7 +40,7 @@ if '.' not in sys.path:
 
 ###--- Globals ---###
 
-USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <gatherer to run>]
+USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-M|-n|-o|-p|-r|-s|-x|-X] [-G <gatherer to run>]
     Data sets to (re)generate:
 	-a : Alleles
 	-A : Accession IDs
@@ -54,6 +54,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-n|-o|-p|-r|-s|-x|-X] [-G <g
 	-i : Images
 	-l : Other
 	-m : Markers
+	-M : mapping data
 	-n : Annotations
 	-o : Human Disease Portal
 	-p : Probes
@@ -221,10 +222,13 @@ OTHER = [ 'glossary', 'statistic'
 	]
 IMSR = [ 'imsr',
 	]
+MAPPING = [ 'mapping_experiment', 'mapping_id', 'mapping_link', 'mapping_to_marker', 'mapping_rirc',
+		'mapping_cross', 'mapping_hybrid', 'mapping_insitu', 'mapping_fish', 'mapping_table',
+	]
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
-		'marker_location', 'marker_counts', 
-		'marker_slimgrid',
+		'marker_location', 'marker_counts', 'marker_polymorphism',
+		'marker_slimgrid', 'marker_polymorphism_allele',
 		'marker_note', 'marker_sequence_num', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
@@ -249,8 +253,8 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent',
 	'term_sequence_num', 'term_ancestor_simple', 'queryform_option',
-	'term_emap', 'term_emaps_child', 'go_evidence_category',
-	'term_to_header', 'term_to_term',
+	'term_emap', 'term_emaps_child', 'go_evidence_category', 'term_note',
+	'term_to_header', 'term_to_term', 'term_default_parent', 'term_annotation_counts',
 	]
 TESTS = ['test_stats']
 
@@ -271,7 +275,7 @@ FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
-	'-X' : HT_EXPRESSION,
+	'-X' : HT_EXPRESSION,	'-M' : MAPPING,
 	}
 
 # boolean; are we doing a build of the complete front-end database?

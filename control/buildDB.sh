@@ -22,6 +22,7 @@ usage()
     echo "    -h : IMSR counts (via HTTP)"
     echo "    -i : Images"
     echo "    -m : Markers"
+    echo "    -M : Mapping data"
     echo "    -n : Annotations"
     echo "    -o : Disease Portal"
     echo "    -p : Probes"
@@ -56,7 +57,7 @@ export TARGET_TYPE
 
 # handle the other (optional) parameters
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -n -o -p -s -t -r -v -x -X -G -S"
+POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -M -n -o -p -s -t -r -v -x -X -G -S"
 skipPostProcess=0
 while [ $# -gt 0 ]; do
     found=0
