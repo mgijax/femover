@@ -273,8 +273,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
 				
 		#
-		# for case where ldb=9 (Sequence DB), use the acc_actualdb.name = 'GenBank'
-		# because ldb=9 (Sequence DB) contains > 1 actual URL
+		# case: if ldb=9 (Sequence DB), then use the acc_actualdb.name = 'GenBank'
+		# (because ldb=9 (Sequence DB) contains > 1 actual URL)
 		#
 		cmd = '''
 			select ve._annotevidence_key, a.accid, ldb._logicaldb_key, ldb.name as logicaldb
