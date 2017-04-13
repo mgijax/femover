@@ -272,17 +272,29 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		# initialize a tooltip finder for the the other inferredfrom tooltips
 		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
 				
+		#
+		# for case where ldb=9 (Sequence DB), use the acc_actualdb.name = 'GenBank'
+		# because ldb=9 (Sequence DB) contains > 1 actual URL
+		#
 		cmd = '''
-			select ve._annotevidence_key,
-			a.accid,
-			ldb._logicaldb_key,
-			ldb.name as logicaldb
+			select ve._annotevidence_key, a.accid, ldb._logicaldb_key, ldb.name as logicaldb
 			from voc_evidence ve
 			join acc_accession a on
 				a._object_key = ve._annotevidence_key
 				and a._mgitype_key = 25
+				and a._logicaldb_key not in (9)
 			join acc_logicaldb ldb on
 				ldb._logicaldb_key = a._logicaldb_key
+		        union
+			select ve._annotevidence_key, a.accid, ldb._logicaldb_key, ldb.name as logicaldb
+			from voc_evidence ve
+			join acc_accession a on
+				a._object_key = ve._annotevidence_key
+				and a._mgitype_key = 25
+				and a._logicaldb_key in (9)
+			join acc_actualdb ldb on
+				ldb._logicaldb_key = a._logicaldb_key
+				and ldb.name = 'GenBank'
 		'''
 		
 		(cols, rows) = dbAgnostic.execute(cmd)
