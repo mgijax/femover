@@ -261,8 +261,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 	
 	def queryInferredFromIds(self):
 		"""
-		Query all inferredfrom IDs for 
-			_annot_key from BATCH_TEMP_TABLE
+		Query all inferredfrom IDs for _annot_key from BATCH_TEMP_TABLE
 		
 		Return map { _annotevidence_key: [{ id, tooltip, logicaldb}] }
 		"""
@@ -273,10 +272,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		# initialize a tooltip finder for the the other inferredfrom tooltips
 		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
 				
-		# These sequences will be mapped to MGI logicaldb for linking
-		#mgi_sequence_logicaldbs = set(['SWISS-PROT','NCBI Query'])
-		#mgi_sequence_logicaldbs = set(['Sequence DB','SWISS-PROT','NCBI Query'])
-		
 		cmd = '''
 			select ve._annotevidence_key,
 			a.accid,
@@ -296,16 +291,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		accidCol = dbAgnostic.columnNumber (cols, 'accid')
 		ldbCol = dbAgnostic.columnNumber (cols, 'logicaldb')
 		
-		
 		inferredfromIdMap = {}
 		for row in rows:
 			evidenceKey = row[evidenceKeyCol]
 			accid = row[accidCol]
 			ldb = row[ldbCol]
-			
-			# Some sequences will be mapped to MGI logicaldb for URL linking
-			#if ldb in mgi_sequence_logicaldbs:
-			#	ldb = 'MGI'
 			
 			# prefer object-specific tooltip, fall back on general organism tooltip
 			tooltip = tooltipFinder.getTooltip(accid)
