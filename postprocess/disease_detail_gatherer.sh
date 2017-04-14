@@ -41,7 +41,7 @@ select count(*) from disease where genes_tab_count > 0;
 --	allele (genotype.combination_1)
 --
 
-SELECT gr.disease_key
+SELECT gr.disease_key, gr.annotated_disease
 INTO TEMP tmp_models
 FROM disease_row_to_model drm, disease_row r, disease_group_row gr, disease_group dg, disease_model dm, genotype g        
 WHERE drm.disease_row_key = r.disease_row_key
@@ -52,7 +52,7 @@ WHERE drm.disease_row_key = r.disease_row_key
         AND dm.is_not_model = 0
         AND dm.genotype_key = g.genotype_key
         AND g.is_disease_model = 1
-        GROUP BY gr.disease_key, g.background_strain, g.combination_1
+        GROUP BY gr.disease_key, gr.annotated_disease, g.background_strain, g.combination_1
 ;
 WITH tmp_models_counts AS (
 SELECT disease_key, count(disease_key) as models_count
