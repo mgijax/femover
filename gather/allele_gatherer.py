@@ -109,18 +109,16 @@ class AlleleGatherer (Gatherer.Gatherer):
 		# extract the holder and company ID for deltagen/lexicon
 		# knockouts, and cache them for postprocessResults()
 
-		keyCol = Gatherer.columnNumber (self.results[4][0],
-			'_Allele_key')
-		holderCol = Gatherer.columnNumber (self.results[4][0],
-			'holder')
-		companyCol = Gatherer.columnNumber (self.results[4][0],
-			'companyID')
+		keyCol = Gatherer.columnNumber (self.results[4][0], '_Allele_key')
+		holderCol = Gatherer.columnNumber (self.results[4][0], 'holder')
+		companyCol = Gatherer.columnNumber (self.results[4][0], 'companyID')
+		repositoryCol = Gatherer.columnNumber (self.results[4][0], 'repository')
+		jrsIDCol = Gatherer.columnNumber (self.results[4][0], 'jrsID')
 
 		self.knockouts = {}
 
 		for r in self.results[4][1]:
-			self.knockouts[r[keyCol]] = (r[holderCol], 
-				r[companyCol])
+			self.knockouts[r[keyCol]] = (r[holderCol], r[companyCol], r[repositoryCol], r[jrsIDCol])
 
 		logger.debug ('Found %d knockouts' % len(self.knockouts))
 
@@ -256,13 +254,17 @@ class AlleleGatherer (Gatherer.Gatherer):
 				r[modeCol]), r, columns)
 
 			if self.knockouts.has_key(allele):
-				holder, company = self.knockouts[allele]
+				holder, company, repository, jrsID = self.knockouts[allele]
 			else:
 				holder = None
 				company = None
+				repository = None
+				jrsID = None
 
 			self.addColumn('holder', holder, r, columns)
 			self.addColumn('companyID', company, r, columns)
+			self.addColumn('repository', repository, r, columns)
+			self.addColumn('jrsID', jrsID, r, columns)
 
 			self.addColumn('transmission', Gatherer.resolve (
 				r[transCol]), r, columns)
@@ -306,7 +308,7 @@ cmds = [
 	order by c.sequenceNum''',
 
 	# 4. Deltagen/Lexicon Knockout data
-	'select _Allele_key, holder, companyID from ALL_Knockout_Cache',
+	'select _Allele_key, holder, companyID, repository, jrsID from ALL_Knockout_Cache',
 
 	# 5. alleles' primary images
 	'''select a._Object_key as _Allele_key, p._Image_key
@@ -358,7 +360,7 @@ fieldOrder = [
 	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'inducibleNote',
 	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',
-	'imageKey', 'hasDiseaseModel',
+	'imageKey', 'hasDiseaseModel', 'repository', 'jrsID',
 	]
 
 # prefix for the filename of the output file

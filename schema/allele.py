@@ -37,6 +37,8 @@ createStatement = '''CREATE TABLE %s  (
 	transmission_phrase	text	null,
 	primary_image_key	int		null,
 	has_disease_model	int		null,
+	repository		text		null,
+	jrs_id			text		null,
 	PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -83,6 +85,8 @@ comments = {
 		'transmission_phrase' : 'phrase to use in describing transmission type on allele detail page',
 		'primary_image_key' : 'identifies the primary image for the allele',
 		'has_disease_model' : '1 if this allele is a model for at least one human disease, 0 if not',
+		'repository' : 'the repository from which this knockout is available',
+		'jrs_id' : 'the Jax Registry ID (JRS) of the knockout',
 		},
 	Table.INDEX : {
 		'symbol' : 'look up alleles by symbol',
