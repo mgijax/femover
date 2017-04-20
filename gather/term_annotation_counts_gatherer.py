@@ -11,6 +11,7 @@ import dbAgnostic
 
 MP_GENOTYPE = 'Mammalian Phenotype/Genotype'
 GO_MARKER = 'GO/Marker'
+HPO_DO = 'HPO/DO'
 
 ###--- Classes ---###
 
@@ -162,6 +163,13 @@ class MPGenotypeCollector (Collector):
 	def getAnnotation(self, termKey, objectKey, qualifier, evidenceCode):
 		return (termKey, objectKey)
 
+class HpoDoCollector (Collector):
+	# Is: a collector that is for HPO/DO annotations (mapping from term to term) without considering qualifier
+	#	or evidence code when defining unique annotations
+	
+	def getAnnotation(self, termKey, objectKey, qualifier, evidenceCode):
+		return (termKey, objectKey)
+
 class TACGatherer (Gatherer.Gatherer):
 	# Is: a data gatherer for the term_annotation_counts table
 	# Has: queries to execute against the source database
@@ -185,6 +193,60 @@ class TACGatherer (Gatherer.Gatherer):
 		logger.debug(' - got %d MP/Genotype annotations from database' % len(rows))
 		return rows
 	
+	def getDiseasesPerHpoTerm(self, annotTypeKey):
+		# get the annotations that map from an HPO term to a DO term as a list of tuples, where each tuple is:
+		#	(DO term key, HPO term key, qualifier, evidence code)
+		# Note: only includes diseases with human annotations, as these are the ones returned by HMDC when
+		#	querying by an HPO ID
+		
+		# commands to generate a couple temp tables...
+		prepCmds = [
+			# 0. create temp table with mapping from HPO to DO terms
+			'''select va._Term_key as hpo_key, va._Object_key as do_key
+				into temporary table hpo_to_do
+				from voc_annot va
+				where va._AnnotType_key = 1024''',
+				
+			# 1-2. indexing on hpo_to_do mapping table
+			'create index i1 on hpo_to_do(hpo_key)',
+			'create index i2 on hpo_to_do(do_key)',
+			
+			# 3. compute closure of DO vocabulary, including self referential links (bottom of union)
+			'''select t._Term_key, c._DescendentObject_key as descendant
+				into temporary table do_closure
+				from voc_term t, voc_vocab v, dag_closure c
+				where v.name = 'Disease Ontology'
+					and t._Vocab_key = v._Vocab_key
+					and t._Term_key = c._AncestorObject_key
+				union
+				select t._Term_key, t._Term_key
+				from voc_term t, voc_vocab v
+				where v.name = 'Disease Ontology'
+					and t._Vocab_key = v._Vocab_key''',
+
+			# 4-5. indexing on do_closure table
+			'create index d1 on do_closure(_Term_key)',
+			'create index d2 on do_closure(descendant)', 
+			]
+		
+		i = 0
+		for prepCmd in prepCmds:
+			dbAgnostic.execute(prepCmd)
+			logger.debug(' - executed prep cmd %d' % i)
+			i = i + 1
+
+		cmd = '''select distinct htd.do_key, htd.hpo_key, null as qualifier, null as evidence_code
+			from hpo_to_do htd, do_closure dc, voc_annot va, voc_term q
+			where htd.do_key = dc._Term_key
+				and dc.descendant = va._Term_key
+				and va._Qualifier_key = q._Term_key
+				and q.term is null
+				and va._AnnotType_key = 1022'''
+
+		cols, rows = dbAgnostic.execute(cmd)
+		logger.debug(' - got %d HPO/DO annotations from database' % len(rows))
+		return rows
+		
 	def getAnnotations(self, annotTypeKey):
 		# gets all the annotations for the given annotation type key as a list of tuples, where each tuple is:
 		#	(object key, term key, qualifier, evidence code)
@@ -232,9 +294,15 @@ class TACGatherer (Gatherer.Gatherer):
 			mgiType = row[mgiTypeCol]
 
 			ancestors = AncestorCache(vocabKey)
+
 			if row[annotTypeNameCol] == MP_GENOTYPE:
 				collector = MPGenotypeCollector(ancestors)
 				annotations = self.getMPGenotypeAnnotations(row[annotTypeKeyCol])
+
+			elif row[annotTypeNameCol] == HPO_DO:
+				collector = HpoDoCollector(ancestors)
+				annotations = self.getDiseasesPerHpoTerm(row[annotTypeKeyCol])
+
 			else:
 				collector = Collector(ancestors)
 				annotations = self.getAnnotations(row[annotTypeKeyCol])
@@ -265,9 +333,9 @@ cmds = [
 	'''select vat._AnnotType_key, vat.name as annot_type, vat._Vocab_key, v.name as vocab_name,
 			t.name as mgi_type
 		from voc_annottype vat, voc_vocab v, acc_mgitype t
-		where vat.name in ('%s', '%s')
+		where vat.name in ('%s', '%s', '%s')
 			and vat._MGIType_key = t._MGIType_key
-			and vat._Vocab_key = v._Vocab_key''' % (MP_GENOTYPE, GO_MARKER),
+			and vat._Vocab_key = v._Vocab_key''' % (MP_GENOTYPE, GO_MARKER, HPO_DO),
 	]
 
 # order of fields (from the query results) to be written to the output file

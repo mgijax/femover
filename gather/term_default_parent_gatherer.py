@@ -10,7 +10,7 @@
 #	1. Adult Mouse Anatomy
 #		a. prefer part-of relationships over is-a
 #		b. use smart alpha to choose first parent
-#	2. Mammalian Phenotype Ontology
+#	2. Mammalian Phenotype Ontology, GO, HPO
 #		a. use same rules from #1 until further notice
 
 import Gatherer
@@ -102,7 +102,7 @@ cmds = [
 		from voc_vocab v, voc_term t, voc_vocabdag d, dag_node child, dag_edge e,
 			dag_node parent, voc_term p, dag_label l
 		where v._Vocab_key = t._Vocab_key
-			and v.name in ('Adult Mouse Anatomy', 'Mammalian Phenotype', 'GO')
+			and v.name in ('Adult Mouse Anatomy', 'Mammalian Phenotype', 'GO', 'Human Phenotype Ontology')
 			and v._Vocab_key = d._Vocab_key
 			and d._DAG_key = child._DAG_key
 			and t._Term_key = child._Object_key
