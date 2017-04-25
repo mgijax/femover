@@ -24,7 +24,7 @@ cmds = [
 			and n._Note_key = c._Note_key
 			and tt._Vocab_key = v._Vocab_key
 			and t.noteType = 'Public Vocabulary Term Comment'
-			and v.name in ('GO', 'Mammalian Phenotype', 'Human Phenotype Ontology') ''',
+			and v.name in ('GO', 'Mammalian Phenotype', 'Human Phenotype Ontology', 'Disease Ontology') ''',
 	]
 
 # order of fields (from the query results) to be written to the

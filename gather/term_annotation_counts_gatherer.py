@@ -12,6 +12,7 @@ import dbAgnostic
 MP_GENOTYPE = 'Mammalian Phenotype/Genotype'
 GO_MARKER = 'GO/Marker'
 HPO_DO = 'HPO/DO'
+DO_GENOTYPE = 'DO/Genotype'
 
 ###--- Classes ---###
 
@@ -333,9 +334,9 @@ cmds = [
 	'''select vat._AnnotType_key, vat.name as annot_type, vat._Vocab_key, v.name as vocab_name,
 			t.name as mgi_type
 		from voc_annottype vat, voc_vocab v, acc_mgitype t
-		where vat.name in ('%s', '%s', '%s')
+		where vat.name in ('%s', '%s', '%s', '%s')
 			and vat._MGIType_key = t._MGIType_key
-			and vat._Vocab_key = v._Vocab_key''' % (MP_GENOTYPE, GO_MARKER, HPO_DO),
+			and vat._Vocab_key = v._Vocab_key''' % (MP_GENOTYPE, GO_MARKER, HPO_DO, DO_GENOTYPE),
 	]
 
 # order of fields (from the query results) to be written to the output file
