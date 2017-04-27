@@ -16,9 +16,10 @@ OMIM = 15
 ENTREZ_GENE = 55
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
+MYGENE_INFO = 178
 
 # preferred ordering for human/mouse links, by logical database
-LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
+LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL, MYGENE_INFO ]
 
 # organism 
 MOUSE = 1            
@@ -150,6 +151,8 @@ def getDisplayText (ldbKey, ldbName, accID):
     # We can tweak the text of the link here, depending on the logical
     # database.  At present, we always use the logical db name.
 
+    if ldbName == 'MyGene':
+        return 'MyGene.info'
     return ldbName
 
 def getVersionForVistaPoint (version):
@@ -451,10 +454,10 @@ cmds = [
     where m._Organism_key = %d
         and m._Marker_key = a._Object_key
         and a._MGIType_key = %d
-        and a._LogicalDB_key in (%d, %d, %d)
+        and a._LogicalDB_key in (%d, %d, %d, %d)
         and a.private = 0
         and a.preferred = 1''' % (
-            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
+            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM, MYGENE_INFO),
 
     # 1. mouse markers' IDs
     '''select a._LogicalDB_key,
