@@ -599,7 +599,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
 		global TERM_CACHE
 
-		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ]
+		outColumns = [ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount', 'genesCount', 'modelsCount' ]
 		outRows = []
 
 		cols, rows = self.results[0]
@@ -618,12 +618,15 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 			termKey = row[keyCol]
 
 			refsCount = 0
+		        genesCount = 0
+		        modelsCount = 0
 			if termToRefs.has_key(termKey):
 				refsCount = len(termToRefs[termKey])
 
 			outRows.append ( [
 				row[keyCol], row[termCol], row[idCol],
-				row[nameCol], refsCount, row[hpoCol] ] )
+				row[nameCol], refsCount, row[hpoCol], 
+				genesCount, modelsCount ] )
 
 			TERM_CACHE[row[keyCol]] = (row[termCol], row[idCol])
 
@@ -1399,7 +1402,7 @@ cmds = [
 # generated keys, so we'll just group them all here for simplicity.
 files = [
 	('disease',
-		[ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount' ],
+		[ '_Term_key', 'term', 'accID', 'name', 'refCount', 'hpoCount', 'genesCount', 'modelsCount' ],
 		'disease'),
 
 	('disease_synonym',

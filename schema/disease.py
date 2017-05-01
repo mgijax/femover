@@ -20,6 +20,8 @@ createStatement = '''CREATE TABLE %s  (
 	logical_db		text	not null,
 	disease_reference_count	int	not null,
 	hpo_term_count		int	not null,
+	genes_tab_count		int     not null,
+	models_tab_count	int     not null,
 	PRIMARY KEY(disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -46,6 +48,8 @@ comments = {
 		'logical_db' : 'logical database assigning the ID',
 		'disease_reference_count' : 'count of references for annotations for this disease',
 		'hpo_term_count' : 'count of Human Phenotype Ontology (HPO) terms associated with this disease',
+		'genes_tab_count' : 'count of rows in the Disease browser/Genes tab',
+		'models_tab_count' : 'count of rows in the Disease browser/Models tab',
 		},
 	Table.INDEX : {
 		'disease' : 'case-sensitive searching by disease term',

@@ -32,6 +32,7 @@ usage()
     echo "    -x : eXpression (GXD Data plus GXD Literature Index)"
     echo "    -X : high-throughput expression data (from ArrayExpress)"
     echo "    -G : run a single, specified gatherer (name specified afterward)"
+    echo "    -S : skip post-processing tasks (postprocess directory)"
     echo "  If no data set flags are specified, the whole front-end database"
     echo "  will be (re)generated.  Any existing contents of the database"
     echo "  will be wiped."
@@ -55,9 +56,9 @@ fi
 export TARGET_TYPE
 
 # handle the other (optional) parameters
-
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -M -n -o -p -s -t -r -v -x -X -G"
+POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -M -n -o -p -s -t -r -v -x -X -G -S"
+skipPostProcess=0
 while [ $# -gt 0 ]; do
     found=0
     for flag in ${POSSIBLE_FLAGS}
@@ -66,6 +67,7 @@ while [ $# -gt 0 ]; do
             FLAGS="${FLAGS} ${flag}"
             found=1
         fi
+
     done
 
     if [ ${found} -eq 0 ]; then
@@ -76,6 +78,11 @@ while [ $# -gt 0 ]; do
         if [ "$1" = "-G" ]; then
             shift
             FLAGS="${FLAGS} $1"
+        fi
+
+        if [ "$1" = "-S" ]; then
+            shift
+    	    skipPostProcess=1
         fi
 
         # if setting flags, then ignore single priority tables
@@ -113,5 +120,22 @@ do
     rm -rf ${LOG_DIR}/buildDatabase.${table}.log
     mv -f ${LOG_DIR}/buildDatabase.log ${LOG_DIR}/buildDatabase.${table}.log
 done
+
+# run any post-processing scripts
+rm -rf ${LOG_DIR}/postprocess.log
+if [ ${skipPostProcess} -eq 0 ]; then
+	echo "running post processing scripts"
+	for postscript in ${FEMOVER}/postprocess/*
+	do
+    		echo "${postscript}" >> ${LOG_DIR}/postprocess.log
+    		${postscript} >> ${LOG_DIR}/postprocess.log
+    		if [ $? -ne 0 ]; then
+        		echo "${postscript} failed.  See logs for details." >> ${LOG_DIR}/postprocess.log
+        		exit 1
+    		fi
+	done
+else
+	echo "skipping post processing scripts"
+fi
 
 ./dbExecute.py 'grant select on all tables in schema fe to public'
