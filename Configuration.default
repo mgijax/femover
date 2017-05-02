@@ -71,7 +71,7 @@ export VISTA_POINT_URL
 # URL for making Ensembl GM-based links for markers to Gene Tree
 #
 
-GENE_TREE_URL="http://useast.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=@@@@"
+GENE_TREE_URL="http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g=@@@@"
 export GENE_TREE_URL
 
 #
