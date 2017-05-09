@@ -215,6 +215,9 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             accID = row[idCol]
             seqNum = seqNum + 1
 
+            if accID.startswith('OMIM:'):
+                accID = accID.replace('OMIM:', '')
+                
             ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb',
                 '_LogicalDB_key', 'name')
 
