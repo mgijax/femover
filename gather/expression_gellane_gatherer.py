@@ -4,6 +4,10 @@
 #
 # HISTORY
 #
+# 05/03/2017	lec
+#	- TR12557/add query to (# 1. Gather all the lane structures)
+#	  to prevent structures without bands
+#
 # 03/10/2016	lec
 #	- TR12281/add exists statement for gxd_expression
 #
@@ -75,14 +79,18 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 	def collateResults(self):
 
 		# process gel lanes + bands 
+
 		laneCols = [ 'gellane_key', 'assay_key', 'genotype_key','sex',
                         'age','age_note','lane_note','sample_amount',
                         'lane_label','control_text','is_control',
                         'rna_type','lane_seq']
+
                 laneRows = []
+
 		bandCols = ['gelband_key','gellane_key','gelrow_key','assay_key',
                         'rowsize','row_note','strength','band_note',
                         'row_seq']
+
 		bandRows = []
 
 		(cols, rows) = self.results[0]
@@ -112,11 +120,12 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 		bandKeyCol = Gatherer.columnNumber (cols, '_gelband_key')
 		bandNoteCol = Gatherer.columnNumber (cols, 'bandnote')
 		bandStrengthCol = Gatherer.columnNumber (cols, 'strength')
-
 	
 		uniqueLaneKeys = set()
 		uniqueBandKeys = set()
+
 		for row in rows:
+
 			assayKey = row[assayKeyCol]
 			laneKey = row[laneKeyCol]
 			genotypeKey = row[genotypeKeyCol]
@@ -147,6 +156,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 
 			if laneKey not in uniqueLaneKeys:
 				uniqueLaneKeys.add(laneKey)
+
 				# make a new gellane row
 				# for null/empty lanes we need special text
 				laneLabel = not laneLabel and "Lane %s"%laneSeq or laneLabel 
@@ -155,6 +165,7 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 				#if not sampleAmount and (not rnaType or rnaType in NOT_SPECIFIED_VALUES):
 				#	sampleAmountDisplay = NOT_SPECIFIED
 				#else:
+
 				sampleAmountDisplay = not sampleAmount and NOT_SPECIFIED or "%s &micro;g"%sampleAmount
 				if rnaType not in NOT_SPECIFIED_VALUES:
 					sampleAmountDisplay = "%s; %s RNA"%(sampleAmountDisplay,rnaType)
@@ -168,10 +179,12 @@ class GelLaneGatherer (Gatherer.MultiFileGatherer):
 
 			if bandKey not in uniqueBandKeys:
 				uniqueBandKeys.add(bandKey)
+
 				# make a new gelband row
 				# eliminate trailing zeros from decimal value
 				if rowSize:
 					rowSize = ("%s"%rowSize).rstrip('0').rstrip('.')
+
 				# when the amount(size) is Null the display is going to say something like 'Size Not Specified'
 				rowSizeDisplay = rowSize==None and NOT_SPECIFIED_SIZE or "%s %s"%(rowSize,rowUnits) 
 
@@ -245,6 +258,7 @@ cmds = [
 			and vte._stage_key = gs._stage_key
 		join voc_term struct on
 			struct._term_key = vte._term_key
+	where exists (select 1 from GXD_GelBand gb where gs._gellane_key = gb._gellane_key)
 	''',
 	]
 
@@ -256,11 +270,13 @@ files = [
 			'rna_type',
 			'lane_seq' ],
                 'gellane'),
+
 	('gelband',
 		['gelband_key','gellane_key','gelrow_key','assay_key',
 			'rowsize','row_note','strength','band_note',
 			'row_seq'],
 		'gelband'),
+
         ('gellane_to_structure',
 		[ 'unique_key','gellane_key', 'mgd_structure_key', 'printname',
 			'structure_seq'],
