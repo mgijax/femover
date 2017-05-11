@@ -17,7 +17,7 @@ createStatement = '''CREATE TABLE %s  (
 	unique_key		int		not null,
 	statistic_key		int		not null,
 	name			text		not null,
-	abbreviation		text	not null,
+	tooltip			text	null,
 	value			int			not null,
 	group_name			text		not null,
 	sequencenum			int		not null,
@@ -30,7 +30,7 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
 	'statistic_key' : 'create index %s on %s (statistic_key)',
 	'name' : 'create index %s on %s (name)',
-	'abbreviation' : 'create index %s on %s (abbreviation)',
+	'tooltip' : 'create index %s on %s (tooltip)',
 	'group_name' : 'create index %s on %s (group_name)'
 	}
 
@@ -47,7 +47,7 @@ comments = {
 		'unique_key' : 'unique key for this row',
 		'statistic_key' : 'MGI_Statistic key',
 		'name' : 'long name of statistic',
-		'abbreviation' : 'short name / ID of statistic',
+		'tooltip' : 'mouse-over tooltip for the statistic',
 		'value' : 'MGI_Measurement.intvalue',
 		'group_name' : 'MGI_Set.name for this statistic',
 		'sequencenum' : 'Orderering of this statistic',

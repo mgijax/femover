@@ -1,0 +1,11 @@
+# pre-computed statistics, two tab-delimited columns (statistic name\tvalue)
+Pathways	347
+Enzymatic reactions	2018
+Transport reactions	9
+Polypeptides	39629
+Protein complexes	6
+Enzymes	3000
+Transporters	61
+Compounds	1337
+RefSNPs	15663546
+Strains with SNPs	88
