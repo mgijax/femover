@@ -58,6 +58,18 @@ POLYMORPHISMS_STATS_PAGE = 'Stats Page Polymorphisms'
 SEQUENCES_STATS_PAGE = 'Stats Page Sequences'
 REFERENCES = 'References'
 
+###--- sequence statistics ---###
+
+SEQ_DNA = 'Mouse nucleotide sequences'
+SEQ_RNA = 'Mouse transcript sequences'
+SEQ_POLYPEPTIDE = 'Mouse polypeptide sequences'
+
+STATS[SEQ_DNA] = ('', 'SELECT COUNT(1) FROM SEQ_Sequence WHERE _SequenceType_key = 316347 AND _Organism_key = 1')
+STATS[SEQ_RNA] = ('', 'SELECT COUNT(1) FROM SEQ_Sequence WHERE _SequenceType_key = 316346 AND _Organism_key = 1')
+STATS[SEQ_POLYPEPTIDE] = ('', 'SELECT COUNT(1) FROM SEQ_Sequence WHERE _SequenceType_key = 316348 AND _Organism_key = 1')
+
+GROUPS[SEQUENCES_STATS_PAGE] = [ SEQ_DNA, SEQ_RNA, SEQ_POLYPEPTIDE ]
+
 ###--- recombinase statistics ---###
 
 CRE_DRIVERS_IN_ALLELES = 'Drivers in recombinase knock-in alleles'
