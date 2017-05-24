@@ -147,8 +147,8 @@ GXD_IMAGES = 'Expression images'
 GXD_ASSAYS = 'Expression assays'
 GXD_MUTANTS = 'Mouse mutants with expression data'
 
-STATS[GXD_GENES_INDEXED] = ('', 'SELECT COUNT(DISTINCT _Marker_key) FROM GXD_Index')
-STATS[GXD_GENES_CODED] = ('',
+STATS[GXD_GENES_INDEXED] = ('Genes searchable using the Gene Expression Literature Query', 'SELECT COUNT(DISTINCT _Marker_key) FROM GXD_Index')
+STATS[GXD_GENES_CODED] = ('Genes searchable using the Gene Expression Data Query',
 	'''SELECT COUNT(DISTINCT ge._Marker_key)
 		FROM GXD_Expression ge, MRK_Marker mm
 		WHERE ge._Marker_key = mm._Marker_key AND mm._Organism_key = 1
