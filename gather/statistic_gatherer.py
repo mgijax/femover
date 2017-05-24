@@ -141,7 +141,7 @@ GROUPS[GO_STATS_PAGE] = GROUPS[GO_MINI_HOME][:]
 ###--- Gene Expression Database (GXD) statistics ---###
 
 GXD_GENES_INDEXED = 'Genes studied in expression references'
-GXD_GENES_CODED = 'Genes with expression assay results'
+GXD_GENES_CODED = 'Genes with annotated expression results'
 GXD_RESULTS = 'Expression assay results'
 GXD_IMAGES = 'Expression images'
 GXD_ASSAYS = 'Expression assays'
