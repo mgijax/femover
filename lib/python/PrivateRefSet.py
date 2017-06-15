@@ -2,6 +2,11 @@
 # Purpose: to provide an easy means to determine which references are
 #	supposed to be de-emphasized in the WI (not appearing in counts,
 #	not highlighted on a marker detail page, etc.)
+#
+# 06/15/2017	lec
+#	- TR12250/LitTriage ; see also gather/reference_gatherer.py
+#	perhaps gather/reference_gatherer.py should us this library
+#
 
 import dbAgnostic
 import logger
