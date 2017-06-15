@@ -82,6 +82,7 @@ class ReferenceGatherer (Gatherer.Gatherer):
 # 'MGI Data Load', 
 # 'MGI Direct Data Submission', 
 # 'Personal Communication'
+# 'Newsletter'
 #
 
 cmds = [ '''select distinct _Refs_key from GXD_Index''',
