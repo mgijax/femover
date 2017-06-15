@@ -101,11 +101,13 @@ cmds = [ '''select distinct _Refs_key from GXD_Index''',
 		c.jnumID,
 		c.numericPart,
 		c.pubmedID,
+		c.doiID,
 	        'Literature' as grouping
 	    from BIB_Refs r, BIB_Citation_Cache c
 	    where r._Refs_key = c._Refs_key
 	    and c.referenceType not in 
-	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 'MGI Direct Data Submission', 'Personal Communication')
+	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 
+		 'MGI Direct Data Submission', 'Personal Communication', 'Newsletter')
 	    union
 	    select r._Refs_key as referenceKey,
 		c.referenceType,
@@ -122,11 +124,13 @@ cmds = [ '''select distinct _Refs_key from GXD_Index''',
 		c.jnumID,
 		c.numericPart,
 		c.pubmedID,
+		c.doiID,
 		'Other: database loads, direct submissions, etc.' as grouping
 	    from BIB_Refs r, BIB_Citation_Cache c
 	    where r._Refs_key = c._Refs_key
 	    and c.referenceType in 
-	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 'MGI Direct Data Submission', 'Personal Communication')
+	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 
+		 'MGI Direct Data Submission', 'Personal Communication')
 	'''
 	]
 
@@ -136,7 +140,7 @@ fieldOrder = [
 	'referenceKey', 'referenceType', 'primaryAuthor',
 	'authors', 'title',
 	'journal', 'vol', 'issue', 'pubDate', 'year', 'pages',
-	'jnumID', 'numericPart', 'pubmedID', 'miniCitation',
+	'jnumID', 'numericPart', 'pubmedID', 'doiID', 'miniCitation',
 	'shortCitation', 'longCitation', 'indexedForGXD', 'grouping'
 	]
 

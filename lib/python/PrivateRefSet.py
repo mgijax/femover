@@ -28,7 +28,7 @@ def _initialize():
 		from BIB_Citation_Cache br, ACC_Accession acc
                 where br.referenceType in  
                 ('External Resource', 'MGI Curation Record', 'MGI Data Load', 
-                 'MGI Direct Data Submission', 'Personal Communication')
+                 'MGI Direct Data Submission', 'Personal Communication', 'Newsletter')
 		and br._Refs_key = acc._Object_key
 		and acc._MGIType_key = 1
 		and acc.prefixPart = 'J:'
