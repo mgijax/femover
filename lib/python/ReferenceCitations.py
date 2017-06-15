@@ -69,7 +69,7 @@ def _getRefs():
 	refs = {}
 
 	allCmd = '''select r._Refs_key,
-			r.refType as referenceType,
+			c.referenceType,
 			r.authors,
 			r.title,
 			r.journal,
@@ -78,8 +78,7 @@ def _getRefs():
 			r.date as pubDate,
 			r.year,
 			r.pgs as pages
-		from bib_refs r,
-			bib_citation_cache c
+		from BIB_Refs r, BIB_Citation_Cache c
 		where r._Refs_key = c._Refs_key'''
 
 	if SOURCE_TABLE:

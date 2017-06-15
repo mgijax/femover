@@ -72,7 +72,19 @@ class ReferenceGatherer (Gatherer.Gatherer):
 
 ###--- globals ---###
 
-cmds = [ '''select distinct _Refs_key from gxd_index''',
+#
+# _Vocab_key = 131/Refernece Type
+# this set will be stored in the "Other" group
+# terms not in this set will be stored in the "Literature" group
+#
+# 'External Resource', 
+# 'MGI Curation Record', 
+# 'MGI Data Load', 
+# 'MGI Direct Data Submission', 
+# 'Personal Communication'
+#
+
+cmds = [ '''select distinct _Refs_key from GXD_Index''',
 
 	'''select r._Refs_key as referenceKey,
 		c.referenceType,
@@ -90,7 +102,7 @@ cmds = [ '''select distinct _Refs_key from gxd_index''',
 		c.numericPart,
 		c.pubmedID,
 	        'Literature' as grouping
-	    from bib_refs r, bib_citation_cache c
+	    from BIB_Refs r, BIB_Citation_Cache c
 	    where r._Refs_key = c._Refs_key
 	    and c.referenceType not in 
 	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 'MGI Direct Data Submission', 'Personal Communication')
@@ -111,7 +123,7 @@ cmds = [ '''select distinct _Refs_key from gxd_index''',
 		c.numericPart,
 		c.pubmedID,
 		'Other: database loads, direct submissions, etc.' as grouping
-	    from bib_refs r, bib_citation_cache c
+	    from BIB_Refs r, BIB_Citation_Cache c
 	    where r._Refs_key = c._Refs_key
 	    and c.referenceType in 
 	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 'MGI Direct Data Submission', 'Personal Communication')

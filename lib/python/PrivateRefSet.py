@@ -19,43 +19,27 @@ def _initialize():
 
 	PRIVATE_REFS = {}
 
-	basicQuery = '''select acc.accID, br._Refs_key
-		from BIB_Refs br, ACC_Accession acc
-		where br._Refs_key = acc._Object_key
-			and acc._MGIType_key = 1
-			and acc.prefixPart = 'J:'
-			and acc._LogicalDB_key = 1'''
+	query = '''select acc.accID, br._Refs_key
+		from BIB_Citation_Cache br, ACC_Accession acc
+                where br.referenceType in  
+                ('External Resource', 'MGI Curation Record', 'MGI Data Load', 
+                 'MGI Direct Data Submission', 'Personal Communication')
+		and br._Refs_key = acc._Object_key
+		and acc._MGIType_key = 1
+		and acc.prefixPart = 'J:'
+		and acc._LogicalDB_key = 1
+		'''
 
-	dataLoads = basicQuery + " and br.journal ilike 'database%'"
-	personalCommunications = basicQuery + \
-		" and br.journal ilike 'personal%'"
-	genbankSubmissions = basicQuery + \
-		" and br.journal ilike 'Genbank Submission'"
-	books = basicQuery + " and br.refType = 'BOOK'"
-	dataSubmissions = basicQuery + \
-		" and br.journal ilike '%Data Submission%'"
-	curatorialRefs = basicQuery + " and br.journal is null " + \
-		" and br._ReviewStatus_key = 2"
+	(cols, rows) = dbAgnostic.execute (query)
 
-	queries = [ 
-		('data load', dataLoads),
-		('personal communication', personalCommunications), 
-		('genbank submission', genbankSubmissions),
-		('book', books), 
-		('direct data submission', dataSubmissions), 
-		('curatorial', curatorialRefs)
-		]
+	idCol = dbAgnostic.columnNumber (cols, 'accID')
+	keyCol = dbAgnostic.columnNumber (cols, '_Refs_key')
 
-	for (title, query) in queries:
-		(cols, rows) = dbAgnostic.execute (query)
+	for row in rows:
+		PRIVATE_REFS[row[idCol]] = 1
+		PRIVATE_REFS[row[keyCol]] = 1
+	logger.debug ('Found %d %s references' % (len(rows), title))
 
-		idCol = dbAgnostic.columnNumber (cols, 'accID')
-		keyCol = dbAgnostic.columnNumber (cols, '_Refs_key')
-
-		for row in rows:
-			PRIVATE_REFS[row[idCol]] = 1
-			PRIVATE_REFS[row[keyCol]] = 1
-		logger.debug ('Found %d %s references' % (len(rows), title))
 	return
 
 ###--- Functions ---###
