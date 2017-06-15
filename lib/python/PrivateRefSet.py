@@ -43,7 +43,7 @@ def _initialize():
 	for row in rows:
 		PRIVATE_REFS[row[idCol]] = 1
 		PRIVATE_REFS[row[keyCol]] = 1
-	logger.debug ('Found %d %s references' % (len(rows), title))
+	logger.debug ('Found %d references' % (len(rows)))
 
 	return
 
