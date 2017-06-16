@@ -131,7 +131,7 @@ cmds = [ '''select distinct _Refs_key from GXD_Index''',
 	    where r._Refs_key = c._Refs_key
 	    and c.referenceType in 
 	    	('External Resource', 'MGI Curation Record', 'MGI Data Load', 
-		 'MGI Direct Data Submission', 'Personal Communication')
+		 'MGI Direct Data Submission', 'Personal Communication', 'Newsletter')
 	'''
 	]
 
