@@ -24,20 +24,16 @@ def _initialize():
 
 	PRIVATE_REFS = {}
 
-	query = '''select acc.accID, br._Refs_key
-		from BIB_Citation_Cache br, ACC_Accession acc
-                where br.referenceType in  
+	query = '''select jnumID, _Refs_key
+		from BIB_Citation_Cache
+                where referenceType in  
                 ('External Resource', 'MGI Curation Record', 'MGI Data Load', 
                  'MGI Direct Data Submission', 'Personal Communication', 'Newsletter', 'Book')
-		and br._Refs_key = acc._Object_key
-		and acc._MGIType_key = 1
-		and acc.prefixPart = 'J:'
-		and acc._LogicalDB_key = 1
 		'''
 
 	(cols, rows) = dbAgnostic.execute (query)
 
-	idCol = dbAgnostic.columnNumber (cols, 'accID')
+	idCol = dbAgnostic.columnNumber (cols, 'jnumID')
 	keyCol = dbAgnostic.columnNumber (cols, '_Refs_key')
 
 	for row in rows:
