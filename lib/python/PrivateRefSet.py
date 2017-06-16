@@ -5,7 +5,6 @@
 #
 # 06/15/2017	lec
 #	- TR12250/LitTriage ; see also gather/reference_gatherer.py
-#	perhaps gather/reference_gatherer.py should us this library
 #
 
 import dbAgnostic
