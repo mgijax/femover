@@ -881,11 +881,13 @@ files = [
 			'gxdLitMarkerCount' ],
 		'term_counts'),
 
+	# hoping to eliminate this, in favor of term_ancestor_simple
 	('term_ancestor',
 		[ Gatherer.AUTO, 'termKey', 'ancestorTermKey', 'ancestorTerm',
 			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ],
 		'term_ancestor'),
 
+	# note that term_sibling is used in DO browser
 	('term_sibling',
 		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
 			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ],
