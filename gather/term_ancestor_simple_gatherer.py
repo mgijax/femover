@@ -21,46 +21,38 @@ class TermAncestorSimpleGatherer (Gatherer.Gatherer):
 		cols, rows = self.results[0]
 
 		keyCol = Gatherer.columnNumber (cols, 'termKey')
+		ancestorKeyCol = Gatherer.columnNumber (cols, 'ancestorKey')
 		termCol = Gatherer.columnNumber (cols, 'ancestorTerm')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 
 		ancestors = {}		# term key -> { ancestor ID : 1 }
 		self.finalResults = []
-		self.finalColumns = ['termKey', 'ancestorTerm', 'ancestorID']
+		self.finalColumns = ['termKey', 'ancestorKey', 'ancestorTerm', 'ancestorID']
 
 		logger.debug ('Got %d ancestor rows' % len(rows))
 
 		for row in rows:
 			termKey = row[keyCol]
-			accID = row[idCol]
+			ancestorKey = row[ancestorKeyCol]
 
-			if ancestors.has_key(termKey):
+			if termKey in ancestors:
 
-				# if we've already seen this ancestors for
-				# this term, then skip it
+				# if we've already seen this ancestor for this term, then skip it
 
-				if ancestors[termKey].has_key(accID):
+				if ancestorKey in ancestors[termKey]:
 					continue
 
-				# otherwise, add this ancestor to the set of
-				# those seen
+				# otherwise, add this ancestor to the set of those seen
 
-				ancestors[termKey][accID] = 1
+				ancestors[termKey][ancestorKey] = 1
 			else:
 				# this is the first ancestor for this term
-				ancestors[termKey] = { accID : 1 }
+				ancestors[termKey] = { ancestorKey : 1 }
 
-			self.finalResults.append ( [ termKey, row[termCol],
-				accID ] )
-
-#			logger.debug ('Collapsed to %d unique ancestors' % \
-#				len(self.finalResults))
-
-		# next, handle the ancestors from the anatomical dictionary
+			self.finalResults.append ( [ termKey, ancestorKey, row[termCol], row[idCol] ] )
 
 		# clear this to allow memory to be reclaimed
 		ancestors = {}	
-
 		return
 
 ###--- globals ---###
@@ -70,6 +62,7 @@ cmds = [
 	#	could to a 'distinct' here, but we'll do it in code to save
 	#	load on the database, and hopefully get a better response time
 	'''select dc._DescendentObject_key as termKey,
+		t._Term_key as ancestorKey,
 		t.term as ancestorTerm,
 		a.accID
 	from DAG_DAG dd,
@@ -90,7 +83,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ Gatherer.AUTO, 'termKey', 'ancestorTerm', 'ancestorID', ]
+fieldOrder = [ Gatherer.AUTO, 'termKey', 'ancestorKey', 'ancestorTerm', 'ancestorID', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'term_ancestor_simple'

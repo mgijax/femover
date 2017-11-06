@@ -16,6 +16,7 @@ tableName = 'term_ancestor_simple'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	term_key		int		not null,
+	ancestor_term_key	int		not null,
 	ancestor_term		text	null,
 	ancestor_primary_id	text	null,
 	PRIMARY KEY(unique_key))''' % tableName
@@ -23,13 +24,17 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+	'ancestor_term_key' : 'create index %s on %s (ancestor_term_key)',
+	'ancestor_primary_id' : 'create index %s on %s (ancestor_primary_id)',
+	}
 
 # index used to cluster data in the table
 clusteredIndex = ('term_key', 'create index %s on %s (term_key)')
 
 keys = {
 	'term_key' : ('term', 'term_key'),
+	'ancestor_term_key' : ('term', 'term_key'),
 	}
 
 # comments describing the table, columns, and indexes
@@ -38,6 +43,7 @@ comments = {
 	Table.COLUMN : {
 		'unique_key' : 'unique key for this term/ancestor pair',
 		'term_key' : 'foreign key to term table',
+		'ancestor_term_key' : 'foreign key to term table, for the ancestor term',
 		'ancestor_term' : 'name of the ancestor term, cached here for convenience',
 		'ancestor_primary_id' : 'accession ID of the ancestor term, cached here for convenience',
 		},
@@ -47,8 +53,7 @@ comments = {
 	}
 
 # global instance of this Table object
-table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+table = Table.Table (tableName, createStatement, indexes, keys, comments, clusteredIndex)
 
 ###--- Main program ---###
 
