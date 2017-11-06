@@ -29,13 +29,12 @@ def _getBooks():
 			place,
 			publisher,
 			series_ed as edition
-		from bib_books'''
+		from BIB_Books'''
 
 	if SOURCE_TABLE:
 		bookCmd = bookCmd + ''' b
 			where exists (select 1 from %s c
-				where b._Refs_key = c._Refs_key)''' % \
-					SOURCE_TABLE
+				where b._Refs_key = c._Refs_key)''' % SOURCE_TABLE
 
 	books = {}
 
@@ -69,7 +68,7 @@ def _getRefs():
 	refs = {}
 
 	allCmd = '''select r._Refs_key,
-			r.refType as referenceType,
+			c.referenceType,
 			r.authors,
 			r.title,
 			r.journal,
@@ -78,15 +77,13 @@ def _getRefs():
 			r.date as pubDate,
 			r.year,
 			r.pgs as pages
-		from bib_refs r,
-			bib_citation_cache c
+		from BIB_Refs r, BIB_Citation_Cache c
 		where r._Refs_key = c._Refs_key'''
 
 	if SOURCE_TABLE:
 		allCmd = allCmd + '''
 			and exists (select 1 from %s d
-				where d._Refs_key = r._Refs_key)''' % \
-					SOURCE_TABLE
+				where d._Refs_key = r._Refs_key)''' % SOURCE_TABLE
 
 	columns, results = dbAgnostic.execute (allCmd)
 
@@ -392,7 +389,6 @@ def restrict(tableName):
 	global SOURCE_TABLE
 
 	SOURCE_TABLE = tableName
-	logger.debug('Restricted set of references to only those in %s' % \
-		SOURCE_TABLE)
+	logger.debug('Restricted set of references to only those in %s' % SOURCE_TABLE)
 	return
 

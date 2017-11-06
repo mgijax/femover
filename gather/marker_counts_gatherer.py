@@ -244,8 +244,8 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
 
 cmds = [
 	# 0. all markers
-	'''select _Marker_key
-		from mrk_marker
+	'''
+	select _Marker_key from mrk_marker
 	''',
 
 	# 1. count of references for each marker (no longer de-emphasizing
