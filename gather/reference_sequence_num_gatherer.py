@@ -50,8 +50,11 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 			else:
 				title = None
 
-			byDate.append ( (int(row[yearCol]),
-				int(row[numericPartCol]), referenceKey) )
+			numericPart = 0
+			if row[numericPartCol] != None:
+				numericPart = int(row[numericPartCol])
+			
+			byDate.append ( (int(row[yearCol]), numericPart, referenceKey) )
 			byAuthor.append ( (author, referenceKey) )
 			byTitle.append ( (title, referenceKey) )
 			byID.append ( (row[numericPartCol], referenceKey) )
