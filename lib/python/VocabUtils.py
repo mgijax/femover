@@ -19,6 +19,27 @@ synonymCache = {}
 # acc ID -> term key
 idCache = {}
 
+###--- functions dealing with vocabularies ---###
+
+def getVocabularies():
+	# get a list of (vocab key, vocab name) tuples, one for each vocabulary, order by name
+
+	cmd = '''select _Vocab_key, name
+		from voc_vocab
+		order by name'''
+
+	(cols, rows) = dbAgnostic.execute (cmd)
+
+	keyCol = dbAgnostic.columnNumber (cols, '_Vocab_key')
+	nameCol = dbAgnostic.columnNumber (cols, 'name')
+
+	vocabularies = []
+
+	for row in rows:
+		vocabularies.append ( (row[keyCol], row[nameCol]) )
+
+	return vocabularies
+
 ###--- functions dealing with terms ---###
 
 def getKey(termID):

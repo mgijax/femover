@@ -5,7 +5,6 @@
 import Gatherer
 import logger
 import TermCounts
-import GroupedList
 import gc
 import dbAgnostic
 import OutputFile
