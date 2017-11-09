@@ -10,7 +10,7 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'term_ancestor_simple'
+tableName = 'term_ancestor'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 

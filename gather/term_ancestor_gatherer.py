@@ -1,14 +1,14 @@
 #!/usr/local/bin/python
 # 
-# gathers data for the 'term_ancestor_simple' table in the front-end database
+# gathers data for the 'term_ancestor' table in the front-end database
 
 import Gatherer
 import logger
 
 ###--- Classes ---###
 
-class TermAncestorSimpleGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the term_ancestor_simple table
+class TermAncestorGatherer (Gatherer.Gatherer):
+	# Is: a data gatherer for the term_ancestor table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for ancestors of vocabulary terms,
 	#	collates results, writes tab-delimited text file
@@ -86,10 +86,10 @@ cmds = [
 fieldOrder = [ Gatherer.AUTO, 'termKey', 'ancestorKey', 'ancestorTerm', 'ancestorID', ]
 
 # prefix for the filename of the output file
-filenamePrefix = 'term_ancestor_simple'
+filenamePrefix = 'term_ancestor'
 
-# global instance of a TermAncestorSimpleGatherer
-gatherer = TermAncestorSimpleGatherer (filenamePrefix, fieldOrder, cmds)
+# global instance of a TermAncestorGatherer
+gatherer = TermAncestorGatherer (filenamePrefix, fieldOrder, cmds)
 
 ###--- main program ---###
 
