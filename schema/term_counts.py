@@ -15,8 +15,6 @@ tableName = 'term_counts'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
 	term_key		int	not null,
-	path_count		int	not null,
-	descendent_count	int	not null,
 	child_count		int	not null,
 	marker_count		int	not null,
 	expression_marker_count	int	not null,
@@ -39,8 +37,6 @@ comments = {
 	Table.TABLE : 'stores several special counts for vocabulary terms, one row per vocabulary term',
 	Table.COLUMN : {
 		'term_key' : 'foreign key to term table, identifying the term with which we are concerned',
-		'path_count' : 'number of paths down a DAG that lead to this term',
-		'descendent_count' : 'number of descendents of this term',
 		'child_count' : 'number of immediate children of this term',
 		'marker_count' : 'number of markers associated with this term',
 		'expression_marker_count' : 'number of markers associated with this term which also have fully-coded expression data',

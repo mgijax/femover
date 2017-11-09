@@ -4,7 +4,6 @@
 
 import Gatherer
 import logger
-import TermCounts
 import gc
 import dbAgnostic
 import OutputFile
@@ -270,52 +269,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached %d term definitions' % len(defs))
 		return defs
 
-	def collectDescendentCounts (self):
-		keyCol = Gatherer.columnNumber (self.results[5][0], '_AncestorObject_key')
-		ctCol = Gatherer.columnNumber (self.results[5][0], 'ct')
-
-		counts = {}
-		for row in self.results[5][1]:
-			counts[row[keyCol]] = row[ctCol]
-		logger.debug ('Found %d descendent counts' % len(counts))
-		return counts
-
-	def findTermCounts (self, descendentCounts, edges, upEdges):
-		kCol = Gatherer.columnNumber (self.results[4][0], '_Term_key')
-		vCol = Gatherer.columnNumber (self.results[4][0], '_Vocab_key')
-
-		rows = []
-		columns = [ 'termKey', 'pathCount', 'descendentCount',
-			'childCount', 'markerCount', 'expressionMarkerCount',
-			'creMarkerCount', 'gxdLitMarkerCount' ]
-
-		for r in self.results[4][1]:
-			key = r[kCol]
-			vocab = r[vCol]
-
-			paths = pathsToRoots (key, vocab, upEdges)
-			row = [ key, len(paths) ]
-
-			if descendentCounts.has_key(key):
-				row.append (descendentCounts[key])
-			else:
-				row.append (0)
-
-			if edges.has_key(vocab) and edges[vocab].has_key(key):
-				row.append (len(edges[vocab][key]))
-			else:
-				row.append (0)
-
-			row.append (TermCounts.getMarkerCount(key))
-			row.append (TermCounts.getExpressionMarkerCount(key))
-			row.append (TermCounts.getCreMarkerCount(key))
-			row.append (TermCounts.getLitIndexMarkerCount(key))
-
-			rows.append (row)
-
-		logger.debug ('Got %d term_counts' % len(rows))
-		return columns, rows
-
 	def findTermAncestors (self, upEdges, ids, termByKey, writer):
 
 		# This method is a huge memory hog, especially for the GO
@@ -407,45 +360,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Found %d ancestors' % len(rows))
 		return pathCache, columns, rows
 
-	def findSiblings (self, pathCache, terms, ids, edges, vocabs,
-			sequenceNum):
-		termList = pathCache.keys()
-		columns = [ 'termKey', 'siblingKey', 'term', 'accID',
-			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ]
-		rows = []
-
-		for term in termList:
-			ancestorDict = pathCache[term]
-			vocabKey = vocabs[term]
-
-			for ((edgeType, ancestor), pathNum) in \
-				ancestorDict.items():
-
-				for (edgeType, sibling) in \
-					edges[vocabKey][ancestor]:
-
-					if sibling == term:
-						continue
-
-					isLeaf = 1
-					if edges[vocabKey].has_key(sibling):
-						isLeaf = 0
-
-					termText = None
-					termID = None
-					if terms.has_key(sibling):
-						termText = terms[sibling]
-					if ids.has_key(sibling):
-						termID = ids[sibling]
-
-					row = [ term, sibling, termText,
-						termID, sequenceNum[sibling],
-						isLeaf, edgeType, pathNum ]
-
-					rows.append (row)
-		logger.debug ('Collated %d rows for siblings' % len(rows))
-		return columns, rows
-
 	def getGOOntologies (self):
 		columns, rows = self.results[6]
 
@@ -485,19 +399,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		gc.collect()
 
-		# step 6 -- get counts of descendents for each term
-
-		descendentCounts = self.collectDescendentCounts()
-
-		# step 7 -- term_counts table
-
-		columns, rows = self.findTermCounts (descendentCounts, edges,
-			upEdges)
-		self.output.append ( (columns, rows) )
-
-		del descendentCounts
-		gc.collect()
-
 		# step 8 -- term_ancestor table
 
 		pathCache, columns, rows = self.findTermAncestors (upEdges,
@@ -508,11 +409,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		del upEdges
 		gc.collect()
-
-		# step 10 -- term_sibling table
-		columns, rows = self.findSiblings (pathCache, terms, ids,
-			edges, vocabs, sequenceNum)
-		self.output.append ( (columns, rows) ) 
 
 		return
 
@@ -605,7 +501,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 			logger.debug('Finished %s (%d)' % (vocabName,
 				vocabKey))
 
-		TermCounts.reset()
 
 		self.resetInstanceVariables(-1)
 	
@@ -715,12 +610,6 @@ files = [
 		[ Gatherer.AUTO, 'termKey', 'ancestorTermKey', 'ancestorTerm',
 			'ancestorID', 'pathNumber', 'depth', 'edgeLabel' ],
 		'term_ancestor'),
-
-	# note that term_sibling is used in DO browser
-	('term_sibling',
-		[ Gatherer.AUTO, 'termKey', 'siblingKey', 'term', 'accID',
-			'sequenceNum', 'isLeaf', 'edgeLabel', 'pathNumber' ],
-		'term_sibling'),
 	]
 
 # global instance of a VocabularyGatherer
