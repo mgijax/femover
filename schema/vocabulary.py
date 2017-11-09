@@ -18,7 +18,6 @@ createStatement = '''CREATE TABLE %s  (
 	vocab_name	text	not null,
 	term_count	int		not null,
 	is_simple	int		not null,
-	max_depth	int		not null,
 	PRIMARY KEY(vocab_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -35,7 +34,6 @@ comments = {
 		'vocab_name' : 'name of this vocabulary',
 		'term_count' : 'number of terms in this vocabulary',
 		'is_simple' : '1 if this is a flat (simple) vocabulary, or 0 if it is a DAG',
-		'max_depth' : 'maximum depth of a leaf node in this vocabulary',
 		},
 	Table.INDEX : {
 		'vocab_name' : 'quick lookup by vocabulary name',
