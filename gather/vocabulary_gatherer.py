@@ -244,55 +244,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		logger.debug ('Cached %d IDs for terms' % len(ids))
 		return ids
 
-	def findChildren (self, ids, edges, sequenceNum):
-
-		vCol = Gatherer.columnNumber (self.results[0][0],
-			'_Vocab_key')
-		pCol = Gatherer.columnNumber (self.results[0][0], 'parentKey')
-		cCol = Gatherer.columnNumber (self.results[0][0], 'childKey')
-		tCol = Gatherer.columnNumber (self.results[0][0], 'term')
-		sCol = Gatherer.columnNumber (self.results[0][0],
-			'sequenceNum')
-		eCol = Gatherer.columnNumber (self.results[0][0],
-			'_Label_key')
-
-		columns = [ 'parentKey', 'childKey', 'term', 'accID',
-			'sequenceNum', 'isLeaf', 'edgeLabel' ]
-		rows = []
-
-		for r in self.results[0][1]:
-			row = [ r[pCol], r[cCol], r[tCol] ]
-
-			if ids.has_key(r[cCol]):
-				row.append (ids[r[cCol]])
-			else:
-				row.append (None)
-
-			# some vocabs have a defined ordering.  if this terms
-			# is ordered, then use that one.  if not, use our
-			# computed sequence number.
-
-			if r[sCol]:
-				row.append (r[sCol])
-			else:
-				row.append (sequenceNum[r[cCol]])
-
-			isLeaf = 1
-			if edges.has_key(r[vCol]):
-				if edges[r[vCol]].has_key(r[cCol]):
-					isLeaf = 0
-
-			edgeType = Gatherer.resolve (r[eCol], 'dag_label',
-				'_Label_key', 'label')
-
-			row.append (isLeaf)
-			row.append (edgeType)
-
-			rows.append (row)
-
-		logger.debug ('Found %d parent/child pairs' % len(rows))
-		return columns, rows
-
 	def collectDefinitions (self):
 		keyCol = Gatherer.columnNumber (self.results[3][0], '_Term_key')
 		noteCol = Gatherer.columnNumber (self.results[3][0], 'note')
@@ -318,105 +269,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 
 		logger.debug ('Cached %d term definitions' % len(defs))
 		return defs
-
-	def findTerms (self, ids, defs, isRoot, edges, goOntologies):
-		kCol = Gatherer.columnNumber (self.results[4][0], '_Term_key')
-		vCol = Gatherer.columnNumber (self.results[4][0], '_Vocab_key')
-		tCol = Gatherer.columnNumber (self.results[4][0], 'term')
-		sCol = Gatherer.columnNumber (self.results[4][0], 'sequenceNum')
-		isObsoleteCol = Gatherer.columnNumber (self.results[4][0], 'isObsolete')
-		abbrevCol = Gatherer.columnNumber (self.results[4][0], 'abbreviation')
-
-		terms = {}		# terms[term key] = term
-
-		columns = [ 'termKey', 'term', 'accID', 'vocab',
-			'displayVocab', 'abbreviation', 'def', 'sequenceNum',
-			'isRoot', 'isLeaf', 'isObsolete' ]
-
-		# produce a sorted list of terms, for those vocabularies
-		# without a pre-assigned set of sequence numbers
-
-		toSort = []		# (term, term key)...
-		for r in self.results[4][1]:
-			if r[tCol]:
-				toSort.append ( (r[tCol].lower(), r[kCol]) )
-			else:
-				toSort.append ( ('', r[kCol]) )
-
-		toSort.sort()
-		i = 0
-		sequenceNum = {}		# sequenceNum[termKey] = i
-
-		for (term, termKey) in toSort:
-			i = i + 1
-			sequenceNum[termKey] = i
-
-		logger.debug ('Sorted %d terms' % len(sequenceNum))
-
-		# now compile the rows for the term table
-
-		rows = []
-		for r in self.results[4][1]:
-			key = r[kCol]
-			voc = r[vCol]
-
-			row = [ key, r[tCol] ]
-
-			terms[key] = r[tCol]
-
-			if ids.has_key(key):
-				row.append (ids[key])
-			else:
-				row.append (None)
-
-			# We need both the raw vocab name and, for some cases,
-			# a special display-only vocab name.
-
-			vocabName = Gatherer.resolve (voc, 'voc_vocab',
-				'_Vocab_key', 'name')
-
-			row.append (vocabName)
-
-			if voc==GO_VOCAB_KEY and goOntologies.has_key(key):
-				row.append (goOntologies[key])
-			else:
-				row.append (vocabName)
-
-			row.append(r[abbrevCol])
-
-			if defs.has_key (key):
-				row.append (defs[key])
-			else:
-				row.append (None)
-
-			# some vocabularies have a defined ordering; if this
-			# term has such an ordering, use it; if not, use our
-			# computed ordering
-
-			if r[sCol] != None:
-				row.append (r[sCol])
-			else:
-				row.append (sequenceNum[key])
-
-			flag = 0
-			if isRoot.has_key(voc):
-				if isRoot[voc].has_key (key):
-					if isRoot[voc][key]:
-						flag = 1
-			row.append (flag)
-
-			flag = 0
-			if edges.has_key(voc):
-				if not edges[voc].has_key(key):
-					flag = 1
-			row.append (flag)
-
-			row.append (r[isObsoleteCol])
-			rows.append (row)
-
-		logger.debug ('Found %d terms' % len(rows))
-
-		return terms, sequenceNum, columns, rows
 
 	def collectDescendentCounts (self):
 		keyCol = Gatherer.columnNumber (self.results[5][0], '_AncestorObject_key')
@@ -624,17 +476,6 @@ class VocabularyGatherer (Gatherer.MultiFileGatherer):
 		# step 4 -- cache term definitions
 		
 		defs = self.collectDefinitions()
-
-		# step 5 -- term table
-
-		terms, sequenceNum, columns, rows = self.findTerms (ids, defs,
-			isRoot, edges, goOntologies)
-		self.output.append ( (columns, rows) )
-
-		# step 3 -- term_child table (moved to 5a)
-
-		columns, rows = self.findChildren (ids, edges, sequenceNum)
-		self.output.append ( (columns, rows) )
 
 		# free up memory from a few large objects before proceeding
 
@@ -862,17 +703,6 @@ files = [
 	('vocabulary',
 		[ '_Vocab_key', 'name', 'termCount', 'isSimple', 'maxDepth' ],
 		'vocabulary'),
-
-	('term',
-		[ 'termKey', 'term', 'accID', 'vocab', 'displayVocab', 
-			'abbreviation', 'def',
-			'sequenceNum', 'isRoot', 'isLeaf', 'isObsolete' ],
-		'term'),
-
-	('term_child',
-		[ Gatherer.AUTO, 'parentKey', 'childKey', 'term', 'accID',
-			'sequenceNum', 'isLeaf', 'edgeLabel' ],
-		'term_child'),
 
 	('term_counts',
 		[ 'termKey', 'pathCount', 'descendentCount', 'childCount',
