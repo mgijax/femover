@@ -571,13 +571,6 @@ cmds = [
 		from voc_term
 		where _Vocab_key = %d''',
 
-	# query 5 - descendent counts
-	'''select c._AncestorObject_key, count(1) as ct
-		from DAG_Closure c, voc_term t
-		where c._AncestorObject_key = t._Term_key
-			and t._Vocab_key = %d
-		group by c._AncestorObject_key''',
-
 	# query 6 - shorthand notation for display (instead of vocab name)
 	# for GO terms
 	'''select t._Term_key, case
@@ -598,12 +591,6 @@ files = [
 	('vocabulary',
 		[ '_Vocab_key', 'name', 'termCount', 'isSimple', 'maxDepth' ],
 		'vocabulary'),
-
-	('term_counts',
-		[ 'termKey', 'pathCount', 'descendentCount', 'childCount',
-			'markerCount', 'expressionMarkerCount','creMarkerCount',
-			'gxdLitMarkerCount' ],
-		'term_counts'),
 
 	# hoping to eliminate this, in favor of term_ancestor_simple
 	('term_ancestor',
