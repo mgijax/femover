@@ -58,7 +58,7 @@ class TermAncestorGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	# 0. ancestors for traditional vocabulary terms (not the AD);
+	# 0. ancestors for vocabulary terms;
 	#	could to a 'distinct' here, but we'll do it in code to save
 	#	load on the database, and hopefully get a better response time
 	'''select dc._DescendentObject_key as termKey,
