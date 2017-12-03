@@ -24,25 +24,6 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
 	#	produces a single file, but it's convenient for the automatic
 	#	management of how many output rows to keep in memory.
 
-	def addPhenotypeAnatomyMappings (self):
-		# temporary method for pulling in phenotype-to-anatomy mapping subset from
-		# a text file.  Eventually replace this with another SELECT statement in
-		# the UNION below, pulling the full set from the database once the data
-		# are loaded.
-		
-		import FileReader
-		import VocabUtils
-		
-		reader = FileReader.FileReader('../data/mp_to_emapa.txt')
-		rows = reader.extract(['MP ID', 'EMAPA ID'])
-		
-		for row in rows:
-			self.addRow('term_to_term', [
-				VocabUtils.getKey(row[0]), VocabUtils.getKey(row[1]), 'MP to EMAPA', None, None ] )
-		
-		logger.debug('Added %d MP-to-EMAPA mappings' % len(rows))
-		return
-	
 	def collateResults (self):
 		# slice and dice the query results to produce our set of
 		# final results
@@ -61,7 +42,6 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
 					row[evidence], row[xref] ])
 
 		logger.debug ('Collected %d term relationships' % len(rows))
-		self.addPhenotypeAnatomyMappings()
 		return
 
 ###--- globals ---###
@@ -83,6 +63,12 @@ cmds = [
 	from mgi_relationship r, voc_term e
 	where r._Category_key = 1005
 	and r._Evidence_key = e._Term_key
+	union
+        select r._Object_key_1, r._Object_key_2,
+                'MP to EMAPA', e.abbreviation, null
+        from mgi_relationship r, voc_term e
+        where r._Category_key = 1007
+        and r._Evidence_key = e._Term_key
 	''',
 	]
 
