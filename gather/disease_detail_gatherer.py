@@ -1315,8 +1315,7 @@ cmds = [
 	# 5. finally, we need to pull enough information up to allow creation
 	# of disease model objects with their references and their
 	# relationships to disease rows.  We INCLUDE annotations with NOT
-	# qualifiers this time, but exclude annotations for alleles with
-	# driver notes, and wild-type alleles
+	# qualifiers this time, but exclude annotations for alleles with wild-type alleles
 	#
 	# the 2nd part selects all 
 	# 1) rows using the annotated term itself

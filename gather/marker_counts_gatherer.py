@@ -29,7 +29,6 @@ DO_MARKER = 1023		# from VOC_AnnotType
 DO_HUMAN_MARKER = 1022	# from VOC_AnnotType
 NOT_QUALIFIER = 1614157		# from VOC_Term
 TERM_MGITYPE = 13		# from ACC_MGIType
-DRIVER_NOTE = 1034		# from MGI_NoteType
 GT_ROSA = 37270			# MRK_Marker for 'Gt(ROSA)26Sor'
 
 MUTATION_INVOLVES = 1003
