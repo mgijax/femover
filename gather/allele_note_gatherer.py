@@ -8,6 +8,7 @@ import Gatherer
 
 DERIVATION_NOTE_TYPE = 1033
 DERIVATION_NOTES = 'Derivation'
+DRIVER_NOTES = 'Driver'
 
 ###--- Classes ---###
 
@@ -23,25 +24,19 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 
 		# process query 0 (including most note types)
 
-		keyCol = Gatherer.columnNumber (self.results[0][0],
-			'_Object_key')
-		typeCol = Gatherer.columnNumber (self.results[0][0],
-			'_NoteType_key')
-		noteCol = Gatherer.columnNumber (self.results[0][0], 'note')
+		keyCol = Gatherer.columnNumber (self.results[0][0], '_Object_key')
+		typeCol = Gatherer.columnNumber (self.results[0][0], '_NoteType_key')
+		noteCol = Gatherer.columnNumber (self.results[0][0], 'note') 
 
 		for row in self.results[0][1]:
 			alleleKey = row[keyCol]
-			noteType = Gatherer.resolve (row[typeCol],
-				'mgi_notetype', '_NoteType_key', 'noteType')
+			noteType = Gatherer.resolve (row[typeCol], 'mgi_notetype', '_NoteType_key', 'noteType')
 			note = row[noteCol]
 
 			if not m.has_key(alleleKey):
 				m[alleleKey] = { noteType : note }
-			elif not m[alleleKey].has_key(noteType):
-				m[alleleKey][noteType] = note
 			else:
-				m[alleleKey][noteType] = \
-					m[alleleKey][noteType] + note 
+				m[alleleKey][noteType] = note
 
 		# add in derivation notes from query 1
 
@@ -52,8 +47,6 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 		noteCol = Gatherer.columnNumber (cols, 'note')
 		noteType = DERIVATION_NOTES
 
-		lastNoteKey = None
-
 		for row in rows:
 			alleleKey = row[alleleKeyCol]
 			note = row[noteCol]
@@ -61,19 +54,24 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 
 			if not m.has_key(alleleKey):
 				m[alleleKey] = { noteType : note }
-			elif not m[alleleKey].has_key(noteType):
-				m[alleleKey][noteType] = note
-			elif lastNoteKey == noteKey:
-				# continuing same note
-				m[alleleKey][noteType] = \
-					m[alleleKey][noteType] + note
 			else:
-				# starting new note; separate with <P>
-				m[alleleKey][noteType] = \
-					m[alleleKey][noteType] + '<p>' + note
+				m[alleleKey][noteType] = note
 
-			# remember this is the last note we worked on
-			lastNoteKey = noteKey
+		# add in driver notes from query 2
+
+		cols, rows = self.results[2]
+		alleleKeyCol = Gatherer.columnNumber (cols, '_Object_key_1')
+		noteCol = Gatherer.columnNumber (cols, 'symbol')
+		noteType = DRIVER_NOTES
+
+		for row in rows:
+			alleleKey = row[alleleKeyCol]
+			note = row[noteCol]
+
+			if not m.has_key(alleleKey):
+				m[alleleKey] = { noteType : note }
+			else:
+				m[alleleKey][noteType] = note
 
 		# boil it down to the final set of results
 
@@ -117,6 +115,14 @@ cmds = [
 		and n._Note_key = nc._Note_key 
     	order by a._Allele_key, n._Note_key, nc.sequenceNum''' % \
 		DERIVATION_NOTE_TYPE,
+
+	# 2. add in driver note
+	'''
+	select r._Object_key_1, m.symbol
+	from MGI_Relationship r, MRK_Marker m
+	where r._Category_key = 1006
+	and r._Object_key_2 = m._Marker_key
+	''',
 	]
 
 # order of fields (from the query results) to be written to the
