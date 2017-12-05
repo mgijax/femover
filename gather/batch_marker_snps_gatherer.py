@@ -23,21 +23,31 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
 ###--- Setup for Gatherer ---###
 
 cmds = [
-	# 0. gather the SNPs within 2kb of the markers in this group; only
-	# include SNPs with variation class "SNP" for now.
-	'''select distinct m._Marker_key, a.accID
-		from mrk_marker m, snp_consensussnp_marker s, snp_accession a,
-			snp_coord_cache c, snp_consensussnp p
-		where m._Marker_key = s._Marker_key
-			and m._Marker_key >= %d
-			and m._Marker_key < %d
-			and s.distance_from <= 2000
-			and s._ConsensusSNP_key = a._Object_key
+	# 0. gather the SNPs within 2kb of the markers in this group, and only include SNPs with
+	#	variation class "SNP" for now.
+	# Note:  To aid efficiency, I restructured this query to ensure that it was processed in
+	#	the order that made sense for the data.  (First find the SNPs based on marker, then
+	#	rule out multi-coordinate SNPs and non-SNP variation classes, then find the IDs for
+	#	the set that made it through the filtering steps.)  Cuts query runtime by 73%.
+	'''with step1 as (
+			select s._Marker_key, s._ConsensusSNP_key
+			from snp_consensussnp_marker s
+			where s._Marker_key >= %d
+				and s._Marker_key < %d
+				and exists (select 1 from mrk_marker m where m._Marker_key = s._Marker_key)
+				and s.distance_from <= 2000
+		), step2 as (
+			select s._Marker_key, s._ConsensusSNP_key
+			from step1 s, snp_coord_cache c, snp_consensussnp t
+			where s._ConsensusSNP_key = c._ConsensusSNP_key
+				and c.isMultiCoord = 0
+				and s._ConsensusSNP_key = t._ConsensusSNP_key
+				and t._VarClass_key = 1878510
+		)
+		select distinct s._Marker_key, a.accID
+		from step2 s, snp_accession a
+		where s._ConsensusSNP_key = a._Object_key
 			and a._MGIType_key = 30		-- consensus SNP
-			and s._ConsensusSNP_key = c._ConsensusSNP_key
-			and c.isMultiCoord = 0
-			and s._ConsensusSNP_key = p._ConsensusSNP_key
-			and p._VarClass_key = 1878510
 	''',
 	]
 
