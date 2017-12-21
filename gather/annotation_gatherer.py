@@ -12,6 +12,7 @@ import logger
 import GenotypeClassifier
 import gc
 import top
+import Lookup
 
 # annotation data specific imports
 import go_annot_extensions
@@ -28,6 +29,22 @@ from annotation.tooltip import TooltipFinder
 #	for the currently processed batch
 BATCH_TEMP_TABLE = 'annotation_batch_tmp'
 
+###--- controlled vocabulary lookups ---###
+
+MGITYPE_LOOKUP = Lookup.Lookup('acc_mgitype', '_MGIType_key', 'name')
+JNUM_LOOKUP = Lookup.Lookup('bib_citation_cache', '_Refs_key', 'jnumid')
+VOCAB_LOOKUP = Lookup.Lookup('voc_vocab', '_Vocab_key', 'name')
+DAG_LOOKUP = Lookup.Lookup('dag_dag', '_DAG_key', 'name')
+EVIDENCE_TERM_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
+EVIDENCE_CODE_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'abbreviation')
+QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
+
+###--- Global caches ---###
+
+evidenceCols = None		# rather than just repeatedly sending the same evidence query, cache results here
+evidenceRows = None
+
+###--- Classes ---###
 
 class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 	
@@ -265,6 +282,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		Return map { _annotevidence_key: [{ id, tooltip, logicaldb}] }
 		"""
+		global evidenceCols, evidenceRows
 		
 		# initialize an organism finder for the inferredfrom ID data
 		organismFinder = OrganismFinder(annotBatchTableName=BATCH_TEMP_TABLE)
@@ -272,24 +290,26 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		# initialize a tooltip finder for the the other inferredfrom tooltips
 		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
 				
-		cmd = '''
-			select ve._annotevidence_key, a.accid, ldb._logicaldb_key, ldb.name as logicaldb
-			from voc_evidence ve
-			join acc_accession a on
-				a._object_key = ve._annotevidence_key
-				and a._mgitype_key = 25
-			join acc_logicaldb ldb on
-				ldb._logicaldb_key = a._logicaldb_key
-		'''
+		# This function is called for each batch.  Rather than process this query each time, only
+		# ask the database once and then use the cached result thereafter.
+		if evidenceCols == None:
+			cmd = '''
+				select ve._annotevidence_key, a.accid, ldb._logicaldb_key, ldb.name as logicaldb
+				from voc_evidence ve
+				join acc_accession a on
+					a._object_key = ve._annotevidence_key
+					and a._mgitype_key = 25
+				join acc_logicaldb ldb on
+					ldb._logicaldb_key = a._logicaldb_key'''
 		
-		(cols, rows) = dbAgnostic.execute(cmd)
+			(evidenceCols, evidenceRows) = dbAgnostic.execute(cmd)
 		
-		evidenceKeyCol = dbAgnostic.columnNumber (cols, '_annotevidence_key')
-		accidCol = dbAgnostic.columnNumber (cols, 'accid')
-		ldbCol = dbAgnostic.columnNumber (cols, 'logicaldb')
+		evidenceKeyCol = dbAgnostic.columnNumber (evidenceCols, '_annotevidence_key')
+		accidCol = dbAgnostic.columnNumber (evidenceCols, 'accid')
+		ldbCol = dbAgnostic.columnNumber (evidenceCols, 'logicaldb')
 		
 		inferredfromIdMap = {}
-		for row in rows:
+		for row in evidenceRows:
 			evidenceKey = row[evidenceKeyCol]
 			accid = row[accidCol]
 			ldb = row[ldbCol]
@@ -392,15 +412,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
 		termIdCol = Gatherer.columnNumber (cols, 'term_id')
 		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
+		qualifierKeyCol = Gatherer.columnNumber (cols, '_qualifier_key')
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
-		evidenceTermCol = Gatherer.columnNumber (cols, 'evidence_term')
-		evidenceCodeCol = Gatherer.columnNumber (cols, 'evidence_code')
+		evidenceTermKeyCol = Gatherer.columnNumber (cols, '_evidenceterm_key')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		inferredfromCol = Gatherer.columnNumber (cols, 'inferredfrom')
-		vocabCol = Gatherer.columnNumber (cols, 'vocab')
-		dagCol = Gatherer.columnNumber (cols, 'dag_name')
-		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_vocab_key')
+		dagKeyCol = Gatherer.columnNumber (cols, '_dag_key')
+		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
 		if not rows:
 			return
@@ -426,13 +445,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			termKey = repRow[termKeyCol]
 			termId = repRow[termIdCol]
 			objectKey = repRow[objectKeyCol]
-			qualifier = repRow[qualifierCol]
 			evidenceKey = repRow[evidenceKeyCol]
-			evidenceTerm = repRow[evidenceTermCol]
-			evidenceCode = repRow[evidenceCodeCol]
-			dagName = repRow[dagCol]
-			vocabName = repRow[vocabCol]
-			mgitype = repRow[mgitypeCol]
+			evidenceTerm = EVIDENCE_TERM_LOOKUP.get(repRow[evidenceTermKeyCol])
+			evidenceCode = EVIDENCE_CODE_LOOKUP.get(repRow[evidenceTermKeyCol])
+			dagName = DAG_LOOKUP.get(repRow[dagKeyCol])
+			mgitype = MGITYPE_LOOKUP.get(repRow[mgitypeKeyCol])
 			
 			# count references
 			refKeys = set([])
@@ -459,8 +476,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			annots.append((
 						self.curAnnotationKey,
 						dagName,
-						qualifier,
-						vocabName,
+						QUALIFIER_LOOKUP.get(repRow[qualifierKeyCol]),
+						VOCAB_LOOKUP.get(repRow[vocabKeyCol]),
 						term,
 						termId,
 						termKey,
@@ -598,7 +615,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
-		jnumidCol = Gatherer.columnNumber (cols, 'jnumid')
 		
 		referenceRows = []
 		
@@ -616,13 +632,12 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			for row in rows:
 				evidenceKey = row[evidenceKeyCol]
 				refsKey = row[refsKeyCol]
-				jnumid = row[jnumidCol]
 				
 				if refsKey in seen:
 					continue
 				seen.add(refsKey)
 				
-				refs.append( (refsKey, jnumid) )
+				refs.append( (refsKey, JNUM_LOOKUP.get(refsKey)) )
 				
 			# sort by refsKey
 			refs.sort(key=lambda x: x[0])
@@ -652,8 +667,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
-		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
 		markerAnnotRows = []
 		
@@ -664,7 +678,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
 			annotType = repRow[annotTypeCol]
 			objectKey = repRow[objectKeyCol]
-			mgitype = repRow[mgitypeCol]
+			mgitype = MGITYPE_LOOKUP.get(repRow[mgitypeKeyCol])
 			
 			if mgitype == 'Marker':
 				
@@ -687,8 +701,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
-		qualifierCol = Gatherer.columnNumber (cols, 'qualifier')
-		mgitypeCol = Gatherer.columnNumber (cols, 'mgitype')
+		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
 		genotypeAnnotRows = []
 		
@@ -699,7 +712,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			newAnnotationKey = self.evidenceKeyToNew[repRow[evidenceKeyCol]]
 			annotType = repRow[annotTypeCol]
 			objectKey = repRow[objectKeyCol]
-			mgitype = repRow[mgitypeCol]
+			mgitype = MGITYPE_LOOKUP.get(repRow[mgitypeKeyCol])
 			
 			if mgitype == 'Genotype':
 				
@@ -768,7 +781,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
-		vocabCol = Gatherer.columnNumber (cols, 'vocab')
+		vocabKeyCol = Gatherer.columnNumber (cols, '_vocab_key')
 		
 		seqnumRows = []
 		
@@ -780,7 +793,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			annotType = repRow[annotTypeCol]
 			annotKey = repRow[annotKeyCol]
 			termKey = repRow[termKeyCol]
-			vocab = repRow[vocabCol]
+			vocab = VOCAB_LOOKUP.get(repRow[vocabKeyCol])
 			repEvidenceKey = repRow[evidenceKeyCol]
 			
 			byVocab = byVocabMap[vocab]
@@ -886,16 +899,14 @@ cmds = [
 		term._term_key,
 		term.term, 
 		term_acc.accid as term_id,
-		qual.term as qualifier,
+		va._qualifier_key,
 		ve._annotevidence_key, 
-		ev_term.term as evidence_term,
-		ev_term.abbreviation as evidence_code,
+		ve._evidenceterm_key,
 		ve._refs_key, 
-		ref_acc.accid as jnumid,
 		ve.inferredfrom,
-		voc.name as vocab,
-		dag.name as dag_name,
-		mtype.name as mgitype
+		term._vocab_key,
+		dn._dag_key,
+		vat._mgitype_key
 		from voc_annot va
 		join %s abt on 			-- batch annotations with above temp table
 			abt._annot_key = va._annot_key
@@ -905,19 +916,6 @@ cmds = [
 			vat._annottype_key = va._annottype_key
 		join voc_term term on						-- annotated term
 			term._term_key = va._term_key
-		join voc_term qual on 						-- qualifier
-			qual._term_key = va._qualifier_key
-		join voc_term ev_term on 					-- evidence term/code
-			ev_term._term_key = ve._evidenceterm_key
-		join voc_vocab voc on						-- annotated vocab
-			voc._vocab_key = term._vocab_key
-		join acc_mgitype mtype on					-- mgi type
-			mtype._mgitype_key = vat._mgitype_key
-		join acc_accession ref_acc on				-- j number
-			ref_acc._object_key = ve._refs_key
-			and ref_acc._mgitype_key = 1
-			and ref_acc.prefixpart = 'J:'
-			and ref_acc.preferred = 1
 		left outer join acc_accession term_acc on	-- term accid
 			term_acc._object_key = va._term_key
 			and term_acc._mgitype_key = 13
@@ -925,10 +923,7 @@ cmds = [
 			and term_acc.private = 0
 		left outer join dag_node dn on				-- dag name
 			dn._object_key = va._term_key
-		left outer join dag_dag dag on
-			dag._dag_key = dn._dag_key
 	''' % BATCH_TEMP_TABLE,
-	
 	]
 
 # definition of output files, each as:

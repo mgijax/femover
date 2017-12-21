@@ -37,7 +37,10 @@ class Lookup:
 		if self.cache.has_key(searchTerm):
 			return self.cache[searchTerm]
 
-		if not self.stringSearch:
+		if searchTerm == None:
+			cmd = '''select %s from %s where %s is %s'''
+			searchTerm = 'null'
+		elif not self.stringSearch:
 			cmd = '''select %s from %s where %s = %s'''
 		elif self.caseInsensitive:
 			cmd = '''select %s from %s where lower(%s) = '%s' '''

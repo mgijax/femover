@@ -7,7 +7,10 @@
 import dbAgnostic
 import GOFilter
 import constants as C
+import Lookup
 
+EVIDENCE_CODE_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'abbreviation')
+QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
         
 def transformAnnotationType(cols, rows):
     """
@@ -61,8 +64,8 @@ def groupAnnotations(cols, rows,
         annotTypeCol = dbAgnostic.columnNumber (cols, 'annottype')
         termKeyCol = dbAgnostic.columnNumber (cols, '_term_key')
         objectKeyCol = dbAgnostic.columnNumber (cols, '_object_key')
-        qualifierCol = dbAgnostic.columnNumber (cols, 'qualifier')
-        evidenceCodeCol = dbAgnostic.columnNumber (cols, 'evidence_code')
+        qualifierKeyCol = dbAgnostic.columnNumber (cols, '_qualifier_key')
+        evidenceTermKeyCol = dbAgnostic.columnNumber (cols, '_evidenceterm_key')
         inferredfromCol = dbAgnostic.columnNumber (cols, 'inferredfrom')
         
         groupMap = {}
@@ -71,8 +74,8 @@ def groupAnnotations(cols, rows,
             annotType = row[annotTypeCol]
             objectKey = row[objectKeyCol]
             termKey = row[termKeyCol]
-            qualifier = row[qualifierCol]
-            evidenceCode = row[evidenceCodeCol]
+            qualifier = QUALIFIER_LOOKUP.get(row[qualifierKeyCol])
+            evidenceCode = EVIDENCE_CODE_LOOKUP.get(row[evidenceTermKeyCol])
             inferredfrom = row[inferredfromCol]
             
             properties = []

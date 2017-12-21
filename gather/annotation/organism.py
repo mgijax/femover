@@ -25,23 +25,27 @@ class OrganismFinder:
 
         # base query for object lookups; fill in organism key field,
         # extra table(s), and extra where clause(s)
-        self.baseQuery = '''select distinct aa.accID, %%s
-            from voc_evidence ve,
-                %s abt,
-                acc_accession aa,
-                voc_annot va,
+        self.baseQuery = '''with annotations as (
+            select va._Annot_key
+            from %s abt, voc_annot va
+            where abt._Annot_key = va._Annot_key
+                and va._AnnotType_key not in (%s, %s)
+            ), evidence_id as(
+            select aa.accID
+            from annotations va,
+                voc_evidence ve, 
+                acc_accession aa
+            where ve._Annot_key = va._Annot_key
+                and aa._LogicalDB_key != %s
+                and ve._AnnotEvidence_key = aa._Object_key
+                and aa._MGIType_key = 25)
+            select distinct eid.accID, %%s
+            from evidence_id eid,
                 acc_accession bb,
                 %%s
-            where ve._AnnotEvidence_key = aa._Object_key
-                and aa._MGIType_key = 25
-                and ve._Annot_key = va._Annot_key
-                and va._AnnotType_key not in (%s, %s)
-                and aa.accID = bb.accID
-                and aa._LogicalDB_key != %d
-                and abt._annot_key = va._annot_key
-                and %%s
-        ''' % ( annotBatchTableName, C.DO_MARKER_TYPE, C.MP_MARKER_TYPE, \
-                C.CHEBI_LDB_KEY)
+            where eid.accID = bb.accID
+                and %%s''' % (
+            annotBatchTableName, C.DO_MARKER_TYPE, C.MP_MARKER_TYPE, C.CHEBI_LDB_KEY)
         
         self.cacheYeast()
         self.cacheSequences()
