@@ -17,6 +17,7 @@ import Lookup
 # annotation data specific imports
 import go_annot_extensions
 import go_isoforms
+from annotation import mapper
 from annotation import transform
 from annotation import constants as C
 from annotation import sequence_num
@@ -41,6 +42,7 @@ QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
 
 ###--- Global caches ---###
 
+annotKeyMapper = mapper.AnnotationMapper()		# maps prod _Annot_key to fe annotation_key
 evidenceCols = None		# rather than just repeatedly sending the same evidence query, cache results here
 evidenceRows = None
 
@@ -403,6 +405,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		"""
 		build the annotation table
 		"""
+		global annotKeyMapper
 		
 		cols, rows = self.results[3]
 		
@@ -472,12 +475,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				evidenceKey = row[evidenceKeyCol]
 				self.evidenceKeyToNew[evidenceKey] = self.curAnnotationKey
 			
+			vocab = VOCAB_LOOKUP.get(repRow[vocabKeyCol])
+
 			# append new annotation row
 			annots.append((
 						self.curAnnotationKey,
 						dagName,
 						QUALIFIER_LOOKUP.get(repRow[qualifierKeyCol]),
-						VOCAB_LOOKUP.get(repRow[vocabKeyCol]),
+						vocab,
 						term,
 						termId,
 						termKey,
@@ -489,6 +494,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 						inferredIdCount
 						))
 			
+			# only need to cache mappings for MP and DO, as those are the ones that are programmatically
+			# rolled up to markers (and so the only ones that have source annotation properties.
+			if vocab in ('Mammalian Phenotype', 'Disease Ontology'):
+				annotKeyMapper.map(repRow[annotKeyCol], self.curAnnotationKey)
+
 			self.curAnnotationKey += 1
 			
 			
@@ -862,7 +872,68 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		# clear the memory state for this batch of annotations
 		self.clearGlobals()
 		
+	def postscript (self):
+		# Purpose: Now that we've handled all the annotations and mapped them to new keys
+		#	(cached in annotKeyMapper), we can produce the contents of the 'annotation_source' table.
+		# Returns: nothing
+		# Effects: queries the database for the source (genotype-level) annotation keys of MP & DO
+		#	annotations that are rolled up to markers.  Converts them to their equivalent front-end
+		#	keys and builds the data file for the 'annotation_source' table.
 		
+		logger.info('Entering postscript() method with %d key mappings' % annotKeyMapper.size())
+		
+		# first find the range of annotation keys that have source annotation properties defined
+		minMaxCmd = '''select min(a._Annot_key) as minKey, max(a._Annot_key) as maxKey
+			from voc_annot a, voc_evidence e, voc_evidence_property vep, voc_term p
+			where a._Annot_key = e._Annot_key
+				and e._AnnotEvidence_key = vep._AnnotEvidence_key
+				and vep._PropertyTerm_key = p._Term_key
+				and p.term = '_SourceAnnot_key' '''
+
+		(cols, rows) = dbAgnostic.execute(minMaxCmd)
+		
+		startAnnotKey = rows[0][dbAgnostic.columnNumber(cols, 'minKey')]
+		maxAnnotKey = rows[0][dbAgnostic.columnNumber(cols, 'maxKey')]
+		
+		logger.info('Processing source annotations for keys %d..%d' % (startAnnotKey, maxAnnotKey))
+		
+		# Now step through chunks of annotations in that defined range, finding the source annotation(s)
+		# for each derived annotation, converting the annotation keys to their front-end db equivalents,
+		# and building the output data file. 
+		
+		cmd = '''select a._Annot_key, vep.value::integer as sourceAnnotKey
+			from voc_evidence_property vep, voc_term p, voc_annot a, voc_evidence e
+			where a._Annot_key = e._Annot_key
+				and e._AnnotEvidence_key = vep._AnnotEvidence_key
+				and vep._PropertyTerm_key = p._Term_key
+				and p.term = '_SourceAnnot_key'
+				and a._Annot_key >= %d
+				and a._Annot_key < %d'''
+		
+		rowCount = 0
+		while startAnnotKey <= maxAnnotKey:
+			endAnnotKey = startAnnotKey + self.chunkSize
+			
+			(cols, rows) = dbAgnostic.execute(cmd % (startAnnotKey, endAnnotKey))
+			
+			annotKeyCol = dbAgnostic.columnNumber(cols, '_Annot_key')
+			sourceAnnotKeyCol = dbAgnostic.columnNumber(cols, 'sourceAnnotKey')
+			
+			sourceRows = []
+			
+			for row in rows:
+				feSourceAnnotKeys = annotKeyMapper.getFeAnnotKeys(row[sourceAnnotKeyCol])
+			
+				for annotKey in annotKeyMapper.getFeAnnotKeys(row[annotKeyCol]):
+					for sourceKey in feSourceAnnotKeys:
+						sourceRows.append( (annotKey, sourceKey) )
+			
+			self.addRows('annotation_source', sourceRows)
+			rowCount = rowCount + len(sourceRows)
+			startAnnotKey = endAnnotKey
+		
+		logger.info('Produced %d source rows' % rowCount)
+		return
 
 ###--- globals ---###
 
@@ -988,6 +1059,12 @@ files = [
 			'by_object_dag_term', 'by_isoform'
 			]
 	),
+
+	('annotation_source',
+		['annotation_key', 'source_annotation_key' ],
+		[Gatherer.AUTO, 'annotation_key', 'source_annotation_key' ]
+	),
+		
 	]
 
 # global instance of a AnnotationGatherer

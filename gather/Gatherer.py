@@ -698,6 +698,8 @@ class CachingMultiFileGatherer:
 			logger.info ('Post-processed results')
 			logMemoryUsage()
 
+		self.postscript()
+		
 		self.files.closeAll()
 		logger.info ('Closed all output files')
 		logMemoryUsage()
@@ -706,6 +708,17 @@ class CachingMultiFileGatherer:
 		logger.info ('Reported file info to stdout')
 		return
 
+	def postscript (self):
+		# Purpose: handles any last items on the to-do list before the output files are closed.
+		#	This runs after going through the traditional processing (either in chunks or as a
+		#	single large batch).
+		# Returns: nothing
+		# Assumes: nothing
+		# Modifies: nothing
+		# Throws: nothing
+		
+		pass
+		
 	def collateResults (self):
 		# Purpose: to do any necessary slicing and dicing of
 		#	self.results to produce a final set of results to be
