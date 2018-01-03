@@ -373,3 +373,93 @@ def unload():
 	gc.collect()
 	logger.debug('Reclaimed memory in GXDUtils')
 	return
+
+###--- functions and variables dealing with identifying genotypes ---###
+###--- and genotype/assay pairs as being wild-type or not         ---###
+
+# has two types of keys:
+# - genotype key - for genotypes that are always wild-type (no allele pairs)
+# - (genotype key, assay key) - for genotypes that can be considered wild-type for certain assay types
+#    These pairs must have:
+#       a. assay type = In situ reporter (knock in) (key 9)
+#	    b. only one allele pair
+#	    c. allele pair with one wild type allele and one other
+#	    d. both alleles for the assayed gene
+WILD_TYPE = None
+
+def clearWildTypeCache():
+    # return the WILD_TYPE global variable to its uninitialized state and free up its memory
+    global WILD_TYPE
+
+    WILD_TYPE = None
+    gc.collect()
+    logger.debug('Reclaimed memory in GXDUtils')
+    return
+
+def isWildType(genotypeKey, assayKey = None):
+    # Returns 1 if either genotypeKey is always wild-type or if the (genotypeKey, assayKey) pair can
+    # be considered wild-type.  Returns 0 if neither is true.
+    
+    global WILD_TYPE
+    
+    if WILD_TYPE == None:
+        _cacheWildTypeData()
+        
+    if genotypeKey in WILD_TYPE:
+        return 1
+    if (genotypeKey, assayKey) in WILD_TYPE:
+        return 1
+    return 0
+
+def _cacheWildTypeData():
+    # populates the WILD_TYPE global variable per the comments above its definition
+    global WILD_TYPE
+    
+    WILD_TYPE = {}
+
+	# genotypes with no allele pairs (treat expression assays for these as wild type)
+    alwaysWild = '''select g._Genotype_key
+        from gxd_genotype g
+        where g._Genotype_key >= 0
+            and not exists (select 1 from gxd_allelepair p
+                where g._Genotype_key = p._Genotype_key)'''
+
+    (cols, rows) = dbAgnostic.execute(alwaysWild)
+    for row in rows:
+        WILD_TYPE[row[0]] = 1
+    logger.debug('Cached %d always wild genotypes' % len(rows))
+    
+	# also treat expression assays for these genotypes as wild type; these have:
+	#	a. assay type = In situ reporter (knock in) (key 9)
+	#	b. only one allele pair
+	#	c. allele pair with one wild type allele and one other
+	#	d. both alleles for the assayed gene
+    sometimesWild = '''select distinct s._Assay_key, s._Genotype_key
+        from gxd_specimen s, gxd_assay a, gxd_allelegenotype gag1, gxd_allelegenotype gag2,
+            all_allele a1, all_allele a2
+        where s._Assay_key = a._Assay_key
+            and a._AssayType_key = 9
+            and s._Genotype_key >= 0
+            and exists (select 1 from gxd_expression e
+                where e._Assay_key = a._Assay_key
+                    and e.isForGxd = 1)
+            and not exists (select 1 from gxd_allelepair gap
+                where s._Genotype_key = gap._Genotype_key
+                    and gap.sequenceNum > 1)
+            and s._Genotype_key = gag1._Genotype_key
+            and gag1._Allele_key = a1._Allele_key
+            and a1.isWildType = 1
+            and s._Genotype_key = gag2._Genotype_key
+            and gag2._Allele_key = a2._Allele_key
+            and a2.isWildType = 0
+            and a1._Marker_key = a._Marker_key
+            and a2._Marker_key = a._Marker_key'''
+
+    (cols, rows) = dbAgnostic.execute(sometimesWild)
+    assayCol = dbAgnostic.columnNumber(cols, '_Assay_key')
+    genotypeCol = dbAgnostic.columnNumber(cols, '_Genotype_key')
+
+    for row in rows:
+        WILD_TYPE[(row[0], row[1])] = 1
+    logger.debug('Cached %d genotype/assay pairs' % len(rows))
+    return

@@ -665,47 +665,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 		return
 
-	def getWildTypeAssays (self):
-		# get a dictionary with two types of keys
-		#	genotype key : where the genotype is always wild-type
-		#	(genotype key, assay key) : where the genotype is
-		#		sometimes wild-type, depending partly on the
-		#		type of assay with which it is associated
-
-		wildtype = {}
-
-		# query 9 - genotypes that are always wild-type
-
-		cols, rows = self.results[9]
-
-		for row in rows:
-			wildtype[row[0]] = 1
-
-		logger.debug ('Found %d wild-type genotypes' % len(rows))
-
-		# reclaim memory once we have processed the results
-		self.results[9] = [ cols, [] ]
-		gc.collect()
-
-		# query 10 - genotype/assay pairs that are wild-type together
-
-		cols, rows = self.results[10]
-
-		genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
-		assayCol = Gatherer.columnNumber (cols, '_Assay_key')
-
-		for row in rows:
-			wildtype[(row[genotypeCol], row[assayCol])] = 1
-
-		logger.debug ('Found %d wild-type genotype/assay pairs' % \
-			len(rows))
-
-		# reclaim memory once we have processed the results
-		self.results[10] = [ cols, [] ]
-		gc.collect()
-
-		return wildtype
-
 	def collateResults (self):
 
 		# get caches of data
@@ -719,8 +678,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		assays = self.getBasicAssayData()
 		inSituExtras = self.getInSituExtraData()
 		gelExtras = self.getGelExtraData()
-
-		wildtype = self.getWildTypeAssays()
 
 		# definitions for expression_result_summary table data
 
@@ -816,12 +773,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 					hasImage = 1
 					break
 
-		    	if wildtype.has_key(genotypeKey):
-				isWildType = 1
-		    	elif wildtype.has_key( (genotypeKey, assayKey) ):
-				isWildType = 1
-			else:
-		    		isWildType = 0
 
 			# while we are in here, add count statistics of tissues
 			self.addMarkerTissueCount(markerKey,emapsKey,stage, structure, strength)
@@ -848,7 +799,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    jNumbers[refsKey],
 			    hasImage,
 			    genotypeKey,
-			    isWildType,
+			    GXDUtils.isWildType(genotypeKey, assayKey),
 			    pattern,
 			    specimenKey
 			    ]
@@ -1245,44 +1196,6 @@ cmds = [
 		or exists (select 1 from gxd_gellane g
 			where g._Genotype_key = gap._Genotype_key)
 	order by gap.sequenceNum''',
-
-	# 9. genotypes with no allele pairs (treat expression assays for
-	# these as wild type)
-	'''select g._Genotype_key
-	from gxd_genotype g
-	where g._Genotype_key >= 0
-		and not exists (select 1 from gxd_allelepair p
-			where g._Genotype_key = p._Genotype_key)''',
-
-	# 10. also treat expression assays for these genotypes as wild type;
-	# these have:
-	#	a. assay type = In situ reporter (knock in) (key 9)
-	#	b. only one allele pair
-	#	c. allele pair with one wild type allele and one other
-	#	d. both alleles for the assayed gene
-	'''select distinct s._Assay_key,
-		s._Genotype_key
-	from gxd_specimen s,
-		gxd_assay a,
-		gxd_allelegenotype gag1,
-		gxd_allelegenotype gag2,
-		all_allele a1,
-		all_allele a2
-	where s._Assay_key = a._Assay_key
-		and a._AssayType_key = 9
-		and s._Genotype_key >= 0
-		and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key and e.isForGxd = 1)
-		and not exists (select 1 from gxd_allelepair gap
-			where s._Genotype_key = gap._Genotype_key
-			and gap.sequenceNum > 1)
-		and s._Genotype_key = gag1._Genotype_key
-		and gag1._Allele_key = a1._Allele_key
-		and a1.isWildType = 1
-		and s._Genotype_key = gag2._Genotype_key
-		and gag2._Allele_key = a2._Allele_key
-		and a2.isWildType = 0
-		and a1._Marker_key = a._Marker_key
-		and a2._Marker_key = a._Marker_key''',
 	]
 
 files = [
