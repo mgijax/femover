@@ -420,7 +420,7 @@ def _cacheWildTypeData():
 	# genotypes with no allele pairs (treat expression assays for these as wild type)
     alwaysWild = '''select g._Genotype_key
         from gxd_genotype g
-        where g._Genotype_key >= 0
+        where g._Genotype_key >= -1
             and not exists (select 1 from gxd_allelepair p
                 where g._Genotype_key = p._Genotype_key)'''
 
@@ -439,7 +439,7 @@ def _cacheWildTypeData():
             all_allele a1, all_allele a2
         where s._Assay_key = a._Assay_key
             and a._AssayType_key = 9
-            and s._Genotype_key >= 0
+            and s._Genotype_key >= -1
             and exists (select 1 from gxd_expression e
                 where e._Assay_key = a._Assay_key
                     and e.isForGxd = 1)
