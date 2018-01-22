@@ -14,41 +14,29 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 	#	collates results, writes tab-delimited text file
 
 	def collateResults (self):
-		dict = {}
+		data = {}
+		cols, rows = self.results[0]
+		
+		refsKeyCol = Gatherer.columnNumber (cols, '_Refs_key')
+		authorsCol = Gatherer.columnNumber (cols, 'authors')
+		titleCol = Gatherer.columnNumber (cols, 'title')
+		yearCol = Gatherer.columnNumber (cols, 'year')
+		numericPartCol = Gatherer.columnNumber (cols, 'numericPart')
 
-		refsKeyCol = Gatherer.columnNumber (self.results[0][0],
-			'_Refs_key')
-		authorsCol = Gatherer.columnNumber (self.results[0][0],
-			'authors')
-		titleCol = Gatherer.columnNumber (self.results[0][0], 'title')
-		yearCol = Gatherer.columnNumber (self.results[0][0], 'year')
-		numericPartCol = Gatherer.columnNumber (self.results[0][0],
-			'numericPart')
-
-		byDate = []
+		byDate = []		# lists of (sortable value, reference key) for sorting by various fields
 		byAuthor = []
 		byTitle = []
-		byID = []
-		for row in self.results[0][1]:
+		for row in rows:
 			referenceKey = row[refsKeyCol]
-			d = { '_Refs_key' : referenceKey,
-				'byDate' : 0,
-				'byAuthor' : 0,
-				'byTitle' : 0,
-				'byPrimaryID' : 0 }
-			dict[referenceKey] = d
+			data[referenceKey] = { '_Refs_key' : referenceKey }
 
+			author = None
 			if row[authorsCol]:
-				author = row[authorsCol]
-				author = author.lower()
-			else:
-				author = None
+				author = row[authorsCol].lower()
 
+			title = None
 			if row[titleCol]:
-				title = row[titleCol]
-				title = title.lower()
-			else:
-				title = None
+				title = row[titleCol].lower()
 
 			numericPart = 0
 			if row[numericPartCol] != None:
@@ -57,36 +45,39 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 			byDate.append ( (int(row[yearCol]), numericPart, referenceKey) )
 			byAuthor.append ( (author, referenceKey) )
 			byTitle.append ( (title, referenceKey) )
-			byID.append ( (row[numericPartCol], referenceKey) )
+			data[referenceKey] = {
+				'_Refs_key' : referenceKey,
+				'byPrimaryID' : numericPart
+				}
 
 		logger.debug ('Pulled out data to sort')
 
 		byDate.sort()
 		byAuthor.sort()
 		byTitle.sort()
-		byID.sort()
 
 		logger.debug ('Sorted data')
 
-		for (lst, field) in [ (byDate, 'byDate'),
-			(byAuthor, 'byAuthor'), (byTitle, 'byTitle'),
-			(byID, 'byPrimaryID') ]:
-				i = 1
-				for t in lst:
-					referenceKey = t[-1]
-					dict[referenceKey][field] = i
-					i = i + 1
+		for (lst, field) in [ (byDate, 'byDate'), (byAuthor, 'byAuthor'), (byTitle, 'byTitle') ]:
+			i = 1
+			for t in lst:
+				referenceKey = t[-1]
+				data[referenceKey][field] = i
+				i = i + 1
 
-		self.finalColumns = [ '_Refs_key', 'byDate', 'byAuthor',
-			'byTitle', 'byPrimaryID' ]
-
+		self.finalColumns = [ '_Refs_key', 'byDate', 'byAuthor', 'byPrimaryID', 'byTitle' ]
 		self.finalResults = []
-		for refDict in dict.values():
+		
+		refKeys = data.keys()
+		refKeys.sort()
+		
+		for key in refKeys:
+			refDict = data[key]
 			row = [ refDict['_Refs_key'],
 				refDict['byDate'],
 				refDict['byAuthor'],
-				refDict['byTitle'],
 				refDict['byPrimaryID'],
+				refDict['byTitle'],
 				]
 			self.finalResults.append (row)
 		return
@@ -94,8 +85,7 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select m._Refs_key, m.authors, m.year, 
-		c.numericPart, c.jnumID, m.title
+	'''select m._Refs_key, m.authors, m.year, c.numericPart, c.jnumID, m.title
 	from bib_refs m, bib_citation_cache c
 	where m._Refs_key = c._Refs_key''',
 	]
@@ -103,7 +93,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Refs_key', 'byDate', 'byAuthor', 'byTitle', 'byPrimaryID',
+	'_Refs_key', 'byDate', 'byAuthor', 'byPrimaryID', 'byTitle'
 	]
 
 # prefix for the filename of the output file
