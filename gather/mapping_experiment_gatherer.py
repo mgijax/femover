@@ -58,8 +58,8 @@ cmds = [
 	from mld_expts e
 	inner join acc_accession a on (e._Expt_key = a._Object_key and a._LogicalDB_key = 1
 		and a.preferred = 1 and a._MGIType_key = 4)
-	left outer join mld_notes rn on (e._Refs_key = rn._Refs_key and rn.sequenceNum = 1)
-	left outer join mld_expt_notes en on (e._Expt_key = en._Expt_key and en.sequenceNum = 1)
+	left outer join mld_notes rn on (e._Refs_key = rn._Refs_key)
+	left outer join mld_expt_notes en on (e._Expt_key = en._Expt_key)
 	left outer join mld_matrix mx on (e._Expt_key = mx._Expt_key)
 	left outer join crs_cross cs on (mx._Cross_key = cs._Cross_key)
 	where e.exptType != 'CONTIG' ''',
