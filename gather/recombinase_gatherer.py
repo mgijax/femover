@@ -578,10 +578,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
 		for r in self.results[2][1]:
 			key = r[keyCol]
-			if assayNote.has_key (key):
-				assayNote[key] = assayNote[key] + r[noteCol]
-			else:
-				assayNote[key] = r[noteCol]
+			assayNote[key] = r[noteCol]
 
 		logger.debug ('Found %d assay notes' % len(assayNote))
 		return assayNote
@@ -971,11 +968,11 @@ cmds = [
 	# 2
 	# assay notes by assay key
 	#
-	'''select distinct a._Assay_key, a.sequenceNum, a.assayNote
+	'''select distinct a._Assay_key, a.assayNote
 	from gxd_assaynote a,
 		all_cre_cache c
 	where a._Assay_key = c._Assay_key
-	order by a.sequenceNum''',
+	order by a._Assay_key''',
 
 	# 3
 	# probes for each Cre probe prep key

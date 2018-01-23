@@ -34,10 +34,7 @@ class AssayGatherer (Gatherer.Gatherer):
 		
 		for row in rows:
 			key = row[keyCol]
-			if notes.has_key(key):
-				notes[key] = notes[key] + row[noteCol]
-			else:
-				notes[key] = row[noteCol]
+			notes[key] = row[noteCol]
 
 		logger.debug ('Found notes for %d assays' % len(notes))
 
@@ -223,10 +220,10 @@ class AssayGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select a._Assay_key, a.sequenceNum, a.assayNote
+	'''select a._Assay_key, a.assayNote
 		from gxd_assaynote a
 		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
-		order by a._Assay_key, a.sequenceNum''',
+		order by a._Assay_key''',
 
 	'''select a._Assay_key,
 			p._Probe_key,
