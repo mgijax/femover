@@ -35,17 +35,15 @@ class AlleleGatherer (Gatherer.Gatherer):
 		# extract driver data from the first query, and cache it
 		# for later use in postprocessResults()
 
-		keyCol = Gatherer.columnNumber (self.results[0][0],
-			'_Allele_key')
-		driverCol = Gatherer.columnNumber (self.results[0][0],
-			'driverNote')
+		keyCol = Gatherer.columnNumber (self.results[0][0], '_Allele_key')
+		driverCol = Gatherer.columnNumber (self.results[0][0], 'driverNote')
+		driverKeyCol = Gatherer.columnNumber (self.results[0][0], '_Marker_key')
 
-		self.driver = {}
+		self.driver = {}				# allele key : (driver symbol, key)
 		for row in self.results[0][1]:
-			self.driver[row[keyCol]] = row[driverCol]
+			self.driver[row[keyCol]] = (row[driverCol], row[driverKeyCol])
 
-		logger.debug ('Found %d recombinase alleles' % \
-			len(self.driver))
+		logger.debug ('Found %d recombinase alleles' % len(self.driver))
 
 		# extract gene name data from the second query and cache it
 		# for later use in postprocessResults()
@@ -210,10 +208,11 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 			if self.driver.has_key (allele):
 				isRecombinase = 1
-				driver = self.driver[allele]
+				driver, driverKey = self.driver[allele]
 			else:
 				isRecombinase = 0
 				driver = None
+				driverKey = None
 
 			if self.genes.has_key (allele):
 				gene = self.genes[allele]
@@ -238,6 +237,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 			self.addColumn('isRecombinase', isRecombinase, r,
 				columns)
 			self.addColumn('driver', driver, r, columns)
+			self.addColumn('driver_key', driverKey, r, columns)
 			self.addColumn('geneName', gene, r, columns)
 			self.addColumn('inducibleNote', inducibleNote, r,
 				columns)
@@ -286,7 +286,11 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 cmds = [
 	# 0. Cre drivers
-	'''select distinct _Allele_key, driverNote from all_cre_cache''',
+	'''select a._Allele_key, m._Marker_key, m.symbol as driverNote
+		from mgi_relationship r, all_allele a, mrk_marker m
+		where r._Category_key = 1006
+		and r._Object_key_1 = a._Allele_key
+		and r._Object_key_2 = m._Marker_key''',
 
 	# 1. marker name for each allele
 	'''select a._Allele_key, m.name
@@ -357,7 +361,7 @@ cmds = [
 fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType','chromosome','collection',
-	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'inducibleNote',
+	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'driver_key', 'inducibleNote',
 	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',
 	'imageKey', 'hasDiseaseModel', 'repository', 'jrsID',
