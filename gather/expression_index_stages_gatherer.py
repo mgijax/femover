@@ -67,7 +67,6 @@ cmds = [
 		where s._IndexAssay_key = t._Term_key
 			and exists (select 1 from gxd_index i
 				where i._Index_key = s._Index_key)
-			and t.sequenceNum = 1
 			and s._StageID_key = a._Term_key''',
 	]
 
