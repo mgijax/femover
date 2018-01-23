@@ -852,7 +852,7 @@ def checkForFinishedLoad():
 
 		# if a load operation finished, then remove it from the list
 		# of unfinished processes, schedule creation of that
-		# table's indexes, and remove the data file that was loaded
+		# table's indexes
 
 		if BCPIN_DISPATCHER.getStatus(id) == Dispatcher.FINISHED:
 			del BCPIN_IDS[i]
@@ -862,7 +862,6 @@ def checkForFinishedLoad():
 
 			logger.debug ('Finished loading %s' % table)
 			scheduleClusteredIndex(table)
-			os.remove(path)
 
 		i = i - 1
 
