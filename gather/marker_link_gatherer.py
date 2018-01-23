@@ -14,6 +14,7 @@ import MarkerUtils
 MGI = 1                
 OMIM = 15
 ENTREZ_GENE = 55
+ZFIN_GENE = 172
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
 MYGENE_INFO = 178
@@ -57,7 +58,7 @@ VISTA_POINT = 'VISTA-Point'
 GENE_TREE = 'Gene Tree'
 
 # URL to expression data at zfin; substitute in an NCBI ID for a Zfin marker
-zfin_url = '''http://zfin.org/cgi-bin/webdriver?MIval=aa-xpatselect.apg&query_results=exist&START=0&searchtype=equals&gene_name=%s'''
+zfin_url = 'https://zfin.org/action/marker/%s/expression'
 
 # URL to expression data at geisha; substitute in an NCBI ID for a chicken
 # marker
@@ -524,7 +525,7 @@ cmds = [
         and za.private = 0
         and za.preferred = 1
     order by m._Marker_key, zm.symbol''' % (MOUSE, HOMOLOGY_CLUSTER,
-            ZFIN_SOURCE, ZEBRAFISH, MARKER, ENTREZ_GENE),
+            ZFIN_SOURCE, ZEBRAFISH, MARKER, ZFIN_GENE),
 
     # 5. data for chicken expression links (via homology)
     '''select distinct m._Marker_key as mouse_marker_key,

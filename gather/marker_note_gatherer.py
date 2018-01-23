@@ -33,7 +33,6 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
 		noteKeyCol = Gatherer.columnNumber (cols, '_Note_key')
 		noteCol = Gatherer.columnNumber (cols, 'note')
-		seqNumCol = Gatherer.columnNumber (cols, 'sequenceNum')
 
 		notes = {}
 		noteCount = 0
@@ -199,11 +198,11 @@ cmds = [
 	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 
 	# 1. marker clips
-	'''select _Marker_key, sequenceNum, note
+	'''select _Marker_key, note
 		from mrk_notes n
 		where exists (select 1 from mrk_marker m
 			where m._Marker_key = n._Marker_key)
-		order by _Marker_key, sequenceNum''',
+		order by _Marker_key''',
 
 	# 2. searchable notes for rolled-up DO and MP annotations
 	'''with rolled_up_annotations as (

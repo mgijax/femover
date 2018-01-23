@@ -94,6 +94,13 @@ while [ $# -gt 0 ]; do
     shift
 done
 
+# remove any data files from the previous run
+if [ "${REMOVE_DATA_FILES}" == "" ]; then
+    echo "Missing REMOVE_DATA_FILES setting"
+elif [ "${REMOVE_DATA_FILES}" == "1" ]; then
+    rm -f ${DATA_DIR}/*
+fi
+
 # run the mover with any specified flags
 echo "buildDatabase.py ${FLAGS}"
 ./buildDatabase.py ${FLAGS}

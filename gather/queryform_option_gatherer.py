@@ -64,11 +64,7 @@ class QFOptionGatherer (Gatherer.Gatherer):
 		for row in rows:
 			termKey = row[termCol]
 			note = row[noteCol]
-
-			if defs.has_key(termKey):
-				defs[termKey] = defs[termKey] + note
-			else:
-				defs[termKey] = note 
+			defs[termKey] = note 
 
 		# 1. marker QF : MCV (marker type) field
 
@@ -365,14 +361,14 @@ cmds = [
 	order by vt.sequenceNum''',
 
 	# 3. definitions for MCV terms on marker QF
-	'''select t._Term_key, x.sequenceNum, x.note
+	'''select t._Term_key, x.note
 	from voc_vocab v,
 		voc_term t,
 		voc_text x
 	where v._Vocab_key = t._Vocab_key
 		and v.name = 'Marker Category'
 		and t._Term_key = x._Term_key
-	order by t._Term_key, x.sequenceNum, x.note''',
+	order by t._Term_key, x.note''',
 
 	# 4. genome build number for mouse markers
 	'''select distinct version

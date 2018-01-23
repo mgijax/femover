@@ -18,8 +18,7 @@ ProbeNoteGatherer = Gatherer.Gatherer
 cmds = [
 	# 0. probe and tissue notes; assumes only one note chunk per note
 	'''select _Probe_key, 'probe' as note_type, note
-		from PRB_Notes
-		where note is not null
+		from prb_notes
 		union
 		select p._Probe_key, 'tissue' as note_type, s.description
 		from prb_probe p, prb_source s
