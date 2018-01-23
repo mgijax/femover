@@ -81,8 +81,9 @@ CHUNK_SIZE=100000	# for large tables, how many rows to do at once
 BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
 SOURCE_TYPE=postgres	# build from postgres, mysql
 TARGET_TYPE=postgres	# build into postgres or mysql
+REMOVE_DATA_FILES=1	# remove data fles from prior run?  (0/1)
 
-export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE
+export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE REMOVE_DATA_FILES
 
 # path to data file for short papers' Full Text links
 FULL_TEXT_LINKS_PATH=../data/fullTextLinks.txt
