@@ -145,7 +145,7 @@ def logMemoryUsage():
 	# Modifies: writes to log file
 	# Throws: nothing
 
-	logger.info ('RAM used : %s' % myMemory())
+	#logger.info ('RAM used : %s' % myMemory())
 	return
 
 ###--- Classes ---###
