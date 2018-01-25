@@ -28,12 +28,16 @@ cmds = [
 			gxd_insituresult r,
 			gxd_strength st,
 			gxd_allelegenotype gag,
-			mgi_relationship rel
+			mgi_relationship rel,
+			gxd_isresultstructure isr
 		where e.isRecombinase = 1
 			and e._Assay_key = sp._Assay_key
+			and e._Specimen_key = sp._Specimen_key
 			and sp._Specimen_key = r._Specimen_key
 			and r._Strength_key = st._Strength_key
 			and e._Genotype_key = gag._Genotype_key
+			and r._Result_key = isr._Result_key
+			and isr._Emapa_Term_key = e._Emapa_Term_key
 			and rel._Category_key = 1006
 			and rel._Object_key_1 = gag._Allele_key''',
 	]
