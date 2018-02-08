@@ -460,6 +460,6 @@ def _cacheWildTypeData():
     genotypeCol = dbAgnostic.columnNumber(cols, '_Genotype_key')
 
     for row in rows:
-        WILD_TYPE[(row[0], row[1])] = 1
+        WILD_TYPE[(row[genotypeCol], row[assayCol])] = 1
     logger.debug('Cached %d genotype/assay pairs' % len(rows))
     return
