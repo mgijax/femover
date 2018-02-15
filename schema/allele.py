@@ -26,6 +26,7 @@ createStatement = '''CREATE TABLE %s  (
 	is_wild_type		int		not null,
 	is_mixed		int		not null,
 	driver			text	null,
+	driver_key		int		null,
 	inducible_note		text	null,
 	molecular_description	text		null,
 	strain			text	null,
@@ -47,10 +48,12 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
 	'symbol' : 'create index %s on %s (symbol)',
 	'primary_id' : 'create index %s on %s (primary_id)',
+	'driver_key' : 'create index %s on %s (driver_key)',
 	}
 
 keys = {
 	'primary_image_key' : ('image', 'image_key'),
+	'driver_key' : ('marker', 'marker_key'),
 	}
 
 # index used to cluster data in the table
@@ -74,6 +77,7 @@ comments = {
 		'is_recombinase' : '1 if this is a recombinase allele, 0 if not',
 		'is_wild_type' : '1 if this is a wild-type allele, 0 if not',
 		'driver' : 'driver for this allele, if it is a recombinase allele',
+		'driver_key' : 'marker key for the driver for this allele, if it is a recombinase allele',
 		'inducible_note' : 'inducible note',
 		'molecular_description' : 'molecular description',
 		'strain' : 'strain which is the source of the allele',
