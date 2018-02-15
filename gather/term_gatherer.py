@@ -91,7 +91,7 @@ cmds = [
 			and t._Term_key = n._Object_key
 			and n._DAG_key = d._DAG_key
 	)
-	select v.name as vocab, t._Term_key, t.term, t.abbreviation, d.note as definition,
+	select v.name as vocab, t._Term_key, t.term, t.abbreviation, t.note as definition,
 		i.accID, t.sequenceNum, t.isObsolete,
 		case
 			when g.abbreviation = 'C' then 'Component'
@@ -113,7 +113,6 @@ cmds = [
 	from voc_term t
 	inner join selected_vocabs vv on (t._Vocab_key = vv._Vocab_key)
 	inner join voc_vocab v on (t._Vocab_key = v._Vocab_key)
-	left outer join voc_text d on (t._Term_key = d._Term_key)
 	left outer join primary_ids i on (t._Term_key = i._Term_key)
 	left outer join leaves e on (t._Term_Key = e._Term_key)
 	left outer join roots r on (t._Term_key = r._Term_key)

@@ -62,7 +62,7 @@ class ExpressionIndexStagesGatherer (Gatherer.Gatherer):
 cmds = [
 	'''select s._Index_key, t.note, a.term as ageString
 		from gxd_index_stages s,
-			voc_text t,
+			voc_term t,
 			voc_term a
 		where s._IndexAssay_key = t._Term_key
 			and exists (select 1 from gxd_index i

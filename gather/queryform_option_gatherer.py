@@ -361,14 +361,12 @@ cmds = [
 	order by vt.sequenceNum''',
 
 	# 3. definitions for MCV terms on marker QF
-	'''select t._Term_key, x.note
+	'''select t._Term_key, t.note
 	from voc_vocab v,
-		voc_term t,
-		voc_text x
+		voc_term t
 	where v._Vocab_key = t._Vocab_key
 		and v.name = 'Marker Category'
-		and t._Term_key = x._Term_key
-	order by t._Term_key, x.note''',
+	order by t._Term_key''',
 
 	# 4. genome build number for mouse markers
 	'''select distinct version
