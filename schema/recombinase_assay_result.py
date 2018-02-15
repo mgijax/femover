@@ -13,6 +13,7 @@ tableName = 'recombinase_assay_result'
 createStatement = '''CREATE TABLE %s  ( 
 	result_key		int		not null,
 	allele_system_key	int		not null,
+	structure_key	int		null,
 	structure		text	null,
 	age			text	null,
 	level			text	null,
@@ -36,9 +37,14 @@ createStatement = '''CREATE TABLE %s  (
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
-indexes = {}
+indexes = {
+	'structure_key' : 'create index %s on %s (structure_key)',
+	}
 
-keys = { 'allele_system_key' : ('recombinase_allele_system', 'allele_system_key'), }
+keys = {
+	'allele_system_key' : ('recombinase_allele_system', 'allele_system_key'),
+	'structure_key' : ('term', 'term_key'),
+	}
 
 # index used to cluster data in the table
 clusteredIndex = ('allele_system_key',
@@ -50,6 +56,7 @@ comments = {
 	Table.COLUMN : {
 		'result_key' : 'unique identifier for this record',
 		'allele_system_key' : 'identifies the allele/system pair',
+		'structure_key' : 'term key for anatomical structure (stage-specific / EMAPS)',
 		'structure' : 'anatomical structure',
 		'age' : 'age of the specimen',
 		'level' : 'level of activity detected',

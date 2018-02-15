@@ -674,7 +674,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 		systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
 
 		out = []
-		columns = [ 'resultKey', 'alleleSystemKey', 'structure',
+		columns = [ 'resultKey', 'alleleSystemKey', 'structureKey', 'structure',
 			'age', 'sex', 'jnumID', 'resultNote', 'specimenNote',
 			'level', 'pattern', 'assayType', 'reporterGene',
 			'detectionMethod', 'allelicComposition', 'strain',
@@ -709,7 +709,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 			emapsKey = r[emapsKeyCol]
 			structure = r[structureCol]
 
-			row = [ i, alleleSystemKey, structure,
+			row = [ i, alleleSystemKey, emapsKey, structure,
 				r[ageCol], r[sexCol], r[jnumCol],
 				r[resultNoteCol], r[specimenNoteCol], ]
 			row.append (Gatherer.resolve (r[strengthCol],
@@ -1083,7 +1083,7 @@ files = [
 		'recombinase_other_allele'),
 
 	('recombinase_assay_result',
-		[ 'resultKey', 'alleleSystemKey', 'structure', 'age', 'level',
+		[ 'resultKey', 'alleleSystemKey', 'structureKey', 'structure', 'age', 'level',
 			'pattern', 'jnumID', 'assayType', 'reporterGene',
 			'detectionMethod', 'sex', 'allelicComposition',
 			'strain', 'assayNote', 'resultNote',
