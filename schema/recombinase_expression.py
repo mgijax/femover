@@ -48,7 +48,7 @@ comments = {
 		'unique_key' : 'generated primary key for this table',
 		'driver_key' : '(marker) key for the driver of the recombinase allele',
 		'allele_key' : 'identifies the recombinase allele',
-		'structure_key' : 'EMAPA structure key for the result',
+		'structure_key' : 'EMAPS structure key for the result',
 		'result_key' : 'key from production GXD_InSituResult table (not used otherwise in front-end db)',
 		'is_detected' : 'was expression detected?  (Yes, No, Ambiguous)',
 		},
