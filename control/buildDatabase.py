@@ -232,7 +232,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_note', 'marker_sequence_num', 'marker_flags',
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
-		'homology_cluster', 'marker_qtl_experiments',
+		'homology_cluster', 'marker_qtl_experiments', 'marker_wksilvers',
 		'marker_microarray', 'marker_to_term', 'marker_related_marker',
 		'marker_interaction', 'marker_mp_annotation','marker_minimap'
 	]
