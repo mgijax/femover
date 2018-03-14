@@ -16,7 +16,7 @@ tableName = 'marker_wksilvers'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key				int		not null,
 	silvers_symbol			text	not null,
-	silvers_url_fragement	text	null,
+	silvers_url_fragment	text	null,
 	marker_key				int		not null,
 	marker_symbol			text	not null,
 	marker_id				text	not null,
