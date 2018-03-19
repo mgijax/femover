@@ -115,12 +115,32 @@ cmds = [
 	# all references
 	'select m._Refs_key from bib_refs m',
 
-	# count of markers for each reference
-	'''select m._Refs_key, count(1) as numMarkers
-		from mrk_reference m, mrk_marker mm
-		where m._Marker_key = mm._Marker_key
-			and mm._Marker_Status_key = 1
-		group by m._Refs_key''',
+	# count of markers for each reference, including refs for alleles and considering
+	# "mutation involves" and "expressed component" relationships.  Built using query
+	# from marker_to_reference_gatherer.py to help results match these counts.
+	'''with marker_alleles as (
+			select _Marker_key, _Allele_key 
+			from all_allele
+			where isWildType = 0
+			union
+			select r._Object_key_2 as _Marker_key, r._Object_key_1 as _Allele_key
+			from mgi_relationship r
+			where r._Category_key in (1003,1004)
+			),
+		marker_refs as (
+			select r._Marker_key, r._Refs_key
+			from mrk_reference r
+			union
+			select t._Marker_key, r._Refs_key
+			from marker_alleles t, mgi_reference_assoc r
+			where t._Allele_key = r._Object_key
+			and r._MGIType_key = 11)
+		select r._Refs_key, count(distinct m._Marker_key) as numMarkers
+		from marker_refs m, bib_refs r, bib_citation_cache c
+		where m._Refs_key = r._Refs_key
+			and m._Refs_key = c._Refs_key
+			and m._Marker_key is not null
+		group by 1''',
 
 	# count of probes
 	'''select _Refs_key, count(1) as numProbes
