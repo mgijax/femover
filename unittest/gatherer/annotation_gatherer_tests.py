@@ -57,8 +57,8 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                      'annottype', 
                      '_term_key', 
                      '_object_key',
-                     'qualifier',
-                     'evidence_code',
+                     '_qualifier_key',
+                     '_evidenceterm_key',
                      'inferredfrom' 
         ]
     
@@ -67,8 +67,8 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                 annotType='test',
                 termKey=1,
                 objectKey=1,
-                qualifier='',
-                evidenceCode='',
+                qualifierKey=1,
+                evidenceCode=1,
                 inferredfrom=''):
         """
         return test row for the given input,
@@ -79,7 +79,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                annotType,
                termKey,
                objectKey,
-               qualifier,
+               qualifierKey,
                evidenceCode,
                inferredfrom
         ]
@@ -105,15 +105,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=2,
                              objectKey=3,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='')]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
@@ -127,15 +127,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='')]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
@@ -149,15 +149,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='colocalizes_with',
-                             evidenceCode='IDA',
+                             qualifierKey=1614151,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1614156,
+                             evidenceCode=1,
                              inferredfrom='')]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
@@ -174,8 +174,8 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='')]
         
         propertyMap = {
@@ -196,15 +196,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='')
                 ]
         
@@ -226,15 +226,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='')
                 ]
         
@@ -257,15 +257,15 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom=''),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='',
-                             evidenceCode='IDA',
+                             qualifierKey=1,
+                             evidenceCode=1,
                              inferredfrom='MGI:12345')
                 ]
         
@@ -313,12 +313,12 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='Mammalian Phenotype/Genotype',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),
+                             qualifierKey=1614151),
                 self.makeRow(evidenceKey=2,
                              annotType='Mammalian Phenotype/Genotype',
                              termKey=1,
                              objectKey=1,
-                             qualifier='NOT')]
+                             qualifierKey=1614156)]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
@@ -331,12 +331,12 @@ class GroupAnnotationsTestCase(unittest.TestCase):
                              annotType='Mammalian Phenotype/Genotype',
                              termKey=1,
                              objectKey=1,
-                             qualifier='NOT'),
+                             qualifierKey=2),
                 self.makeRow(evidenceKey=2,
                              annotType='Mammalian Phenotype/Genotype',
                              termKey=1,
                              objectKey=1,
-                             qualifier='NOT')]
+                             qualifierKey=2)]
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
@@ -355,8 +355,8 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                      'annottype', 
                      '_term_key', 
                      '_object_key',
-                     'qualifier',
-                     'evidence_code',
+                     '_qualifier_key',
+                     '_evidenceterm_key',
                      'inferredfrom' 
         ]
         
@@ -365,8 +365,8 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                 annotType='test',
                 termKey=1,
                 objectKey=1,
-                qualifier='',
-                evidenceCode='',
+                qualifierKey=1,
+                evidenceCode=1,
                 inferredfrom=''):
         """
         return test row for the given input,
@@ -377,7 +377,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                annotType,
                termKey,
                objectKey,
-               qualifier,
+               qualifierKey,
                evidenceCode,
                inferredfrom
         ]
@@ -390,12 +390,12 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),
+                             qualifierKey=1),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='')]
+                             qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
         self.assertEquals(len(aggregatedProps), 0)
@@ -417,12 +417,12 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),
+                             qualifierKey=1),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='')]
+                             qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
         self.assertEquals(len(aggregatedProps), 2)
@@ -444,12 +444,12 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),
+                             qualifierKey=1),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='')]
+                             qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
         self.assertEquals(len(aggregatedProps), 1)
@@ -485,12 +485,12 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),
+                             qualifierKey=1),
                 self.makeRow(evidenceKey=2,
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier='')]
+                             qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
         self.assertEquals(len(aggregatedProps), 2)
@@ -516,7 +516,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              annotType='GO/Marker',
                              termKey=1,
                              objectKey=1,
-                             qualifier=''),]
+                             qualifierKey=1),]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
         self.assertEquals(len(aggregatedProps), 1)
