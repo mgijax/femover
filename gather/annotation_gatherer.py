@@ -42,6 +42,12 @@ QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
 
 ###--- Global caches ---###
 
+# get the shared organism finder for the inferredfrom ID data
+organismFinder = OrganismFinder()
+
+# initialize a tooltip finder for the the other inferredfrom tooltips
+tooltipFinder = TooltipFinder()
+				
 annotKeyMapper = mapper.AnnotationMapper()		# maps prod _Annot_key to fe annotation_key
 evidenceCols = None		# rather than just repeatedly sending the same evidence query, cache results here
 evidenceRows = None
@@ -284,14 +290,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		Return map { _annotevidence_key: [{ id, tooltip, logicaldb}] }
 		"""
-		global evidenceCols, evidenceRows
+		global evidenceCols, evidenceRows, organismFinder, tooltipFinder
 		
-		# initialize an organism finder for the inferredfrom ID data
-		organismFinder = OrganismFinder(annotBatchTableName=BATCH_TEMP_TABLE)
-		
-		# initialize a tooltip finder for the the other inferredfrom tooltips
-		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
-				
 		# This function is called for each batch.  Rather than process this query each time, only
 		# ask the database once and then use the cached result thereafter.
 		if evidenceCols == None:
