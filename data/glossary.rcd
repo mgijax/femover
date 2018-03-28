@@ -4965,7 +4965,7 @@ definition=Used to describe an <A HREF="!FEWI_URL!glossary/enzyme">enzyme</A> or
 [ 
 key=theiler 
 displayName=Theiler Stage 
-definition=Theiler stages define mouse development by a set of morphological \
+definition=Theiler stages (TS) define mouse development by a set of morphological \
 criteria (Theiler, Karl. <i>The House Mouse: Atlas of Embryonic Development.</i> \
 New York: Springer-Verlag, 1989).  This staging scheme is used because embryos \
 at the same gestational age can have developed at different rates and therefore \
