@@ -458,19 +458,15 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			
 		# fetch properties for grouping
 		propertiesMap = self.queryAnnotationProperties()
-		logger.debug('got annotation properties')
 		
 		# fetch inferredfrom IDs
 		inferredfromIdMap = self.queryInferredFromIds()
-		logger.debug('got inferredfromIdMap')
 			
 		# group/roll up annotations
 		self.annotGroupsMap = transform.groupAnnotations(cols, rows,
 										propertiesMap=propertiesMap)
-		self.annotGroupsRows = self.annotGroupsRows
+		self.annotGroupsRows = orderedValues(self.annotGroupsMap)
 			
-		logger.debug('grouped annotations')
-		annots = []
 		for rows in self.annotGroupsRows:
 			
 			repRow = rows[0]
@@ -511,7 +507,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			vocab = VOCAB_LOOKUP.get(repRow[vocabKeyCol])
 
 			# append new annotation row
-			annots.append((
+#			annots.append((
+			self.addRow('annotation', (
 						self.curAnnotationKey,
 						dagName,
 						QUALIFIER_LOOKUP.get(repRow[qualifierKeyCol]),
@@ -526,7 +523,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 						refsCount,
 						inferredIdCount
 						))
-			
+
 			# only need to cache mappings for MP and DO, as those are the ones that are programmatically
 			# rolled up to markers (and so the only ones that have source annotation properties.
 			if vocab in ('Mammalian Phenotype', 'Disease Ontology'):
@@ -534,9 +531,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 
 			self.curAnnotationKey += 1
 			
-			
-		self.addRows('annotation', annots)
-		
 		# store these for sub-table processing
 		self.annotPropertiesMap = propertiesMap
 		self.inferredfromIdMap = inferredfromIdMap
@@ -551,9 +545,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# get alternate display names for properties
 		propDisplayMap = self.queryPropertyDisplayNames()
-		logger.debug('got propertyDisplayNames')
 		
-		propertyRows = []
 		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
@@ -577,7 +569,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 					if property in orderedKeys(propDisplayMap):
 						property = propDisplayMap[property]
 					
-					propertyRows.append((
+					self.addRow('annotation_property', (
 						newAnnotationKey,
 						prop['type'],
 						property,
@@ -586,7 +578,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 						prop['sequencenum']
 					))
 		
-		self.addRows('annotation_property', propertyRows)
 		
 	
 	def buildAnnotationInferredFromId(self):
@@ -602,8 +593,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		inferredfromCol = Gatherer.columnNumber (cols, 'inferredfrom')
-		
-		inferredIdRows = []
 		
 		for rows in self.annotGroupsRows:
 		
@@ -635,7 +624,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				id = idObj['id']
 				tooltip = idObj['tooltip']
 				
-				inferredIdRows.append((
+				self.addRow('annotation_inferred_from_id', (
 					newAnnotationKey,
 					logicalDb,
 					id,
@@ -646,9 +635,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				seqnum += 1
 						
 						
-		self.addRows('annotation_inferred_from_id', inferredIdRows)
-		
-		
 	def buildAnnotationReference(self):
 		"""
 		Build the annotation_reference table
@@ -658,8 +644,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
-		
-		referenceRows = []
 		
 		for rows in self.annotGroupsRows:
 		
@@ -688,7 +672,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			seqnum = 1
 			for ref in refs:
 				
-				referenceRows.append((
+				self.addRow('annotation_reference', (
 					newAnnotationKey,
 					ref[0],
 					ref[1],
@@ -696,8 +680,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				))
 				
 				seqnum += 1
-				
-		self.addRows('annotation_reference', referenceRows)
 				
 				
 	def buildMarkerToAnnotation(self):
@@ -712,8 +694,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
-		markerAnnotRows = []
-		
 		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
@@ -725,14 +705,12 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			
 			if mgitype == 'Marker':
 				
-				markerAnnotRows.append((
+				self.addRow('marker_to_annotation', (
 					objectKey,
 					newAnnotationKey,
 					annotType
 				))
 				
-				
-		self.addRows('marker_to_annotation', markerAnnotRows)
 		
 	def buildGenotypeToAnnotation(self):
 		"""
@@ -746,8 +724,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
-		genotypeAnnotRows = []
-		
 		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
@@ -759,14 +735,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			
 			if mgitype == 'Genotype':
 				
-				genotypeAnnotRows.append((
+				self.addRow('genotype_to_annotation', (
 					objectKey,
 					newAnnotationKey,
 					annotType
 				))
-				
-				
-		self.addRows('genotype_to_annotation', genotypeAnnotRows)
 		
 	
 	def buildAnnotationHeader(self):
@@ -796,14 +769,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			if termKey in headerMap:
 			
 				for headerKey in headerMap[termKey]:
-					
-					headerRows.append((
+				
+					self.addRow('annotation_to_header', (
 						newAnnotationKey,
 						headerKey
 					))
-				
-				
-		self.addRows('annotation_to_header', headerRows)
 		
 		
 	def buildAnnotationSequenceNum(self):
@@ -825,8 +795,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_vocab_key')
-		
-		seqnumRows = []
 		
 		for rows in self.annotGroupsRows:
 		
@@ -859,7 +827,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			if repEvidenceKey in byIsoformMap:
 				byIsoform = byIsoformMap[repEvidenceKey]
 					
-			seqnumRows.append((
+			self.addRow('annotation_sequence_num', (
 				newAnnotationKey,
 				byDagStructure,
 				byTermAlpha,
@@ -869,8 +837,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				byObjectDagTerm,
 				byIsoform
 			))
-				
-		self.addRows('annotation_sequence_num', seqnumRows)
 		
 	
 	def collateResults (self):
@@ -883,32 +849,17 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# perform any necessary data transforms on the base query
 		self.transformAnnotations()
-		logger.debug('returned from transformAnnotations()')
+
 		# Build the tables for each batch
 		
 		self.buildAnnotation()
-		logger.debug('returned from buildAnnotation()')
-		
 		self.buildAnnotationProperty()
-		logger.debug('returned from buildAnnotationProperty()')
-		
 		self.buildAnnotationInferredFromId()
-		logger.debug('returned from buildAnnotationInferredFromId()')
-		
 		self.buildAnnotationReference()
-		logger.debug('returned from buildAnnotationReference()')
-		
 		self.buildMarkerToAnnotation()
-		logger.debug('returned from buildMarkerToAnnotation()')
-		
 		self.buildGenotypeToAnnotation()
-		logger.debug('returned from buildGenotypeToAnnotation()')
-		
 		self.buildAnnotationHeader()
-		logger.debug('returned from buildAnnotationHeader()')
-		
 		self.buildAnnotationSequenceNum()
-		logger.debug('returned from buildAnnotationSequenceNum()')
 		
 		# clear the memory state for this batch of annotations
 		self.clearGlobals()
@@ -961,17 +912,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			annotKeyCol = dbAgnostic.columnNumber(cols, '_Annot_key')
 			sourceAnnotKeyCol = dbAgnostic.columnNumber(cols, 'sourceAnnotKey')
 			
-			sourceRows = []
-			
 			for row in rows:
 				feSourceAnnotKeys = annotKeyMapper.getFeAnnotKeys(row[sourceAnnotKeyCol])
 			
 				for annotKey in annotKeyMapper.getFeAnnotKeys(row[annotKeyCol]):
 					for sourceKey in feSourceAnnotKeys:
-						sourceRows.append( (annotKey, sourceKey) )
-			
-			self.addRows('annotation_source', sourceRows)
-			rowCount = rowCount + len(sourceRows)
+						self.addRow('annotation_source', (annotKey, sourceKey) )
+						rowCount = rowCount + len(feSourceAnnotKeys)
+
 			startAnnotKey = endAnnotKey
 		
 		logger.info('Produced %d source rows' % rowCount)
