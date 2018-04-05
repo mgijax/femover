@@ -25,6 +25,8 @@ class AnnotationMapper:
     
     def getFeAnnotKeys(self, prodAnnotKey):
         if prodAnnotKey in self.prodToFe:
+            if len(self.prodToFe[prodAnnotKey]) > 1:
+                self.prodToFe[prodAnnotKey].sort()
             return self.prodToFe[prodAnnotKey]
         return []
 
