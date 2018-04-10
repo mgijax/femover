@@ -14,7 +14,6 @@
 #
 
 import Gatherer
-import VocabSorter
 import Lookup
 import logger
 import GenotypeClassifier

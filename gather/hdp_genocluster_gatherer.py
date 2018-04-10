@@ -11,6 +11,7 @@ import logger
 import gc
 import DiseasePortalUtils
 import dbAgnostic
+import MarkerUtils
 
 ###--- Globals ---###
 
@@ -462,19 +463,26 @@ class GenoclusterGatherer (Gatherer.MultiFileGatherer):
 
 		# ready to push the compressedSet into the gClusterResults
 
-		# list of rows for hdp_genocluster table, each with:
-		# (genocluster key, marker key)
-		gClusterResults = []
+		# list of rows for hdp_genocluster table, each with: (genocluster key)
+		gClusterResults = map(lambda x : [x], compressSet.keys() )
+		
+		# (genocluster key, marker key, symbol, primary ID, marker type)
+		gMarkerResults = []
+		gmPairs = {}			# (genocluster key, marker key) : 1
 
 		for clusterKey in compressSet:
 			# the cluster-result (cluster key, allele-pair info)
 			for gKey in compressSet[clusterKey]:
 				for ap1 in compressSet[clusterKey][gKey]:
 					for ap2 in ap1:
-						if (gKey, ap2[0]) in genoMarkerList \
-							and ap2[0] != None \
-							and ([clusterKey, ap2[0]]) not in gClusterResults:
-							gClusterResults.append([clusterKey, ap2[0]])
+						mKey = ap2[0]
+						gtPair = (gKey, mKey)			# genotype key, marker key
+						gcPair = (clusterKey, mKey)		# genocluster key, marker key
+
+						if (gtPair in genoMarkerList) and (gtPair[1] != None) and (gcPair not in gmPairs):
+							gmPairs[gcPair] = 1
+							gMarkerResults.append( (clusterKey, mKey, MarkerUtils.getSymbol(mKey),
+								MarkerUtils.getPrimaryID(mKey), MarkerUtils.getMarkerType(mKey)) )
 
 				# need to pick up any additional markers that
 				# this genotype was rolled-up to (like EC
@@ -482,14 +490,15 @@ class GenoclusterGatherer (Gatherer.MultiFileGatherer):
 
 				if genotypeToMarkers.has_key(gKey):
 					for mKey in genotypeToMarkers[gKey]:
-						t = [ clusterKey, mKey ]
-						if t not in gClusterResults:
-						    gClusterResults.append(t)
+						gcPair = (clusterKey, mKey)
+						if gcPair not in gmPairs:
+							gmPairs[gcPair] = 1
+							gMarkerResults.append( (clusterKey, mKey, MarkerUtils.getSymbol(mKey),
+								MarkerUtils.getPrimaryID(mKey), MarkerUtils.getMarkerType(mKey)) )
 
-		logger.debug('Found %d marker/genocluster pairs' % \
-			len(gClusterResults))
+		logger.debug('Found %d marker/genocluster pairs' % len(gMarkerResults))
 
-		gClusterCols = [ 'hdp_genocluster_key', '_Marker_key' ]
+		gClusterCols = [ 'hdp_genocluster_key' ]
 		self.output.append ( (gClusterCols, gClusterResults) )
 
 		gCols = [ 'hdp_genocluster_key', '_Genotype_key' ]
@@ -500,6 +509,8 @@ class GenoclusterGatherer (Gatherer.MultiFileGatherer):
 		  'term', 'has_backgroundnote', 'genotermref_count' ]
 		self.output.append( (gannotCols, gannotResults) )
 
+		gMarkerCols = [ 'hdp_genocluster_key', 'marker_key', 'symbol', 'primary_id', 'marker_type', ]
+		self.output.append( (gMarkerCols, gMarkerResults) )
 		return
 
 ###--- globals ---###
@@ -584,7 +595,7 @@ cmds = [
 
 files = [
 	('hdp_genocluster',
-		[ Gatherer.AUTO, 'hdp_genocluster_key', '_Marker_key' ],
+		[ Gatherer.AUTO, 'hdp_genocluster_key' ],
           'hdp_genocluster'),
 
 	('hdp_genocluster_genotype',
@@ -596,6 +607,10 @@ files = [
 		  '_AnnotType_key', 'qualifier_type', 'term_type', 'accID',
 		  'term', 'has_backgroundnote', 'genotermref_count' ],
           'hdp_genocluster_annotation'),
+	
+	('hdp_genocluster_marker',
+		[ Gatherer.AUTO, 'hdp_genocluster_key', 'marker_key', 'symbol', 'primary_id', 'marker_type', ],
+		'hdp_genocluster_marker'),
 	]
 
 # global instance of a GenoclusterGatherer

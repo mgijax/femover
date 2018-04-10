@@ -13,7 +13,7 @@ import tempfile
 import transform
 import constants as C
 import go_isoforms
-
+import gc
 
 def _createSequenceNumTables():
     """
@@ -25,31 +25,37 @@ def _createSequenceNumTables():
     # by_vocab sort
     logger.debug("creating vocab seqnum temp tables")
     _createVocabSequenceNums()
+    gc.collect()
     
     # by_annottype sort
     logger.debug("creating annottype seqnum temp tables")
     _createAnnotTypeSequenceNums()
+    gc.collect()
     
     # by_term sort
     logger.debug("creating term alpha seqnum temp tables")
     _createTermAlphaSequenceNums()
+    gc.collect()
 
     # by_vocab_dag sort
     logger.debug("creating dag structure seqnum temp tables")
     _createVocabDagSequenceNums()
-    logger.debug("creating vocab dag seqnum temp tables")
+    gc.collect()
 
     # by_dag_structure sort
+    logger.debug("creating vocab dag seqnum temp tables")
     _createDagStructureSequenceNums()
+    gc.collect()
 
     # by_object_dag sorts
     logger.debug("creating object type + dag seqnum temp tables")
     _createObjectDagSequenceNums()
+    gc.collect()
     
     # by_isoform sort
     logger.debug("creating isoform seqnum temp tables")
     _createIsoformSequenceNums()
-    
+    gc.collect()
     
     logger.debug("done creating sequencenum temp tables")
     

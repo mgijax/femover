@@ -11,49 +11,60 @@ import constants as C
 
 class OrganismFinder:
     """
-    Finds Organisms for inferredfrom IDs
+    Finds Organisms for inferredfrom IDs.
+    Note: Despite my best efforts, this is still terribly slow to process a batch at a time.
+        (30 seconds per batch for sequences, 10 for alleles, 45 for markers, etc.)  So, I'm
+        going to trade memory for time here and try just loading them all at once.  At this
+        point (March 2018), there are about 307,000 IDs that can be mapped to an organism.
+        Shouldn't be an unreasonable amount of memory.
     """
 
-    def __init__ (self, annotBatchTableName):
+    def __init__ (self):
         """
-        Initialize all lookups for annotations where
-            _annot_key exists in annotBatchTableName
+        Initialize all lookups for annotations where inferred-from ID can be mapped to an organism
         """
         
         self.idCache = {}    # maps from ID -> organism key
         self.organismCache = {}    # maps from organism key -> name
+        self.buildTempTable()
 
         # base query for object lookups; fill in organism key field,
         # extra table(s), and extra where clause(s)
-        self.baseQuery = '''with annotations as (
-            select va._Annot_key
-            from %s abt, voc_annot va
-            where abt._Annot_key = va._Annot_key
-                and va._AnnotType_key not in (%s, %s)
-            ), evidence_id as(
-            select aa.accID
-            from annotations va,
-                voc_evidence ve, 
-                acc_accession aa
-            where ve._Annot_key = va._Annot_key
-                and aa._LogicalDB_key != %s
-                and ve._AnnotEvidence_key = aa._Object_key
-                and aa._MGIType_key = 25)
-            select distinct eid.accID, %%s
+        self.baseQuery = '''select distinct eid.accID, %s
             from evidence_id eid,
                 acc_accession bb,
-                %%s
+                %s
             where eid.accID = bb.accID
-                and %%s''' % (
-            annotBatchTableName, C.DO_MARKER_TYPE, C.MP_MARKER_TYPE, C.CHEBI_LDB_KEY)
+                and %s''' 
         
         self.cacheYeast()
         self.cacheSequences()
         self.cacheAlleles()
         self.cacheMarkers()
         self.cacheOrganisms()
+        self.dropTempTable()
         
+    def buildTempTable(self):
+        dbAgnostic.execute('''select distinct aa.accID
+            into temp evidence_id
+            from voc_annot va,
+                voc_evidence ve, 
+                acc_accession aa
+            where ve._Annot_key = va._Annot_key
+                and va._AnnotType_key not in (%s, %s)
+                and aa._LogicalDB_key != %s
+                and ve._AnnotEvidence_key = aa._Object_key
+                and aa._MGIType_key = 25''' % (C.DO_MARKER_TYPE, C.MP_MARKER_TYPE, C.CHEBI_LDB_KEY) )
 
+        dbAgnostic.execute('create unique index on evidence_id (accID)')
+        (cols, rows) = dbAgnostic.execute('select count(1) from evidence_id')
+        logger.debug('Built evidence_id table with %d rows' % rows[0][0])
+        return
+    
+    def dropTempTable(self):
+        dbAgnostic.execute('drop table evidence_id')
+        return
+    
     def cacheGeneric(self, cmd, objectType):
         (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -126,5 +137,4 @@ class OrganismFinder:
     def getOrganism(self, accID):
         if self.idCache.has_key(accID):
             return self.organismCache[self.idCache[accID]]
-    
     

@@ -9,6 +9,8 @@ import AgeUtils
 import symbolsort
 from expression_ht import samples
 
+VocabSorter.setVocabs(90)		# EMAPA
+
 ###--- Globals ---###
 
 expKeyCol = None		# column indexes populated by cacheColumns()
