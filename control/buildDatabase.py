@@ -59,6 +59,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-M|-n|-o|-p|-r|-s|-x|-X] [-G
 	-o : Human Disease Portal
 	-p : Probes
 	-s : Sequences
+	-S : Strains
 	-r : References
 	-v : Vocabularies
 	-x : eXpression (GXD Data plus GXD Literature Index)
@@ -250,7 +251,8 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_source', 'sequence_sequence_num',
 		'sequence_clone_collection', 'sequence_provider_map',
 	]
-
+STRAINS = [ 'strain',
+	]
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent', 'term_child',
 	'term_sequence_num', 'term_ancestor', 'queryform_option', 'term', 'term_counts',
 	'term_emap', 'term_emaps_child', 'go_evidence_category', 'term_note', 'term_sibling',
@@ -276,7 +278,7 @@ FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
-	'-X' : HT_EXPRESSION,	'-M' : MAPPING,
+	'-X' : HT_EXPRESSION,	'-M' : MAPPING,	'-S' : STRAINS,
 	}
 
 # boolean; are we doing a build of the complete front-end database?
