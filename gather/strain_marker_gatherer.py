@@ -11,7 +11,7 @@ import Lookup
 ###--- Globals ---###
 
 MARKER_KEY_LOOKUP = Lookup.Lookup('acc_accession', 'accid', '_Object_key', stringSearch = True)
-STRAIN_ID_LOOKUP = Lookup.Lookup('acc_accession', '_Object_key', 'accID', initClause = '_MGIType_key = 10')
+STRAIN_ID_LOOKUP = Lookup.AccessionLookup('Strain')
 
 ###--- Classes ---###
 
@@ -40,12 +40,13 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 			
 		# look up strain keys, strain IDs, and canonical marker keys
 		strainCol = dbAgnostic.columnNumber(cols, 'strain')
+		strainKeyCol = dbAgnostic.columnNumber(cols, 'strain_key')
 		markerCol = dbAgnostic.columnNumber(cols, 'canonical_MGI_ID')
 		
 		cols = cols + [ 'marker_key', 'strain_id' ]
 		for row in rows:
 			row.append(MARKER_KEY_LOOKUP.get(row[markerCol]))
-			row.append(STRAIN_ID_LOOKUP.get(row[-1]))
+			row.append(STRAIN_ID_LOOKUP.get(row[strainKeyCol]))
 		logger.debug('Added marker and strain data')
 
 		# strip out rows that don't have a strain name

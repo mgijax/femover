@@ -4,6 +4,7 @@
 
 import dbAgnostic
 import logger
+import cmd
 
 ###--- Classes ---###
 
@@ -81,3 +82,32 @@ class Lookup:
 
 		self.cache[searchTerm] = match
 		return match
+
+class AccessionLookup:
+	def __init__ (self, mgiType, logicalDB = 'MGI', preferred = 1):
+		self.mgiType = mgiType
+		self.logicalDB = logicalDB
+		self.preferred = preferred
+		return
+	
+	def get (self, objectKey):
+		# returns the first ID returned for the given objectKey, logicalDB, and preferred status
+
+		if objectKey == None:
+			return None
+		
+		cmd = '''select a.accID
+			from acc_accession a, acc_logicaldb ldb, acc_mgitype t
+			where a._Object_key = %s
+				and a._LogicalDB_key = ldb._LogicalDB_key
+				and ldb.name = '%s'
+				and a._MGIType_key = t._MGIType_key
+				and t.name = '%s'
+				and a.preferred = %s
+			limit 1''' % (objectKey, self.logicalDB, self.mgiType, self.preferred)
+			
+		logger.debug(cmd)
+		(cols, rows) = dbAgnostic.execute(cmd)
+		if rows:
+			return rows[0][0]
+		return None
