@@ -252,6 +252,7 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_clone_collection', 'sequence_provider_map',
 	]
 STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
+		'strain_synonym',
 	]
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent', 'term_child',
 	'term_sequence_num', 'term_ancestor', 'queryform_option', 'term', 'term_counts',
