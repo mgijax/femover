@@ -45,10 +45,12 @@ class StrainToReferenceGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select mra._Object_key, r.year, c.numericPart, mra._Refs_key
-		from mgi_reference_assoc mra, bib_citation_cache c, bib_refs r
+		from mgi_reference_assoc mra, bib_citation_cache c, bib_refs r, prb_strain ps
 		where mra._RefAssocType_key in (1009, 1010)
 			and mra._Refs_key = c._Refs_key
 			and mra._Refs_key = r._Refs_key
+			and mra._Object_key = ps._Strain_key
+			and ps.strain not ilike '%involves%'
 		order by 1, 2, 3'''
 	]
 

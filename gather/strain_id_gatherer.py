@@ -18,9 +18,11 @@ cmds = [
 	# 0. accession IDs for strains.  Order so MGI IDs come first, preferred IDs before secondary.
 	'''select a._Object_key, a._LogicalDB_key, ldb.name, a.preferred, a.accID, a.preferred, a.private,
 		row_number() over (order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID) as sequence_num
-	from acc_accession a, acc_logicaldb ldb
+	from acc_accession a, acc_logicaldb ldb, prb_strain ps
 	where a._MGIType_key = 10
 		and a._LogicalDB_key = ldb._LogicalDB_key
+		and a._Object_key = ps._Strain_key
+		and ps.strain not ilike '%involves%'
 	order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID''',
 	]
 
