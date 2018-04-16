@@ -12,6 +12,52 @@ import Lookup
 
 MARKER_KEY_LOOKUP = Lookup.Lookup('acc_accession', 'accid', '_Object_key', stringSearch = True)
 STRAIN_ID_LOOKUP = Lookup.AccessionLookup('Strain')
+STRAIN_CACHE = {}		# ID : (name, strain key)
+
+STRAIN_ORDER = [
+	'MGI:3028467',	# C57BL/6J
+	'MGI:3037980',	# 129S1/SvImJ
+	'MGI:2159747',	# A/J
+	'MGI:2159745',	# AKR/J
+	'MGI:2159737',	# BALB/cJ
+	'MGI:2159741', 	# C3H/HeJ
+	'MGI:3056279',	# C57BL/6NJ
+	'MGI:2159793',	# CAST/EiJ
+	'MGI:2159756',	# CBA/J
+	'MGI:2684695',	# DBA/2J
+	'MGI:2163709',	# FVB/NJ
+	'MGI:2159761',	# LP/J
+	'MGI:2160559',	# M. caroli
+	'MGI:5651824',	# M. pahari
+	'MGI:2162056',	# NOD/ShiLtJ
+	'MGI:2173835',	# NZO/HlLtJ
+	'MGI:2160654',	# PWK/PhJ
+	'MGI:2160671',	# SPRET/EiJ
+	'MGI:2160667',	# WSB/EiJ
+	]
+
+###--- Functions ---###
+
+def getStrainSequenceNum(strainID):
+	if strainID in STRAIN_ORDER:
+		return STRAIN_ORDER.index(strainID)
+	return len(STRAIN_ORDER) + 1
+
+def getStrain(strainID):
+	# returns (name, key) for given strain ID
+	global STRAIN_CACHE
+	
+	if strainID not in STRAIN_CACHE:
+		cmd = '''select ps.strain, ps._Strain_key
+			from acc_accession a, prb_strain ps
+			where a._MGIType_key = 10
+			and a.accID = '%s'
+			and a._Object_key = ps._Strain_key''' % strainID
+		
+		(cols, rows) = dbAgnostic.execute(cmd)
+		STRAIN_CACHE[strainID] = rows[0]
+
+	return STRAIN_CACHE[strainID]
 
 ###--- Classes ---###
 
@@ -58,6 +104,61 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		
 		return cols, rows
 	
+	def findMissingStrainsPerMarker(self):
+		# returns { marker key : list of strain IDs with no data }
+		
+		markerCol = dbAgnostic.columnNumber(self.finalColumns, 'canonical_marker_key')
+		strainCol = dbAgnostic.columnNumber(self.finalColumns, 'strain_id')
+		
+		existing = {}
+		for row in self.finalResults:
+			markerKey = row[markerCol]
+			strainID = row[strainCol]
+
+			if markerKey not in existing:
+				existing[markerKey] = set()
+			existing[markerKey].add(strainID)
+			
+		markers = existing.keys()
+		markers.sort()
+		
+		ct = 0
+		missing = {}
+		for markerKey in markers:
+			for strainID in STRAIN_ORDER:
+				if strainID not in existing[markerKey]:
+					if markerKey not in missing:
+						missing[markerKey] = []
+					missing[markerKey].append(strainID)
+					ct = ct + 1
+
+		logger.debug('Found %d missing rows for %d markers' % (ct, len(missing)))
+		return missing
+
+	def generateMissingStrainMarkers(self):
+		# generate strain/marker rows for strains where a marker has no data
+		
+		missing = self.findMissingStrainsPerMarker()
+		markers = missing.keys()
+		markers.sort()
+		smKey = self.finalResults[-1][0]			# last strain/marker key assigned
+		ct = 0
+		
+		for markerKey in markers:
+			for strainID in missing[markerKey]:
+				strain, strainKey = getStrain(strainID)
+				seqNum = getStrainSequenceNum(strainID)
+
+				smKey = smKey + 1
+				r = [ smKey, markerKey, strainKey, strain, strainID,
+						None, None, None, None, None, None, seqNum
+					]
+				self.finalResults.append (r)
+				ct = ct + 1
+
+		logger.debug('Generated %d filler rows' % ct)
+		return
+	
 	def collateResults(self):
 		self.finalColumns = [ 'strain_marker_key', 'canonical_marker_key', 'strain_key',
 			'strain_name', 'strain_id', 'feature_type', 'chromosome', 'start_coordinate',
@@ -77,20 +178,20 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		endCoordCol = dbAgnostic.columnNumber(cols, 'strain_end')
 		strandCol = dbAgnostic.columnNumber(cols, 'strain_strand')
 		
-		seqNum = 1
 		for row in rows:
 			length = None
 			if row[startCoordCol] and row[endCoordCol]:
 				length = abs(int(row[endCoordCol]) - int(row[startCoordCol])) + 1
 				
+			seqNum = getStrainSequenceNum(row[strainIDCol])
 			r = [ row[smKeyCol], row[markerKeyCol], row[strainKeyCol],
 					row[strainCol], row[strainIDCol], row[typeCol], row[chromosomeCol],
 					row[startCoordCol], row[endCoordCol], row[strandCol], length, seqNum,
 				]
 			self.finalResults.append(r)
-			seqNum = seqNum + 1
 			
 		logger.debug('Built %d rows with %d cols' % (len(self.finalResults), len(self.finalColumns)))
+		self.generateMissingStrainMarkers()
 		return
 	
 ###--- globals ---###
