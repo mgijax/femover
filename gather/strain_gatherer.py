@@ -29,8 +29,11 @@ cmds = [
 			and preferred = 1
 		group by 1
 		)
-		select s._Strain_key, s.strain, a.accID
+		select s._Strain_key, s.strain, a.accID, st.term as strain_type,
+			sp.term as species, s.standard
 		from prb_strain s
+		inner join voc_term st on (s._StrainType_key = st._Term_key)
+		inner join voc_term sp on (s._Species_key = sp._Term_key)
 		left outer join acc_accession a on (
 			s._Strain_key = a._Object_key
 			and a._MGIType_key = 10
@@ -44,7 +47,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Strain_key', 'strain', 'accID', ]
+fieldOrder = [ '_Strain_key', 'strain', 'accID', 'strain_type', 'species', 'standard', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'strain'
