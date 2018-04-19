@@ -42,7 +42,6 @@ comments = {
 		},
 	Table.INDEX : {
 		'by_strain' : 'easy lookup of the strains ordered between m and n',
-		'strain_key' : 'primar key',
 		},
 	}
 
