@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
 	strain_type		text	null,
 	species			text	null,
 	is_standard		int		not null,
+	is_sequenced	int		not null,
 	PRIMARY KEY(strain_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -47,6 +48,7 @@ comments = {
 		'strain_type' : 'high-level type of strain (attributes are more specific)',
 		'species' : 'type of mouse for this strain',
 		'is_standard' : '0/1 flag for whether this is an official strain or not',
+		'is_sequenced' : '0/1 flag for whether this is one of the 19 sequenced strains or not',
 		},
 	Table.INDEX : {
 		'primary_id' : 'quick access by primary strain ID',

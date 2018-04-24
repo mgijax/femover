@@ -3,6 +3,7 @@
 # gathers data for the 'strain' table in the front-end database
 
 import Gatherer
+from strain_marker_gatherer import STRAIN_ORDER
 
 ###--- Classes ---###
 
@@ -15,6 +16,13 @@ StrainGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
+	# 0. load a temp table with sequence keys for the 19 sequenced strains
+	'''select _Object_key as _Strain_key
+		into temp table sequenced_strains
+		from acc_accession
+		where _MGIType_key = 10
+			and accID in ('%s')''' % "','".join(STRAIN_ORDER),
+		
 	# 0. Some strains have no preferred ID, others have only a non-MGI preferred ID, and most
 	# have at least a preferred MGI ID, while some also have secondary IDs and preferred non-MGI IDs.
 	# To choose an ID, we want to:
@@ -30,10 +38,14 @@ cmds = [
 		group by 1
 		)
 		select s._Strain_key, s.strain, a.accID, st.term as strain_type,
-			sp.term as species, s.standard
+			sp.term as species, s.standard, case
+				when ss._Strain_key is null then 0
+				else 1
+				end as is_sequenced
 		from prb_strain s
 		inner join voc_term st on (s._StrainType_key = st._Term_key)
 		inner join voc_term sp on (s._Species_key = sp._Term_key)
+		left outer join sequenced_strains ss on (s._Strain_key = ss._Strain_key) 
 		left outer join acc_accession a on (
 			s._Strain_key = a._Object_key
 			and a._MGIType_key = 10
@@ -47,7 +59,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Strain_key', 'strain', 'accID', 'strain_type', 'species', 'standard', ]
+fieldOrder = [ '_Strain_key', 'strain', 'accID', 'strain_type', 'species', 'standard', 'is_sequenced']
 
 # prefix for the filename of the output file
 filenamePrefix = 'strain'
