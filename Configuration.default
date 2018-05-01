@@ -61,6 +61,12 @@ IMSR_COUNT_TIMEOUT=300		# number of seconds before a timeout occurs
 export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
 
 #
+# setting for retrieving IMSR strain data
+#
+IMSR_STRAIN_URL="http://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
+export IMSR_STRAIN_URL
+
+#
 # URL for making coordinate-based links for markers to VISTA-Point
 #
 
