@@ -81,7 +81,7 @@ class IMSRStrainData:
 	# Returns: a list of tuples, each including:
 	#		(strain name or synonym, approved nomen flag (0/1), IMSR ID, repository, source URL)
 	def queryStrains (self):
-		logger.debug ('IMSR_STRAIN_URL : %s' % self.IMSR_STRAIN_URL)
+		logger.debug ('Getting IMSR strain data from: %s' % self.IMSR_STRAIN_URL)
 
 		f = urllib2.urlopen(self.IMSR_STRAIN_URL)
 		try:
