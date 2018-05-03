@@ -5,6 +5,7 @@
 import Gatherer
 from IMSRData import IMSRStrainData
 import logger
+import StrainUtils
 
 ###--- Globals ---###
 
@@ -197,23 +198,23 @@ class StrainImsrDataGatherer (Gatherer.Gatherer):
 cmds = [
 	# 0. get the strain names themselves
 	'''select s._Strain_key, s.strain
-		from prb_strain s
-		where s.strain not ilike '%involves%' ''',
+		from prb_strain s, %s t
+		where s._Strain_key = t._Strain_key''' % StrainUtils.getStrainTempTable(),
 
 	# 1. get the synonyms for the strains
 	'''select s._Object_key, s.synonym
-		from mgi_synonym s, prb_strain ps, mgi_synonymtype t
-		where s._Object_key = ps._Strain_key
-			and ps.strain not ilike '%involves%'
+		from mgi_synonym s, %s z, mgi_synonymtype t
+		where s._Object_key = z._Strain_key
 			and s._SynonymType_key = t._SynonymType_key
-			and t._MGIType_key = 10''',
+			and t._MGIType_key = 10''' % StrainUtils.getStrainTempTable(),
 			
 	# 2. non-MGI strain IDs (skip MGI, because IMSR has no MGI strain IDs)
 	'''select a._Object_key, ldb.name, a.accID
-		from acc_accession a, acc_logicaldb ldb
+		from acc_accession a, acc_logicaldb ldb, %s t
 		where ldb.name != 'MGI'
+			and a._Object_key = t._Strain_key
 			and a._LogicalDB_key = ldb._LogicalDB_key
-			and a._MGIType_key = 10''',
+			and a._MGIType_key = 10''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

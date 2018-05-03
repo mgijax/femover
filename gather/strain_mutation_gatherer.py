@@ -5,6 +5,7 @@
 import Gatherer
 import symbolsort
 import logger
+import StrainUtils
 
 ###--- Functions ---###
 
@@ -54,6 +55,7 @@ cmds = [
 	'''select psm._Strain_key, psm._Marker_key, m.symbol as marker_symbol, ma.accID as marker_id,
 			psm._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id
 		from prb_strain_marker psm
+		inner join %s t on (psm._Strain_key = t._Strain_key)
 		inner join mrk_marker m on (psm._Marker_key = m._Marker_key)
 		inner join acc_accession ma on (psm._Marker_key = ma._Object_key
 			and ma._MGIType_key = 2
@@ -64,10 +66,7 @@ cmds = [
 			and aa._MGIType_key = 11
 			and aa._LogicalDB_key = 1
 			and aa.preferred = 1)
-		where exists (select 1 from prb_strain ps
-			where ps._Strain_key = psm._Strain_key
-			and ps.strain not ilike '%involves%')
-		order by psm._Strain_key, m.symbol, a.symbol''',
+		order by psm._Strain_key, m.symbol, a.symbol''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

@@ -5,6 +5,7 @@
 import Gatherer
 import symbolsort
 import logger
+import StrainUtils
 
 ###--- Functions ---###
 
@@ -51,11 +52,10 @@ class StrainQTLGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'''select ps._Strain_key, m._Marker_key, m.symbol as marker_symbol, ma.accID as marker_id,
+	'''select s._Strain_key, m._Marker_key, m.symbol as marker_symbol, ma.accID as marker_id,
 			a._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id
-		from prb_strain ps, all_allele a, voc_term t, acc_accession aa, mrk_marker m, acc_accession ma
-		where ps.strain not ilike '%involves%'
-			and ps._Strain_key = a._Strain_key
+		from %s s, all_allele a, voc_term t, acc_accession aa, mrk_marker m, acc_accession ma
+		where s._Strain_key = a._Strain_key
 			and a._Allele_Type_key = t._Term_key
 			and t.term = 'QTL'
 			and a._Allele_key = aa._Object_key
@@ -67,7 +67,7 @@ cmds = [
 			and ma._MGIType_key = 2
 			and ma._LogicalDB_key = 1
 			and ma.preferred = 1
-		order by 1, 6'''
+		order by 1, 6''' % StrainUtils.getStrainTempTable()
 	]
 
 # order of fields (from the query results) to be written to the

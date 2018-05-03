@@ -3,6 +3,7 @@
 # gathers data for the 'strain_id' table in the front-end database
 
 import Gatherer
+import StrainUtils
 
 ###--- Classes ---###
 
@@ -18,12 +19,11 @@ cmds = [
 	# 0. accession IDs for strains.  Order so MGI IDs come first, preferred IDs before secondary.
 	'''select a._Object_key, a._LogicalDB_key, ldb.name, a.preferred, a.accID, a.preferred, a.private,
 		row_number() over (order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID) as sequence_num
-	from acc_accession a, acc_logicaldb ldb, prb_strain ps
+	from acc_accession a, acc_logicaldb ldb, %s t
 	where a._MGIType_key = 10
 		and a._LogicalDB_key = ldb._LogicalDB_key
-		and a._Object_key = ps._Strain_key
-		and ps.strain not ilike '%involves%'
-	order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID''',
+		and a._Object_key = t._Strain_key
+	order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

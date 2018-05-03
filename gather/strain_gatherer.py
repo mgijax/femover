@@ -4,6 +4,7 @@
 
 import Gatherer
 from strain_marker_gatherer import STRAIN_ORDER
+import StrainUtils
 
 ###--- Classes ---###
 
@@ -29,7 +30,6 @@ cmds = [
 	#	1. prefer an MGI preferred ID
 	#	2. settle for a non-MGI preferred ID, if #1 doesn't exist
 	#	3. end up with a null preferred ID, if neither #1 nor #2 exist.
-	# Also, we only want to include strains that do not have "involves" in their name.
 	'''with minimum_ldb as (
 		select _Object_key, min(_LogicalDB_key) as _LogicalDB_key
 		from acc_accession
@@ -45,6 +45,7 @@ cmds = [
 		from prb_strain s
 		inner join voc_term st on (s._StrainType_key = st._Term_key)
 		inner join voc_term sp on (s._Species_key = sp._Term_key)
+		inner join %s t on (s._Strain_key = t._Strain_key)
 		left outer join sequenced_strains ss on (s._Strain_key = ss._Strain_key) 
 		left outer join acc_accession a on (
 			s._Strain_key = a._Object_key
@@ -53,8 +54,7 @@ cmds = [
 			and exists (select 1 from minimum_ldb ldb
 				where a._Object_key = ldb._Object_key 
 					and a._LogicalDB_key = ldb._LogicalDB_key) )
-		where s.strain not ilike '%involves%'
-		order by 1''',
+		order by 1''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

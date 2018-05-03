@@ -5,6 +5,7 @@
 import Gatherer
 import symbolsort
 import logger
+import StrainUtils
 
 ###--- Functions ---###
 
@@ -56,9 +57,9 @@ cmds = [
 	'''select s._Object_key, s.synonym, t.synonymType, c.jnumID
 		from mgi_synonym s
 		inner join mgi_synonymtype t on (s._SynonymType_key = t._SynonymType_key and t._MGIType_key = 10)
-		inner join prb_strain ps on (s._Object_key = ps._Strain_key and ps.strain not ilike '%involves%')
+		inner join %s ps on (s._Object_key = ps._Strain_key)
 		left outer join bib_citation_cache c on (s._Refs_key = c._Refs_key)
-		order by 1, 2'''
+		order by 1, 2''' % StrainUtils.getStrainTempTable()
 	]
 
 # order of fields (from the query results) to be written to the

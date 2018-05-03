@@ -3,6 +3,7 @@
 # gathers data for the 'strain_attribute' table in the front-end database
 
 import Gatherer
+import StrainUtils
 
 ###--- Classes ---###
 
@@ -17,12 +18,11 @@ StrainAttributeGatherer = Gatherer.Gatherer
 cmds = [
 	'''select va._Object_key as _Strain_key, vt.term,
 			row_number() over (order by va._Object_key, vt.term) as row_num
-		from voc_annot va, voc_term vt, prb_strain s
+		from voc_annot va, voc_term vt, %s t
 		where va._AnnotType_key = 1009
 			and va._Term_key = vt._Term_key
-			and va._Object_key = s._Strain_key
-			and s.strain not ilike '%involves%'
-		order by va._Object_key, vt.term''',
+			and va._Object_key = t._Strain_key
+		order by va._Object_key, vt.term''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

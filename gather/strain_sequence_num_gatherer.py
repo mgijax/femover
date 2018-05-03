@@ -5,6 +5,7 @@
 import Gatherer
 import symbolsort
 import logger
+import StrainUtils
 
 ###--- Globals ---###
 
@@ -55,9 +56,9 @@ class StrainSequenceNumGatherer (Gatherer.Gatherer):
 
 cmds = [
 	# 0. strain keys and names for ordering
-	'''select _Strain_key, strain
-		from prb_strain
-		where strain not ilike '%involves%' ''',
+	'''select s._Strain_key, s.strain
+		from prb_strain s, %s t
+		where s._Strain_key = t._Strain_key''' % StrainUtils.getStrainTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the
