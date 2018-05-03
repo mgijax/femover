@@ -12,6 +12,13 @@ mgiStrainName = {}			# strain name (mixed case) : [ strain keys ]
 mgiStrainNameLower = {}		# strain name (lowercase) : [ strain keys ]
 mgiSynonym = {}				# synonym (mixed case) : [ strain keys ]
 mgiSynonymLower = {}		# synonym (lowercase) : [ strain keys ]
+mgiAccID = {}				# ID : [ strain keys ]
+
+ldbOkay = [ 'EMMA', 'OBS', 'MMRRC', 'RMRC-NLAC', 'ARC', 'MUGEN' ]
+ldbNeedsPrefix = [ 'NCIMR', 'APB', 'CARD', 'ORNL', 'NIG', 'TAC' ]
+ldbJax = 'JAX Registry'
+ldbHarwell = 'Harwell'
+ldbRiken = 'RIKEN BRC'
 
 ###--- Functions ---###
 
@@ -21,6 +28,29 @@ def getImsrLines():
 
 	return IMSRStrainData().queryStrains()
 
+def tweakID(accID, ldb):
+	# adjust the 'accID' according to rules for the given 'ldb', since MGI and IMSR store
+	# IDs from the same logical database differently
+	
+	if ldb == ldbJax:
+		if not accID.startswith('JAX'):
+			return 'JAX:%s' % accID
+
+	elif ldb == ldbRiken:
+		if not accID.startswith('RBRC'):
+			return 'RBRC%s' % accID
+
+	elif ldb == ldbHarwell:
+		if accID.startswith('FESA:'):
+			accID = accID[5:]
+		return 'HAR:%s' % accID
+		
+	elif ldb in ldbNeedsPrefix:
+		if not accID.startswith(ldb):
+			return '%s:%s' % (ldb, accID)
+		
+	return accID
+
 ###--- Classes ---###
 
 class StrainImsrDataGatherer (Gatherer.Gatherer):
@@ -29,6 +59,29 @@ class StrainImsrDataGatherer (Gatherer.Gatherer):
 	# Does: queries the source database -- and IMSR -- for IMSR data about strains,
 	#	collates results, writes tab-delimited text file
 
+	def processIDs(self):
+		# process accession IDs from the database, populating mgiAccIDs
+		
+		global mgiAccID
+		
+		cols, rows = self.results[2]
+		keyCol = Gatherer.columnNumber(cols, '_Object_key')
+		idCol = Gatherer.columnNumber(cols, 'accID')
+		ldbCol = Gatherer.columnNumber(cols, 'name')
+		
+		for row in rows:
+			key = row[keyCol]
+			accID = tweakID(row[idCol], row[ldbCol])
+			
+			if accID not in mgiAccID:
+				mgiAccID[accID] = [ key ]
+			else:
+				mgiAccID[accID].append(key)
+				
+		logger.debug('Processed %d ID rows' % len(rows))
+		logger.debug('Got %d IDs' % len(mgiAccID))
+		return
+				
 	def processNames(self):
 		# process strain names from the database, populating two global dictionaries
 		
@@ -95,9 +148,11 @@ class StrainImsrDataGatherer (Gatherer.Gatherer):
 		imsrLines = getImsrLines()
 		self.processNames()
 		self.processSynonyms()
+		self.processIDs()
 				
 		# Now, we need to go through the data lines from IMSR.  For each...
-		# 1. If the IMSR strain name matches an MGI strain name, use that strain key.
+		# 0. If we can match by ID, use that strain key.
+		# 1. If not #0, if the IMSR strain name matches an MGI strain name, use that strain key.
 		# 2. If not #1, if the IMSR strain name matches an MGI synonym, use that strain key.
 		# 3. If not #2, if the IMSR strain name matches (case-insensitive) an MGI strain name, use that strain key.
 		# 4. If not #3, if the IMSR strain name matches (case-insensitive) an MGI synonym, use that strain key.
@@ -110,7 +165,10 @@ class StrainImsrDataGatherer (Gatherer.Gatherer):
 		matchType = None
 		for (imsrStrain, approved, imsrID, repository, sourceURL) in imsrLines:
 			strainKeys = []
-			if imsrStrain in mgiStrainName:
+			if imsrID in mgiAccID:
+				strainKeys = mgiAccID[imsrID]
+				matchType = 'exact match to ID'
+			elif imsrStrain in mgiStrainName:
 				strainKeys = mgiStrainName[imsrStrain]
 				matchType = 'exact match to name'
 			elif imsrStrain in mgiSynonym:
@@ -149,6 +207,13 @@ cmds = [
 			and ps.strain not ilike '%involves%'
 			and s._SynonymType_key = t._SynonymType_key
 			and t._MGIType_key = 10''',
+			
+	# 2. non-MGI strain IDs (skip MGI, because IMSR has no MGI strain IDs)
+	'''select a._Object_key, ldb.name, a.accID
+		from acc_accession a, acc_logicaldb ldb
+		where ldb.name != 'MGI'
+			and a._LogicalDB_key = ldb._LogicalDB_key
+			and a._MGIType_key = 10''',
 	]
 
 # order of fields (from the query results) to be written to the
