@@ -67,12 +67,7 @@ def tweakID(accID, ldb):
 	
 	if ldb == ldbJax:
 		if accID.startswith('JAX'):
-			accID = str(int(accID[3:]))
-		else:
-			try:
-				accID = str(int(accID))
-			except:
-				pass		# keep ID as it is
+			accID = accID[3:]
 
 	elif ldb == ldbRiken:
 		if not accID.startswith('RBRC'):
@@ -204,7 +199,7 @@ class StrainMpdDataGatherer (Gatherer.Gatherer):
 			strainKeys = []
 			if sourceID in mgiAccID:
 				strainKeys = mgiAccID[sourceID]
-				matchType = 'exact match to ID (%s)' % sourceID
+				matchType = 'exact match to ID'
 			elif mpdStrain in mgiStrainName:
 				strainKeys = mgiStrainName[mpdStrain]
 				matchType = 'exact match to name'
