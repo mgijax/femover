@@ -76,54 +76,60 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
 	def collateResults (self):
 		# produce the rows of results for the current batch of SNPs
 		
-		validSNPs = self.getValidSNPs()
-		snpIDs = self.getIDs()
-		multiCoordSNPs = self.getMultiCoordSNPs()
+#		validSNPs = self.getValidSNPs()
+#		snpIDs = self.getIDs()
+#		multiCoordSNPs = self.getMultiCoordSNPs()
 
-		(cols, rows) = self.results[0]
+		(cols, rows) = self.results[-1]
 		markerCol = Gatherer.columnNumber(cols, '_Marker_key')
-		snpCol = Gatherer.columnNumber(cols, '_ConsensusSNP_key')
+#		snpCol = Gatherer.columnNumber(cols, '_ConsensusSNP_key')
+		idCol = Gatherer.columnNumber(cols, 'accID')
 
 		for row in rows:
-			snpKey = row[snpCol]
-			if (snpKey not in validSNPs) or (snpKey not in snpIDs) or (snpKey in multiCoordSNPs):
-				continue
-			self.addRow ('batch_marker_snps', (row[markerCol], snpIDs[snpKey]))
+#			snpKey = row[snpCol]
+			self.addRow ('batch_marker_snps', (row[markerCol], row[idCol]))
 		return
 
 ###--- Setup for Gatherer ---###
 
+tempTable = 'snp_batch'
+
 cmds = [
-	# 0. SNP/marker pairs for the batch that are within the appropriate distance
+	# 0 drop any existing temp table
+	'drop table if exists %s' % tempTable,
+	
+	# 1. SNP/marker pairs for the batch that are within the appropriate distance
 	'''select distinct s._ConsensusSNP_key, s._Marker_key
+		into temp table %s
 		from snp_consensussnp_marker s
-		where s._ConsensusSNP_key >= %d
-			and s._ConsensusSNP_key < %d
+		where s._ConsensusSNP_key >= %%d
+			and s._ConsensusSNP_key < %%d
 			and s.distance_from <= 2000
-	''',
+	''' % tempTable, 
+
+	# 2. index the temp table
+	'create index %s_index on %s (_ConsensusSNP_key)' % (tempTable, tempTable),
 	
-	# 1. SNPs for the batch that have the appropriate variation class(es)
-	'''select t._ConsensusSNP_key
-		from snp_consensussnp t
-		where t._ConsensusSNP_key >= %d
-			and t._ConsensusSNP_key < %d
-			and t._VarClass_key = 1878510
-	''',
+	# 3. delete SNPs that have the wrong variation class
+	'''delete from %s
+		using snp_consensussnp t
+		where t._VarClass_key != 1878510
+			and %s._ConsensusSNP_key = t._ConsensusSNP_key
+	''' % (tempTable, tempTable),
 	
-	# 2. accession IDs for SNPs in the batch
-	'''select distinct a._Object_key as _ConsensusSNP_key, a.accID
-		from snp_accession a
-		where a._Object_key >= %d
-			and a._Object_key < %d
+	# 4. delete SNPs that have multiple coordinates
+	'''delete from %s
+		using snp_coord_cache s
+		where s.isMultiCoord = 1
+			and %s._ConsensusSNP_key = s._ConsensusSNP_key
+		''' % (tempTable, tempTable),
+
+	# 5. get SNP/marker pairs
+	'''select distinct t._Marker_key, a.accID
+		from %s t, snp_accession a
+		where t._ConsensusSNP_key = a._Object_key
 			and a._MGIType_key = 30		-- consensus SNP
-	''',
-	
-	# 3. SNPs that have multiple coordinates (to skip)
-	'''select _ConsensusSNP_key
-		from snp_coord_cache
-		where _ConsensusSNP_key >= %d
-			and _ConsensusSNP_key < %d
-			and isMultiCoord = 1''',
+		''' % tempTable,
 	]
 
 files = [
