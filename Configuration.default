@@ -67,6 +67,12 @@ IMSR_STRAIN_URL="http://www.findmice.org/report.txt?query=&states=Any&_states=1&
 export IMSR_STRAIN_URL
 
 #
+# setting for retrieving MPD strain data
+#
+MPD_STRAIN_URL="https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"
+export MPD_STRAIN_URL
+
+#
 # URL for making coordinate-based links for markers to VISTA-Point
 #
 
