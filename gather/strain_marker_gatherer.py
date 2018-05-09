@@ -4,60 +4,6 @@
 
 import Gatherer
 import logger
-import FileReader
-import dbAgnostic
-import Lookup
-
-###--- Globals ---###
-
-MARKER_KEY_LOOKUP = Lookup.Lookup('acc_accession', 'accid', '_Object_key', stringSearch = True)
-STRAIN_ID_LOOKUP = Lookup.AccessionLookup('Strain')
-STRAIN_CACHE = {}		# ID : (name, strain key)
-
-STRAIN_ORDER = [
-	'MGI:3028467',	# C57BL/6J
-	'MGI:3037980',	# 129S1/SvImJ
-	'MGI:2159747',	# A/J
-	'MGI:2159745',	# AKR/J
-	'MGI:2159737',	# BALB/cJ
-	'MGI:2159741', 	# C3H/HeJ
-	'MGI:3056279',	# C57BL/6NJ
-	'MGI:2159793',	# CAST/EiJ
-	'MGI:2159756',	# CBA/J
-	'MGI:2684695',	# DBA/2J
-	'MGI:2163709',	# FVB/NJ
-	'MGI:2159761',	# LP/J
-	'MGI:2160559',	# M. caroli
-	'MGI:5651824',	# M. pahari
-	'MGI:2162056',	# NOD/ShiLtJ
-	'MGI:2173835',	# NZO/HlLtJ
-	'MGI:2160654',	# PWK/PhJ
-	'MGI:2160671',	# SPRET/EiJ
-	'MGI:2160667',	# WSB/EiJ
-	]
-
-###--- Functions ---###
-
-def getStrainSequenceNum(strainID):
-	if strainID in STRAIN_ORDER:
-		return STRAIN_ORDER.index(strainID)
-	return len(STRAIN_ORDER) + 1
-
-def getStrain(strainID):
-	# returns (name, key) for given strain ID
-	global STRAIN_CACHE
-	
-	if strainID not in STRAIN_CACHE:
-		cmd = '''select ps.strain, ps._Strain_key
-			from acc_accession a, prb_strain ps
-			where a._MGIType_key = 10
-			and a.accID = '%s'
-			and a._Object_key = ps._Strain_key''' % strainID
-		
-		(cols, rows) = dbAgnostic.execute(cmd)
-		STRAIN_CACHE[strainID] = rows[0]
-
-	return STRAIN_CACHE[strainID]
 
 ###--- Classes ---###
 
@@ -67,48 +13,29 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 	# Does: queries the source database for primary data for strain markers,
 	#	collates results, writes tab-delimited text file
 
-	def getFromFile(self):
-		logger.debug('Reading data from file')
-		strainMarkerFile = FileReader.FileReader('../data/strain_marker_mini_set.txt')
-		cols = [
-			'canonical_symbol', 'canonical_MGI_ID', 'strain', 'strain_key', 'strain_chr',
-			'strain_start', 'strain_end', 'strain_strand', 'strain_biotype'
-			]
-		rows = FileReader.nullify(FileReader.distinct(strainMarkerFile.extract(cols)))
+	def populateStrainCaches(self):
+		# populate the global STRAIN_CACHE and STRAIN_ORDER variables
 		
-		# generate a strain key
-		cols.append('strain_marker_key')
-		key = 1
+		self.strainCache = {}		# strain ID : [ name, strain key, sequence num ]
+		self.strainOrder = []		# list of strain IDs in order to be displayed
+		
+		cols, rows = self.results[-2]
+		keyCol = Gatherer.columnNumber(cols, '_Strain_key')
+		nameCol = Gatherer.columnNumber(cols, 'strain')
+		idCol = Gatherer.columnNumber(cols, 'accID')
+		seqNumCol = Gatherer.columnNumber(cols, 'sequence_num')
+		
 		for row in rows:
-			row.append(key)
-			key = key + 1
-		logger.debug('Added strain marker keys')
-			
-		# look up strain keys, strain IDs, and canonical marker keys
-		strainCol = dbAgnostic.columnNumber(cols, 'strain')
-		strainKeyCol = dbAgnostic.columnNumber(cols, 'strain_key')
-		markerCol = dbAgnostic.columnNumber(cols, 'canonical_MGI_ID')
-		
-		cols = cols + [ 'marker_key', 'strain_id' ]
-		for row in rows:
-			row.append(MARKER_KEY_LOOKUP.get(row[markerCol]))
-			row.append(STRAIN_ID_LOOKUP.get(row[strainKeyCol]))
-		logger.debug('Added marker and strain data')
-
-		# strip out rows that don't have a strain name
-		rowNum = len(rows) - 1
-		while rowNum >= 0:
-			if not rows[rowNum][strainCol]:
-				del rows[rowNum]
-			rowNum = rowNum - 1
-		
-		return cols, rows
+			self.strainOrder.append(row[idCol])
+			self.strainCache[row[idCol]] = [ row[nameCol], row[keyCol], row[seqNumCol] ]
+		logger.debug('Got info for %d strains' % len(self.strainOrder))
+		return
 	
 	def findMissingStrainsPerMarker(self):
 		# returns { marker key : list of strain IDs with no data }
 		
-		markerCol = dbAgnostic.columnNumber(self.finalColumns, 'canonical_marker_key')
-		strainCol = dbAgnostic.columnNumber(self.finalColumns, 'strain_id')
+		markerCol = Gatherer.columnNumber(self.finalColumns, 'canonical_marker_key')
+		strainCol = Gatherer.columnNumber(self.finalColumns, 'strain_id')
 		
 		existing = {}
 		for row in self.finalResults:
@@ -125,7 +52,7 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		ct = 0
 		missing = {}
 		for markerKey in markers:
-			for strainID in STRAIN_ORDER:
+			for strainID in self.strainOrder:
 				if strainID not in existing[markerKey]:
 					if markerKey not in missing:
 						missing[markerKey] = []
@@ -138,21 +65,21 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 	def generateMissingStrainMarkers(self):
 		# generate strain/marker rows for strains where a marker has no data
 		
+		# For each marker, find the strains with no annotations.
 		missing = self.findMissingStrainsPerMarker()
 		markers = missing.keys()
 		markers.sort()
+
 		smKey = self.finalResults[-1][0]			# last strain/marker key assigned
 		ct = 0
 		
 		for markerKey in markers:
 			for strainID in missing[markerKey]:
-				strain, strainKey = getStrain(strainID)
-				seqNum = getStrainSequenceNum(strainID)
+				strain, strainKey, seqNum = self.strainCache[strainID]
 
 				smKey = smKey + 1
-				r = [ smKey, markerKey, strainKey, strain, strainID,
-						None, None, None, None, None, None, seqNum
-					]
+				r = ( smKey, markerKey, strainKey, strain, strainID,
+						None, None, None, None, None, None, seqNum )
 				self.finalResults.append (r)
 				ct = ct + 1
 
@@ -160,51 +87,69 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		return
 	
 	def collateResults(self):
-		self.finalColumns = [ 'strain_marker_key', 'canonical_marker_key', 'strain_key',
-			'strain_name', 'strain_id', 'feature_type', 'chromosome', 'start_coordinate',
-			'end_coordinate', 'strand', 'length', 'sequence_num' ]
-		self.finalResults = []
+		self.populateStrainCaches()
 		
-		cols, rows = self.getFromFile()
+		self.finalColumns, self.finalResults = self.results[-1]
+		logger.debug('Got %d rows from db' % len(self.finalResults))
 		
-		smKeyCol = dbAgnostic.columnNumber(cols, 'strain_marker_key')
-		markerKeyCol = dbAgnostic.columnNumber(cols, 'marker_key')
-		strainKeyCol = dbAgnostic.columnNumber(cols, 'strain_key')
-		strainCol = dbAgnostic.columnNumber(cols, 'strain')
-		strainIDCol = dbAgnostic.columnNumber(cols, 'strain_id')
-		typeCol = dbAgnostic.columnNumber(cols, 'strain_biotype')
-		chromosomeCol = dbAgnostic.columnNumber(cols, 'strain_chr')
-		startCoordCol = dbAgnostic.columnNumber(cols, 'strain_start')
-		endCoordCol = dbAgnostic.columnNumber(cols, 'strain_end')
-		strandCol = dbAgnostic.columnNumber(cols, 'strain_strand')
-		
-		for row in rows:
-			length = None
-			if row[startCoordCol] and row[endCoordCol]:
-				length = abs(int(row[endCoordCol]) - int(row[startCoordCol])) + 1
-				
-			seqNum = getStrainSequenceNum(row[strainIDCol])
-			r = [ row[smKeyCol], row[markerKeyCol], row[strainKeyCol],
-					row[strainCol], row[strainIDCol], row[typeCol], row[chromosomeCol],
-					row[startCoordCol], row[endCoordCol], row[strandCol], length, seqNum,
-				]
-			self.finalResults.append(r)
-			
-		logger.debug('Built %d rows with %d cols' % (len(self.finalResults), len(self.finalColumns)))
 		self.generateMissingStrainMarkers()
+		logger.debug('Added rows for missing strains')
 		return
 	
 ###--- globals ---###
 
+all_strains = 'all_strains'
+
 cmds = [
-	# 0. token query for now; will need to fill in to pull data from database
-	'select 1',
+	# 0. ordered set of strains involved in strain markers
+	'''select distinct a.accID, s._Strain_key, s.strain, case
+			when s.strain = 'C57BL/6J' then 0
+			else row_number() over (order by s.strain)
+			end sequence_num
+		into temp table %s
+		from prb_strain s, acc_accession a
+		where s._Strain_key = a._Object_key
+			and a._MGIType_key = 10
+			and a.preferred = 1
+			and a._LogicalDB_key = 1
+			and exists (select 1 from mrk_strainmarker msm
+				where s._Strain_key = msm._Strain_key)
+		order by 4''' % all_strains,
+		
+	# 1-2. add indexes to temp table
+	'create unique index %s_idx1 on %s (accID)' % (all_strains, all_strains),
+	'create unique index %s_idx2 on %s (_Strain_key)' % (all_strains, all_strains),
+
+	# 3. pull in the standard set of strains (already in order)
+	'''select _Strain_key, strain, accID, sequence_num
+		from %s
+		order by sequence_num''' % all_strains,
+	
+	# 4. all strain-marker records from the database
+	'''select msm._StrainMarker_key as strain_marker_key, m._Marker_key as canonical_marker_key,
+			s._Strain_key, s.strain, s.accID as strain_id, 
+			gm.rawBiotype as feature_type, ch.chromosome,
+			mcf.startCoordinate::bigint as start_coordinate,
+			mcf.endCoordinate::bigint as end_coordinate, mcf.strand,
+			(abs(mcf.endCoordinate - mcf.startCoordinate) + 1)::bigint as length,
+			s.sequence_num
+		from mrk_strainmarker msm
+		inner join mrk_marker m on (m._Marker_key = msm._Marker_key)
+		inner join %s s on (msm._Strain_key = s._Strain_key)
+		inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
+		left outer join acc_accession a_seq on (a.accID = a_seq.accID and a_seq._MGIType_key = 19)
+		left outer join seq_genemodel gm on (a_seq._Object_key = gm._Sequence_key)
+		left outer join map_coord_feature mcf on (a_seq._Object_key = mcf._Object_key and mcf._MGIType_key = 19)
+		left outer join map_coordinate mc on (mcf._Map_key = mc._Map_key and mc._MGIType_key = 27)
+		left outer join map_coord_collection col on (mc._Collection_key = col._Collection_key and col.abbreviation = 'MGP')
+		left outer join mrk_chromosome ch on (mc._Object_key = ch._Chromosome_key)
+		order by m._Marker_key, s.sequence_num''' % all_strains,
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'strain_marker_key', 'canonical_marker_key', 'strain_key', 'strain_name', 'strain_id',
+	'strain_marker_key', 'canonical_marker_key', '_Strain_key', 'strain', 'strain_id',
 	'feature_type', 'chromosome', 'start_coordinate', 'end_coordinate', 'strand', 'length', 'sequence_num',
 	]
 
