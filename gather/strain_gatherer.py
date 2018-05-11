@@ -3,7 +3,6 @@
 # gathers data for the 'strain' table in the front-end database
 
 import Gatherer
-from strain_marker_gatherer import STRAIN_ORDER
 import StrainUtils
 
 ###--- Classes ---###
@@ -18,11 +17,9 @@ StrainGatherer = Gatherer.Gatherer
 
 cmds = [
 	# 0. load a temp table with sequence keys for the 19 sequenced strains
-	'''select _Object_key as _Strain_key
+	'''select distinct _Strain_key
 		into temp table sequenced_strains
-		from acc_accession
-		where _MGIType_key = 10
-			and accID in ('%s')''' % "','".join(STRAIN_ORDER),
+		from mrk_strainmarker''',
 		
 	# 0. Some strains have no preferred ID, others have only a non-MGI preferred ID, and most
 	# have at least a preferred MGI ID, while some also have secondary IDs and preferred non-MGI IDs.
