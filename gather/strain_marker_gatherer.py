@@ -62,6 +62,16 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		logger.debug('Found %d missing rows for %d markers' % (ct, len(missing)))
 		return missing
 
+	def getMaxStrainMarkerKey(self):
+		# find the highest strain-marker key in the results so far
+		
+		smKeyCol = Gatherer.columnNumber(self.finalColumns, 'strain_marker_key')
+		maxKey = 0
+		for row in self.finalResults:
+			maxKey = max(maxKey, row[smKeyCol])
+		logger.debug('Found max strain_marker_key = %d' % maxKey)
+		return maxKey
+
 	def generateMissingStrainMarkers(self):
 		# generate strain/marker rows for strains where a marker has no data
 		
@@ -70,7 +80,7 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		markers = missing.keys()
 		markers.sort()
 
-		smKey = self.finalResults[-1][0]			# last strain/marker key assigned
+		smKey = self.getMaxStrainMarkerKey()
 		ct = 0
 		
 		for markerKey in markers:
