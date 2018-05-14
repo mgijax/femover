@@ -200,11 +200,9 @@ cmds = [
 		group by _Refs_key''',
 		
 	# 10. count of mouse strains per reference
-	'''select mra._Refs_key, count(distinct mra._Object_key) as numStrains
-		from mgi_reference_assoc mra, %s t
-		where mra._RefAssocType_key in (1009, 1010)
-			and mra._Object_key = t._Strain_key
-		group by mra._Refs_key''' % StrainUtils.getStrainTempTable(),
+	'''select _Refs_key, count(distinct _Strain_key) as numStrains
+		from %s
+		group by _Refs_key''' % StrainUtils.getStrainReferenceTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the output file
