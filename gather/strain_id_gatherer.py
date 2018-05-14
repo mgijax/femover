@@ -17,6 +17,7 @@ StrainIDGatherer = Gatherer.Gatherer
 
 cmds = [
 	# 0. accession IDs for strains.  Order so MGI IDs come first, preferred IDs before secondary.
+	#	Suppress FESA IDs for now, as we have nowhere to link them to.
 	'''select a._Object_key, a._LogicalDB_key, ldb.name, a.preferred, a.accID, a.preferred, a.private,
 		row_number() over (order by a._Object_key, a._LogicalDB_key, a.preferred desc, a.accID) as sequence_num
 	from acc_accession a, acc_logicaldb ldb, %s t
