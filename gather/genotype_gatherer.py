@@ -11,6 +11,7 @@ import logger
 import string
 import TagConverter
 import GenotypeClassifier
+import StrainUtils
 
 ###--- Functions ---###
 
@@ -207,20 +208,20 @@ cmds = [
 	# 5. assumes that a genotype has only one ID, that it is from MGI, and
 	# that it is both preferred and non-private
 	'''select distinct g._Genotype_key, s.strain, a.accID, g.note,
-			g.isConditional, t.term
-		from gxd_genotype g, acc_accession a, prb_strain s, voc_term t
-		where g._Strain_key = s._Strain_key
-			and g._Genotype_key = a._Object_key
+			g.isConditional, t.term, sid.strain_id
+		from gxd_genotype g
+		inner join acc_accession a on (g._Genotype_key = a._Object_key
 			and a._MGIType_key = 12
 			and a._LogicalDB_key = 1
-			and a.preferred = 1
-			and g._ExistsAs_key = t._term_key
-	''',
+			and a.preferred = 1)
+		inner join prb_strain s on (g._Strain_key = s._Strain_key)
+		inner join voc_term t on (g._ExistsAs_key = t._term_key)
+		left outer join %s sid on (g._Strain_key = sid._Strain_key)''' % StrainUtils.getStrainIDTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Genotype_key', 'strain', 'accID', 'isConditional', 'note',
+fieldOrder = [ '_Genotype_key', 'strain', 'strain_id', 'accID', 'isConditional', 'note',
 	'combo1', 'combo2', 'hasImage', 'hasPhenoData', 'hasDiseaseModel',
 	'classification', 'cell_lines', 'term' ]
 

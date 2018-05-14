@@ -5,6 +5,7 @@
 import Gatherer
 import re
 import logger
+import StrainUtils
 
 ###--- Constants ---###
 NOT_SPECIFIED="Not Specified"
@@ -166,7 +167,6 @@ class AlleleGatherer (Gatherer.Gatherer):
 		typeCol = Gatherer.columnNumber (columns, '_Allele_Type_key')
 		symCol = Gatherer.columnNumber (columns, 'symbol')
 		modeCol = Gatherer.columnNumber (columns, '_Mode_key')
-		strainCol = Gatherer.columnNumber(columns, 'strain')
 		transCol = Gatherer.columnNumber(columns, '_Transmission_key')
 		collCol = Gatherer.columnNumber(columns, 'collxn')
 
@@ -331,15 +331,17 @@ cmds = [
 	# 7. assume all alleles have an MGI ID
 	'''select a._Allele_key, a.symbol, a.name, a._Allele_Type_key,
 		ac.accID, ac._LogicalDB_key, s.strain, a._Mode_key,
-		a._Transmission_key, a.isWildType, a.isMixed, coll.term collxn
-	from all_allele a, acc_accession ac, prb_strain s,voc_term coll
-	where a._Allele_key = ac._Object_key
+		a._Transmission_key, a.isWildType, a.isMixed, coll.term collxn,
+		sid.strain_id
+	from all_allele a
+	inner join acc_accession ac on (a._Allele_key = ac._Object_key
 		and ac._MGIType_key = 11
 		and ac.preferred = 1 
-		and ac._LogicalDB_key = 1
-		and a._Strain_key = s._Strain_key
 		and ac.private = 0
-		and coll._term_key=a._collection_key''',
+		and ac._LogicalDB_key = 1)
+	inner join prb_strain s on (a._Strain_key = s._Strain_key)
+	inner join voc_term coll on (coll._term_key=a._collection_key)
+	left outer join %s sid on (a._Strain_key = sid._Strain_key)''' % StrainUtils.getStrainIDTempTable(),
 
 	# 8. map allele_key to chromosome
 	'''
@@ -362,7 +364,7 @@ fieldOrder = [
 	'_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
 	'accID', 'logicalDB', 'alleleType', 'alleleSubType','chromosome','collection',
 	'isRecombinase', 'isWildType', 'isMixed', 'driver', 'driver_key', 'inducibleNote',
-	'molecularDescription', 'strain', 'strainLabel', 'inheritanceMode',
+	'molecularDescription', 'strain', 'strainLabel', 'strain_id', 'inheritanceMode',
 	'holder', 'companyID', 'transmission', 'transmission_phrase',
 	'imageKey', 'hasDiseaseModel', 'repository', 'jrsID',
 	]

@@ -19,6 +19,7 @@ tableName = 'genotype'
 createStatement = '''CREATE TABLE %s  ( 
 	genotype_key		int		not null,
 	background_strain	text	null,
+	strain_id			text	null,
 	primary_id		text	null,
 	is_conditional		int		not null,
 	note			text	null,
@@ -49,6 +50,7 @@ comments = {
 	Table.COLUMN : {
 		'genotype_key' : 'unique key identifying this genotype, same as _Genotype_key in mgd',
 		'background_strain' : 'name of the mouse strain used as a background',
+		'strain_id' : 'ID for linking to strain detail page (for strains moved to fe database)',
 		'primary_id' : 'preferred accession ID for this genotype',
 		'is_conditional' : '1 if this is a conditional genotype, 0 if not',
 		'note' : 'note for the genotype',

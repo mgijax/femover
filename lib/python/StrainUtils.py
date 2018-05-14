@@ -8,6 +8,7 @@ import logger
 
 STRAIN_TEMP_TABLE = None        # temp table containing strain keys selected for front-end database
 STRAIN_REF_TEMP_TABLE = None    # temp table containins strain key / reference key pairs for front-end db
+STRAIN_ID_TEMP_TABLE = None     # temp table containing strain key / primary MGI ID pairs for front-end db
 
 ###--- Functions ---###
 
@@ -146,3 +147,31 @@ def getStrainReferenceTempTable():
     logger.debug(' - has %d rows' % rows[0][0])
     return STRAIN_REF_TEMP_TABLE
     
+def getStrainIDTempTable():
+    # Returns: the name of a temp table that contains strain key / primary MGI ID pairs to be
+    #   part of the front-end database.  Creates the table first, if it doesn't exist yet.'
+    
+    global STRAIN_ID_TEMP_TABLE
+    
+    if STRAIN_ID_TEMP_TABLE:
+        return STRAIN_ID_TEMP_TABLE
+    
+    STRAIN_ID_TEMP_TABLE = 'strain_ids'
+    
+    cmd0 = '''select f._Strain_key, a.accID as strain_id
+        into temp table %s
+        from acc_accession a, %s f
+        where a._MGIType_key = 10
+            and a._Object_key = f._Strain_key
+            and a._LogicalDB_key = 1
+            and a.preferred = 1''' % (STRAIN_ID_TEMP_TABLE, getStrainTempTable())
+    dbAgnostic.execute(cmd0)
+            
+    cmd1 = 'create index strainIDIndex1 on %s (_Strain_key)' % STRAIN_ID_TEMP_TABLE
+    dbAgnostic.execute(cmd1)
+    
+    cmd2 = 'select count(1) from %s' % STRAIN_ID_TEMP_TABLE
+    cols, rows = dbAgnostic.execute(cmd2)
+    
+    logger.debug('Put %d strain IDs in temp table' % rows[0][0])
+    return STRAIN_ID_TEMP_TABLE
