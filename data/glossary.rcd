@@ -5218,15 +5218,6 @@ definition=See <A HREF="!FEWI_URL!glossary/cloning_vector">Cloning Vector</A>.
 ]
 
 [ 
-key=vega
-displayName=VEGA
-definition=Vertebrate Genome Annotation.  The <a href="http://vega.sanger.ac.uk/ ">VEGA</a> \
-database is a central repository for high quality, frequently updated, manual \
-annotation of vertebrate  finished genome sequence. VEGA developed within \
-Ensembl as a joint  project between EMBL-EBI and the Sanger Institute.
-]
-
-[ 
 key=virus 
 displayName=Virus 
 definition=A noncellular biological entity that requires a host cell for reproduction. Viruses consist of a \ 

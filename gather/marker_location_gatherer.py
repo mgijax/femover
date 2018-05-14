@@ -9,10 +9,6 @@ import config
 
 offset = 'cmOffset'
 
-NCBI_GENE_MODEL = 59
-ENSEMBL_GENE_MODEL = 60
-VEGA_GENE_MODEL = 85
-
 ###--- Classes ---###
 
 class MarkerLocationGatherer (Gatherer.Gatherer):
