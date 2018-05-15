@@ -10,7 +10,7 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-tableName = 'strain_to_reference'
+tableName = 'strain_disease'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
