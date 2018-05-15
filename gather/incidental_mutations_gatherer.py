@@ -33,7 +33,7 @@ class IncidentalMutationsGatherer (Gatherer.MultiFileGatherer):
 		logger.debug("done reading input file")
 	
 	def buildMarkerLinks(self):
-		cols=["unique_key","marker_key","filename"]
+		cols=["unique_key","marker_key","provider"]
 
 		# gen the marker ID lookup {mgiid=>markerKey}
 		markerLookup = {}
@@ -59,7 +59,7 @@ class IncidentalMutationsGatherer (Gatherer.MultiFileGatherer):
 				logger.debug("cannot identify marker for row %d: %s"%(rowCount,"\t".join(r)))
 				continue
 
-			rows.append((rowCount,markerLookup[mgiid],file))
+			rows.append((rowCount,markerLookup[mgiid],file.replace('.xlsx', '')))
 		return cols,rows
 
 	def buildAlleleLinks(self):
@@ -134,7 +134,7 @@ cmds = [
 #	(filename prefix, list of fieldnames, table name)
 files = [
 	('marker_incidental_mut',
-		['unique_key','marker_key','filename'],
+		['unique_key','marker_key','provider'],
 		'marker_incidental_mut'),
 	('allele_incidental_mut',
 		['unique_key','allele_key','filename'],

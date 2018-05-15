@@ -6,49 +6,60 @@
 
 import Gatherer
 import config
+import dbAgnostic
+import logger
 
 ###--- Classes ---###
 
 class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
 	def collateResults (self):
-		(cols, rows) = self.results[0]
-
-		markerCol = Gatherer.columnNumber(cols, '_Marker_key')
-		idCol = Gatherer.columnNumber(cols, 'accID')
-
-		for row in rows:
-			self.addRow ('batch_marker_snps', (row[markerCol], row[idCol]) )
+		# produce the rows of results for the current batch of SNPs
+		
+		(cols, rows) = self.results[-1]
+		self.addRows('batch_marker_snps', rows)
 		return
 
 ###--- Setup for Gatherer ---###
 
+tempTable = 'snp_batch'
+
 cmds = [
-	# 0. gather the SNPs within 2kb of the markers in this group, and only include SNPs with
-	#	variation class "SNP" for now.
-	# Note:  To aid efficiency, I restructured this query to ensure that it was processed in
-	#	the order that made sense for the data.  (First find the SNPs based on marker, then
-	#	rule out multi-coordinate SNPs and non-SNP variation classes, then find the IDs for
-	#	the set that made it through the filtering steps.)  Cuts query runtime by 73%.
-	'''with step1 as (
-			select s._Marker_key, s._ConsensusSNP_key
-			from snp_consensussnp_marker s
-			where s._Marker_key >= %d
-				and s._Marker_key < %d
-				and exists (select 1 from mrk_marker m where m._Marker_key = s._Marker_key)
-				and s.distance_from <= 2000
-		), step2 as (
-			select s._Marker_key, s._ConsensusSNP_key
-			from step1 s, snp_coord_cache c, snp_consensussnp t
-			where s._ConsensusSNP_key = c._ConsensusSNP_key
-				and c.isMultiCoord = 0
-				and s._ConsensusSNP_key = t._ConsensusSNP_key
-				and t._VarClass_key = 1878510
-		)
-		select distinct s._Marker_key, a.accID
-		from step2 s, snp_accession a
-		where s._ConsensusSNP_key = a._Object_key
+	# 0 drop any existing temp table
+	'drop table if exists %s' % tempTable,
+	
+	# 1. SNP/marker pairs for the batch that are within the appropriate distance
+	'''select distinct s._ConsensusSNP_key, s._Marker_key
+		into temp table %s
+		from snp_consensussnp_marker s, mrk_marker m
+		where s._ConsensusSNP_key >= %%d
+			and s._ConsensusSNP_key < %%d
+			and s.distance_from <= 2000
+			and s._Marker_key = m._Marker_key
+	''' % tempTable, 
+
+	# 2. index the temp table
+	'create index %s_snp_index on %s (_ConsensusSNP_key)' % (tempTable, tempTable),
+	
+	# 3. delete SNPs that have the wrong variation class
+	'''delete from %s
+		using snp_consensussnp t
+		where t._VarClass_key != 1878510
+			and %s._ConsensusSNP_key = t._ConsensusSNP_key
+	''' % (tempTable, tempTable),
+	
+	# 4. delete SNPs that have multiple coordinates
+	'''delete from %s
+		using snp_coord_cache s
+		where s.isMultiCoord = 1
+			and %s._ConsensusSNP_key = s._ConsensusSNP_key
+		''' % (tempTable, tempTable),
+
+	# 5. get SNP/marker pairs
+	'''select distinct t._Marker_key, a.accID
+		from %s t, snp_accession a
+		where t._ConsensusSNP_key = a._Object_key
 			and a._MGIType_key = 30		-- consensus SNP
-	''',
+		''' % tempTable,
 	]
 
 files = [
@@ -60,9 +71,9 @@ files = [
 
 gatherer = BatchMarkerSnpsGatherer (files, cmds)
 gatherer.setupChunking (
-	'select min(_Marker_key) from snp_consensussnp_marker',
-	'select max(_Marker_key) from snp_consensussnp_marker',
-	10000
+	'select min(_ConsensusSNP_key) from snp_consensussnp_marker',
+	'select max(_ConsensusSNP_key) from snp_consensussnp_marker',
+	1000000
 	)
 
 ###--- main program ---###

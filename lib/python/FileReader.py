@@ -13,6 +13,41 @@ TAB = '\t'
 LF = '\n'
 CR = '\r'
 
+###--- functions ---###
+
+def nullify (rows):
+	# go through 'rows' and convert any 'null' strings to be a Python None
+	
+	converted = 0
+	rowCount = len(rows)
+	rowNum = 0
+	
+	while rowNum < rowCount:
+		colCount = len(rows[rowNum])
+		colNum = 0
+		while colNum < colCount:
+			if rows[rowNum][colNum] == 'null':
+				rows[rowNum][colNum] = None
+				converted = converted + 1
+			colNum = colNum + 1
+		rowNum = rowNum + 1
+				
+	logger.debug('Converted %d null values to None' % converted)
+	return rows
+
+def distinct (rows):
+	# go through 'rows' and return only distinct rows (eliminate any duplicate rows)
+	
+	out = []
+	seen = {}
+	for row in rows:
+		tpl = tuple(row)
+		if tpl not in seen:
+			seen[tpl] = 1
+			out.append(row)
+	logger.debug('reduced %d rows to %d distinct' % (len(rows), len(out)))	
+	return out
+	
 ###--- classes ---###
 
 class FileReader:

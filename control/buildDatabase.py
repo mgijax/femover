@@ -59,6 +59,7 @@ USAGE = '''Usage: %s [-a|-A|-b|-c|-C|-d|-g|-h|-i|-m|-M|-n|-o|-p|-r|-s|-x|-X] [-G
 	-o : Human Disease Portal
 	-p : Probes
 	-s : Sequences
+	-S : Strains
 	-r : References
 	-v : Vocabularies
 	-x : eXpression (GXD Data plus GXD Literature Index)
@@ -228,8 +229,8 @@ MAPPING = [ 'mapping_experiment', 'mapping_id', 'mapping_link', 'mapping_to_mark
 MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
 		'marker_to_sequence', 'marker_to_reference', 'marker_link',
 		'marker_location', 'marker_counts', 'marker_polymorphism',
-		'marker_slimgrid', 'marker_polymorphism_allele',
-		'marker_note', 'marker_sequence_num', 'marker_flags',
+		'marker_slimgrid', 'marker_polymorphism_allele', 'strain_marker_gene_model',
+		'marker_note', 'marker_sequence_num', 'marker_flags', 'strain_marker', 
 		'marker_to_probe', 'marker_count_sets', 'marker_alias',
 		'marker_biotype_conflict', 'marker_searchable_nomenclature',
 		'homology_cluster', 'marker_qtl_experiments', 'marker_wksilvers',
@@ -250,7 +251,10 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_source', 'sequence_sequence_num',
 		'sequence_clone_collection', 'sequence_provider_map',
 	]
-
+STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
+		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data',
+		'strain_mpd_data',
+	]
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent', 'term_child',
 	'term_sequence_num', 'term_ancestor', 'queryform_option', 'term', 'term_counts',
 	'term_emap', 'term_emaps_child', 'go_evidence_category', 'term_note', 'term_sibling',
@@ -276,7 +280,7 @@ FLAGS = { '-c' : CRE, 		'-m' : MARKERS,		'-r' : REFERENCES,
 	'-h' : IMSR,		'-g' : GENOTYPES,	'-b' : BATCHQUERY,
 	'-n' : ANNOTATIONS,	'-A' : ACCESSION,	'-d' : DISEASE,
 	'-t' : TESTS, 		'-l' : OTHER,	'-o' : HDPORTAL,
-	'-X' : HT_EXPRESSION,	'-M' : MAPPING,
+	'-X' : HT_EXPRESSION,	'-M' : MAPPING,	'-S' : STRAINS,
 	}
 
 # boolean; are we doing a build of the complete front-end database?

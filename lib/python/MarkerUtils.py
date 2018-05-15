@@ -247,8 +247,6 @@ def _populateMarkerAlleleCache():
             vt.sequenceNum
         from all_allele a, voc_term vt
         where vt._Vocab_key = 38
-            and vt.term not in ('Not Applicable', 'Not Specified',
-                'Other')
             and vt._Term_key = a._Allele_Type_key
             and a.isWildType = 0
             and a._Marker_key is not null
@@ -569,6 +567,10 @@ def getAlleleCountsByType():
 
     for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
 
+        # We don't want to report counts for subsets of certain allele types.
+        if countType in ('Not Applicable', 'Not Specified', 'Other'):
+            continue
+        
         # make sure we have the mapping from count type to its seq num
         if not c.has_key(countTypeOrder):
             c[countTypeOrder] = countType

@@ -13,6 +13,7 @@
 import Gatherer
 import logger
 import GOFilter
+import StrainUtils
 
 ###--- Globals ---###
 
@@ -26,6 +27,7 @@ GxdAssayCount = 'gxdAssayCount'
 AlleleCount = 'alleleCount'
 SequenceCount = 'sequenceCount'
 GoAnnotCount = 'goAnnotationCount'
+StrainCount = 'strainCount'
 
 error = 'referenceCountsGatherer.error'
 
@@ -63,6 +65,7 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
 			(self.results[7], GxdAssayCount, 'numAssays'),
 			(self.results[8], AlleleCount, 'numAlleles'),
 			(self.results[9], SequenceCount, 'numSequences'),
+			(self.results[10], StrainCount, 'numStrains'),
 			]
 		for (r, countName, colName) in toAdd:
 			logger.debug ('Processing %s, %d rows' % (countName,
@@ -112,10 +115,10 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	# all references
+	# 0. all references
 	'select m._Refs_key from bib_refs m',
 
-	# count of markers for each reference, including refs for alleles and considering
+	# 1. count of markers for each reference, including refs for alleles and considering
 	# "mutation involves" and "expressed component" relationships.  Built using query
 	# from marker_to_reference_gatherer.py to help results match these counts.
 	'''with marker_alleles as (
@@ -142,29 +145,29 @@ cmds = [
 			and m._Marker_key is not null
 		group by 1''',
 
-	# count of probes
+	# 2. count of probes
 	'''select _Refs_key, count(1) as numProbes
 		from prb_reference
 		group by _Refs_key''',
 
-	# count of mapping experiments
+	# 3. count of mapping experiments
 	'''select _Refs_key, count(1) as numExperiments
 		from mld_expts
 		group by _Refs_key''',
 
-	# count of GXD literature index entries
+	# 4. count of GXD literature index entries
 	'''select _Refs_key, count(1) as numIndex
 		from gxd_index
 		group by _Refs_key''',
 
-	# count of expression results
+	# 5. count of expression results
 	'''select a._Refs_key, count(distinct e._Expression_key) as numResults
 		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
 		group by a._Refs_key''',
 
-	# count of structures with expression results
+	# 6. count of structures with expression results
 	'''select _Refs_key, count(distinct vte._term_key) as numStructures
 		from gxd_expression e
 		join voc_term_emaps vte on
@@ -173,14 +176,14 @@ cmds = [
 		where isForGXD = 1
 		group by _Refs_key''',
 
-	# count of expression assays
+	# 7. count of expression assays
 	'''select a._Refs_key, count(distinct a._Assay_key) as numAssays
 		from gxd_assay a, gxd_expression e
 		where a._Assay_key = e._Assay_key
 			and e.isForGXD = 1
 		group by a._Refs_key''',
 
-	# count of alleles
+	# 8. count of alleles
 	'''select r._Refs_key as _Refs_key,
 			count(distinct a._Allele_key) as numAlleles
 		from mgi_reference_assoc r, all_allele a
@@ -189,18 +192,23 @@ cmds = [
 			and a.isWildType != 1
 		group by r._Refs_key''',
 
-	# count of sequences
+	# 9. count of sequences
 	'''select _Refs_key as _Refs_key,
 			count(distinct _Object_key) as numSequences
 		from mgi_reference_assoc
 		where _MGIType_key = 19
 		group by _Refs_key''',
+		
+	# 10. count of mouse strains per reference
+	'''select _Refs_key, count(distinct _Strain_key) as numStrains
+		from %s
+		group by _Refs_key''' % StrainUtils.getStrainReferenceTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the output file
 fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
 	GxdIndexCount, GxdResultCount, GxdStructureCount,
-	GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount ]
+	GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'reference_counts'

@@ -85,6 +85,16 @@ if os.environ.has_key('IMSR_COUNT_URL'):
 else:
 	IMSR_COUNT_URL = "http://www.findmice.org/report/mgiCounts.txt"
 
+if os.environ.has_key('IMSR_STRAIN_URL'):
+	IMSR_STRAIN_URL = os.environ['IMSR_STRAIN_URL']
+else:
+	IMSR_STRAIN_URL = "http://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
+
+if os.environ.has_key('MPD_STRAIN_URL'):
+	MPD_STRAIN_URL = os.environ['MPD_STRAIN_URL']
+else:
+	MPD_STRAIN_URL = "https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"
+
 if os.environ.has_key('BUILDS_IN_SYNC'):
 	BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])
 else:

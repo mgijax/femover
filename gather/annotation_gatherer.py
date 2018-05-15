@@ -30,21 +30,53 @@ from annotation.tooltip import TooltipFinder
 #	for the currently processed batch
 BATCH_TEMP_TABLE = 'annotation_batch_tmp'
 
+# name of table that will hold all the _annot_keys, properly ordered
+TEMP_TABLE = 'ordered_annotations'
+
+# minimum and maximum row_num values included in TEMP_TABLE
+MIN_ROW_NUM = 0
+MAX_ROW_NUM = 0
+
 ###--- controlled vocabulary lookups ---###
 
-MGITYPE_LOOKUP = Lookup.Lookup('acc_mgitype', '_MGIType_key', 'name')
-JNUM_LOOKUP = Lookup.Lookup('bib_citation_cache', '_Refs_key', 'jnumid')
-VOCAB_LOOKUP = Lookup.Lookup('voc_vocab', '_Vocab_key', 'name')
-DAG_LOOKUP = Lookup.Lookup('dag_dag', '_DAG_key', 'name')
-EVIDENCE_TERM_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
-EVIDENCE_CODE_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'abbreviation')
-QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
+MGITYPE_LOOKUP = Lookup.Lookup('acc_mgitype', '_MGIType_key', 'name', initClause = '_MGIType_key > 0')
+JNUM_LOOKUP = Lookup.Lookup('bib_citation_cache', '_Refs_key', 'jnumid', initClause = '_Refs_key > 0')
+VOCAB_LOOKUP = Lookup.Lookup('voc_vocab', '_Vocab_key', 'name', initClause = '_Vocab_key > 0')
+DAG_LOOKUP = Lookup.Lookup('dag_dag', '_DAG_key', 'name', initClause = '_DAG_key > 0')
+EVIDENCE_TERM_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term',
+	initClause = '_Vocab_key in (2, 3, 43, 45, 57, 80, 85, 107)')
+EVIDENCE_CODE_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'abbreviation',
+	initClause = '_Vocab_key in (2, 3, 43, 45, 57, 80, 85, 107)')
+QUALIFIER_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term',
+	initClause = '_Vocab_key in (52, 53, 54, 84, 108)')
 
 ###--- Global caches ---###
 
+# get the shared organism finder for the inferredfrom ID data
+organismFinder = OrganismFinder()
+
+# initialize a tooltip finder for the the other inferredfrom tooltips
+tooltipFinder = TooltipFinder()
+				
 annotKeyMapper = mapper.AnnotationMapper()		# maps prod _Annot_key to fe annotation_key
 evidenceCols = None		# rather than just repeatedly sending the same evidence query, cache results here
 evidenceRows = None
+
+###--- Functions ---###
+
+def orderedKeys(dictionary):
+	# returns the keys of 'dictionary' as a sorted list
+	keys = dictionary.keys()
+	keys.sort()
+	return keys
+
+def orderedValues(dictionary):
+	# returns a list of values from the dictionary, ordered according to the sorted list of keys
+	
+	values = []
+	for key in orderedKeys(dictionary):
+		values.append(dictionary[key])
+	return values
 
 ###--- Classes ---###
 
@@ -68,6 +100,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		Reset/Initialize all globals
 		"""
 		
+		self.annotGroupsRows = []
 		self.annotGroupsMap = {}
 		self.annotPropertiesMap = {}
 		self.inferredfromIdMap = {}
@@ -284,14 +317,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		Return map { _annotevidence_key: [{ id, tooltip, logicaldb}] }
 		"""
-		global evidenceCols, evidenceRows
+		global evidenceCols, evidenceRows, organismFinder, tooltipFinder
 		
-		# initialize an organism finder for the inferredfrom ID data
-		organismFinder = OrganismFinder(annotBatchTableName=BATCH_TEMP_TABLE)
-		
-		# initialize a tooltip finder for the the other inferredfrom tooltips
-		tooltipFinder = TooltipFinder(annotBatchTableName=BATCH_TEMP_TABLE)
-				
 		# This function is called for each batch.  Rather than process this query each time, only
 		# ask the database once and then use the cached result thereafter.
 		if evidenceCols == None:
@@ -302,7 +329,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 					a._object_key = ve._annotevidence_key
 					and a._mgitype_key = 25
 				join acc_logicaldb ldb on
-					ldb._logicaldb_key = a._logicaldb_key'''
+					ldb._logicaldb_key = a._logicaldb_key
+				order by 1, 3, 2'''
 		
 			(evidenceCols, evidenceRows) = dbAgnostic.execute(cmd)
 		
@@ -364,6 +392,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		where h._Vocab_key = 4
 			and h.abbreviation is not null
 			and h.sequenceNum is not null
+		order by 2, 1
 		''' % (BATCH_TEMP_TABLE, BATCH_TEMP_TABLE)
 		
 		(cols, rows) = dbAgnostic.execute(cmd)
@@ -389,9 +418,9 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		"""
 		
 		# make query results editable
-		self.results[3] = ( self.results[3][0], dbAgnostic.tuplesToLists(self.results[3][1]) )
+		self.results[-1] = ( self.results[-1][0], dbAgnostic.tuplesToLists(self.results[-1][1]) )
 		
-		cols, rows = self.results[3]
+		cols, rows = self.results[-1]
 		
 		
 		transform.removeGONoDataAnnotations(cols, rows)
@@ -407,7 +436,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		"""
 		global annotKeyMapper
 		
-		cols, rows = self.results[3]
+		cols, rows = self.results[-1]
 		
 		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
@@ -434,11 +463,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		inferredfromIdMap = self.queryInferredFromIds()
 			
 		# group/roll up annotations
-		groupMap = transform.groupAnnotations(cols, rows,
+		self.annotGroupsMap = transform.groupAnnotations(cols, rows,
 										propertiesMap=propertiesMap)
+		self.annotGroupsRows = orderedValues(self.annotGroupsMap)
 			
-		annots = []
-		for rows in groupMap.values():
+		for rows in self.annotGroupsRows:
 			
 			repRow = rows[0]
 			
@@ -478,7 +507,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			vocab = VOCAB_LOOKUP.get(repRow[vocabKeyCol])
 
 			# append new annotation row
-			annots.append((
+#			annots.append((
+			self.addRow('annotation', (
 						self.curAnnotationKey,
 						dagName,
 						QUALIFIER_LOOKUP.get(repRow[qualifierKeyCol]),
@@ -493,7 +523,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 						refsCount,
 						inferredIdCount
 						))
-			
+
 			# only need to cache mappings for MP and DO, as those are the ones that are programmatically
 			# rolled up to markers (and so the only ones that have source annotation properties.
 			if vocab in ('Mammalian Phenotype', 'Disease Ontology'):
@@ -501,13 +531,9 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 
 			self.curAnnotationKey += 1
 			
-			
-		self.addRows('annotation', annots)
-		
 		# store these for sub-table processing
 		self.annotPropertiesMap = propertiesMap
 		self.inferredfromIdMap = inferredfromIdMap
-		self.annotGroupsMap = groupMap
 		
 		
 	def buildAnnotationProperty(self):
@@ -520,12 +546,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		# get alternate display names for properties
 		propDisplayMap = self.queryPropertyDisplayNames()
 		
-		propertyRows = []
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 			
 			repRow = rows[0]
 			
@@ -541,10 +566,10 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 					
 					# if we have an alternate display synonym, use it
 					property = prop['property']
-					if property in propDisplayMap:
+					if property in orderedKeys(propDisplayMap):
 						property = propDisplayMap[property]
 					
-					propertyRows.append((
+					self.addRow('annotation_property', (
 						newAnnotationKey,
 						prop['type'],
 						property,
@@ -553,7 +578,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 						prop['sequencenum']
 					))
 		
-		self.addRows('annotation_property', propertyRows)
 		
 	
 	def buildAnnotationInferredFromId(self):
@@ -565,14 +589,12 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# build the inferred_from_id rows
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		inferredfromCol = Gatherer.columnNumber (cols, 'inferredfrom')
 		
-		inferredIdRows = []
-		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -602,7 +624,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				id = idObj['id']
 				tooltip = idObj['tooltip']
 				
-				inferredIdRows.append((
+				self.addRow('annotation_inferred_from_id', (
 					newAnnotationKey,
 					logicalDb,
 					id,
@@ -613,22 +635,17 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				seqnum += 1
 						
 						
-		self.addRows('annotation_inferred_from_id', inferredIdRows)
-		
-		
 	def buildAnnotationReference(self):
 		"""
 		Build the annotation_reference table
 		"""
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		
-		referenceRows = []
-		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -655,7 +672,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			seqnum = 1
 			for ref in refs:
 				
-				referenceRows.append((
+				self.addRow('annotation_reference', (
 					newAnnotationKey,
 					ref[0],
 					ref[1],
@@ -664,24 +681,20 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				
 				seqnum += 1
 				
-		self.addRows('annotation_reference', referenceRows)
-				
 				
 	def buildMarkerToAnnotation(self):
 		"""
 		Build the marker_to_annotation table
 		"""
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
-		markerAnnotRows = []
-		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -692,30 +705,26 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			
 			if mgitype == 'Marker':
 				
-				markerAnnotRows.append((
+				self.addRow('marker_to_annotation', (
 					objectKey,
 					newAnnotationKey,
 					annotType
 				))
 				
-				
-		self.addRows('marker_to_annotation', markerAnnotRows)
 		
 	def buildGenotypeToAnnotation(self):
 		"""
 		Build the genotype_to_annotation table
 		"""
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		objectKeyCol = Gatherer.columnNumber (cols, '_object_key')
 		refsKeyCol = Gatherer.columnNumber (cols, '_refs_key')
 		mgitypeKeyCol = Gatherer.columnNumber (cols, '_mgitype_key')
 		
-		genotypeAnnotRows = []
-		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -726,14 +735,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			
 			if mgitype == 'Genotype':
 				
-				genotypeAnnotRows.append((
+				self.addRow('genotype_to_annotation', (
 					objectKey,
 					newAnnotationKey,
 					annotType
 				))
-				
-				
-		self.addRows('genotype_to_annotation', genotypeAnnotRows)
 		
 	
 	def buildAnnotationHeader(self):
@@ -745,14 +751,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		headerMap = self.queryHeaderTerms()
 		
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
 		
 		headerRows = []
 		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -763,14 +769,11 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			if termKey in headerMap:
 			
 				for headerKey in headerMap[termKey]:
-					
-					headerRows.append((
+				
+					self.addRow('annotation_to_header', (
 						newAnnotationKey,
 						headerKey
 					))
-				
-				
-		self.addRows('annotation_to_header', headerRows)
 		
 		
 	def buildAnnotationSequenceNum(self):
@@ -786,16 +789,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		byObjectDagMap = sequence_num.queryByObjectDagSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
 		byIsoformMap = sequence_num.queryByIsoformSeqnums( annotBatchTableName=BATCH_TEMP_TABLE )
 		
-		cols = self.results[3][0]
+		cols = self.results[-1][0]
 		evidenceKeyCol = Gatherer.columnNumber (cols, '_annotevidence_key')
 		annotTypeCol = Gatherer.columnNumber (cols, 'annottype')
 		annotKeyCol = Gatherer.columnNumber (cols, '_annot_key')
 		termKeyCol = Gatherer.columnNumber (cols, '_term_key')
 		vocabKeyCol = Gatherer.columnNumber (cols, '_vocab_key')
 		
-		seqnumRows = []
-		
-		for rows in self.annotGroupsMap.values():
+		for rows in self.annotGroupsRows:
 		
 			repRow = rows[0]
 			
@@ -811,7 +812,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			byTermAlpha = byTermAlphaMap[termKey]
 			
 			byDagStructure = 0
-			if termKey in byTermDagMap:
+			if termKey in byTermDagMap:	
 				byDagStructure = byTermDagMap[termKey]
 			
 			byVocabDagTerm = 0
@@ -819,14 +820,14 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				byVocabDagTerm = byVocabDagMap[termKey]
 				
 			byObjectDagTerm = 0
-			if annotKey in byObjectDagMap:
+			if annotKey in byObjectDagMap:	
 				byObjectDagTerm = byObjectDagMap[annotKey]
 				
 			byIsoform = 0
 			if repEvidenceKey in byIsoformMap:
 				byIsoform = byIsoformMap[repEvidenceKey]
 					
-			seqnumRows.append((
+			self.addRow('annotation_sequence_num', (
 				newAnnotationKey,
 				byDagStructure,
 				byTermAlpha,
@@ -836,8 +837,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				byObjectDagTerm,
 				byIsoform
 			))
-				
-		self.addRows('annotation_sequence_num', seqnumRows)
 		
 	
 	def collateResults (self):
@@ -850,23 +849,16 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# perform any necessary data transforms on the base query
 		self.transformAnnotations()
-		
+
 		# Build the tables for each batch
 		
 		self.buildAnnotation()
-		
 		self.buildAnnotationProperty()
-		
 		self.buildAnnotationInferredFromId()
-		
 		self.buildAnnotationReference()
-		
 		self.buildMarkerToAnnotation()
-		
 		self.buildGenotypeToAnnotation()
-		
 		self.buildAnnotationHeader()
-		
 		self.buildAnnotationSequenceNum()
 		
 		# clear the memory state for this batch of annotations
@@ -908,7 +900,8 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 				and vep._PropertyTerm_key = p._Term_key
 				and p.term = '_SourceAnnot_key'
 				and a._Annot_key >= %d
-				and a._Annot_key < %d'''
+				and a._Annot_key < %d
+			order by 1, 2'''
 		
 		rowCount = 0
 		while startAnnotKey <= maxAnnotKey:
@@ -919,45 +912,67 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 			annotKeyCol = dbAgnostic.columnNumber(cols, '_Annot_key')
 			sourceAnnotKeyCol = dbAgnostic.columnNumber(cols, 'sourceAnnotKey')
 			
-			sourceRows = []
-			
 			for row in rows:
 				feSourceAnnotKeys = annotKeyMapper.getFeAnnotKeys(row[sourceAnnotKeyCol])
 			
 				for annotKey in annotKeyMapper.getFeAnnotKeys(row[annotKeyCol]):
 					for sourceKey in feSourceAnnotKeys:
-						sourceRows.append( (annotKey, sourceKey) )
-			
-			self.addRows('annotation_source', sourceRows)
-			rowCount = rowCount + len(sourceRows)
+						self.addRow('annotation_source', (annotKey, sourceKey) )
+						rowCount = rowCount + len(feSourceAnnotKeys)
+
 			startAnnotKey = endAnnotKey
 		
 		logger.info('Produced %d source rows' % rowCount)
 		return
 
+###--- functions ---###
+
+def initialize():
+	# create a temp table that contains the annotation keys (properly ordered for iteration) and a
+	# generated key for each.  Updates global MAX_ROW_NUM to show highest value of generated key.
+	global MAX_ROW_NUM
+	
+	logger.debug('Building temp table of annotations')
+
+	cmd1 = '''select row_number() over (
+			order by va._annottype_key, va._object_key, va._term_key, va._Annot_key) as row_num,
+			va._Annot_key
+		into temp %s
+		from voc_annot va
+		order by va._annottype_key, va._object_key, va._term_key, va._Annot_key''' % TEMP_TABLE
+
+	cmd2 = '''create unique index tempIndex1 on %s (row_num)''' % TEMP_TABLE
+	cmd3 = '''cluster %s using tempIndex1''' % TEMP_TABLE
+	cmd4 = '''create index tempIndex2 on %s (_annot_key)''' % TEMP_TABLE
+	
+	for (cmd, msg) in [ (cmd1, 'built table'), (cmd2, 'indexed row_num'),
+			(cmd3, 'clustered data'), (cmd4, 'indexed _Annot_key') ]:
+		dbAgnostic.execute(cmd)
+		logger.debug(' - %s' % msg)
+		
+	(cols, rows) = dbAgnostic.execute('select max(row_num) from %s' % TEMP_TABLE)
+	MAX_ROW_NUM = rows[0][0]
+	
+	logger.debug(' - included %d annotations' % MAX_ROW_NUM)
+	return
+	
 ###--- globals ---###
 
 cmds = [
+	#
+	# 0 - 2. setup a temp table for each batch.
+	#
+	'''drop table if exists %s''' % BATCH_TEMP_TABLE,
+
+	'''select row_num, _annot_key
+		into temp %s
+		from %s
+		where row_num > %%d and row_num <= %%d
+		order by 1''' % (BATCH_TEMP_TABLE, TEMP_TABLE),
+
+	'''create index annotation_batch_tmp_idx1 on %s (_annot_key)''' % BATCH_TEMP_TABLE,
+	'''create index annotation_batch_tmp_idx2 on %s (row_num)''' % BATCH_TEMP_TABLE,
 	
-	#
-	# 0 - 2. setup a temp table for each batch
-	#
-	'''
-	drop table if exists %s
-	''' % BATCH_TEMP_TABLE,
-	'''
-	select _annot_key into
-	temp %s
-	from voc_annot va
-	order by va._annottype_key, va._object_key, va._term_key
-	limit 250000 		-- limit must match chunkSize
-	offset %%d -- %%d
-	''' % BATCH_TEMP_TABLE,
-	'''
-	create index annotation_batch_tmp_idx on %s (_annot_key)
-	''' % BATCH_TEMP_TABLE,
-	
-	#
 	# 3. Base Annotation/Evidence data
 	#
 	#	All other information is considered secondary and is
@@ -965,35 +980,31 @@ cmds = [
 	#	require secondary information (e.g. evidence properties & inferredfrom IDs)
 	#
 	'''select va._annot_key, 
-		vat.name as annottype, 
-		va._object_key, 
-		term._term_key,
-		term.term, 
-		term_acc.accid as term_id,
-		va._qualifier_key,
-		ve._annotevidence_key, 
-		ve._evidenceterm_key,
-		ve._refs_key, 
-		ve.inferredfrom,
-		term._vocab_key,
-		dn._dag_key,
-		vat._mgitype_key
-		from voc_annot va
-		join %s abt on 			-- batch annotations with above temp table
-			abt._annot_key = va._annot_key
-		join voc_evidence ve on 
-			ve._annot_key = va._annot_key
-		join voc_annottype vat on
-			vat._annottype_key = va._annottype_key
-		join voc_term term on						-- annotated term
-			term._term_key = va._term_key
-		left outer join acc_accession term_acc on	-- term accid
-			term_acc._object_key = va._term_key
+			vat.name as annottype, 
+			va._object_key, 
+			term._term_key,
+			term.term, 
+			term_acc.accid as term_id,
+			va._qualifier_key,
+			ve._annotevidence_key, 
+			ve._evidenceterm_key,
+			ve._refs_key, 
+			ve.inferredfrom,
+			term._vocab_key,
+			dn._dag_key,
+			vat._mgitype_key,
+			btt.row_num
+		from %s btt
+		inner join voc_annot va on (btt._Annot_key = va._Annot_key)
+		inner join voc_evidence ve on (ve._annot_key = va._annot_key)
+		inner join voc_annottype vat on (vat._annottype_key = va._annottype_key)
+		inner join voc_term term on	(term._term_key = va._term_key)
+		left outer join acc_accession term_acc on (term_acc._object_key = va._term_key
 			and term_acc._mgitype_key = 13
 			and term_acc.preferred = 1
-			and term_acc.private = 0
-		left outer join dag_node dn on				-- dag name
-			dn._object_key = va._term_key
+			and term_acc.private = 0)
+		left outer join dag_node dn on (dn._object_key = va._term_key)
+		order by btt.row_num, ve._AnnotEvidence_key
 	''' % BATCH_TEMP_TABLE,
 	]
 
@@ -1067,14 +1078,17 @@ files = [
 		
 	]
 
+# create the necessary temp table
+initialize()
+
 # global instance of a AnnotationGatherer
 gatherer = AnnotationGatherer (files, cmds)
 
 # voc_annot is sparsely populated, so we use limit/offset instead
 #	of the traditional min(key) - max(key) approach
 gatherer.setupChunking(
-	minKeyQuery = '''select 0''',
-	maxKeyQuery = '''select count(*) from voc_annot''',
+	minKeyQuery = '''select %d''' % MIN_ROW_NUM,
+	maxKeyQuery = '''select %d''' % MAX_ROW_NUM,
 	chunkSize = 250000				
 	)
 

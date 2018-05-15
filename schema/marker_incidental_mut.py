@@ -16,7 +16,7 @@ tableName = 'marker_incidental_mut'
 createStatement = '''CREATE TABLE %s  ( 
 	unique_key		int		not null,
 	marker_key		int		not null,
-	filename		text		not null,
+	provider		text		not null,
 	PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -35,7 +35,7 @@ comments = {
 	Table.COLUMN : {
 		'unique_key' : 'unique key identifying this row',
 		'marker_key' : 'key for the marker',
-		'filename' : 'filename of the incidental mutation file',
+		'provider' : 'provider of the incidental mutation data',
 		},
 	}
 

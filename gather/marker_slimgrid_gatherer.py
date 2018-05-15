@@ -22,10 +22,13 @@ error = 'slimgrid.error'	# standard exception raised in this gatherer
 MAX_HEADING_KEY = 0		# maximum heading_key so far
 MAX_SEQUENCE_NUM = 0		# maximum heading sequence_num so far
 
+MP_CLOSURE = 'mp_closure'			# table name for closure table for MP terms
+MP_SOURCE_ANNOT = 'mp_source_annot'	# table name for MP source annotation info
 MP_HEADER_KEYS = 'mp_header_keys'	# table name for MP header term keys
 GO_HEADER_KEYS = 'go_header_keys'	# table name for GO header keys
 GXD_HEADER_KEYS = 'gxd_header_keys'	# table name for GXD anatomy header keys
-GXD_CACHE = 'gxd_cache'			# table name for GXD result cache
+GXD_CACHE = 'gxd_cache'				# table name for GXD result cache
+MARKER_CACHE = 'marker_cache'		# table name for cache of markers to process
 
 NORMAL_QUALIFIER = 2181424	# normal qualifier for MP annotations
 
@@ -126,7 +129,7 @@ def setupGxdHeaderKeys():
 	return 
 
 def setupGOCacheTables():
-	# create a closure table with a slice of EMAPA terms
+	# create a closure table with a slice of GO terms
 
 	cmd1 = '''select dc._AncestorObject_key, dc._DescendentObject_key
 		into temporary table go_closure
@@ -144,6 +147,41 @@ def setupGOCacheTables():
 	for cmd in [ cmd1, cmd2, cmd3, cmd4 ]:
 		dbAgnostic.execute(cmd)
 	logger.debug('created GO closure temp table')
+	return
+
+def setupMPCacheTables():
+	# create temp tables needed for efficient MP processing
+
+	# MP closure table will only hold descendants of MP header terms.  We omit the
+	# header terms themselves, because they will only have Normal annotations.
+	cmd1 = '''select dc._AncestorObject_key, dc._DescendentObject_key
+		into temporary table %s
+		from dag_closure dc, %s ghk
+		where dc._AncestorObject_key = ghk._Term_key''' % (MP_CLOSURE, MP_HEADER_KEYS)
+
+	cmd2 = 'create index mpClo1 on %s (_AncestorObject_key)' % MP_CLOSURE
+	cmd3 = 'create index mpClo2 on %s (_DescendentObject_key)' % MP_CLOSURE
+
+	for cmd in [ cmd1, cmd2, cmd3 ]:
+		dbAgnostic.execute(cmd)
+	logger.debug('created MP closure temp table')
+	
+	# Create a temp table mapping from MP annotation keys to their source annotation keys.
+	cmd4 = '''select va._Annot_key, vep.value::int as _Source_Annot_key
+		into temporary table %s
+		from voc_annot va, voc_evidence ve, voc_evidence_property vep, voc_term vp
+		where va._AnnotType_key = 1015
+			and va._Annot_key = ve._Annot_key
+			and ve._AnnotEvidence_key = vep._AnnotEvidence_key
+			and vep._PropertyTerm_key = vp._Term_key
+			and vp.term = '_SourceAnnot_key' ''' % MP_SOURCE_ANNOT
+			
+	cmd5 = 'create index saIdx1 on %s (_Annot_key)' % MP_SOURCE_ANNOT
+	cmd6 = 'create index saIdx2 on %s (_Source_Annot_key)' % MP_SOURCE_ANNOT
+	
+	for cmd in [ cmd4, cmd5, cmd6 ]:
+		dbAgnostic.execute(cmd)
+	logger.debug('created MP source annot table')
 	return
 
 def setupGxdCacheTables():
@@ -397,6 +435,44 @@ def setupGxdCacheTables():
 		dbAgnostic.execute(cmd)
 	logger.debug('created GXD closure temp table')
 	return
+
+def setupMarkerCacheTable():
+	# set up a cache table (MARKER_CACHE) containing only marker keys that have 
+	# MP, GXD, or GO annotations.  Primary key will be computed, then we can 
+	# iterate over that field and avoid all the marker keys without annotations.
+	
+	cmd0 = '''select row_number() over (order by m._Marker_key) as row_num,
+			m._Marker_key
+		into temp %s
+		from mrk_marker m
+		where m._Marker_Status_key = 1
+			and m._Organism_key = 1
+			and (
+				exists (select 1 from voc_annot mp
+					where m._Marker_key = mp._Object_key
+					and mp._AnnotType_key = 1015)
+				or exists (select 1 from voc_annot go
+					where m._Marker_key = go._Object_key
+					and go._AnnotType_key = 1000)
+				or exists (select 1 from %s gxd
+					where m._Marker_key = gxd._Marker_key)
+			)''' % (MARKER_CACHE, GXD_CACHE)
+			
+	cmd1 = 'create index mIndex1 on %s (row_num)' % MARKER_CACHE
+	cmd2 = 'create index mIndex2 on %s (_Marker_key)' % MARKER_CACHE
+	cmd3 = 'select min(_Marker_key) as min_key, max(_Marker_key) as max_key, count(1) as ct from %s' % MARKER_CACHE
+
+	for cmd in [ cmd0, cmd1, cmd2 ]:
+		dbAgnostic.execute(cmd)
+		
+	(cols, rows) = dbAgnostic.execute(cmd3)
+
+	minKey = rows[0][dbAgnostic.columnNumber(cols, 'min_key')]
+	maxKey = rows[0][dbAgnostic.columnNumber(cols, 'max_key')]
+	count = rows[0][dbAgnostic.columnNumber(cols, 'ct')] 
+	
+	logger.debug('Cached %d marker keys from %d to %d' % (count, minKey, maxKey))
+	return 
 
 ###--- Classes ---###
 
@@ -694,12 +770,21 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		# custom MP setup
 		#setupPhenoHeaderKeys()
 		self.setMPHeaderCollection(MPHeadingCollection())
+		setupMPCacheTables()
 		
 		# custom anatomy setup
 		setupGxdHeaderKeys()
 		setupGxdCacheTables()
 		self.setGxdHeaderCollection(GxdHeadingCollection())
 		
+		# build the cache table of markers with annotations
+		setupMarkerCacheTable()
+		
+		# We can only set up the chunking once we've built the cache of markers.
+		self.setupChunking (
+			'select min(row_num) from %s' % MARKER_CACHE,
+			'select max(row_num) from %s' % MARKER_CACHE,
+			10000)
 
 	def saveHeadings (self, headerRows):
 		# save the given set of header rows to their table file
@@ -964,32 +1049,24 @@ cmds = [
 	'''
 	with markers as (
 		select _Marker_key
-		from mrk_marker
-		where _Marker_key >= %d
-			and _Marker_key < %d
-			and _Organism_key = 1
-			and _Marker_Status_key = 1
+		from %s
+		where row_num >= %%d
+			and row_num < %%d
 	),
 	annotations as (
-		select va._Object_key, mhk._Term_key, vep.value as _Annot_key,
+		select va._Object_key, dc._AncestorObject_key as _Term_key, src._Source_Annot_key as _Annot_key,
 			va._Term_key as annotated_term_key
-		from voc_annot va, dag_closure dc, mp_header_keys mhk,
-			markers m, voc_evidence ve, voc_evidence_property vep,
-			voc_term vp
+		from voc_annot va, %s dc, %s src, markers m
 		where va._AnnotType_key = 1015
 			and va._Object_key = m._Marker_key
 			and va._Term_key = dc._DescendentObject_key
-			and dc._AncestorObject_key = mhk._Term_key
 			and va._Qualifier_key != 2181424
-			and va._Annot_key = ve._Annot_key
-			and ve._AnnotEvidence_key = vep._AnnotEvidence_key
-			and vep._PropertyTerm_key = vp._Term_key
-			and vp.term = '_SourceAnnot_key' 
+			and va._Annot_key = src._Annot_key
 	)
 	select _Object_key, _Term_key,
 		count(distinct annotated_term_key) as annot_count
 	from annotations
-	group by _Object_key, _Term_key''',
+	group by _Object_key, _Term_key''' % (MARKER_CACHE, MP_CLOSURE, MP_SOURCE_ANNOT),
 
 	# 1. A unique GO annotation for a marker is a unique set of (marker
 	# key, term, qualifier, evidence code, and inferred-from value).  When
@@ -1001,11 +1078,9 @@ cmds = [
 	'''
 	with markers as (
 		select _Marker_key
-		from mrk_marker
-		where _Marker_key >= %d
-			and _Marker_key < %d
-			and _Organism_key = 1
-			and _Marker_Status_key = 1
+		from %s
+		where row_num >= %%d
+			and row_num < %%d
 	),
 	annotations as (
 		select distinct gh._Term_key, k._Marker_key, k._DAG_key,
@@ -1018,7 +1093,7 @@ cmds = [
 	)
 	select _Marker_key, _Term_key, count(1) as annot_count
 	from annotations
-	group by _Marker_key, _Term_key''',	
+	group by _Marker_key, _Term_key''' % MARKER_CACHE,	
 
 	# 2. Collate the GXD expression annotations for anatomy headers.  We
 	# want the count of all annotations, plus the flags for whether there
@@ -1030,11 +1105,9 @@ cmds = [
 	'''
 	with markers as (
 		select _Marker_key
-		from mrk_marker
-		where _Marker_key >= %d
-			and _Marker_key < %d
-			and _Organism_key = 1
-			and _Marker_Status_key = 1
+		from %s
+		where row_num >= %%d
+			and row_num < %%d
 	),
 	annotations as (
 		select dc._Emapa_Header_key as _Term_key, gc._Marker_key,
@@ -1049,7 +1122,7 @@ cmds = [
 		max(is_present) as some_present,
 		max(is_wildtype) as some_wildtype
 	from annotations
-	group by _Marker_key, _Term_key''',
+	group by _Marker_key, _Term_key''' % MARKER_CACHE,
 	]
 
 files = [ ('marker_grid_cell',
@@ -1071,11 +1144,6 @@ files = [ ('marker_grid_cell',
 
 # global instance of a SlimgridGatherer
 gatherer = SlimgridGatherer (files, cmds)
-gatherer.setupChunking (
-	'select min(_Marker_key) from MRK_Marker where _Organism_key = 1',
-	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
-	10000
-	)
 
 ###--- main program ---###
 

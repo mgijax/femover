@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the hdp_genocluster table
+# contains data definition information for the strain_sequence_num table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -10,40 +10,38 @@ import Table
 ###--- Globals ---###
 
 # name of this database table
-# human disease portal
-tableName = 'hdp_genocluster'
-#
-# statement to create this table
-#
-# hdp (human disease portal)
-#
-# This table represents the unique "geno-cluster" key.
-#
-# see the gatherer for more information
-#
+tableName = 'strain_sequence_num'
+
+# MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key              int     not null,
-	hdp_genocluster_key		int		not null,
-	PRIMARY KEY(unique_key))''' % tableName
+	strain_key		int		NOT NULL,
+	by_strain		int		NOT NULL,
+	PRIMARY KEY(strain_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-        'hdp_genocluster_key' : 'create unique index %s on %s (hdp_genocluster_key)',
+	'by_strain' : 'create index %s on %s (by_strain)',
 	}
 
-keys = {}
+# column name -> (related table, column in related table)
+keys = {
+	'strain_key' : ('strain', 'strain_key'),
+	}
 
 # index used to cluster data in the table
 clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'central table for the genoclusetr petal, containing one row for each human disease portal genocluster',
+	Table.TABLE : 'pre-computed sequence numbers for ordering strains',
 	Table.COLUMN : {
-		'unique_key' : 'unique key for this record',
-		'hdp_genocluster_key' : 'unique key identifying this human disease portal genotype cluster',
+		'strain_key' : 'identifies the strain (FK to strain table)',
+		'by_strain' : 'orders the strain by its name',
+		},
+	Table.INDEX : {
+		'by_strain' : 'easy lookup of the strains ordered between m and n',
 		},
 	}
 
