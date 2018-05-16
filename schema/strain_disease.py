@@ -2,7 +2,7 @@
 
 import Table
 
-# contains data definition information for the strain_to_reference table
+# contains data definition information for the strain_disease table
 
 # Note: All table and field names should be all-lowercase with underscores
 # used to separate words.
@@ -14,13 +14,13 @@ tableName = 'strain_disease'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int		NOT NULL,
-	strain_key		int		NOT NULL,
-	disease_key		int		NOT NULL,
-	disease_id		text	NULL,
-	disease			text	NULL,
-	sequence_num	int		NOT NULL,
-	PRIMARY KEY(unique_key))''' % tableName
+	strain_disease_key		int		NOT NULL,
+	strain_key				int		NOT NULL,
+	disease_key				int		NOT NULL,
+	disease_id				text	NULL,
+	disease					text	NULL,
+	sequence_num			int		NOT NULL,
+	PRIMARY KEY(strain_disease_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -43,7 +43,7 @@ clusteredIndex = ('strain_key', 'create index %s on %s (strain_key)')
 comments = {
 	Table.TABLE : 'petal table for strain flower, including each disease associated to a strain via a genotype',
 	Table.COLUMN : {
-		'unique_key' : 'unique identifier for this record, no other purpose',
+		'strain_disease_key' : 'generated key to uniquely identify this strain/disease pair',
 		'strain_key' : 'identifies the strain',
 		'disease_key' : 'identifies the disease, FK to term table',
 		'disease_id' : 'primary accession ID of the disease',
@@ -53,7 +53,7 @@ comments = {
 	Table.INDEX : {
 		'disease_key' : 'look up all strains for a disease by key',
 		'disease_id' : 'look up all strains for a disease by ID',
-		'strain_key' : 'clusters data so all references for a strain are stored together on disk, to aid quick retrieval',
+		'strain_key' : 'clusters data so all diseases for a strain are stored together on disk, to aid quick retrieval',
 		},
 	}
 
