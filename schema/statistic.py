@@ -42,15 +42,15 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'contains all the most recent MGI_Statistic measurements',
+	Table.TABLE : 'contains all the most recent data measurements',
 	Table.COLUMN : {
 		'unique_key' : 'unique key for this row',
-		'statistic_key' : 'MGI_Statistic key',
+		'statistic_key' : 'unique key for this statistic',
 		'name' : 'long name of statistic',
 		'tooltip' : 'mouse-over tooltip for the statistic',
-		'value' : 'MGI_Measurement.intvalue',
-		'group_name' : 'MGI_Set.name for this statistic',
-		'sequencenum' : 'Orderering of this statistic',
+		'value' : 'integer value measured for this statistic',
+		'group_name' : 'what group is this statistic part of',
+		'sequencenum' : 'Ordering of this statistic',
 		'group_sequencenum' : 'Ordering of the group',
 		},
 	Table.INDEX : {
