@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
     is_multigenic        int        not null,
     allele_pairs        text        null,
     strain            text        null,
+    strain_id         text        null,
     genotype_id        text        null,
     sequence_num        int        not null,
     PRIMARY KEY(mp_genotype_key))''' % tableName
@@ -47,6 +48,7 @@ comments = {
         'is_multigenic' : '0 if this annotation was rolled-up to the marker, 1 if it was multigenic and could not be rolled-up',
         'allele_pairs' : 'output string for the allele pairs, containing MGI markup for alleles',
         'strain' : 'name of the background strain on which the alleles were placed',
+        'strain_id' : 'primary ID of the strain (where available)',
         'genotype_id' : 'primary ID of the genotype',
         'sequence_num' : 'sequence number for ordering genotypes of a marker',
         },
