@@ -88,7 +88,7 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 				strain, strainKey, seqNum = self.strainCache[strainID]
 
 				smKey = smKey + 1
-				r = ( smKey, markerKey, None, None, strainKey, strain, strainID,
+				r = ( smKey, markerKey, None, None, None, strainKey, strain, strainID,
 						None, None, None, None, None, None, seqNum )
 				self.finalResults.append (r)
 				ct = ct + 1
@@ -137,7 +137,8 @@ cmds = [
 	
 	# 4. all strain-marker records from the database
 	'''select msm._StrainMarker_key as strain_marker_key, m._Marker_key as canonical_marker_key,
-			m.symbol as canonical_marker_symbol, cm.accID as canonical_marker_id,
+			cm.accID as canonical_marker_id, m.symbol as canonical_marker_symbol,
+			m.name as canonical_marker_name,
 			s._Strain_key, s.strain, s.accID as strain_id, 
 			gm.rawBiotype as feature_type, ch.chromosome,
 			mcf.startCoordinate::bigint as start_coordinate,
@@ -145,9 +146,9 @@ cmds = [
 			(abs(mcf.endCoordinate - mcf.startCoordinate) + 1)::bigint as length,
 			s.sequence_num
 		from mrk_strainmarker msm
-		inner join mrk_marker m on (m._Marker_key = msm._Marker_key)
 		inner join %s s on (msm._Strain_key = s._Strain_key)
 		inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
+		left outer join mrk_marker m on (m._Marker_key = msm._Marker_key)
 		left outer join acc_accession cm on (msm._Marker_key = cm._Object_key and cm._MGIType_key = 2
 			and cm._LogicalDB_key = 1 and cm.preferred = 1)
 		left outer join acc_accession a_seq on (a.accID = a_seq.accID and a_seq._MGIType_key = 19)
@@ -162,8 +163,8 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'strain_marker_key', 'canonical_marker_key', 'canonical_marker_id', 'canonical_marker_symbol', '_Strain_key',
-	'strain', 'strain_id',
+	'strain_marker_key', 'canonical_marker_key', 'canonical_marker_id', 'canonical_marker_symbol', 
+	'canonical_marker_name', '_Strain_key', 'strain', 'strain_id',
 	'feature_type', 'chromosome', 'start_coordinate', 'end_coordinate', 'strand', 'length', 'sequence_num',
 	]
 
