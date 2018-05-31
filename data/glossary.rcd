@@ -1760,6 +1760,12 @@ definition=A <A HREF="!FEWI_URL!glossary/protein">protein</A> that cleaves the p
 ]
 
 [ 
+key=endonuclease_mediated
+displayName=Endonuclease Mediated Mutation
+definition=A type of engineered mutation in which a chromosomal gene is altered by the action of a RNA-guided DNA site-specific <A HREF="!FEWI_URL!glossary/endonuclease">endonuclease</A>, including the actions of the clustered regulatory interspaced short palindromic repeat (CRISPR/Cas9 )system, transcription activator-like effector nucleases (TALENS) or zinc finger nucleases (ZFN). These endonucleases induce a broad range of mutations by inducing DNA double-strand breaks that stimulate error-prone nonhomologous end joining (NEJ) or homology-directed repair (HDR) at specified genomic locations.
+]
+
+[ 
 key=enhancer 
 displayName=Enhancer 
 definition=One of the necessary <A HREF="!FEWI_URL!glossary/regulatory_element">regulatory elements</A> of a \ 
