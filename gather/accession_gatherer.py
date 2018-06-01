@@ -45,9 +45,7 @@ OBJECT_TYPE_FILE = 'accession_object_type'
 ACCESSION_FILE = 'accession'
 DISPLAY_TYPE_FILE = 'accession_display_type'
 
-CHUNK_SIZE = 50000	# note that when we are chunking, we are doing the
-			# same key restriction in multiple tables; while this
-			# appears odd, it improves performance a lot
+CHUNK_SIZE = 100000
 
 HOMOLOGENE_LDB_KEY = 81 # ACC_LogicalDB
 MARKER_CLUSTER_KEY = 39	# ACC_MGIType
@@ -66,18 +64,21 @@ ORGANISM_ORDER = [
 
 ME = top.getMyProcess()
 
+mgpCache = set()			# set of seq IDs for MGP IDs associated with canonical markers
+
 ###--- Functions ---###
 
 def logMemory():
 	# write out memory usage stats to the log file
 
-	ME.measure()
-	latestMem = ME.getLatestMemoryUsed()
-	maxMem = ME.getMaxMemoryUsed()
+	# no memory logging for now
+	#ME.measure()
+	#latestMem = ME.getLatestMemoryUsed()
+	#maxMem = ME.getMaxMemoryUsed()
 
-	logger.debug('Memory used:  %s current, %s maximum' % (
-		top.displayMemory(latestMem),
-		top.displayMemory(maxMem) ) )
+	#logger.debug('Memory used:  %s current, %s maximum' % (
+	#	top.displayMemory(latestMem),
+	#	top.displayMemory(maxMem) ) )
 	return
 
 def compareOrganisms (o1, o2):
@@ -196,6 +197,80 @@ class AccessionGatherer:
 		print '%s %s' % (path, DISPLAY_TYPE_FILE)
 		return
 
+	def fillStrainMarkers (self, accessionFile):
+		# for strain markers (markers specific to a certain mouse strain), we want to link to:
+		#	1. the associated canonical marker, if there is one
+		# We don't need to do this one, as this case is handled in the sequence section:
+		#	2. the gene model sequence for the strain marker, if there is no canonical marker
+		# Populates the global mgpCache with MGP IDs that we're indexing for canonical markers (so
+		# they should be skipped for sequences)
+		
+		global mgpCache
+		
+		cmd = '''select msm._StrainMarker_key,
+				a.accID as strainmarker_id,
+				a._LogicalDB_key as strainmarker_ldb,
+				m._Marker_key as canonical_marker_key,
+				m.symbol as canonical_marker_symbol,
+				m.name as canonical_marker_name,
+				m.chromosome as canonical_chromosome,
+				m._Marker_Type_key as canonical_marker_type,
+				cm.accID as canonical_marker_id,
+				cm._LogicalDB_key as canonical_ldb,
+				s.strain,
+				gm._Sequence_key,
+				gm.rawBiotype as strain_feature_type
+			from mrk_strainmarker msm
+			inner join prb_strain s on (msm._Strain_key = s._Strain_key)
+			inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
+			inner join mrk_marker m on (m._Marker_key = msm._Marker_key)
+			inner join acc_accession cm on (msm._Marker_key = cm._Object_key and cm._MGIType_key = 2
+				and cm._LogicalDB_key = 1 and cm.preferred = 1)
+			inner join acc_accession a_seq on (a.accID = a_seq.accID and a_seq._MGIType_key = 19)
+			inner join seq_genemodel gm on (a_seq._Object_key = gm._Sequence_key)'''
+		
+		cols, rows = dbAgnostic.execute(cmd)
+
+		smKeyCol = dbAgnostic.columnNumber (cols, '_StrainMarker_key')
+		smIDCol = dbAgnostic.columnNumber (cols, 'strainmarker_id')
+		smLdbCol = dbAgnostic.columnNumber (cols, 'strainmarker_ldb')
+		cmKeyCol = dbAgnostic.columnNumber (cols, 'canonical_marker_key')
+		cmSymbolCol = dbAgnostic.columnNumber (cols, 'canonical_marker_symbol')
+		cmNameCol = dbAgnostic.columnNumber (cols, 'canonical_marker_name')
+		cmChromosomeCol = dbAgnostic.columnNumber (cols, 'canonical_chromosome')
+		cmTypeCol = dbAgnostic.columnNumber (cols, 'canonical_marker_type')
+		cmIDCol = dbAgnostic.columnNumber (cols, 'canonical_marker_id')
+		cmLdbCol = dbAgnostic.columnNumber (cols, 'canonical_ldb')
+		strainCol = dbAgnostic.columnNumber (cols, 'strain')
+		seqKeyCol = dbAgnostic.columnNumber (cols, '_Sequence_key')
+		featureTypeCol = dbAgnostic.columnNumber (cols, 'strain_feature_type')
+
+		outputCols = [ OutputFile.AUTO, '_Object_key', 'accID', 'displayID', 'sequenceNum',
+			'description', '_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+		outputRows = []
+
+		for row in rows:
+			objectKey = row[cmKeyCol]
+			accID = row[smIDCol]
+			displayID = row[cmIDCol]
+			description = '%s, %s, Chr %s' % (row[cmSymbolCol], row[cmNameCol], row[cmChromosomeCol])
+			displayType = Gatherer.resolve (row[cmTypeCol], 'mrk_types', '_Marker_Type_key', 'name')
+			mgiTypeKey = 2
+				
+			row = [ objectKey, accID, displayID, sequenceNum(accID), description, row[smLdbCol],
+					displayTypeNum(displayType), mgiTypeKey ]
+			outputRows.append(row)
+			mgpCache.add(accID)
+
+		logger.debug ('Found %d strain marker IDs' % len(rows))
+		
+		accessionFile.writeToFile (outputCols, outputCols[1:], outputRows)
+		logger.debug ('Wrote strain marker IDs to file')
+
+		del cols, rows, outputCols, outputRows
+		gc.collect()
+		return 
+	
 	def fillMouseMarkers (self, accessionFile):
 		# only mouse markers
 		cmd = '''select m._Marker_key, a.accID, m.symbol, m.name,
@@ -545,41 +620,33 @@ class AccessionGatherer:
 		gc.collect()
 	    return
 
-	def fillProbes (self, accessionFile):
+	def fillProbes (self, accessionFile, tmpProbeIDs):
 	    # large data set, so walk through it in chunks
 
-	    maxProbeKey = getMaxKey ('prb_probe', '_Probe_key')
+	    maxProbeKey = getMaxKey (tmpProbeIDs, 'row_num')
 
 	    minKey = 0
 	    maxKey = CHUNK_SIZE
 
 	    cmd = '''select p._Probe_key, a.accID, a._LogicalDB_key,
-				a._MGIType_key, p._SegmentType_key, p.name
-			from prb_probe p, acc_accession a
-			where p._Probe_key = a._Object_key
-				and a.private = 0
-				and a._MGIType_key = 3
-				and p._Probe_key > %d
-				and p._Probe_key <= %d
-				and a._Object_key > %d
-				and a._Object_key <= %d'''
+				3 as _MGIType_key, p._SegmentType_key, p.name
+			from prb_probe p, %s a
+			where p._Probe_key = a._Probe_key
+				and a.row_num > %%d
+				and a.row_num <= %%d''' % tmpProbeIDs
 
-	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
-			'displayID',
-			'sequenceNum', 'description', '_LogicalDB_key',
-			'_DisplayType_key', '_MGIType_key' ]
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID', 'displayID',
+			'sequenceNum', 'description', '_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
 
 	    while minKey < maxProbeKey:
 		maxKey = minKey + CHUNK_SIZE
-		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
-			minKey, maxKey))
+		cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey))
 
 		keyCol = dbAgnostic.columnNumber (cols, '_Probe_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
 		mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-		displayTypeCol = dbAgnostic.columnNumber (cols,
-			'_SegmentType_key')
+		displayTypeCol = dbAgnostic.columnNumber (cols, '_SegmentType_key')
 		nameCol = dbAgnostic.columnNumber (cols, 'name')
 
 		outputRows = []
@@ -610,51 +677,89 @@ class AccessionGatherer:
 		gc.collect()
 	    return
 
-	def fillSequences (self, accessionFile):
+	def dropTable(self, name):
+		dbAgnostic.execute('drop table %s' % name)
+		logger.debug('Dropped table: %s' % name)
+		return
+	
+	def buildSeqIDTempTable(self):
+	    # Build a temp table with just sequence IDs for the sake of efficiency.  We can also iterate
+	    # over its row_num field to ensure a full result set each time.
+	    
+	    tmpSeqIDs = 'seq_ids'
+	    dbAgnostic.execute(
+			'''select row_number() over () as row_num,
+				_Object_key as _Sequence_key,
+				accID,
+				_LogicalDB_key,
+				preferred
+	    	into temp table %s
+	    	from acc_accession
+	    	where _MGIType_key = 19
+	    		and private = 0
+	    	order by _Object_key''' % tmpSeqIDs)
+	    logger.debug('Built cache table: %s' % tmpSeqIDs)
+		
+	    dbAgnostic.execute('create index si1 on %s(row_num)' % tmpSeqIDs)
+	    dbAgnostic.execute('create index si2 on %s(_Sequence_key)' % tmpSeqIDs)
+	    logger.debug(' - indexed')
+	    return tmpSeqIDs
+	
+	def buildProbeIDTempTable(self):
+	    # Build a temp table with just probe IDs for the sake of efficiency.  We can also iterate
+	    # over its row_num field to ensure a full result set each time. (exclude GenBank IDs)
+	    
+	    tmpProbeIDs = 'probe_ids'
+	    dbAgnostic.execute(
+			'''select row_number() over () as row_num,
+				_Object_key as _Probe_key,
+				accID,
+				_LogicalDB_key
+	    	into temp table %s
+	    	from acc_accession
+	    	where _MGIType_key = 3
+	    		and private = 0
+	    		and _LogicalDB_key != 9
+	    	order by _Object_key''' % tmpProbeIDs)
+	    logger.debug('Built cache table: %s' % tmpProbeIDs)
+		
+	    dbAgnostic.execute('create index pi1 on %s(row_num)' % tmpProbeIDs)
+	    dbAgnostic.execute('create index pi2 on %s(_Probe_key)' % tmpProbeIDs)
+	    logger.debug(' - indexed')
+	    return tmpProbeIDs
+	
+	def fillSequences (self, accessionFile, tmpSeqIDs, tmpProbeIDs):
+	    global mgpCache
 
-	    maxSeqKey = getMaxKey ('seq_sequence', '_Sequence_key')
-	    maxProbeKey = getMaxKey ('seq_probe_cache', '_Probe_key')
+	    maxSeqKey = getMaxKey (tmpSeqIDs, 'row_num')
+	    maxProbeKey = getMaxKey (tmpProbeIDs, 'row_num')
 
 	    # sequence IDs
-	    cmd1 = '''select s._Sequence_key, a.accID, a._LogicalDB_key,
-	    		a._MGIType_key, s.description, s._SequenceType_key
-	    	from acc_accession a, seq_sequence s
-		where a._MGIType_key = 19
-			and a.private = 0
-			and a._Object_key = s._Sequence_key
-			and a._Object_key > %d
-			and a._Object_key <= %d
-			and s._Sequence_key > %d
-			and s._Sequence_key <= %d'''
+	    cmd1 = '''select a._Sequence_key, a.accID, a._LogicalDB_key,
+	    		19 as _MGIType_key, s.description, s._SequenceType_key
+	    	from %s a, seq_sequence s
+		where a._Sequence_key = s._Sequence_key
+			and a.row_num > %%d
+			and a.row_num <= %%d''' % tmpSeqIDs
 
 	    # probe IDs for probes associated with sequences (from non-Genbank
 	    # logical databases).  Iterate through probes, as there are fewer
 	    # of them.
 	    cmd2 = '''select s._Sequence_key, a.accID, a._LogicalDB_key,
-	    		seqacc.accID as seqID,
-			seqacc._LogicalDB_key as seqLDB,
+	    		seqacc.accID as seqID, seqacc._LogicalDB_key as seqLDB,
 	    		19 as _MGIType_key, s.description, s._SequenceType_key
-	    	from acc_accession a, seq_probe_cache spc, seq_sequence s,
-			acc_accession seqacc
-		where a._MGIType_key = 3
-			and a.private = 0
-			and spc._Probe_key > %d
-			and spc._Probe_key <= %d
-			and a._Object_key > %d
-			and a._Object_key <= %d
-			and a._Object_key = spc._Probe_key
+	    	from %s a, seq_probe_cache spc, seq_sequence s, %s seqacc
+		where a.row_num > %%d
+			and a.row_num <= %%d
+			and a._Probe_key = spc._Probe_key
 			and spc._Sequence_key = s._Sequence_key
-			and s._Sequence_key = seqacc._Object_key
-			and seqacc._MGIType_key = 19
-			and seqacc.preferred = 1
-			and seqacc.private = 0
-			and a._LogicalDB_key != 9'''
+			and spc._Sequence_key = seqacc._Sequence_key
+			and seqacc.preferred = 1''' % (tmpProbeIDs, tmpSeqIDs)
 
 	    queries = [ (cmd1, 'sequence IDs', maxSeqKey),
 			(cmd2, 'probe IDs for sequences', maxProbeKey) ]
 
-	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID',
-			'displayID',
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID', 'displayID',
 			'sequenceNum', 'description', '_LogicalDB_key',
 			'_DisplayType_key', '_MGIType_key' ]
 
@@ -664,18 +769,15 @@ class AccessionGatherer:
 
 		while minKey < maxObjectKey:
 		    maxKey = minKey + CHUNK_SIZE
-		    cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey,
-			    minKey, maxKey))
+		    cols, rows = dbAgnostic.execute(cmd % (minKey, maxKey))
 
 		    keyCol = dbAgnostic.columnNumber (cols, '_Sequence_key')
 		    idCol = dbAgnostic.columnNumber (cols, 'accID')
 		    ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
-		    mgiTypeCol = dbAgnostic.columnNumber (cols,
-			'_MGIType_key')
-		    displayTypeCol = dbAgnostic.columnNumber (cols,
-			'_SequenceType_key')
-		    descriptionCol = dbAgnostic.columnNumber (cols,
-			'description')
+		    mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
+		    displayTypeCol = dbAgnostic.columnNumber (cols, '_SequenceType_key')
+		    descriptionCol = dbAgnostic.columnNumber (cols, 'description')
+		    
 		    if idType[:5] == 'probe':
 			    seqCol = dbAgnostic.columnNumber (cols, 'seqID')
 			    seqLdbCol = dbAgnostic.columnNumber (cols,'seqLDB')
@@ -692,6 +794,11 @@ class AccessionGatherer:
 		    for row in rows:
 			accID = row[idCol]
 			sequenceKey = row[keyCol]
+			
+			# if this ID was already added for a canonical marker (for MGP strain markers),
+			# do not add it for the sequence
+			if accID in mgpCache:
+				continue
 
 			if idType[:5] == 'probe':
 			    if idsByObject.has_key(sequenceKey):
@@ -718,17 +825,18 @@ class AccessionGatherer:
 				]
 			outputRows.append (out) 
 
-		    logger.debug ('Found %d %s (%d-%d)' % (len(rows), idType,
-			minKey, maxKey))
+		    logger.debug ('Found %d %s (%d-%d)' % (len(rows), idType, minKey, maxKey))
 
-		    accessionFile.writeToFile (outputCols, outputCols[1:],
-			outputRows)
+		    accessionFile.writeToFile (outputCols, outputCols[1:], outputRows)
 		    logger.debug ('Wrote %s to file' % idType)
 
 		    del cols, rows, outputRows
 		    gc.collect()
 
 		    minKey = maxKey
+
+	    del mgpCache
+	    gc.collect()
 	    return
 
 	def fillImages (self, accessionFile):
@@ -1258,6 +1366,22 @@ class AccessionGatherer:
 		# build the large file
 
 		accessionFile = OutputFile.OutputFile (ACCESSION_FILE)
+		
+		# fillStrainMarkers must be done before fillSequences, so the mgpCache is populated
+		self.fillStrainMarkers (accessionFile)
+		logMemory()
+		
+		tmpSeqIDs = self.buildSeqIDTempTable()	
+		tmpProbeIDs = self.buildProbeIDTempTable()	
+
+		self.fillSequences (accessionFile, tmpSeqIDs, tmpProbeIDs)
+		logMemory()
+		self.dropTable(tmpSeqIDs)
+
+		self.fillProbes (accessionFile, tmpProbeIDs)
+		logMemory()
+		self.dropTable(tmpProbeIDs)
+
 		self.fillGenotypes (accessionFile)
 		logMemory()
 
@@ -1274,12 +1398,6 @@ class AccessionGatherer:
 		logMemory()
 
 		self.fillAlleles (accessionFile)
-		logMemory()
-
-		self.fillProbes (accessionFile)
-		logMemory()
-
-		self.fillSequences (accessionFile)
 		logMemory()
 
 		self.fillImages (accessionFile)
