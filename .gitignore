@@ -10,3 +10,4 @@ schema/config.py
 *~
 gather/sql.log
 .settings/
+.project/
