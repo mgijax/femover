@@ -554,7 +554,8 @@ cmds = [
 	# 5. counts of SNPs per marker (really, SNP locations.  A SNP that is
 	# within 2kb of a marker will have all of its locations counted, even
 	# if some are not within 2 kb of that marker.)  Only count SNPs with a
-	# variation class of "SNP" for now.
+	# variation class of "SNP" for now.  Include join to MRK_Marker just to
+	# ensure that we have legitimate marker keys.
 	'''with coord_counts as (
 			select _ConsensusSNP_key,
 				count(distinct startCoordinate) as coord_count
@@ -569,8 +570,9 @@ cmds = [
 			and s._VarClass_key = 1878510
 			and m.distance_from <= 2000)
 	select m._Marker_key, sum(f.coord_count) as snp_count
-	from pairs m, coord_counts f
+	from pairs m, coord_counts f, mrk_marker mm
 	where m._ConsensusSNP_key = f._ConsensusSNP_key
+		and m._Marker_key = mm._Marker_key
 	group by m._Marker_key''',
 	]
 
