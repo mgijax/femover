@@ -504,6 +504,7 @@ class AccessionGatherer:
 				and a._MGIType_key = 1
 				and a.private = 0
 				and a.accID is not null
+				and a.accID != ''
 				and (c.journal != 'Submission'
 					or c.journal is null)'''
 
