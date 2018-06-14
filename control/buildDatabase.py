@@ -1371,17 +1371,15 @@ def logProfilingData():
 		fp.write('\n')
 
 		for (name, maxMem, avgMem, maxCpu, avgCpu, time) in GATHER_PROFILES:
-			if maxMem == None:
-				mmString = '0'
-				mmInt = 0
-			else:
+			mmString = '0'
+			mmInt = 0
+			if maxMem != None:
 				mmString = top.displayMemory(maxMem)
 				mmInt = int(maxMem)
 
-			if avgMem == None:
-				amString = '0'
-				amFloat = '0.0'
-			else:
+			amString = '0'
+			amFloat = '0.0'
+			if (avgMem != None) and (type(avgMem) == type(0.1)):
 				amString = top.displayMemory(avgMem)
 				amFloat = '%0.3f' % avgMem
 
