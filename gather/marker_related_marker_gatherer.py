@@ -158,9 +158,15 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 		cols.append ('sequence_num')
 		seqNum = 0
 
+		# Weed out redundant data from MGI_Relationship.
+		seen = set()
 		for row in rows:
-			row.append (regGenerator.getKey((row[relKeyCol], 
-				participant)))
+			mrmKey = regGenerator.getKey((row[relKeyCol], participant))
+			if mrmKey in seen:
+				continue
+			
+			seen.add(mrmKey)
+			row.append(mrmKey)
 			seqNum = seqNum + 1 
 			row.append (seqNum)
 
