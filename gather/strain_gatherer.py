@@ -35,7 +35,7 @@ cmds = [
 		group by 1
 		)
 		select s._Strain_key, s.strain, a.accID, st.term as strain_type,
-			sp.term as species, s.standard, case
+			sp.term as species, s.standard, mnc.note as description, case
 				when ss._Strain_key is null then 0
 				else 1
 				end as is_sequenced
@@ -44,6 +44,9 @@ cmds = [
 		inner join voc_term sp on (s._Species_key = sp._Term_key)
 		inner join %s t on (s._Strain_key = t._Strain_key)
 		left outer join sequenced_strains ss on (s._Strain_key = ss._Strain_key) 
+		left outer join mgi_note mn on (s._Strain_key = mn._Object_key
+			and mn._NoteType_key = 1013)
+		left outer join mgi_notechunk mnc on (mn._Note_key = mnc._Note_key)
 		left outer join acc_accession a on (
 			s._Strain_key = a._Object_key
 			and a._MGIType_key = 10
@@ -56,7 +59,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Strain_key', 'strain', 'accID', 'strain_type', 'species', 'standard', 'is_sequenced']
+fieldOrder = [ '_Strain_key', 'strain', 'accID', 'strain_type', 'species', 'description', 'standard', 'is_sequenced']
 
 # prefix for the filename of the output file
 filenamePrefix = 'strain'
