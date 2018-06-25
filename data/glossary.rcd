@@ -3646,8 +3646,7 @@ key=paralog
 displayName=Paralog 
 definition=One of a set of homologous <A HREF="!FEWI_URL!glossary/gene">genes</A> that have diverged \
 from each other as a consequence of genetic duplication. For example, the mouse alpha globin and beta globin genes are paralogs. \ 
-The relationship between mouse alpha globin and chick beta globin is also considered paralogous. See the \ 
-following <a href="http://genomebiology.com/2001/2/8/interactions/1002/figure/F1" target="_blank">Figure</a>\
+The relationship between mouse alpha globin and chick beta globin is also considered paralogous. \
 <BR>See also:<UL><LI>\ 
 <A HREF="!FEWI_URL!glossary/homolog">Homolog</A></LI><LI>\ 
 <A HREF="!FEWI_URL!glossary/ortholog">Ortholog</A></LI><LI>\
@@ -3705,8 +3704,7 @@ length of DNA that can be reliably synthesized <A HREF="!FEWI_URL!glossary/in_vi
 <A HREF="!FEWI_URL!glossary/replication">replication</A>. The sample is subjected to multiple cycles of \
 denaturation and cooling to allow multiple rounds of replication. The quantity of the target sequence doubles during each \
 cycle, causing the target sequence to be amplified, while other <A HREF="!FEWI_URL!glossary/dna">DNA</A> \ 
-sequences in the sample remain unamplified. See the <A HREF="http://www.accessexcellence.org/AB/GG/polymerase.html">Figure</A> \
-at Access Excellence. 
+sequences in the sample remain unamplified. \ 
 ]
 
 [ 
@@ -5056,8 +5054,8 @@ definition=The <A HREF="!FEWI_URL!glossary/enzyme">enzymatic</A> synthesis of a 
 <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> molecule. The \ 
 <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> is read from the \ 
 <A HREF="!FEWI_URL!glossary/_5_utr">5' end</A> to the \ 
-<AHREF="!FEWI_URL!glossary/_3_prime">3' end</A>, with the \ 
-<AHREF="!FEWI_URL!glossary/protein">protein</A> being synthesized from the \ 
+<A HREF="!FEWI_URL!glossary/_3_prime">3' end</A>, with the \ 
+<A HREF="!FEWI_URL!glossary/protein">protein</A> being synthesized from the \ 
 <A HREF="!FEWI_URL!glossary/amino_terminus">amino terminus</A> to the \ 
 <A HREF="!FEWI_URL!glossary/carboxyl_terminus">carboxyl terminus</A>. See the \ 
 <A HREF="http://www.accessexcellence.org/AB/GG/protein_synthesis.html">Figure</A> at Access Excellence or the \ 
@@ -5075,7 +5073,7 @@ in such a way that:\
 <OL>\
 <LI>the resulting <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A> each contain material from the \
 other chromosome (a <B>reciprocal</B> translocation), see the \ 
-<A HREF=https://en.wikipedia.org/wiki/Chromosomal_translocation">Figure</A> at \ 
+<A HREF="https://en.wikipedia.org/wiki/Chromosomal_translocation">Figure</A> at \ 
 Wikipedia</LI>\
 <LI>one of the chromosomes contains an <A HREF="!FEWI_URL!glossary/insertion">insertion</A> of material \
 from the other chromosome, with the other chromosome containing a \
