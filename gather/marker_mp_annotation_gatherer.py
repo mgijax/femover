@@ -11,6 +11,7 @@ import symbolsort
 import gc
 import dbAgnostic
 import TagConverter
+import StrainUtils
 
 ###--- Globals ---###
 
@@ -38,6 +39,9 @@ HEADERS = {}
 # top-levevl MP terms which should be excluded from consideration as
 # slimgrid headers
 EXCLUDE = [ 'no phenotypic analysis', 'normal phenotype', 'other phenotype' ]
+
+# mapping from genotype ID to strain ID
+STRAIN_IDS = None
 
 ###--- Functions ---###
 
@@ -254,6 +258,44 @@ def compareAnnotations (a, b):
 
     return cmp(a[6], b[6])
 
+def getStrainIDs():
+    # build and return a dictionary mapping from a genotype ID to a strain ID (where available)
+    
+    cmd = '''select g.accID as genotype_id, s.accID as strain_id
+        from gxd_genotype gg, acc_accession g, acc_accession s, %s ss
+        where gg._Genotype_key = g._Object_key
+            and g._LogicalDB_key = 1
+            and g.preferred = 1
+            and g._MGIType_key = 12
+            and gg._Strain_key = s._Object_key
+            and s._LogicalDB_key = 1
+            and s.preferred = 1
+            and s._MGIType_key = 10
+            and gg._Strain_key = ss._Strain_key''' % StrainUtils.getStrainTempTable()
+    
+    cols, rows = dbAgnostic.execute(cmd)
+    
+    gCol = Gatherer.columnNumber(cols, 'genotype_id')
+    sCol = Gatherer.columnNumber(cols, 'strain_id')
+    
+    ids = {}
+    for row in rows:
+        ids[row[gCol]] = row[sCol]
+        
+    logger.debug('Got strain IDs for %d genotypes' % len(ids))
+    return ids
+
+def getStrainID(genotypeID):
+    # return the strain ID corresponding to genotypeID
+    global STRAIN_IDS
+    
+    if STRAIN_IDS == None:
+        STRAIN_IDS = getStrainIDs()
+        
+    if genotypeID in STRAIN_IDS:
+        return STRAIN_IDS[genotypeID]
+    return None
+
 ###--- Classes ---###
 
 class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
@@ -395,7 +437,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                 self.addRow (self.genoTable, [ mpGenoKey,
                     markerKey, multigenic,
                     TagConverter.convert(allelePairs, False),
-                    strain, accID, genoSeqNum ] )
+                    strain, getStrainID(accID), accID, genoSeqNum ] )
 
                 lastMarker = markerKey
                 lastGenotype = genotypeKey
@@ -640,9 +682,9 @@ cmds = [
 files = [
     ('marker_mp_genotype',
         [ 'mp_genotype_key', 'marker_key', 'is_multigenic',
-            'allele_pairs', 'strain', 'acc_id', 'sequence_num' ],
+            'allele_pairs', 'strain', 'strain_id', 'acc_id', 'sequence_num' ],
         [ 'mp_genotype_key', 'marker_key', 'is_multigenic',
-            'allele_pairs', 'strain', 'acc_id', 'sequence_num' ]),
+            'allele_pairs', 'strain', 'strain_id', 'acc_id', 'sequence_num' ]),
     ('marker_mp_annotation',
         [ 'mp_annotation_key', 'mp_genotype_key', 'qualifier',
             'term_key', 'term_id', 'term', 'sequence_num' ],

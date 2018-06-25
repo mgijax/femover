@@ -19,6 +19,7 @@ createStatement = '''CREATE TABLE %s  (
 	primary_id		text	null,
 	strain_type		text	null,
 	species			text	null,
+	description		text	null,
 	is_standard		int		not null,
 	is_sequenced	int		not null,
 	PRIMARY KEY(strain_key))''' % tableName
@@ -47,6 +48,7 @@ comments = {
 		'primary_id' : 'primary MGI ID of the mouse strain',
 		'strain_type' : 'high-level type of strain (attributes are more specific)',
 		'species' : 'type of mouse for this strain',
+		'description' : 'textual strain description (from note type 1013)',
 		'is_standard' : '0/1 flag for whether this is an official strain or not',
 		'is_sequenced' : '0/1 flag for whether this is one of the 19 sequenced strains or not',
 		},

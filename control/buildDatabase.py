@@ -301,6 +301,9 @@ elif config.TARGET_TYPE == 'postgres':
 else:
 	raise error, 'Unknown value for config.TARGET_TYPE'
 
+SOURCE_DBM = dbManager.postgresManager (config.SOURCE_HOST, config.SOURCE_DATABASE,
+	config.SOURCE_USER, config.SOURCE_PASSWORD)
+
 ###--- Functions ---###
 
 def bailout (s,			# string; error message to print
@@ -873,7 +876,7 @@ def checkForFinishedLoad():
 	# if the file conversion stage finished and there are no more
 	# unfinished loads, then the load stage has finished -- report it
 
-	if (GATHER_STATUS == ENDED) and (not BCPIN_IDS):
+	if (GATHER_STATUS == ENDED) and (not BCPIN_IDS) and (BCPIN_STATUS != ENDED):
 		BCPIN_STATUS = ENDED
 		logger.debug ('Last bulk load finished')
 		dbInfoTable.setInfo ('status', 'finished loading data')
@@ -1095,7 +1098,7 @@ def checkForFinishedIndexes():
 	# if the load processes have all finished and there are no unfinished
 	# indexing processes, then the indexing stage is done -- report it
 
-	if (BCPIN_STATUS == ENDED) and (not INDEX_IDS) and (INDEX_STATUS != ENDED):
+	if (OPTIMIZE_STATUS == ENDED) and (not INDEX_IDS) and (INDEX_STATUS != ENDED):
 		INDEX_STATUS = ENDED
 		logger.debug ('Last index finished')
 		dbInfoTable.setInfo ('status', 'finished indexing')
@@ -1285,7 +1288,7 @@ def checkForFinishedForeignKeys():
 	# unfinished foreign key processes, then the foreign key stage is
 	# done -- report it
 
-	if (INDEX_STATUS == ENDED) and (not FK_IDS) and (FK_STATUS != ENDED):
+	if (COMMENT_STATUS == ENDED) and (not FK_IDS) and (FK_STATUS != ENDED):
 		FK_STATUS = ENDED
 		logger.debug ('Last foreign key finished')
 		dbInfoTable.setInfo ('status', 'finished foreign keys')
@@ -1367,15 +1370,25 @@ def logProfilingData():
 		fp.write('\t'.join(cols))
 		fp.write('\n')
 
-		for (name, maxMem, avgMem, maxCpu, avgCpu, time) in \
-			GATHER_PROFILES:
+		for (name, maxMem, avgMem, maxCpu, avgCpu, time) in GATHER_PROFILES:
+			mmString = '0'
+			mmInt = 0
+			if maxMem != None:
+				mmString = top.displayMemory(maxMem)
+				mmInt = int(maxMem)
+
+			amString = '0'
+			amFloat = '0.0'
+			if (avgMem != None) and (type(avgMem) == type(0.1)):
+				amString = top.displayMemory(avgMem)
+				amFloat = '%0.3f' % avgMem
 
 			cols = [
 				name,
-				top.displayMemory(maxMem),
-				int(maxMem),
-				top.displayMemory(avgMem),
-				'%0.3f' % avgMem,
+				mmString,
+				mmInt,
+				amString,
+				amFloat,
 				'%0.1f' % maxCpu,
 				'%0.1f' % avgCpu,
 				formatTime(time),
@@ -1388,6 +1401,7 @@ def logProfilingData():
 		fp.close()
 	except:
 		logger.debug('Could not write gatherer_profiles.txt')
+		traceback.print_exc()
 	return
 
 def readTimings():
@@ -1496,6 +1510,33 @@ def sortGatherers(gatherers):
 
 	return map(lambda x : x[1], toOrder)
 
+def sourceContainsPrivateData():
+	# Purpose: determine if the source database still has private data in it (a common
+	#	error, when we forget to run the MGI_deletePrivateData script in development)
+	# Returns: boolean (True if private data exists, False if not)
+	# Assumes: we can read from the source database
+	# Modifies: nothing
+	# Throws: propagates any exceptions raised during database access
+	
+	# Any alleles without an Autoload or Approved status should have been removed by the
+	# process to delete private data.
+	
+	cmd = '''select count(1)
+		from all_allele a, voc_term t
+		where a._Allele_Status_key = t._Term_key
+			and t.term not in ('Approved', 'Autoload')'''
+	(columns, rows) = SOURCE_DBM.execute(cmd)
+	
+	# Just as a second check, look for a couple of note types that should also have been
+	# removed.
+	
+	cmd2 = '''select count(1)
+		from mgi_note
+		where _NoteType_key in (1004,1009)'''
+	(columns2, rows2) = SOURCE_DBM.execute(cmd2)
+	
+	return (rows[0][0] != 0) or (rows2[0][0] != 0)
+	
 def main():
 	# Purpose: main program (main logic of the script)
 	# Returns: nothing
@@ -1509,6 +1550,10 @@ def main():
 	gatherers = sortGatherers(processCommandLine())
 	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
 	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
+	
+	if sourceContainsPrivateData():
+		raise error, 'Error: Source database contains private data.  Need to run MGI_deletePrivateData.csh'
+	
 	dbInfoTable.dropTable()
 	if FULL_BUILD:
 		dropTables(gatherers)

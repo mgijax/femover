@@ -11,6 +11,7 @@ import Gatherer
 import logger
 import GOGraphs
 import utils
+import dbAgnostic
 
 # list of markers in mrk_location_cache
 locationLookup = {}
@@ -23,7 +24,33 @@ locationDisplay3 = 'Chr%s syntenic'
 locationDisplay4 = 'Chr%s QTL'
 locationDisplay5 = 'Chr Unknown'
 
+strainName = 'C57BL/6J'
+strainID = None
+
 ###--- Functions ---###
+
+def getStrainID():
+	# get the primary ID for the global 'strainName'
+	global strainID
+	
+	if strainID == None:
+		cmd = '''select a.accID
+			from prb_strain ps, acc_accession a, acc_mgitype t
+			where ps._Strain_key = a._Object_key
+				and a._MGIType_key = t._MGIType_key
+				and t.name = 'Strain'
+				and a._LogicalDB_key = 1
+				and a.preferred = 1
+				and ps.strain = '%s' ''' % strainName
+		cols, rows = dbAgnostic.execute(cmd)
+		
+		if len(rows) != 1:
+			raise Exception('Cannot uniquely find strain %s' % strainName)
+		
+		strainID = rows[0][0]
+		logger.debug('Found ID for %s' % strainName)
+
+	return strainID
 
 def getLocationDisplay (marker, organism):
 	#
@@ -139,63 +166,56 @@ class MarkerGatherer (Gatherer.Gatherer):
 
 		self.convertFinalResultsToList()
 
-		statusCol = Gatherer.columnNumber (self.finalColumns,
-			'_Marker_Status_key')
-		typeCol = Gatherer.columnNumber (self.finalColumns,
-			'_Marker_Type_key')
-		orgCol = Gatherer.columnNumber (self.finalColumns,
-			'_Organism_key')
-		keyCol = Gatherer.columnNumber (self.finalColumns,
-			'_Marker_key')
+		statusCol = Gatherer.columnNumber (self.finalColumns, '_Marker_Status_key')
+		typeCol = Gatherer.columnNumber (self.finalColumns, '_Marker_Type_key')
+		orgCol = Gatherer.columnNumber (self.finalColumns, '_Organism_key')
+		keyCol = Gatherer.columnNumber (self.finalColumns, '_Marker_key')
 
+		B6Name = strainName
+		B6ID = getStrainID()
+		
 		for r in self.finalResults:
 
 			markerKey = r[keyCol]
 			organism = r[orgCol]
 
 			if self.featureTypes.has_key(markerKey):
-				feature = ', '.join (
-					self.featureTypes[markerKey])
+				feature = ', '.join (self.featureTypes[markerKey])
 			else:
 				feature = None
 
 			# look up cached ID and logical database
 			if self.ids.has_key(markerKey):
 				accid, ldb = self.ids[markerKey]
-				ldbName = Gatherer.resolve (ldb,
-					'acc_logicaldb', '_LogicalDB_key',
-					'name')
+				ldbName = Gatherer.resolve (ldb, 'acc_logicaldb', '_LogicalDB_key', 'name')
 			else:
 				accid = None
 				ldb = None
 				ldbName = None
 
+			organism = utils.cleanupOrganism(Gatherer.resolve (r[orgCol], 'mgi_organism', '_Organism_key', 'commonName'))
+
 			self.addColumn ('accid', accid, r, self.finalColumns)
-			self.addColumn ('subtype', feature, r,
-				self.finalColumns)
-			self.addColumn ('status', Gatherer.resolve (
-				r[statusCol], 'mrk_status',
-				'_Marker_Status_key', 'status'),
-				r, self.finalColumns)
-			self.addColumn ('logicalDB', ldbName, r,
-				self.finalColumns)
-			self.addColumn ('markerType', Gatherer.resolve (
-				r[typeCol], 'mrk_types', '_Marker_Type_key',
-				'name'), r, self.finalColumns)
-			self.addColumn ('organism', utils.cleanupOrganism(
-				Gatherer.resolve (r[orgCol], 'mgi_organism',
-				'_Organism_key', 'commonName')),
-				r, self.finalColumns)
-			self.addColumn ('hasGOGraph',
-				GOGraphs.hasGOGraph(accid),
-				r, self.finalColumns)
+			self.addColumn ('subtype', feature, r, self.finalColumns)
+			self.addColumn ('status', Gatherer.resolve (r[statusCol], 'mrk_status', '_Marker_Status_key', 'status'), r, self.finalColumns)
+			self.addColumn ('logicalDB', ldbName, r, self.finalColumns)
+			self.addColumn ('markerType', Gatherer.resolve (r[typeCol], 'mrk_types', '_Marker_Type_key', 'name'), r, self.finalColumns)
+			self.addColumn ('organism', organism, r, self.finalColumns)
+			self.addColumn ('hasGOGraph', GOGraphs.hasGOGraph(accid), r, self.finalColumns)
 
 			# location and coordinate information
-		        location, coordinate, buildIdentifier = getLocationDisplay(markerKey, organism)
+			location, coordinate, buildIdentifier = getLocationDisplay(markerKey, organism)
 			self.addColumn ('location_display', location, r, self.finalColumns)
 			self.addColumn ('coordinate_display', coordinate, r, self.finalColumns)
 			self.addColumn ('build_identifier', buildIdentifier, r, self.finalColumns)
-
+			
+			# add strain info for markers with coordinates on C57BL/6J
+			if (organism == 'mouse') and coordinate:
+				self.addColumn ('strain', B6Name, r, self.finalColumns)
+				self.addColumn ('strain_id', B6ID, r, self.finalColumns)
+			else:
+				self.addColumn ('strain', None, r, self.finalColumns)
+				self.addColumn ('strain_id', None, r, self.finalColumns) 
 		return
 
 ###--- globals ---###
@@ -273,7 +293,7 @@ cmds = [
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
 	'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
-	'location_display', 'coordinate_display', 'build_identifier' ]
+	'location_display', 'coordinate_display', 'build_identifier', 'strain', 'strain_id', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker'

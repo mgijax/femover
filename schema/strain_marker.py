@@ -16,6 +16,9 @@ tableName = 'strain_marker'
 createStatement = '''CREATE TABLE %s  ( 
 	strain_marker_key		int		not null,
 	canonical_marker_key	int		null,
+	canonical_marker_id		text	null,
+	canonical_marker_symbol	text	null,
+	canonical_marker_name	text	null,
 	strain_key				int		not null,
 	strain_name				text	null,
 	strain_id				text	null,
@@ -33,6 +36,7 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
 	'strain_key' : 'create index %s on %s (strain_key)',
+	'canonical_id' : 'create index %s on %s (canonical_marker_id)',
 	}
 
 # column name -> (related table, column in related table)
@@ -50,6 +54,9 @@ comments = {
 	Table.COLUMN : {
 		'strain_marker_key' : 'primary key for this table, identifies a strain marker object',
 		'canonical_marker_key' : 'marker key for the canonical marker associated with this strain marker (FK to marker table)',
+		'canonical_marker_id' : 'primary ID for the canonical marker associated with this strain marker (if any)',
+		'canonical_marker_symbol' : 'official symbol for the canonical marker associated with this strain marker (if any)',
+		'canonical_marker_name' : 'official name for the canonical marker associated with this strain marker (if any)',
 		'strain_key' : 'strain key of the associated strain (FK to strain table)',
 		'strain_name' : 'name of the strain, cached for convenience',
 		'strain_id' : 'primary ID of the strain, cached for convenience',

@@ -88,7 +88,7 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 				strain, strainKey, seqNum = self.strainCache[strainID]
 
 				smKey = smKey + 1
-				r = ( smKey, markerKey, strainKey, strain, strainID,
+				r = ( smKey, markerKey, None, None, None, strainKey, strain, strainID,
 						None, None, None, None, None, None, seqNum )
 				self.finalResults.append (r)
 				ct = ct + 1
@@ -96,11 +96,39 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
 		logger.debug('Generated %d filler rows' % ct)
 		return
 	
+	def filterDuplicates(self):
+		# It is possible for a single strain marker to have multiple records in self.finalResults,
+		# if it has multiple gene model sequences.  We need to filter this down so each strain marker
+		# only appears once.  To do this, we'll keep the first one seen for each.  (Note that the
+		# records are already ordered by marker key, then strain, then by logical database.)
+		
+		pkCol = Gatherer.columnNumber(self.finalColumns, 'strain_marker_key')
+		i = len(self.finalResults) - 1
+		lastPK = None
+		deletedCount = 0
+		
+		# Start at the end of the list and work backward.  If we encounter a strain marker key that
+		# matches the one we just saw, then delete the one we just saw and keep this one.
+		
+		while i >= 0:
+			pk = self.finalResults[i][pkCol]
+			if pk == lastPK:
+				del self.finalResults[i + 1]	
+				deletedCount = deletedCount + 1
+			else:
+				lastPK = pk
+			i = i - 1
+		
+		logger.debug('Removed %d duplicate rows' % deletedCount)
+		return
+
 	def collateResults(self):
 		self.populateStrainCaches()
 		
 		self.finalColumns, self.finalResults = self.results[-1]
 		logger.debug('Got %d rows from db' % len(self.finalResults))
+		
+		self.filterDuplicates()
 		
 		self.generateMissingStrainMarkers()
 		logger.debug('Added rows for missing strains')
@@ -137,29 +165,34 @@ cmds = [
 	
 	# 4. all strain-marker records from the database
 	'''select msm._StrainMarker_key as strain_marker_key, m._Marker_key as canonical_marker_key,
+			cm.accID as canonical_marker_id, m.symbol as canonical_marker_symbol,
+			m.name as canonical_marker_name,
 			s._Strain_key, s.strain, s.accID as strain_id, 
 			gm.rawBiotype as feature_type, ch.chromosome,
 			mcf.startCoordinate::bigint as start_coordinate,
 			mcf.endCoordinate::bigint as end_coordinate, mcf.strand,
 			(abs(mcf.endCoordinate - mcf.startCoordinate) + 1)::bigint as length,
-			s.sequence_num
+			s.sequence_num, a_seq._LogicalDB_key
 		from mrk_strainmarker msm
-		inner join mrk_marker m on (m._Marker_key = msm._Marker_key)
 		inner join %s s on (msm._Strain_key = s._Strain_key)
 		inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
+		left outer join mrk_marker m on (m._Marker_key = msm._Marker_key)
+		left outer join acc_accession cm on (msm._Marker_key = cm._Object_key and cm._MGIType_key = 2
+			and cm._LogicalDB_key = 1 and cm.preferred = 1)
 		left outer join acc_accession a_seq on (a.accID = a_seq.accID and a_seq._MGIType_key = 19)
 		left outer join seq_genemodel gm on (a_seq._Object_key = gm._Sequence_key)
 		left outer join map_coord_feature mcf on (a_seq._Object_key = mcf._Object_key and mcf._MGIType_key = 19)
 		left outer join map_coordinate mc on (mcf._Map_key = mc._Map_key and mc._MGIType_key = 27)
 		left outer join map_coord_collection col on (mc._Collection_key = col._Collection_key and col.abbreviation = 'MGP')
 		left outer join mrk_chromosome ch on (mc._Object_key = ch._Chromosome_key)
-		order by m._Marker_key, s.sequence_num''' % all_strains,
+		order by m._Marker_key, s.sequence_num, a_seq._LogicalDB_key''' % all_strains,
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'strain_marker_key', 'canonical_marker_key', '_Strain_key', 'strain', 'strain_id',
+	'strain_marker_key', 'canonical_marker_key', 'canonical_marker_id', 'canonical_marker_symbol', 
+	'canonical_marker_name', '_Strain_key', 'strain', 'strain_id',
 	'feature_type', 'chromosome', 'start_coordinate', 'end_coordinate', 'strand', 'length', 'sequence_num',
 	]
 

@@ -28,6 +28,8 @@ createStatement = '''CREATE TABLE %s  (
 	location_display 	text	NULL,
 	coordinate_display 	text 	NULL,
 	build_identifier	text    NULL,
+	strain				text	NULL,
+	strain_id			text	NULL,
 	PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -58,6 +60,8 @@ comments = {
 		'location_display' : 'genetic location (cM, cytogentic offset) display',
 		'coordinate_display' : 'genomic coordinate display',
 		'build_identifier' : 'names the genome build to which the coordinates are relative',
+		'strain' : 'name of mouse strain, if this marker has a coordiante location (will always be null of C57BL/6J)',
+		'strain_id' : 'primary ID for the mouse strain (will always be null or ID of C57BL/6J)',
 		},
 	Table.INDEX : {
 		'symbol' : 'look up markers by symbol',
