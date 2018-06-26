@@ -667,9 +667,9 @@ definition=The order of <A HREF="!FEWI_URL!glossary/nucleotide">nucleotide</A> \
 [
 key=bind
 displayName=BIND
-definition=Biomolecular Interaction Network Database. A collection of \
-records documenting molecular  interactions.  The contents of \
-<a href="http://www.blueprint.org/bind/bind_about.html">BIND</a> include \
+definition=Biomolecular Interaction Network Database. Was a collection of \
+records documenting molecular interactions.  The contents of \
+BIND included \
 high-throughput data submissions and hand-curated information gathered \
 from the scientific  literature.
 ]
@@ -732,9 +732,9 @@ displayName=BLAST
 definition=Basic Local Alignment and Searching Tool. A sequence comparison \ 
 <A HREF="!FEWI_URL!glossary/algorithm">algorithm</A> optimized \
 for speed used to search sequence databases for optimal local alignments to a \
-query sequence. There is a description of the \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/Education/BLASTinfo/BLAST_algorithm.html">specific algorithm</A> \ 
-used, and additional information, at <A HREF="http://www.ncbi.nlm.nih.gov/BLAST/blast_overview.html">NCBI</A>. 
+query sequence. For more on BLAST, see \ 
+The <a href="https://www.ncbi.nlm.nih.gov/books/NBK153387/">BLAST Sequence Analysis Tool</a> \
+section of the NCBI Handbook.
 ]
 
 [ 
@@ -2063,7 +2063,7 @@ key=gcg
 displayName=GCG Format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
-See <A HREF="${MBLAST_URL}user_docs/mblast_seq_formats.shtml">MouseBLAST Help -Sequence Formats</A>. 
+See an example <a href="https://www.genomatix.de/online_help/help/sequence_formats.html#GCG">here</a>. 
 ]
 
 [ 
@@ -2574,7 +2574,7 @@ key=image
 displayName=IMAGE Consortium 
 definition=Integrated Molecular Analysis of Genome Expression Consortium. A collection of a large number of \
 partially sequenced <A HREF="!FEWI_URL!glossary/cdna">cDNAs</A>. See the homepage of the \
-<A HREF="http://image.hudsonalpha.org">IMAGE Consortium</A> for further information. 
+<A HREF="http://www.imageconsortium.org">IMAGE Consortium</A> for further information. 
 ]
 
 [ 
@@ -2597,7 +2597,7 @@ The preparation is then treated with a secondary antibody that has been coupled 
 <A HREF="!FEWI_URL!glossary/chromogenic">chromogenic</A> \ 
 <A HREF="!FEWI_URL!glossary/substrate">substrate</A>. Microscopic examination reveals the presence of \
 staining, and hence of the specific protein to be detected. See one of the \
-<A HREF="${WI_URL}searches/image.cgi?1931">Figures</A> \
+<A HREF="!FEWI_URL!image/MGI:2676207">Figures</A> \
 from <A HREF="!FEWI_URL!glossary/gxd">GXD</A> for an example. 
 ]
 
@@ -2623,10 +2623,10 @@ paternally-inherited <A HREF="!FEWI_URL!glossary/allele">alleles</A> as a conseq
 [ 
 key=imsr 
 displayName=IMSR 
-definition=International Mouse Strain Resources. A resource of mouse \
+definition=International Mouse Strain Resource. A resource of mouse \
 <A HREF="!FEWI_URL!glossary/strain">strain</a> information contributed by a number of \
 participating institutions world wide and hosted by <A HREF="!FEWI_URL!glossary/mgi">MGI</a> and \
-The Jackson Laboratory. IMSR offers web-based strain detail pages with information about the biology, stock, and \
+The Jackson Laboratory. <A HREF="http://www.findmice.org/index.jsp">IMSR</a> offers web-based strain detail pages with information about the biology, stock, and \
 availability of strains.
 ]
 
@@ -3300,7 +3300,7 @@ definition=Messenger RNA. An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule t
 [ 
 key=mtb 
 displayName=MTB 
-definition=<A HREF="http://tumor.informatics.jax.org/FMPro?-db=TumorInstance&-format=mtdp.html&-view">Mouse Tumor Biology Database</A>. One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
+definition=<A HREF="http://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>. One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
 the mouse tumor biology.
 ]
 
@@ -3400,7 +3400,7 @@ definition=Newborn.
 [ 
 key=nhgri 
 displayName=NHGRI 
-definition=<A HREF="http://www.nhgri.nih.gov/">National Human Genome Research Institute</A>.
+definition=<A HREF="https://www.genome.gov">National Human Genome Research Institute</A>.
 ]
 
 [ 
