@@ -1348,6 +1348,19 @@ def formatTime (sec):
 	return '%s:%s:%s' % (string.zfill(hh,2), string.zfill(mm,2),
 		string.zfill(ss,2))
 
+def floatToString(f, precision=1):
+	# Purpose: convert float 'f' to a string with the given number of places
+	#	after the decimal point
+	# Returns: string
+	# Notes: 1. if f is None, treats it as 0
+	
+	if (f == None) or (f == ''):
+		f = 0.0
+	if (type(f) == types.StringType) or (type(f) == types.IntType):
+		f = float(f)
+	formatString = '%0.' + str(precision) + 'f'
+	return formatString % f
+	
 def logProfilingData():
 	# Purpose: produce a file in the logs directory with profiling data
 	#	for the various gatherers
@@ -1389,10 +1402,10 @@ def logProfilingData():
 				mmInt,
 				amString,
 				amFloat,
-				'%0.1f' % maxCpu,
-				'%0.1f' % avgCpu,
+				floatToString(maxCpu),
+				floatToString(avgCpu),
 				formatTime(time),
-				'%0.3f' % time
+				floatToString(time, 3)
 				]
 
 			fp.write('\t'.join(map(str,cols)))
