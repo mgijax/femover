@@ -106,7 +106,6 @@ class AccessionLookup:
 				and a.preferred = %s
 			limit 1''' % (objectKey, self.logicalDB, self.mgiType, self.preferred)
 			
-		logger.debug(cmd)
 		(cols, rows) = dbAgnostic.execute(cmd)
 		if rows:
 			return rows[0][0]
