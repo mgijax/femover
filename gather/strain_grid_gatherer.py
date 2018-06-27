@@ -208,9 +208,35 @@ class StrainGridGatherer (Gatherer.CachingMultiFileGatherer):
 		logger.debug('Built heading tables (%d rows)' % len(HEADING_KEY_GENERATOR)) 
 		return
 	
+	def addEmptyGridCells(self):
+		# examines data in self.gcCount to add data for cells where the count would be zero
+		
+		headingKeys = []
+		for heading in HEADING_KEY_GENERATOR.getDataValues():
+			headingKeys.append(HEADING_KEY_GENERATOR.getKey(heading))
+		
+		toAdd = {}		# maps from strain key to list of heading keys that we've not yet seen
+		
+		for (gridCellKey, strainKey, headingKey) in self.gcCount.keys():
+			if strainKey not in toAdd:
+				toAdd[strainKey] = headingKeys[:]		# make a copy of the list of heading keys
+			toAdd[strainKey].remove(headingKey)
+			
+		i = 0
+		for strainKey in toAdd.keys():
+			for headingKey in toAdd[strainKey]:
+				gridCellKey = GRIDCELL_KEY_GENERATOR.getKey( (strainKey, headingKey) )
+				trio = (gridCellKey, strainKey, headingKey)
+				self.gcCount[trio] = 0
+				i = i + 1
+
+		logger.debug('Added %d empty grid cells' % i)
+		return
+
 	def buildGridCellTable(self):
 		# populates the SG_CELL table
 		
+		self.addEmptyGridCells()
 		for (trio, count) in self.gcCount.items():
 			(gridCellKey, strainKey, headingKey) = trio
 			color = 0
@@ -252,8 +278,10 @@ class StrainGridGatherer (Gatherer.CachingMultiFileGatherer):
 				color = 3		# 6-99
 			elif count > 1:
 				color = 2		# 2-5
+			elif count == 1:
+				color = 1	
 			else:
-				color = 1
+				color = 0
 				
 			self.addRow(SG_POPUP_CELL, [ rowKey, columnKey, color, count, self.termKeySeqNum[termKey] ])
 		
