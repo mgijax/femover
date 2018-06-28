@@ -14,11 +14,10 @@ tableName = 'strain_grid_heading_to_term'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int	not null,
 	heading_key		int	not null,
 	term_key		int	not null,
 	term_id			text	null,
-	PRIMARY KEY(unique_key))''' % tableName
+	PRIMARY KEY(heading_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -34,20 +33,18 @@ keys = {
 	}
 
 # index used to cluster data in the table
-clusteredIndex = ('heading_key', 'create index %s on %s (heading_key)')
+clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
 	Table.TABLE : 'strain_grid_heading_to_term',
 	Table.COLUMN : {
-		'unique_key' : 'uniquely identifies a row in this table, no other purpose',
-		'heading_key' : 'identifies which header this term is associated with',
+		'heading_key' : 'identifies which header this term is associated with; also primary key',
 		'term_key' : 'term key to be associated with the heading',
 		'term_id' :  '(optional) term ID, if the term has an ID',
 		},
 	Table.INDEX : {
 		'term_key' : 'quick retrieval of headings associated with a vocabulary term',
-		'heading_key' : 'used to cluster records so all terms for a given header will be stored together',
 		},
 	}
 

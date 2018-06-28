@@ -359,7 +359,7 @@ files = [
 		),
 	(SG_HEADING_TO_TERM,
 		[ 'heading_key', 'term_key', 'term_id' ],
-		[ Gatherer.AUTO, 'heading_key', 'term_key', 'term_id' ]
+		[ 'heading_key', 'term_key', 'term_id' ]
 		),
 		
 	# The last three tables contain data for the popups shown to a user when he clicks on a
