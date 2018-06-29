@@ -248,11 +248,33 @@ class StrainGridGatherer (Gatherer.CachingMultiFileGatherer):
 		logger.debug('Built grid cell table (%d rows)' % len(self.gcCount))
 		return
 	
+	def addEmptyPopupCells(self, rowsPerGridCell, columnsPerGridCell, definedCells):
+		# computes and adds the popup cells that would be empty, based on the input parameters
+		
+		i = 0
+		for gridCellKey in rowsPerGridCell.keys():
+			for rowKey in rowsPerGridCell[gridCellKey]:
+				for columnKey in columnsPerGridCell[gridCellKey]:
+					if (rowKey, columnKey) not in definedCells:
+						(gridCellKey, termKey) = COLUMN_KEY_GENERATOR.getDataValue(columnKey)
+						self.addRow(SG_POPUP_CELL, [ rowKey, columnKey, 0, 0, self.termKeySeqNum[termKey] ])
+						i = i + 1
+
+		logger.debug('Added %d empty popup cells' % i)
+		return
+
 	def buildPopupTables(self):
 		# populates the SG_POPUP_ROW, SG_POPUP_COLUMN, and SG_POPUP_CELL tables
 		
 		rowsDone = set()		# set of rowKeys we've already added records for
 		columnsDone = set()		# set of columnKeys we've already added records for
+		
+		# These three variables are collected so we can easily fill in empty cells, once we know
+		# which ones are non-empty.
+
+		rowsPerGridCell = {}	# maps from grid cell key to list of row keys for that grid cell
+		columnsPerGridCell = {}	# maps from grid cell key to list of column keys for that grid cell
+		definedCells = set()	# set of (row key, column key) for cells we've already defined
 		
 		for (pair, count) in self.popCount.items():
 			(rowKey, columnKey) = pair
@@ -268,9 +290,17 @@ class StrainGridGatherer (Gatherer.CachingMultiFileGatherer):
 
 				self.addRow(SG_POPUP_ROW, [ rowKey, gridCellKey, genotypeKey, seqNum ])
 				
+				if gridCellKey not in rowsPerGridCell:
+					rowsPerGridCell[gridCellKey] = []
+				rowsPerGridCell[gridCellKey].append(rowKey)
+				
 			if columnKey not in columnsDone:
 				columnsDone.add(columnKey)
 				self.addRow(SG_POPUP_COLUMN, [ columnKey, gridCellKey, self.term[termKey], self.termKeySeqNum[termKey] ])
+				
+				if gridCellKey not in columnsPerGridCell:
+					columnsPerGridCell[gridCellKey] = []
+				columnsPerGridCell[gridCellKey].append(columnKey)
 				
 			if count > 99:
 				color = 4		# 100+ annotations
@@ -284,8 +314,10 @@ class StrainGridGatherer (Gatherer.CachingMultiFileGatherer):
 				color = 0
 				
 			self.addRow(SG_POPUP_CELL, [ rowKey, columnKey, color, count, self.termKeySeqNum[termKey] ])
+			definedCells.add( (rowKey, columnKey) )
 		
-		logger.debug('Built popup tables (%d cells)' % len(self.popCount))
+		logger.debug('Built popup tables (%d non-zero cells)' % len(self.popCount))
+		self.addEmptyPopupCells(rowsPerGridCell, columnsPerGridCell, definedCells)
 		return
 
 	def collateResults(self):
