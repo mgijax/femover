@@ -4,6 +4,7 @@
 
 import config
 import Gatherer
+import StrainUtils
 
 ###--- Global Constants ---###
 
@@ -22,6 +23,21 @@ def notNone (s):
 		return ''
 	return s
 
+def initialize():
+	cmd0 = '''select _Sequence_key, _Source_key
+			into temp table tmp_seq_source_assoc
+			from seq_source_assoc
+			order by 1'''
+
+	cmd1 = 'create index idx1 on tmp_seq_source_assoc (_Sequence_key)'
+	cmd2 = 'create index idx1 on tmp_seq_source_assoc (_Source_key)'
+	
+	dbAgnostic.execute(cmd0)
+	dbAgnostic.execute(cmd1)
+	dbAgnostic.execute(cmd2)
+	logger.debug('Created temp table tmp_seq_source_assoc')
+	return
+	
 ###--- Classes ---###
 
 class SequenceSourceGatherer (Gatherer.ChunkGatherer):
@@ -146,34 +162,25 @@ cmds = [
 	from seq_sequence_raw r
 	where _Sequence_key >= %d and _Sequence_key < %d''',
 
-# no longer needed:
-#		and exists (select 1 from seq_sequence s
-#			where r._Sequence_key = s._Sequence_key)''',
-
 	'''select ssa._Sequence_key,
 		s.strain,
+		t.strain_id,
 		ps._Tissue_key,
 		ps._Gender_key,
 		ps.age,
 		c.term as cellLine
-	from seq_source_assoc ssa,
-		prb_source ps,
-		voc_term c,
-		prb_strain s
-	where ssa._Sequence_key >= %d and ssa._Sequence_key < %d
-		and ssa._Source_key = ps._Source_key
-		and ps._Strain_key = s._Strain_key
-		and ps._CellLine_key = c._Term_key'''
-# no longer needed:
-#		and exists (select 1 from seq_sequence ss
-#			where ssa._Sequence_key = ss._Sequence_key)
+	from tmp_seq_source_assoc ssa
+	inner join prb_source ps on (ssa._Source_key = ps._Source_key)
+	inner join voc_term c on (ps._CellLine_key = c._Term_key)
+	inner join prb_strain s on (ps._Strain_key = s._Strain_key)
+	left outer join %s t on (ps._Strain_key = t._Strain_key)
+	where ssa._Sequence_key >= %%d and ssa._Sequence_key < %%d''' % StrainUtils.getStrainIDTempTable()
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO,
-	'_Sequence_key', 'strain', 'tissue', 'age', 'sex', 'cellLine',
+	Gatherer.AUTO, '_Sequence_key', 'strain', 'strain_id', 'tissue', 'age', 'sex', 'cellLine',
 	]
 
 # prefix for the filename of the output file
@@ -181,10 +188,12 @@ filenamePrefix = 'sequence_source'
 
 # global instance of a sequenceGatherer
 gatherer = SequenceSourceGatherer (filenamePrefix, fieldOrder, cmds)
+gatherer.setChunkSize(250000)
 
 ###--- main program ---###
 
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
+	initialize()
 	Gatherer.main (gatherer)
