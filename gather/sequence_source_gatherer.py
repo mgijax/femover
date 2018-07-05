@@ -31,8 +31,8 @@ def initialize():
 			from seq_source_assoc
 			order by 1'''
 
-	cmd1 = 'create index idx1 on tmp_seq_source_assoc (_Sequence_key)'
-	cmd2 = 'create index idx1 on tmp_seq_source_assoc (_Source_key)'
+	cmd1 = 'create index ssa_idx1 on tmp_seq_source_assoc (_Sequence_key)'
+	cmd2 = 'create index ssa_idx2 on tmp_seq_source_assoc (_Source_key)'
 	
 	dbAgnostic.execute(cmd0)
 	dbAgnostic.execute(cmd1)
