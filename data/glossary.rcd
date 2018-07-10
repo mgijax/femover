@@ -111,8 +111,7 @@ definition=A <A HREF="!FEWI_URL!glossary/purine">purine</A> \
 <A HREF="!FEWI_URL!glossary/nucleotide">nucleotides</A> and thus a normal component of \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> and \ 
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Adenine">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -267,12 +266,8 @@ allow the use of twenty different amino acids (the primary amino acids) in the \
 synthesis of proteins. Other nonprimary amino acids occur in proteins by \ 
 <A HREF="!FEWI_URL!glossary/enzyme">enzymatic</A> modification \
 of amino acids in mature proteins, and as metabolic intermediates. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/amino_acid.cfm?key=amino%20acids">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. For Figures \
-showing the structure of each of the twenty primary amino acids, see \ 
-<A HREF="http://www.accessexcellence.org/AB/GG/aminoAcids1.html">Figure 1</A> and \
-<A HREF="http://www.accessexcellence.org/AB/GG/aminoAcids2.html">Figure 2</A> from \ 
-"Molecular Biology of the Cell" by Alberts <I>et al.</I> at Access Excellence. 
+<A HREF="https://en.wikipedia.org/wiki/Amino_acid">Figure</A> at \ 
+Wikipedia. 
 ]
 
 [ 
@@ -281,8 +276,8 @@ displayName=Amino Terminus
 definition=A term that identifies one end of a \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> molecule. \
 The amino terminus is that end of the molecule which terminates in a free amino group. See the \
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/amino_acid.cfm?key=amino%20acids">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.\ 
+<A HREF="https://en.wikipedia.org/wiki/N-terminus">Figure</A> at \ 
+Wikipedia. \ 
 <BR>See also: \
 <UL>\ 
 <LI><A HREF="!FEWI_URL!glossary/amino_acid">Amino Acid</A></LI>\ 
@@ -631,8 +626,8 @@ definition=One of a set of nitrogenous compounds attached to the sugar-phosphate
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>, the purine bases are \
 adenine (A) and guanine (G), while the pyrimidine bases are cytosine (C) and \ 
 <A HREF="!FEWI_URL!glossary/uracil">uracil(U)</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Nucleobase">Figure</A> at \ 
+Wikipedia. 
 ]
 
 [ 
@@ -652,7 +647,7 @@ definition=In double-stranded \
 <A HREF="!FEWI_URL!glossary/uracil">uracil (U)</A> and \ 
 <A HREF="!FEWI_URL!glossary/cytosine">cytosine (C)</A> pairs with \ 
 <A HREF="!FEWI_URL!glossary/guanine">guanine (G)</A>. \
-See the <A HREF="http://www.accessexcellence.org/AB/GG/basePair1.html">Figure</A> at Access Excellence. 
+See the <A HREF="https://en.wikipedia.org/wiki/Base_pair">Figure</A> at Wikipedia. 
 ]
 
 [ 
@@ -667,9 +662,9 @@ definition=The order of <A HREF="!FEWI_URL!glossary/nucleotide">nucleotide</A> \
 [
 key=bind
 displayName=BIND
-definition=Biomolecular Interaction Network Database. A collection of \
-records documenting molecular  interactions.  The contents of \
-<a href="http://www.blueprint.org/bind/bind_about.html">BIND</a> include \
+definition=Biomolecular Interaction Network Database. Was a collection of \
+records documenting molecular interactions.  The contents of \
+BIND included \
 high-throughput data submissions and hand-curated information gathered \
 from the scientific  literature.
 ]
@@ -732,9 +727,9 @@ displayName=BLAST
 definition=Basic Local Alignment and Searching Tool. A sequence comparison \ 
 <A HREF="!FEWI_URL!glossary/algorithm">algorithm</A> optimized \
 for speed used to search sequence databases for optimal local alignments to a \
-query sequence. There is a description of the \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/Education/BLASTinfo/BLAST_algorithm.html">specific algorithm</A> \ 
-used, and additional information, at <A HREF="http://www.ncbi.nlm.nih.gov/BLAST/blast_overview.html">NCBI</A>. 
+query sequence. For more on BLAST, see \ 
+The <a href="https://www.ncbi.nlm.nih.gov/books/NBK153387/">BLAST Sequence Analysis Tool</a> \
+section of the NCBI Handbook.
 ]
 
 [ 
@@ -790,8 +785,8 @@ displayName=Carboxyl Terminus
 definition=A term that identifies one end of a \ 
 <A HREF="!FEWI_URL!glossary/protein">protein</A> molecule. The carboxyl terminus is \ 
 that end of the molecule which terminates in a free carboxyl group. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/amino_acid.cfm?key=amino%20acids">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.\ 
+<A HREF="https://en.wikipedia.org/wiki/C-terminus">Figure</A> at \ 
+Wikipedia.\ 
 <BR>See also: \
 <UL> \ 
 <LI><A HREF="!FEWI_URL!glossary/amino_acid">Amino Acid</A></LI> \ 
@@ -868,8 +863,8 @@ definition=In mammalian genetics, the primary constriction of a \
 <A HREF="!FEWI_URL!glossary/chromosome">chromosome</A> \
 separating it into the short arm (p) and the long arm (q). The centromere is the \
 chromosomal region over which the <A HREF="!FEWI_URL!glossary/kinetochore">kinetochore</A> is \
-organized. See the <A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/centromere.cfm?key=centromere">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. Mouse chromosomes \
+organized. See the <A HREF="https://en.wikipedia.org/wiki/Centromere">Figure</A> at \ 
+Wikipedia. Mouse chromosomes \
 have centromeres close to one end and have essentially no short arm. See the \
 <A HREF="!FEWI_URL!glossary/idiogram">idiogram</A> of the \
 <A HREF="http://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A> at the \
@@ -1091,7 +1086,7 @@ definition=Three <A HREF="!FEWI_URL!glossary/base">bases</A> in a \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A> sequence that specify \
 an <A HREF="!FEWI_URL!glossary/amino_acid">amino acid</A> or \
 a termination signal (stop codon). See the \ 
-<A HREF="http://www.accessexcellence.org/AB/GG/genetic.html">Figure</A> at Access Excellence. <BR>See also:\
+<A HREF="https://en.wikipedia.org/wiki/Genetic_code">Figure</A> at Wikipedia. <BR>See also:\
 <UL><LI><A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A></LI>\ 
 <LI><A HREF="!FEWI_URL!glossary/genetic_code">Genetic Code</A></LI>\
 </UL> 
@@ -1411,8 +1406,8 @@ definition=A <A HREF="!FEWI_URL!glossary/pyrimidine">pyrimidine</A> \
 <A HREF="!FEWI_URL!glossary/nucleotide">nucleotides</A> and thus a normal component of \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> and \ 
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A>  at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Cytosine">Figure</A>  at \
+Wikipedia. 
 ]
 
 [ 
@@ -1566,8 +1561,8 @@ key=dna
 displayName=DNA 
 definition=Deoxyribonucleic acid. The <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> of which \ 
 <A HREF="!FEWI_URL!glossary/gene">genes</A> are made. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/dna2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. <BR>See also:<UL><LI> \ 
+<A HREF="https://en.wikipedia.org/wiki/DNA">Figure</A> at \ 
+Wikipedia. <BR>See also:<UL><LI> \ 
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A></LI> \
 <LI><A HREF="!FEWI_URL!glossary/nucleic_acid">Nucleic Acid</A></LI> \
 <LI><A HREF="!FEWI_URL!glossary/rna">RNA</A></LI> \
@@ -1632,8 +1627,8 @@ key=dnpt
 displayName=dNTP 
 definition=Deoxyribonucleotide triphosphate. A generic term referring to the four \ 
 <A HREF="!FEWI_URL!glossary/deoxyribonucleotide">deoxyribonucleotides</A>: dATP, dCTP, \
-dGTP and dTTP. See the <A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/nucleotide.cfm?key=nucleotide">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+dGTP and dTTP. See the <A HREF="https://en.wikipedia.org/wiki/Nucleoside_triphosphate">Figure</A> at \
+Wikipedia. 
 ]
 
 [ 
@@ -1757,6 +1752,12 @@ definition=A <A HREF="!FEWI_URL!glossary/protein">protein</A> that cleaves the p
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> \ 
 <A HREF="!FEWI_URL!glossary/enzyme">enzymatically</A>, for example a \ 
 <A HREF="!FEWI_URL!glossary/restriction_enzyme">restriction enzyme</A>. 
+]
+
+[ 
+key=endonuclease_mediated
+displayName=Endonuclease Mediated Mutation
+definition=A type of engineered mutation in which a chromosomal gene is altered by the action of a RNA-guided DNA site-specific <A HREF="!FEWI_URL!glossary/endonuclease">endonuclease</A>, including the actions of the clustered regulatory interspaced short palindromic repeat (CRISPR/Cas9 )system, transcription activator-like effector nucleases (TALENS) or zinc finger nucleases (ZFN). These endonucleases induce a broad range of mutations by inducing DNA double-strand breaks that stimulate error-prone nonhomologous end joining (NEJ) or homology-directed repair (HDR) at specified genomic locations.
 ]
 
 [ 
@@ -1976,8 +1977,8 @@ definition=Fluorescent <I>in situ</I> hybridization. A method for determining th
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> hybridization between chromosomal DNA and the \ 
 <A HREF="!FEWI_URL!glossary/probe">probe</A>. The site of hybridization is determined by \ 
 <A HREF="!FEWI_URL!glossary/fluorescence">fluorescent</A> microscopy. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/fish.cfm?key=fluorescence%20in%20situ%20hybridization%20%28FISH%29">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. <BR>See also \
+<A HREF="https://en.wikipedia.org/wiki/Fluorescence_in_situ_hybridization">Figure</A> at \ 
+Wikipedia. <BR>See also \
 <A HREF="!FEWI_URL!glossary/in_situ"><I>In situ</I> Hybridization</A>. 
 ]
 
@@ -2057,7 +2058,7 @@ key=gcg
 displayName=GCG Format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
-See <A HREF="${MBLAST_URL}user_docs/mblast_seq_formats.shtml">MouseBLAST Help -Sequence Formats</A>. 
+See an example <a href="https://www.genomatix.de/online_help/help/sequence_formats.html#GCG">here</a>. 
 ]
 
 [ 
@@ -2217,7 +2218,7 @@ displayName=Genetic Code
 definition=The relationship of the sixty-four <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> \ 
 <A HREF="!FEWI_URL!glossary/codon">codons</A> to the twenty primary \ 
 <A HREF="!FEWI_URL!glossary/amino_acid">amino acids</A>. See the \ 
-<A HREF="http://www.accessexcellence.org/AB/GG/genetic.html">Figure</A> for the standard genetic code. <BR>See also \ 
+<A HREF="https://en.wikipedia.org/wiki/Genetic_code">Figure</A> for the standard genetic code. <BR>See also \ 
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>. 
 ]
 
@@ -2273,8 +2274,8 @@ definition=A  <A HREF="!FEWI_URL!glossary/purine">purine</A> \
 <A HREF="!FEWI_URL!glossary/nucleotide">nucleotides</A> and thus a normal component of \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> and \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>. See the \
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.
+<A HREF="https://en.wikipedia.org/wiki/Guanine">Figure</A> at \
+Wikipedia.
 ]
 
 [ 
@@ -2568,7 +2569,7 @@ key=image
 displayName=IMAGE Consortium 
 definition=Integrated Molecular Analysis of Genome Expression Consortium. A collection of a large number of \
 partially sequenced <A HREF="!FEWI_URL!glossary/cdna">cDNAs</A>. See the homepage of the \
-<A HREF="http://image.hudsonalpha.org">IMAGE Consortium</A> for further information. 
+<A HREF="http://www.imageconsortium.org">IMAGE Consortium</A> for further information. 
 ]
 
 [ 
@@ -2591,7 +2592,7 @@ The preparation is then treated with a secondary antibody that has been coupled 
 <A HREF="!FEWI_URL!glossary/chromogenic">chromogenic</A> \ 
 <A HREF="!FEWI_URL!glossary/substrate">substrate</A>. Microscopic examination reveals the presence of \
 staining, and hence of the specific protein to be detected. See one of the \
-<A HREF="${WI_URL}searches/image.cgi?1931">Figures</A> \
+<A HREF="!FEWI_URL!image/mgi:2676207">Figures</A> \
 from <A HREF="!FEWI_URL!glossary/gxd">GXD</A> for an example. 
 ]
 
@@ -2617,10 +2618,10 @@ paternally-inherited <A HREF="!FEWI_URL!glossary/allele">alleles</A> as a conseq
 [ 
 key=imsr 
 displayName=IMSR 
-definition=International Mouse Strain Resources. A resource of mouse \
+definition=International Mouse Strain Resource. A resource of mouse \
 <A HREF="!FEWI_URL!glossary/strain">strain</a> information contributed by a number of \
 participating institutions world wide and hosted by <A HREF="!FEWI_URL!glossary/mgi">MGI</a> and \
-The Jackson Laboratory. IMSR offers web-based strain detail pages with information about the biology, stock, and \
+The Jackson Laboratory. <A HREF="http://www.findmice.org/index.jsp">IMSR</a> offers web-based strain detail pages with information about the biology, stock, and \
 availability of strains.
 ]
 
@@ -2714,7 +2715,7 @@ definition=<I>In situ</I> Hybridization: A method of detecting the presence of s
 hybridization is detected by <A HREF="!FEWI_URL!glossary/autoradiography">autoradiography</A> \
 (for radioactive probes) or by <A HREF="!FEWI_URL!glossary/chromogenic">chromogenic</A> reactions or \ 
 <A HREF="!FEWI_URL!glossary/fluorescence">fluorescence</A> (for chemically-labeled probes). See one of the \ 
-<A HREF="${WI_URL}searches/image.cgi?1760">Figures</A> from <A HREF="!FEWI_URL!glossary/gxd">GXD</A> \
+<A HREF="!FEWI_URL!image/MGI:2676497">Figures</A> from <A HREF="!FEWI_URL!glossary/gxd">GXD</A> \
 for an example. <BR>See also <A HREF="!FEWI_URL!glossary/fish">FISH</A>. 
 ]
 
@@ -3294,7 +3295,7 @@ definition=Messenger RNA. An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule t
 [ 
 key=mtb 
 displayName=MTB 
-definition=<A HREF="http://tumor.informatics.jax.org/FMPro?-db=TumorInstance&-format=mtdp.html&-view">Mouse Tumor Biology Database</A>. One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
+definition=<A HREF="http://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>. One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
 the mouse tumor biology.
 ]
 
@@ -3394,7 +3395,7 @@ definition=Newborn.
 [ 
 key=nhgri 
 displayName=NHGRI 
-definition=<A HREF="http://www.nhgri.nih.gov/">National Human Genome Research Institute</A>.
+definition=<A HREF="https://www.genome.gov">National Human Genome Research Institute</A>.
 ]
 
 [ 
@@ -3434,7 +3435,7 @@ definition=An assay that detects specific <A HREF="!FEWI_URL!glossary/rna">RNA</
 <A HREF="!FEWI_URL!glossary/probe">probe</A> with sequence similarity. Samples are subjected to \
 <A HREF="!FEWI_URL!glossary/electrophoresis">electrophoresis</A> on a slab gel. A replica of the gel is then \
 made on a membrane by capillary transfer. Specific RNA sequences are then detected on the membrane with a radioactively- or \
-chemically-labeled probe. See one of the <A HREF="${WI_URL}searches/image.cgi?1785">Figures</A> from \ 
+chemically-labeled probe. See one of the <A HREF="!FEWI_URL!assay/MGI:1204240">Figures</A> from \ 
 <A HREF="!FEWI_URL!glossary/gxd">GXD</A> for an example.<BR>See also: <UL><LI>\ 
 <A HREF="!FEWI_URL!glossary/southern_blot">Southern blot</A></LI><LI>\ 
 <A HREF="!FEWI_URL!glossary/western_blot">Western blot</A></LI></UL> 
@@ -3446,9 +3447,7 @@ displayName=Nucleic Acid
 definition=<A HREF="!FEWI_URL!glossary/dna">DNA</A> or \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>. Each of these compounds consists of a backbone of sugar molecules  \
 ribose for RNA and deoxyribose for DNA linked by single phosphate groups. Attached to the sugars of the backbone are any of \
-four nitrogenous <A HREF="!FEWI_URL!glossary/base">bases</A>, A, T, C or G for DNA and A, U, C or G for RNA. \
-See the <A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/rna2.cfm">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+four nitrogenous <A HREF="!FEWI_URL!glossary/base">bases</A>, A, T, C or G for DNA and A, U, C or G for RNA. 
 ]
 
 [ 
@@ -3640,8 +3639,7 @@ key=paralog
 displayName=Paralog 
 definition=One of a set of homologous <A HREF="!FEWI_URL!glossary/gene">genes</A> that have diverged \
 from each other as a consequence of genetic duplication. For example, the mouse alpha globin and beta globin genes are paralogs. \ 
-The relationship between mouse alpha globin and chick beta globin is also considered paralogous. See the \ 
-following <a href="http://genomebiology.com/2001/2/8/interactions/1002/figure/F1" target="_blank">Figure</a>\
+The relationship between mouse alpha globin and chick beta globin is also considered paralogous. \
 <BR>See also:<UL><LI>\ 
 <A HREF="!FEWI_URL!glossary/homolog">Homolog</A></LI><LI>\ 
 <A HREF="!FEWI_URL!glossary/ortholog">Ortholog</A></LI><LI>\
@@ -3699,8 +3697,7 @@ length of DNA that can be reliably synthesized <A HREF="!FEWI_URL!glossary/in_vi
 <A HREF="!FEWI_URL!glossary/replication">replication</A>. The sample is subjected to multiple cycles of \
 denaturation and cooling to allow multiple rounds of replication. The quantity of the target sequence doubles during each \
 cycle, causing the target sequence to be amplified, while other <A HREF="!FEWI_URL!glossary/dna">DNA</A> \ 
-sequences in the sample remain unamplified. See the <A HREF="http://www.accessexcellence.org/AB/GG/polymerase.html">Figure</A> \
-at Access Excellence. 
+sequences in the sample remain unamplified. \ 
 ]
 
 [ 
@@ -3971,8 +3968,7 @@ key=purine
 displayName=Purine 
 definition=One of the <A HREF="!FEWI_URL!glossary/base">bases</A> of \ 
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acids</A>, either adenine (A) or guanine (G). See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/rna2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Purine">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -3980,8 +3976,7 @@ key=pyrimidine
 displayName=Pyrimidine 
 definition=One of the <A HREF="!FEWI_URL!glossary/base">bases</A> of \ 
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acids</A>, cytosine (C), thymine (T) or uracil (U). \
-See the <A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/rna2.cfm">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.
+See the <A HREF="https://en.wikipedia.org/wiki/Pyrimidine">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -4320,8 +4315,7 @@ definition=Ribonucleic acid. A <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic
 product of <A HREF="!FEWI_URL!glossary/gene_expression">gene expression</A>. Chemically, it differs from \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> by the substitution of ribose for deoxyribose in the sugar-phosphate \
 backbone and by the substitution of the base uracil for thymine. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/rna2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. <BR>See also:  <UL><LI>\ 
+<A HREF="https://en.wikipedia.org/wiki/RNA">Figure</A> at Wikipedia. <BR>See also:  <UL><LI>\ 
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A></LI><LI>\
  <A HREF="!FEWI_URL!glossary/dna">DNA</A></LI> </UL>
 ]
@@ -4665,8 +4659,7 @@ definition=The cellular apparatus that directs <A HREF="!FEWI_URL!glossary/chrom
 movement during cell division in <A HREF="!FEWI_URL!glossary/mitosis">mitosis</A> or \ 
 <A HREF="!FEWI_URL!glossary/meiosis">meiosis</A>. The spindle is largely composed of \ 
 <A HREF="!FEWI_URL!glossary/microtubule">microtubules</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/metaphase.cfm?key=metaphase">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Spindle_apparatus">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -4905,8 +4898,7 @@ chromosome ends. Chromosome ends lacking telomeres, such as those generated from
 are reactive, often fusing with other broken ends to generate \
 <A HREF="!FEWI_URL!glossary/chromosome_rearrangement">chromosome rearrangements</A>. Telomeres also permit \
 the ends of linear chromosomes to <A HREF="!FEWI_URL!glossary/replication">replicate</A> fully. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/chromosome.cfm?key=chromosome">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Telomere">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -4982,8 +4974,7 @@ definition=A <A HREF="!FEWI_URL!glossary/pyrimidine">pyrimidine</A> \
 <A HREF="!FEWI_URL!glossary/nucleotide">nucleotides</A> and thus a normal component of \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A>. <A HREF="!FEWI_URL!glossary/uracil">Uracil</A> \
 replaces thymine in <A HREF="!FEWI_URL!glossary/rna">RNA</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Thymine">Figure</A> at Wikipedia.
 ]
 
 [ 
@@ -5050,8 +5041,8 @@ definition=The <A HREF="!FEWI_URL!glossary/enzyme">enzymatic</A> synthesis of a 
 <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> molecule. The \ 
 <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> is read from the \ 
 <A HREF="!FEWI_URL!glossary/_5_utr">5' end</A> to the \ 
-<AHREF="!FEWI_URL!glossary/_3_prime">3' end</A>, with the \ 
-<AHREF="!FEWI_URL!glossary/protein">protein</A> being synthesized from the \ 
+<A HREF="!FEWI_URL!glossary/_3_prime">3' end</A>, with the \ 
+<A HREF="!FEWI_URL!glossary/protein">protein</A> being synthesized from the \ 
 <A HREF="!FEWI_URL!glossary/amino_terminus">amino terminus</A> to the \ 
 <A HREF="!FEWI_URL!glossary/carboxyl_terminus">carboxyl terminus</A>. See the \ 
 <A HREF="http://www.accessexcellence.org/AB/GG/protein_synthesis.html">Figure</A> at Access Excellence or the \ 
@@ -5068,14 +5059,12 @@ definition=A type of <A HREF="!FEWI_URL!glossary/mutation">mutation</A> in which
 in such a way that:\
 <OL>\
 <LI>the resulting <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A> each contain material from the \
-other chromosome (a<B>reciprocal</B> translocation), see the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/translocation.cfm?key=translocation">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>)</LI>\
+other chromosome (a <B>reciprocal</B> translocation), see the \ 
+<A HREF="https://en.wikipedia.org/wiki/Chromosomal_translocation">Figure</A> at \ 
+Wikipedia</LI>\
 <LI>one of the chromosomes contains an <A HREF="!FEWI_URL!glossary/insertion">insertion</A> of material \
 from the other chromosome, with the other chromosome containing a \
-<A HREF="!FEWI_URL!glossary/deletion">deletion</A> (an <B>insertional</B> translocation, see the \
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/insertion.cfm?key=insertion">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>) or </li>\
+<A HREF="!FEWI_URL!glossary/deletion">deletion</A> (an <B>insertional</B> translocation</li>\
 <LI>the two chromosomes, each with breaks near the <A HREF="!FEWI_URL!glossary/centromere">centromere</A>, \
 fuse to form a single chromosome with a single centromere (a \
 <A HREF="!FEWI_URL!glossary/robertsonian_translocation"><B>Robertsonian</B></A> translocation).\
@@ -5198,8 +5187,7 @@ definition=A <A HREF="!FEWI_URL!glossary/pyrimidine">pyrimidine</A> \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A>. \ 
 <A HREF="!FEWI_URL!glossary/thymine">Thymine</A> replaces uracil in \ 
 <A HREF="!FEWI_URL!glossary/dna">DNA</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/rna2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Uracil">Figure</A> at Wikipedia.
 ]
 
 [ 
