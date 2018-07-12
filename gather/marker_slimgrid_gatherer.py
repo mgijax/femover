@@ -467,108 +467,48 @@ class HeadingCollection:
 		return out
 
 class MPHeadingCollection (HeadingCollection):
-	# Is: a HeadingCollection for the MP (Mammalian Phenotype) slimgrid,
-	#	read from a data file
-
-	def initialize (self):
-		# input data file is a tab-delimited file with three columns:
-		#	header term ID, header term, header abbreviation
-		# mpFile is the full path to this file
-		mpFile = None
-
-		# verify that we have the file specified in the config
-		try:
-			mpFile = config.MP_SLIMGRID_HEADERS
-		except:
-			raise error, \
-			'Missing configuration parameter MP_SLIMGRID_HEADERS'
-
-		# verify that the path is valid
-		if not os.path.exists(mpFile):
-			raise error, 'Cannot find file: %s' % mpFile
-
-		# read from the file and raise exception if we can't
-		try:
-			fp = open(mpFile, 'r')
-			rawLines = fp.readlines()
-			fp.close()
-		except:
-			raise error, 'Error reading from: %s' % mpFile
-
-		# slimgrid definitions
-
-		slimgrid = 'Mammalian Phenotype'
-		slimgridAbbrev = 'MP'
-
-		# remove any blank lines or commented lines from the list of
-		# data lines
-
-		lines = []
-		for line in rawLines:
-			line = line.strip()
-			if (line != '') and (line[0] != '#'):
-				lines.append(line.split('\t'))
-
-		# at this point, lines is a list of lists.  Each sublist 
-		# should have three items:  [ term ID, term, abbrev ].  We're
-		# going to expand these to add the term key as a fourth column.
-
-		lineNum = 0
-		for line in lines:
-			lineNum = lineNum + 1
-
-			if len(line) < 3:
-				raise error, 'In %s line %d has too few fields' % (mpFile, lineNum)
-			if len(line) > 3:
-				raise error, 'In %s line %d has too many fields' % (mpFile, lineNum)
-
-			termKey = VocabUtils.getKey(line[0])
-			if not termKey:
-				raise error, 'In %s line %s, cannot find term key for ID %s' % (mpFile, lineNum, line[0])
-
-			line.append(termKey)
-	
-		# now store the data from the data file internally
-		for [ termID, term, abbrev, termKey ] in lines:
-			self.store(getNextHeadingKey(), term, abbrev, termKey,
-				termID, slimgrid, slimgridAbbrev,
-				getNextSequenceNum())
-
-		logger.debug('Got %d MP headers' % len(lines))
-		return
-
-class MPHeadingCollectionOld (HeadingCollection):
 	# Is: a HeadingCollection for the MP (Mammalian Phenotype) slimgrid
 
 	def initialize (self):
-		cmd = '''select distinct t.term,
+		cmd = '''select s.label as termAbbrev,
+		                t.term,
 				t._Term_key,
 				a.accID,
-				t.sequenceNum
-			from %s vah,
-				voc_term t,
-				acc_accession a
-			where vah._Term_key = t._Term_key
-				and t._Term_key = a._Object_key
-				and a.private = 0
-				and a.preferred = 1
-				and a._MGIType_key = 13
-			order by t.sequenceNum''' % MP_HEADER_KEYS
+				t.sequenceNum,
+				v.name as slimgrid,
+				a.prefixPart as slimgridAbbrev
+			from mgi_setmember s,
+			     voc_term t,
+			     voc_vocab v,
+		   	     acc_accession a
+			where s._set_key = 1051
+			      and s._object_key = t._term_key
+			      and t._vocab_key = v._vocab_key
+			      and t._Term_key = a._Object_key
+			      and a.private = 0
+			      and a.preferred = 1
+			      and a._MGIType_key = 13
+			order by t.sequenceNum'''
 
 		(cols, rows) = dbAgnostic.execute(cmd)
 
+		termAbbrevCol = dbAgnostic.columnNumber (cols, 'termAbbrev')
 		termCol = dbAgnostic.columnNumber (cols, 'term')
 		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
-
-		slimgrid = 'Mammalian Phenotype'
-		slimgridAbbrev = 'MP'
+		slimgridCol = dbAgnostic.columnNumber (cols, 'slimgrid')
+		slimgridAbbrevCol = dbAgnostic.columnNumber (cols, 'slimgridAbbrev')
 
 		for row in rows:
+			termAbbrev = row[termAbbrevCol]
 			accID = row[idCol]
 			termKey = row[keyCol]
 			term = row[termCol].strip()
-			termAbbrev = term.replace(' phenotype', '')
+			slimgrid = row[slimgridCol]
+			slimgridAbbrev = row[slimgridAbbrevCol]
+
+			if termAbbrev == 'None':
+			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
 				termKey, accID,
@@ -581,79 +521,81 @@ class GOHeadingCollection (HeadingCollection):
 	# Is: a HeadingCollection for the GO (Gene Ontology) slimgrids
 
 	def initialize (self):
-		cmd = '''select distinct t.abbreviation as term,
+		cmd = '''select s.label as termAbbrev,
+		                t.term,
 				t._Term_key,
 				a.accID,
 				t.sequenceNum,
-				dd.name as ontology,
-				dd.abbreviation
-			from %s ghk,
-				voc_term t,
-				acc_accession a,
-				dag_node dn,
-				dag_dag dd
-			where ghk._Term_key = t._Term_key
-				and t._Term_key = a._Object_key
-				and a.private = 0
-				and a.preferred = 1
-				and a._MGIType_key = 13
-				and t._Term_key = dn._Object_key
-				and dn._DAG_key = dd._DAG_key
-				and dd._MGIType_key = 13
-			order by t.sequenceNum''' % GO_HEADER_KEYS
+				dd.name as slimgrid,
+				dd.abbreviation as slimgridAbbrev
+			from mgi_setmember s,
+			     voc_term t,
+			     voc_vocab v,
+		   	     acc_accession a,
+			     dag_node dn,
+			     dag_dag dd
+			where s._set_key = 1050
+			      and s._object_key = t._term_key
+			      and t._Vocab_key = v._Vocab_key
+                              and t._Term_key = dn._Object_key
+			      and dn._DAG_key = dd._DAG_key
+			      and dd._MGIType_key = 13 
+			      and t._Term_key = a._Object_key
+			      and a.private = 0
+			      and a.preferred = 1
+			      and a._MGIType_key = 13
+			order by t.sequenceNum'''
 
 		(cols, rows) = dbAgnostic.execute(cmd)
 
+		termAbbrevCol = dbAgnostic.columnNumber (cols, 'termAbbrev')
 		termCol = dbAgnostic.columnNumber (cols, 'term')
 		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
-		ontologyCol = dbAgnostic.columnNumber (cols, 'ontology')
-		abbrevCol = dbAgnostic.columnNumber (cols, 'abbreviation')
-
-		headingKeys = {}	# maps from heading to (heading key,
-					# sequence num)
+		slimgridCol = dbAgnostic.columnNumber (cols, 'slimgrid')
+		slimgridAbbrevCol = dbAgnostic.columnNumber (cols, 'slimgridAbbrev')
 
 		for row in rows:
+			termAbbrev = row[termAbbrevCol]
 			accID = row[idCol]
 			termKey = row[keyCol]
 			term = row[termCol].strip()
-			termAbbrev = term
-			slimgrid = row[ontologyCol]
-			slimgridAbbrev = row[abbrevCol]
+			slimgrid = row[slimgridCol]
+			slimgridAbbrev = row[slimgridAbbrevCol]
 
-			if not headingKeys.has_key(term):
-				headingKeys[term] = (getNextHeadingKey(),
-					getNextSequenceNum())
+			if termAbbrev == 'None':
+			    termAbbrev = term
 
-			headingKey, seqNum = headingKeys[term]
+			self.store(getNextHeadingKey(), term, termAbbrev,
+				termKey, accID,
+				slimgrid, slimgridAbbrev, getNextSequenceNum())
 
-			self.store(headingKey, term, termAbbrev, termKey,
-				accID, slimgrid, slimgridAbbrev, seqNum)
-
-		logger.debug('Got %d terms for %d GO headers' % (len(rows),
-			len(headingKeys)))
+		logger.debug('Got %d Gene Ontology headers' % len(rows))
 		return
 
 class GxdHeadingCollection (HeadingCollection):
 	# Is: a HeadingCollection for the GXD anatomy slimgrid
 
 	def initialize (self):
-		cmd = '''select distinct t.abbreviation as term,
+		cmd = '''select s.label as termAbbrev,
+		                t.term,
 				t._Term_key,
 				a.accID,
 				t.sequenceNum
-			from %s vah,
-				voc_term t,
-				acc_accession a
-			where vah._Term_key = t._Term_key
-				and t._Term_key = a._Object_key
-				and a.private = 0
-				and a.preferred = 1
-				and a._MGIType_key = 13
-			order by t.sequenceNum''' % GXD_HEADER_KEYS
+			from mgi_setmember s,
+			     voc_term t,
+		   	     acc_accession a
+			where s._set_key = 1049
+			      and s._object_key = t._term_key
+			      and t._Term_key = a._Object_key
+			      and a.private = 0
+			      and a.preferred = 1
+			      and a._MGIType_key = 13
+			order by t.sequenceNum'''
 
 		(cols, rows) = dbAgnostic.execute(cmd)
 
+		termAbbrevCol = dbAgnostic.columnNumber (cols, 'termAbbrev')
 		termCol = dbAgnostic.columnNumber (cols, 'term')
 		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
@@ -662,16 +604,19 @@ class GxdHeadingCollection (HeadingCollection):
 		slimgridAbbrev = 'Anatomy'
 
 		for row in rows:
+			termAbbrev = row[termAbbrevCol]
 			accID = row[idCol]
 			termKey = row[keyCol]
 			term = row[termCol].strip()
-			termAbbrev = term
+
+			if termAbbrev == 'None':
+			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
 				termKey, accID,
 				slimgrid, slimgridAbbrev, getNextSequenceNum())
 
-		logger.debug('Got %d anatomy headers' % len(rows))
+		logger.debug('Got %d Anatomy headers' % len(rows))
 		return
 
 class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
