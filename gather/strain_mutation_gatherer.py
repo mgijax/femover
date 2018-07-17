@@ -53,7 +53,7 @@ class StrainMutationGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select psm._Strain_key, psm._Marker_key, m.symbol as marker_symbol, ma.accID as marker_id,
-			psm._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id
+			psm._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id, m.name as marker_name
 		from prb_strain_marker psm
 		inner join %s t on (psm._Strain_key = t._Strain_key)
 		inner join mrk_marker m on (psm._Marker_key = m._Marker_key)
@@ -72,7 +72,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Strain_key', '_Marker_key', 'marker_symbol', 'marker_id',
+	Gatherer.AUTO, '_Strain_key', '_Marker_key', 'marker_symbol', 'marker_name', 'marker_id',
 	'_Allele_key', 'allele_symbol', 'allele_id', 'sequence_num',
 	]
 
