@@ -34,6 +34,12 @@ def getExtraStat(statisticName):
 	
 ### Globals ###
 
+# default value, override from database
+SNP_BUILD_NUMBER = 'dbSNP'	
+cols, rows = dbAgnostic.execute('select snp_data_version from mgi_dbinfo')
+if rows:
+	SNP_BUILD_NUMBER = rows[0][0]
+
 STATS = {}			# statistic name : (tooltip, SQL command) or (tooltip, integer value of count)
 GROUPS = {}			# group name : [ statistic names ]
 
@@ -410,8 +416,8 @@ PLY_PCR = 'PCR polymorphism records'
 PLY_GENES = 'Genes with polymorphisms (RFLP, PCR)'
 PLY_STRAINS = 'Strains'
 
-STATS[PLY_REFSNPS] = ('Consensus SNPs', getExtraStat(PLY_REFSNPS))
-STATS[PLY_STRAINS_SNPS] = ('Mouse strains with SNP data', getExtraStat(PLY_STRAINS_SNPS))
+STATS[PLY_REFSNPS] = ('From %s' % SNP_BUILD_NUMBER, getExtraStat(PLY_REFSNPS))
+STATS[PLY_STRAINS_SNPS] = ('Strains that have been analyzed in %s' % SNP_BUILD_NUMBER, getExtraStat(PLY_STRAINS_SNPS))
 STATS[PLY_RFLP] = ('Restriction Fragment Length Polymorphism records',
 	'''select count(pr._Reference_key)
 		from PRB_Probe pp, PRB_RFLV pr, PRB_Reference ref, VOC_Term vt
