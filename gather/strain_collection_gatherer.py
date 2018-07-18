@@ -10,7 +10,7 @@ import logger
 ###--- Classes ---###
 
 collections = [
-	('cc_parental_strains.txt', 'CCParental'),		# filename, collection name
+	('docc_founder_strains.txt', 'DOCCFounders'),		# filename, collection name
 	('hdp_strains.txt', 'HDP'),
 	]
 
