@@ -3421,7 +3421,7 @@ definition=An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule that functions s
 
 [ 
 key=noninbred 
-displayName=Noninbred Stock 
+displayName=Non-Inbred Stock 
 definition=A stock that is known to be not <A HREF="!FEWI_URL!glossary/inbred_strain">inbred</A>, or \
 intentionally kept to prevent it from becoming inbred.
 ]
