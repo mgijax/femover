@@ -336,7 +336,7 @@ an <B>ancestor</B> to the GO term <B>alcohol dehydrogenase</B> [GO:0004022].\
 [ 
 key=aneuploid 
 displayName=Aneuploid 
-definition=Not \ 
+definition=An abnormal number of chromosomes in a cell. See: \ 
 <A HREF="!FEWI_URL!glossary/euploid">euploid</A>. 
 ]
 
@@ -1023,6 +1023,16 @@ definition=A <A HREF="!FEWI_URL!glossary/dna_construct">DNA construct</A> capabl
 <A HREF="!FEWI_URL!glossary/replication">replication</A> within a bacterial or \
 yeast host that can harbor foreign <A HREF="!FEWI_URL!glossary/dna">DNA</A>, \
 facilitating experimental manipulation of that DNA segment. 
+]
+
+[ 
+key=closed_colony 
+displayName=Closed Colony
+definition=A closed colony contains limited genetic diversity, and is maintained neither \
+by sib-mating (<A HREF="!FEWI_URL!glossary/inbred_strain">inbred</A>), nor by selective \
+mating to maximize heterozygosity (<A HREF="!FEWI_URL!glossary/outbred_stock">outbred</A>). \
+All matings occur within the colony members, but breeders need not be selected from specific \
+parentage. No animals are introduced into the colony from outside the stock from generation to generation.
 ]
 
 [ 
@@ -1919,11 +1929,25 @@ large amount of phenotypic variation among individuals having the same genotype.
 ]
 
 [ 
+key=f1_hybrid
+displayName=F1 Hybrid
+definition=First filial generation. The offspring of an \
+<A HREF="!FEWI_URL!glossary/outcross">outcross</A> between two inbred strains.
+]
+
+[ 
 key=fasta 
 displayName=FASTA format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
 See <A HREF="${MBLAST_URL}user_docs/mblast_seq_formats.shtml">MouseBLAST Help - Sequence Formats</A>. 
+]
+
+[
+key=feature_type
+displayName=Feature Type
+definition=An attribute of a portion of a genomic sequence. The MGI Feature Types are all defined \
+<A HREF="http://www.informatics.jax.org/userhelp/GENE_feature_types_help.shtml">here</A>.
 ]
 
 [
@@ -3594,6 +3618,15 @@ segments that function or are biologically significant as <A HREF="!FEWI_URL!glo
 ]
 
 [ 
+key=outbred_stock 
+displayName=Outbred Stock
+definition=Stocks that are genetically undefined; that is, no two individuals from an outbred stock \ 
+are the same. Outbreds are intentionally not bred with siblings or close relatives, as the purpose of \
+an outbred stock is to maintain maximum heterozygosity. <BR>See also: \ 
+<A HREF="!FEWI_URL!glossary/inbred_strain">Inbred Strain</A>
+]
+
+[ 
 key=outcross 
 displayName=Outcross 
 definition=A type of genetic <A HREF="!FEWI_URL!glossary/cross">cross</A> in which an organism is crossed \
@@ -4407,7 +4440,7 @@ definition=<OL><LI>The separation of <A HREF="!FEWI_URL!glossary/homolog">homolo
 ]
 
 [ 
-key=segregation_inbred_strain 
+key=segregating_inbred_strain 
 displayName=Segregating Inbred Strain
 definition=An <A HREF="!FEWI_URL!glossary/inbred_strain">inbred strain</A> that is kept in forced \ 
 <A HREF="!FEWI_URL!glossary/heterozygosity">heterozygosity</A> for one or more loci. For example, the SM/J \
