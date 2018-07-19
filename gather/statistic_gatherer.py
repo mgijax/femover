@@ -432,7 +432,7 @@ STATS[PLY_GENES] = ('Genes with RFLP and/or PCR polymorphism data',
 	'''SELECT COUNT(DISTINCT pr._Marker_key)
 		FROM PRB_RFLV pr, MRK_Marker m
 		WHERE pr._Marker_key = m._Marker_key AND m._Marker_Status_key IN (1,3) AND m._Marker_Type_key = 1''')
-STATS[PLY_STRAINS] = ('Mouse strains available in MGI',
+STATS[PLY_STRAINS] = ('Strains in MGI with detail pages',
 	'SELECT COUNT(1) FROM %s' % StrainUtils.getStrainTempTable())
 
 GROUPS[POLYMORPHISMS_MINI_HOME] = [ PLY_STRAINS, PLY_STRAINS_SNPS, PLY_REFSNPS, PLY_RFLP, PLY_PCR ]
