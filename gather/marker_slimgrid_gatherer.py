@@ -62,26 +62,6 @@ def setupPhenoHeaderKeys(mph):
 	logger.debug('Found %d MP header keys' % len(mph.getMapping()))
 	return 
 
-def setupPhenoHeaderKeysOld():
-	# build a temp table with the keys of the MP header terms
-
-	cmd1 = '''select _Object_key as _Term_key 
-		into temporary table %s
-	        from MGI_SetMember 
-		where _Set_key = 1051
-		''' % MP_HEADER_KEYS
-
-	dbAgnostic.execute(cmd1)
-
-	cmd2 = 'create unique index mph1 on %s (_Term_key)' % MP_HEADER_KEYS
-	dbAgnostic.execute(cmd2)
-
-	cmd3 = 'select count(1) from %s' % MP_HEADER_KEYS
-	cols, rows = dbAgnostic.execute(cmd3)
-
-	logger.debug('Found %d MP header keys' % rows[0][0])
-	return 
-
 def setupGOHeaderKeys():
 	# build a temp table with the keys of the GO header terms
 
