@@ -475,8 +475,7 @@ class MPHeadingCollection (HeadingCollection):
 				t._Term_key,
 				a.accID,
 				t.sequenceNum,
-				v.name as slimgrid,
-				a.prefixPart as slimgridAbbrev
+				v.name as slimgrid
 			from mgi_setmember s,
 			     voc_term t,
 			     voc_vocab v,
@@ -497,7 +496,6 @@ class MPHeadingCollection (HeadingCollection):
 		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		slimgridCol = dbAgnostic.columnNumber (cols, 'slimgrid')
-		slimgridAbbrevCol = dbAgnostic.columnNumber (cols, 'slimgridAbbrev')
 
 		for row in rows:
 			termAbbrev = row[termAbbrevCol]
@@ -505,7 +503,7 @@ class MPHeadingCollection (HeadingCollection):
 			termKey = row[keyCol]
 			term = row[termCol].strip()
 			slimgrid = row[slimgridCol]
-			slimgridAbbrev = row[slimgridAbbrevCol]
+			slimgridAbbrev = 'MP'
 
 			if termAbbrev == 'None':
 			    termAbbrev = term
