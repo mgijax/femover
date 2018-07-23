@@ -474,13 +474,14 @@ class MPHeadingCollection (HeadingCollection):
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		slimgridCol = dbAgnostic.columnNumber (cols, 'slimgrid')
 
+		slimgridAbbrev = 'MP'
+
 		for row in rows:
 			termAbbrev = row[termAbbrevCol]
 			accID = row[idCol]
 			termKey = row[keyCol]
 			term = row[termCol].strip()
 			slimgrid = row[slimgridCol]
-			slimgridAbbrev = 'MP'
 
 			if termAbbrev == 'None':
 			    termAbbrev = term
