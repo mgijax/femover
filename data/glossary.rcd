@@ -38,10 +38,8 @@ to the right, in reference to the direction of \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A> synthesis during \ 
 <A HREF="!FEWI_URL!glossary/transcription">transcription</A> (from 5' to 3'), \
 and the reading of <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> sequence (from 5' to 3') during \ 
-<A HREF="!FEWI_URL!glossary/translation">translation</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.\ 
-<BR>See also: <UL> <LI><A HREF="!FEWI_URL!glossary/_5_prime">5' (5-prime)</A></LI>\ 
+<A HREF="!FEWI_URL!glossary/translation">translation</A>. \ 
+<BR>See also: <UL> <LI><A HREF="!FEWI_URL!glossary/_5_prime">5' (5-prime)</A></LI> \ 
 <LI><A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A></LI></UL>
 ]
 
@@ -70,9 +68,7 @@ to the right, in reference to the direction of \
 <A HREF="!FEWI_URL!glossary/rna">RNA</A> synthesis during \ 
 <A HREF="!FEWI_URL!glossary/transcription">transcription</A> (from 5' to 3'), \
 and the reading of <A HREF="!FEWI_URL!glossary/mrna">mRNA</A> sequence (from 5' to 3') during \ 
-<A HREF="!FEWI_URL!glossary/translation">translation</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/base_pair2.cfm">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.\ 
+<A HREF="!FEWI_URL!glossary/translation">translation</A>. \ 
 <BR>See also: <UL> <LI><A HREF="!FEWI_URL!glossary/_3_prime">3' (3-prime)</A></LI>\ 
 <LI><A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A></LI></UL>
 ]
@@ -340,7 +336,7 @@ an <B>ancestor</B> to the GO term <B>alcohol dehydrogenase</B> [GO:0004022].\
 [ 
 key=aneuploid 
 displayName=Aneuploid 
-definition=Not \ 
+definition=An abnormal number of chromosomes in a cell. See: \ 
 <A HREF="!FEWI_URL!glossary/euploid">euploid</A>. 
 ]
 
@@ -850,10 +846,7 @@ expressed</A> by being copied as RNA \
 <A HREF="!FEWI_URL!glossary/translation">translated</A> into a protein sequence using a \ 
 <A HREF="!FEWI_URL!glossary/genetic_code">genetic code</A> to interpret three-base \ 
 <A HREF="!FEWI_URL!glossary/codon">codons</A> as instructions to add one of twenty \ 
-<A HREF="!FEWI_URL!glossary/amino_acid">amino acids</A> or to stop translation. See the \ 
-<A HREF="http://www.accessexcellence.org/AB/GG/central.html">Figure</A> at Access Excellence or the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/mrna.cfm?key=messenger%20RNA%20%28mRNA%29">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="!FEWI_URL!glossary/amino_acid">amino acids</A> or to stop translation.
 ]
 
 [ 
@@ -955,9 +948,7 @@ displayName=Chromosome
 definition=A structural unit within a eukaryotic <A HREF="!FEWI_URL!glossary/nucleus">nucleus</A> \
 that carries <A HREF="!FEWI_URL!glossary/gene">genes</A>. A chromosome consists of a long, \ 
 continuous strand of <A HREF="!FEWI_URL!glossary/dna">DNA</A> and associated \ 
-<A HREF="!FEWI_URL!glossary/protein">proteins</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/chromosome.cfm?key=chromosome">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="!FEWI_URL!glossary/protein">proteins</A>.
 ]
 
 [ 
@@ -1032,6 +1023,16 @@ definition=A <A HREF="!FEWI_URL!glossary/dna_construct">DNA construct</A> capabl
 <A HREF="!FEWI_URL!glossary/replication">replication</A> within a bacterial or \
 yeast host that can harbor foreign <A HREF="!FEWI_URL!glossary/dna">DNA</A>, \
 facilitating experimental manipulation of that DNA segment. 
+]
+
+[ 
+key=closed_colony 
+displayName=Closed Colony
+definition=A closed colony contains limited genetic diversity, and is maintained neither \
+by sib-mating (<A HREF="!FEWI_URL!glossary/inbred_strain">inbred</A>), nor by selective \
+mating to maximize heterozygosity (<A HREF="!FEWI_URL!glossary/outbred_stock">outbred</A>). \
+All matings occur within the colony members, but breeders need not be selected from specific \
+parentage. No animals are introduced into the colony from outside the stock from generation to generation.
 ]
 
 [ 
@@ -1484,8 +1485,7 @@ definition=A type of <A HREF="!FEWI_URL!glossary/mutation">mutation</A> caused b
 cytological abnormality in a <A HREF="!FEWI_URL!glossary/chromosome">chromosome</A>. Small deletions within \
 a gene can alter the <A HREF="!FEWI_URL!glossary/reading_frame">reading frame</A>, and thus the \ 
 <A HREF="!FEWI_URL!glossary/amino_acid">amino acid</A> sequence of the encoded \ 
-<A HREF="!FEWI_URL!glossary/protein">protein</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/deletion.cfm?key=deletion">Figure</A> at NHGRI.
+<A HREF="!FEWI_URL!glossary/protein">protein</A>.
 ]
 
 [ 
@@ -1675,9 +1675,7 @@ displayName=Duplication
 definition=An additional copy of a <A HREF="!FEWI_URL!glossary/dna">DNA</A> segment present in the \
 <A HREF="!FEWI_URL!glossary/genome">genome</A>. \
 <A HREF="!FEWI_URL!glossary/gene">Gene</A> duplication is the source of \
-<A HREF="!FEWI_URL!glossary/paralog">paralogous</A> genes. See the \
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/duplication.cfm?key=duplication">Figure</A> at \
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+<A HREF="!FEWI_URL!glossary/paralog">paralogous</A> genes.
 ]
 
 [ 
@@ -1856,9 +1854,8 @@ definition=A  <A HREF="!FEWI_URL!glossary/fluorescence">fluorescent</A> dye that
 <A HREF="!FEWI_URL!glossary/base_pair">base pairs</A> in double-stranded \ 
 <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acids</A> or between \ 
 <A HREF="!FEWI_URL!glossary/base">bases</A> in single-stranded nucleic acids. Ethidium bromide is commonly \
-used to visualize <A HREF="!FEWI_URL!glossary/dna">DNA</A> on agarose gels. See one of the \ 
-<A HREF="${WI_URL}searches/image.cgi?1099">Figures</A> in <A HREF="!FEWI_URL!glossary/gxd">GXD</A> \
-for an example.
+used to visualize <A HREF="!FEWI_URL!glossary/dna">DNA</A> on agarose gels. See the \ 
+<A HREF="https://en.wikipedia.org/wiki/Ethidium_bromide">Image</A> at Wikipedia. 
 ]
 
 [
@@ -1932,11 +1929,25 @@ large amount of phenotypic variation among individuals having the same genotype.
 ]
 
 [ 
+key=f1_hybrid
+displayName=F1 Hybrid
+definition=First filial generation. The offspring of an \
+<A HREF="!FEWI_URL!glossary/outcross">outcross</A> between two inbred strains.
+]
+
+[ 
 key=fasta 
 displayName=FASTA format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
 See <A HREF="${MBLAST_URL}user_docs/mblast_seq_formats.shtml">MouseBLAST Help - Sequence Formats</A>. 
+]
+
+[
+key=feature_type
+displayName=Feature Type
+definition=An attribute of a portion of a genomic sequence. The MGI Feature Types are all defined \
+<A HREF="http://www.informatics.jax.org/userhelp/GENE_feature_types_help.shtml">here</A>.
 ]
 
 [
@@ -2058,7 +2069,7 @@ key=gcg
 displayName=GCG Format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
-See an example <a href="https://www.genomatix.de/online_help/help/sequence_formats.html#GCG">here</a>. 
+See an example <A HREF="https://www.genomatix.de/online_help/help/sequence_formats.html#GCG">here</A>. 
 ]
 
 [ 
@@ -2075,7 +2086,7 @@ definition=The basic unit of heredity; a portion of <A HREF="!FEWI_URL!glossary/
 codes for a <A HREF="!FEWI_URL!glossary/protein">protein</A> product. <BR>See also \
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>.<BR> In \ 
 <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, "gene" may be used to refer to any of the following:<BR><OL><LI>A \
-<AHREF="!FEWI_URL!glossary/locus">locus</A> in the \ 
+<A HREF="!FEWI_URL!glossary/locus">locus</A> in the \ 
 <A HREF="!FEWI_URL!glossary/cytoplasm">cytoplasmic</A> or \ 
 <A HREF="!FEWI_URL!glossary/nucleus">nuclear</A> \
 <A HREF="!FEWI_URL!glossary/genome">genome</A> characterized by an altered \ 
@@ -2218,8 +2229,8 @@ displayName=Genetic Code
 definition=The relationship of the sixty-four <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> \ 
 <A HREF="!FEWI_URL!glossary/codon">codons</A> to the twenty primary \ 
 <A HREF="!FEWI_URL!glossary/amino_acid">amino acids</A>. See the \ 
-<A HREF="https://en.wikipedia.org/wiki/Genetic_code">Figure</A> for the standard genetic code. <BR>See also \ 
-<A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>. 
+<A HREF="https://en.wikipedia.org/wiki/Genetic_code">Figure</A> at Wikipedia for the standard genetic code. \ 
+<BR>See also <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>. 
 ]
 
 [ 
@@ -3405,12 +3416,12 @@ definition=An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule that functions s
 (see <A HREF="!FEWI_URL!glossary/ribozyme">ribozyme</A>) without being \ 
 <A HREF="!FEWI_URL!glossary/translation">translated</A>. Noncoding RNAs lack conserved \ 
 <A HREF="!FEWI_URL!glossary/open_reading_frame">open reading frames</A>. One example is \ 
-<A HREF="http://www.informatics.jax.org/searches/accession_report.cgi?id=MGI:98974">Xist</A>. 
+<A HREF="http://www.informatics.jax.org/marker/MGI:98974">Xist</A>. 
 ]
 
 [ 
 key=noninbred 
-displayName=Noninbred Stock 
+displayName=Non-Inbred Stock 
 definition=A stock that is known to be not <A HREF="!FEWI_URL!glossary/inbred_strain">inbred</A>, or \
 intentionally kept to prevent it from becoming inbred.
 ]
@@ -3465,7 +3476,7 @@ displayName=Nucleotide Repeat Expansion
 definition=A type of <A HREF="!FEWI_URL!glossary/mutation">mutation</A> in which a set of tandemly repeated \
 sequences <A HREF="!FEWI_URL!glossary/replication">replicates</A> inaccurately to increase the number of \
 repeats. An example of this kind of mutation in humans is the \
-<A HREF="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=309550">FMR1</A> gene. <BR>See also \ 
+<A HREF="https://www.ncbi.nlm.nih.gov/gene/2332">FMR1</A> gene. <BR>See also \ 
 <A HREF="!FEWI_URL!glossary/microsatellite">Microsatellite</A>. 
 ]
 
@@ -3481,8 +3492,7 @@ displayName=Nucleus
 definition=The <A HREF="!FEWI_URL!glossary/organelle">organelle</A> in a eukaryotic cell that contains the \
 <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A>. In most types of eukaryotic cells, the nucleus \
 breaks down as chromosomes condense during cell division. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/nucleus.cfm?key=nucleus">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.
+<A HREF="https://en.wikipedia.org/wiki/Cell_nucleus">Image</A> at Wikipedia. 
 ]
 
 [ 
@@ -3605,6 +3615,15 @@ other genome features include <A HREF="!FEWI_URL!glossary/endogenous">Endogenous
 <A HREF="!FEWI_URL!glossary/retrotransposon">Retrotransposons</A>, Integration Sites, and Repetitive \
 Elements. An additional class of such features includes <A HREF="!FEWI_URL!glossary/genome">genomic</A> \ 
 segments that function or are biologically significant as <A HREF="!FEWI_URL!glossary/dna">DNA</A> elements.
+]
+
+[ 
+key=outbred_stock 
+displayName=Outbred Stock
+definition=Stocks that are genetically undefined; that is, no two individuals from an outbred stock \ 
+are the same. Outbreds are intentionally not bred with siblings or close relatives, as the purpose of \
+an outbred stock is to maintain maximum heterozygosity. <BR>See also: \ 
+<A HREF="!FEWI_URL!glossary/inbred_strain">Inbred Strain</A>
 ]
 
 [ 
@@ -4115,8 +4134,7 @@ for at least 20 generations. A panel of recombinant inbred strains derived from 
 used to establish <A HREF="!FEWI_URL!glossary/linkage">linkage</A> between any \
 <A HREF="!FEWI_URL!glossary/marker">marker</A> that is \ 
 <A HREF="!FEWI_URL!glossary/polymorphism">polymorphic</A> between the parental strains and other polymorphic \
-markers that have been typed in each strain in the panel. See the Recombinant Inbred Strain Distribution Panel \ 
-<A HREF="${WI_URL}searches/riset_form.shtml">Query Form</A> at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>. \
+markers that have been typed in each strain in the panel. \
 <BR>See also the <A HREF="${MGIHOME_URL}nomen/strains.shtml">Rules for Nomenclature of Mouse and Rat Strains</A>. 
 ]
 
@@ -4183,9 +4201,7 @@ definition=The process of synthesizing a copy of a <A HREF="!FEWI_URL!glossary/d
 molecule from <A HREF="!FEWI_URL!glossary/nucleotide">nucleotides</A> using information contained \ 
 within one strand of a <A HREF="!FEWI_URL!glossary/template">template</A> DNA molecule. \
 The new strand of DNA is synthesized from the <A HREF="!FEWI_URL!glossary/_5_prime">5' end</A> to \
-the <A HREF="!FEWI_URL!glossary/_3_prime">3' end</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/dna_replication.cfm?key=DNA%20replication">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
+the <A HREF="!FEWI_URL!glossary/_3_prime">3' end</A>. 
 ]
 
 [ 
@@ -4424,7 +4440,7 @@ definition=<OL><LI>The separation of <A HREF="!FEWI_URL!glossary/homolog">homolo
 ]
 
 [ 
-key=segregation_inbred_strain 
+key=segregating_inbred_strain 
 displayName=Segregating Inbred Strain
 definition=An <A HREF="!FEWI_URL!glossary/inbred_strain">inbred strain</A> that is kept in forced \ 
 <A HREF="!FEWI_URL!glossary/heterozygosity">heterozygosity</A> for one or more loci. For example, the SM/J \
@@ -4643,8 +4659,7 @@ definition=An assay that detects specific <A HREF="!FEWI_URL!glossary/dna">DNA</
 then made on a membrane by capillary transfer following \
 <A HREF="!FEWI_URL!glossary/denaturation">denaturation</A>. Specific \
 <A HREF="!FEWI_URL!glossary/dna">DNA</A> sequences are then detected on the membrane with a \
-radioactively- or chemically-labeled <A HREF="!FEWI_URL!glossary/probe">probe</A>. See the \
-<A HREF="http://www.accessexcellence.org/AB/GG/southBlotg.html">Figure</A> from Alberts, et al., Molecular Biology of the Cell.\ 
+radioactively- or chemically-labeled <A HREF="!FEWI_URL!glossary/probe">probe</A>. \ 
 <BR>See also:\
 <UL>\
 <LI><A HREF="!FEWI_URL!glossary/northern_blot">Northern blot</A></LI>\
@@ -4996,9 +5011,7 @@ key=transcription
 displayName=Transcription 
 definition=The <A HREF="!FEWI_URL!glossary/enzyme">enzymatic</A> synthesis of an \ 
 <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule directed by information in a \ 
-<A HREF="!FEWI_URL!glossary/dna">DNA</A> molecule. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/mrna.cfm?key=messenger%20RNA%20%28mRNA%29">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. <BR>See also \ 
+<A HREF="!FEWI_URL!glossary/dna">DNA</A> molecule. <BR>See also \ 
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>. 
 ]
 
@@ -5044,10 +5057,7 @@ definition=The <A HREF="!FEWI_URL!glossary/enzyme">enzymatic</A> synthesis of a 
 <A HREF="!FEWI_URL!glossary/_3_prime">3' end</A>, with the \ 
 <A HREF="!FEWI_URL!glossary/protein">protein</A> being synthesized from the \ 
 <A HREF="!FEWI_URL!glossary/amino_terminus">amino terminus</A> to the \ 
-<A HREF="!FEWI_URL!glossary/carboxyl_terminus">carboxyl terminus</A>. See the \ 
-<A HREF="http://www.accessexcellence.org/AB/GG/protein_synthesis.html">Figure</A> at Access Excellence or the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/mrna.cfm?key=messenger%20RNA%20%28mRNA%29">Figure</A> at \ 
-<A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.<BR>See also \ 
+<A HREF="!FEWI_URL!glossary/carboxyl_terminus">carboxyl terminus</A>. <BR>See also \ 
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>.
 ]
 
@@ -5155,7 +5165,7 @@ bearing no copy of that chromosome, or from the union of a gamete bearing two co
 followed by the loss of one chromosome through an error in <A HREF="!FEWI_URL!glossary/mitosis">mitosis</A>. \
 Because of <A HREF="!FEWI_URL!glossary/imprinting">imprinting</A>, uniparental disomy can have \
 <A HREF="!FEWI_URL!glossary/phenotype">phenotypic</A> consequences in mammals. See, for example, \
-<A HREF="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=176270">Prader-Willi Syndrome</A>. 
+<A HREF="http://omim.org/entry/176270">Prader-Willi Syndrome</A>. 
 ]
 
 [ 
