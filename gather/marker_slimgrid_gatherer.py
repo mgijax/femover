@@ -65,12 +65,11 @@ def setupPhenoHeaderKeys(mph):
 def setupPhenoHeaderKeysOld():
 	# build a temp table with the keys of the MP header terms
 
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'Mammalian Phenotype'
-		and t.sequenceNum is not null''' % MP_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1051
+		''' % MP_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
@@ -86,12 +85,11 @@ def setupPhenoHeaderKeysOld():
 def setupGOHeaderKeys():
 	# build a temp table with the keys of the GO header terms
 
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'GO'
-		and t.sequenceNum is not null''' % GO_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1050
+		''' % GO_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
@@ -107,12 +105,11 @@ def setupGOHeaderKeys():
 def setupGxdHeaderKeys():
 	# build a temp table with the keys of the Gxd header terms
 
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'EMAPA'
-		and t.sequenceNum is not null''' % GXD_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1049
+		''' % GXD_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
@@ -131,8 +128,8 @@ def setupGOCacheTables():
 	cmd1 = '''select dc._AncestorObject_key, dc._DescendentObject_key
 		into temporary table go_closure
 		from dag_closure dc, %s ghk
-		where dc._AncestorObject_key = ghk._Term_key''' % \
-			GO_HEADER_KEYS
+		where dc._AncestorObject_key = ghk._Term_key
+		''' % GO_HEADER_KEYS
 
 	cmd2 = '''insert into go_closure
 		select _Term_key, _Term_key
