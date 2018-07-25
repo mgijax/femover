@@ -49,17 +49,21 @@ def getNextSequenceNum():
 def setupPhenoHeaderKeys(mph):
 	# build a temp table with the keys of the MP header terms
 
-	cmd1 = '''create temporary table %s (
-		_Term_key	int	not null,
-		primary key(_Term_Key) )''' % MP_HEADER_KEYS
-
-	cmd2 = 'insert into %s values (%d)'
+	cmd1 = '''select _Object_key as _Term_key 
+		into temporary table %s
+	        from MGI_SetMember 
+		where _Set_key = 1051
+		''' % MP_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
-	for (termKey, headingKey) in mph.getMapping():
-		dbAgnostic.execute(cmd2 % (MP_HEADER_KEYS, termKey))
 
-	logger.debug('Found %d MP header keys' % len(mph.getMapping()))
+	cmd2 = 'create unique index mp1 on %s (_Term_key)' % MP_HEADER_KEYS
+	dbAgnostic.execute(cmd2)
+
+	cmd3 = 'select count(1) from %s' % MP_HEADER_KEYS
+	cols, rows = dbAgnostic.execute(cmd3)
+
+	logger.debug('Put %d MP keys in %s' % (rows[0][0], MP_HEADER_KEYS))
 	return 
 
 def setupGOHeaderKeys():
