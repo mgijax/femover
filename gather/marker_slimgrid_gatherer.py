@@ -49,49 +49,31 @@ def getNextSequenceNum():
 def setupPhenoHeaderKeys(mph):
 	# build a temp table with the keys of the MP header terms
 
-	cmd1 = '''create temporary table %s (
-		_Term_key	int	not null,
-		primary key(_Term_Key) )''' % MP_HEADER_KEYS
-
-	cmd2 = 'insert into %s values (%d)'
-
-	dbAgnostic.execute(cmd1)
-	for (termKey, headingKey) in mph.getMapping():
-		dbAgnostic.execute(cmd2 % (MP_HEADER_KEYS, termKey))
-
-	logger.debug('Found %d MP header keys' % len(mph.getMapping()))
-	return 
-
-def setupPhenoHeaderKeysOld():
-	# build a temp table with the keys of the MP header terms
-
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'Mammalian Phenotype'
-		and t.sequenceNum is not null''' % MP_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1051
+		''' % MP_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
-	cmd2 = 'create unique index mph1 on %s (_Term_key)' % MP_HEADER_KEYS
+	cmd2 = 'create unique index mp1 on %s (_Term_key)' % MP_HEADER_KEYS
 	dbAgnostic.execute(cmd2)
 
 	cmd3 = 'select count(1) from %s' % MP_HEADER_KEYS
 	cols, rows = dbAgnostic.execute(cmd3)
 
-	logger.debug('Found %d MP header keys' % rows[0][0])
+	logger.debug('Put %d MP keys in %s' % (rows[0][0], MP_HEADER_KEYS))
 	return 
 
 def setupGOHeaderKeys():
 	# build a temp table with the keys of the GO header terms
 
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'GO'
-		and t.sequenceNum is not null''' % GO_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1050
+		''' % GO_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
@@ -107,12 +89,11 @@ def setupGOHeaderKeys():
 def setupGxdHeaderKeys():
 	# build a temp table with the keys of the Gxd header terms
 
-	cmd1 = '''select t._Term_key
+	cmd1 = '''select _Object_key as _Term_key 
 		into temporary table %s
-		from voc_term t, voc_vocab v
-		where t._Vocab_key = v._Vocab_key
-		and v.name = 'EMAPA'
-		and t.sequenceNum is not null''' % GXD_HEADER_KEYS
+	        from MGI_SetMember 
+		where _Set_key = 1049
+		''' % GXD_HEADER_KEYS
 
 	dbAgnostic.execute(cmd1)
 
@@ -131,8 +112,8 @@ def setupGOCacheTables():
 	cmd1 = '''select dc._AncestorObject_key, dc._DescendentObject_key
 		into temporary table go_closure
 		from dag_closure dc, %s ghk
-		where dc._AncestorObject_key = ghk._Term_key''' % \
-			GO_HEADER_KEYS
+		where dc._AncestorObject_key = ghk._Term_key
+		''' % GO_HEADER_KEYS
 
 	cmd2 = '''insert into go_closure
 		select _Term_key, _Term_key
@@ -475,8 +456,7 @@ class MPHeadingCollection (HeadingCollection):
 				t._Term_key,
 				a.accID,
 				t.sequenceNum,
-				v.name as slimgrid,
-				a.prefixPart as slimgridAbbrev
+				v.name as slimgrid
 			from mgi_setmember s,
 			     voc_term t,
 			     voc_vocab v,
@@ -497,7 +477,8 @@ class MPHeadingCollection (HeadingCollection):
 		keyCol = dbAgnostic.columnNumber (cols, '_Term_key')
 		idCol = dbAgnostic.columnNumber (cols, 'accID')
 		slimgridCol = dbAgnostic.columnNumber (cols, 'slimgrid')
-		slimgridAbbrevCol = dbAgnostic.columnNumber (cols, 'slimgridAbbrev')
+
+		slimgridAbbrev = 'MP'
 
 		for row in rows:
 			termAbbrev = row[termAbbrevCol]
@@ -505,9 +486,8 @@ class MPHeadingCollection (HeadingCollection):
 			termKey = row[keyCol]
 			term = row[termCol].strip()
 			slimgrid = row[slimgridCol]
-			slimgridAbbrev = row[slimgridAbbrevCol]
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -563,7 +543,7 @@ class GOHeadingCollection (HeadingCollection):
 			slimgrid = row[slimgridCol]
 			slimgridAbbrev = row[slimgridAbbrevCol]
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -609,7 +589,7 @@ class GxdHeadingCollection (HeadingCollection):
 			termKey = row[keyCol]
 			term = row[termCol].strip()
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -1013,6 +993,11 @@ files = [ ('marker_grid_cell',
 		[ Gatherer.AUTO, 'heading_key', 'term_key', 'term_id' ],
 		),
 	]
+
+#
+# for testing
+#	'select min(_Marker_key) + 10 from MRK_Marker where _Organism_key = 1',
+#
 
 # global instance of a SlimgridGatherer
 gatherer = SlimgridGatherer (files, cmds)
