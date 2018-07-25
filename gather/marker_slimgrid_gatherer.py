@@ -483,7 +483,7 @@ class MPHeadingCollection (HeadingCollection):
 			term = row[termCol].strip()
 			slimgrid = row[slimgridCol]
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -539,7 +539,7 @@ class GOHeadingCollection (HeadingCollection):
 			slimgrid = row[slimgridCol]
 			slimgridAbbrev = row[slimgridAbbrevCol]
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -585,7 +585,7 @@ class GxdHeadingCollection (HeadingCollection):
 			termKey = row[keyCol]
 			term = row[termCol].strip()
 
-			if termAbbrev == 'None':
+			if str(termAbbrev) == 'None':
 			    termAbbrev = term
 
 			self.store(getNextHeadingKey(), term, termAbbrev,
@@ -991,10 +991,11 @@ files = [ ('marker_grid_cell',
 	]
 
 # global instance of a SlimgridGatherer
+#	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
 gatherer = SlimgridGatherer (files, cmds)
 gatherer.setupChunking (
 	'select min(_Marker_key) from MRK_Marker where _Organism_key = 1',
-	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
+	'select min(_Marker_key) + 10 from MRK_Marker where _Organism_key = 1',
 	10000
 	)
 
