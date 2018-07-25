@@ -2068,8 +2068,7 @@ definition=One of the differentiated cells that is a product of \
 key=gcg 
 displayName=GCG Format 
 definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> or \
-<A HREF="!FEWI_URL!glossary/protein">protein</A> sequences. \
-See an example <A HREF="https://www.genomatix.de/online_help/help/sequence_formats.html#GCG">here</A>. 
+<A HREF="!FEWI_URL!glossary/protein">protein</A> sequences.
 ]
 
 [ 
