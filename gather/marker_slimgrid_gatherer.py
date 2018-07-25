@@ -990,12 +990,16 @@ files = [ ('marker_grid_cell',
 		),
 	]
 
+#
+# for testing
+#	'select min(_Marker_key) + 10 from MRK_Marker where _Organism_key = 1',
+#
+
 # global instance of a SlimgridGatherer
-#	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
 gatherer = SlimgridGatherer (files, cmds)
 gatherer.setupChunking (
 	'select min(_Marker_key) from MRK_Marker where _Organism_key = 1',
-	'select min(_Marker_key) + 10 from MRK_Marker where _Organism_key = 1',
+	'select max(_Marker_key) from MRK_Marker where _Organism_key = 1',
 	10000
 	)
 
