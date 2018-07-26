@@ -49,7 +49,7 @@ def getNextSequenceNum():
 	MAX_SEQUENCE_NUM = MAX_SEQUENCE_NUM + 1
 	return MAX_SEQUENCE_NUM
 
-def setupPhenoHeaderKeys(mph):
+def setupPhenoHeaderKeys():
 	# build a temp table with the keys of the MP header terms
 
 	cmd1 = '''select _Object_key as _Term_key 
@@ -693,7 +693,6 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		self.setGOHeaderCollection(GOHeadingCollection())
 		
 		# custom MP setup
-		#setupPhenoHeaderKeys()
 		self.setMPHeaderCollection(MPHeadingCollection())
 		setupMPCacheTables()
 		
@@ -730,7 +729,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		self.mpHeaderCollection = mph
 		self.saveHeadings(mph.getHeadingRows())
 		self.saveTermMapping(mph.getTermRows())
-		setupPhenoHeaderKeys(mph)
+		setupPhenoHeaderKeys()
 		return
 
 	def setGOHeaderCollection (self, goh):
