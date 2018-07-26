@@ -157,21 +157,29 @@ class StrainSnpGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# if we have any comparison strains left, then we need to get new records from the database
 		if comparisonStrains:
-			# need to retrieve allele calls to compate for the same consensus SNP, with the given reference
+			# need to retrieve allele calls to compare for the same consensus SNP, with the given reference
 			# strain and any of the set of comparison strains.  Note that we skip multi-coordinate SNPs, as
-			# these are omitted from public display.
+			# these are omitted from public display.  Also, when computing counts:
+			#	1. in the 'all' count, include any allele calls of:  ACGT?
+			#	2. for 'same' or 'different', include only allele calls:  ACGT (exclude ?)
+			#	3. all other allele calls are suppressed from public summaries, so exclude them from the counts
+			
 			cmd = '''select ref._mgdStrain_key as ref_strain_key,
 					cmp._mgdStrain_key as cmp_strain_key,
 					cc.chromosome,
 					count(1) as all_count,
-					sum(case when ref.allele = cmp.allele then 1 else 0 end) as same_count,
-					sum(case when ref.allele != cmp.allele then 1 else 0 end) as diff_count
+					sum(case when (ref.allele = cmp.allele and ref.allele != '?')
+						then 1 else 0 end) as same_count,
+					sum(case when (ref.allele != cmp.allele and ref.allele != '?' and cmp.allele != '?')
+						then 1 else 0 end) as diff_count
 				from snp_consensussnp_strainallele ref, snp_consensussnp_strainallele cmp,
 					snp_coord_cache cc
 				where ref._ConsensusSNP_key = cmp._ConsensusSNP_key
 					and ref._mgdStrain_key = %d
 					and cmp._mgdStrain_key in (%s)
 					and cmp._ConsensusSNP_key = cc._ConsensusSNP_key
+					and ref.allele in ('A', 'C', 'G', 'T', '?')
+					and cmp.allele in ('A', 'C', 'G', 'T', '?')
 					and cc.isMultiCoord = 0
 				group by 1, 2, 3'''
 		
