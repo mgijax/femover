@@ -163,6 +163,8 @@ class StrainSnpGatherer (Gatherer.CachingMultiFileGatherer):
 			#	1. in the 'all' count, include any allele calls of:  ACGT?
 			#	2. for 'same' or 'different', include only allele calls:  ACGT (exclude ?)
 			#	3. all other allele calls are suppressed from public summaries, so exclude them from the counts
+			# Only deal with SNPs of variation class "SNP", omitting Mixed, MNP, and IN-DEL, as those don't
+			# appear on the public summary page.
 			
 			cmd = '''select ref._mgdStrain_key as ref_strain_key,
 					cmp._mgdStrain_key as cmp_strain_key,
@@ -181,6 +183,7 @@ class StrainSnpGatherer (Gatherer.CachingMultiFileGatherer):
 					and ref.allele in ('A', 'C', 'G', 'T', '?')
 					and cmp.allele in ('A', 'C', 'G', 'T', '?')
 					and cc.isMultiCoord = 0
+					and cc._VarClass_key = 1878510
 				group by 1, 2, 3'''
 		
 			cmpStrains = ','.join(map(str, comparisonStrains))
