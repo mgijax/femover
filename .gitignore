@@ -4,8 +4,11 @@
 *.tmp
 *.swp
 Configuration
+control/Configuration
 control/config.py
 gather/config.py
 schema/config.py
 *~
 gather/sql.log
+.settings/
+.project/

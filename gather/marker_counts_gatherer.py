@@ -16,6 +16,7 @@ import MarkerUtils
 import GOFilter
 import GenotypeClassifier
 import ReferenceUtils
+import SequenceUtils
 from IMSRData import IMSRDatabase
 
 # The count of GO annotations for a marker should exclude all annotations with
@@ -274,9 +275,15 @@ cmds = [
 		group by _Marker_key''' % (MUTATION_INVOLVES, EXPRESSES_COMPONENT),
 
 	# 2. count of sequences for each marker
-	'''select _Marker_key, count(distinct _Sequence_key) as numSeq
+	'''with pairs as (
+		select _Marker_key, _Sequence_key
 		from seq_marker_cache
-		group by _Marker_key''',
+		union
+		select _Marker_key, _Sequence_key
+		from %s
+		) select _Marker_key, count(distinct _Sequence_key) as numSeq
+		from pairs
+		group by _Marker_key''' % SequenceUtils.getStrainMarkers(),
 
 	# 3. count of alleles for each marker (altered to make a bogus query,
 	# since we now count alleles differently).  This keeps us from having

@@ -34,6 +34,7 @@ import ReferenceCitations
 import utils
 import gc
 import top
+import StrainUtils
 
 ###--- Globals ---###
 
@@ -1355,6 +1356,45 @@ class AccessionGatherer:
 	    gc.collect()
 	    return
 
+	def fillStrains (self, accessionFile):
+	    # popuplate the accession file with strain records
+
+	    descriptions = self.buildGenotypeDescriptionCache()
+
+	    mgitypeKey = 10
+	    displayType = displayTypeNum('Strain')
+
+	    cmd = '''select distinct aa.accID, ps.strain, aa._Object_key as _Strain_key, aa._LogicalDB_key
+		from %s s, prb_strain ps, acc_accession aa
+		where s._Strain_key = aa._Object_key
+		and s._Strain_key = ps._Strain_key
+		and aa._MGIType_key = %d''' % (StrainUtils.getStrainTempTable(), mgitypeKey)
+
+	    cols, rows = dbAgnostic.execute(cmd)
+
+	    idCol = dbAgnostic.columnNumber(cols, 'accID')
+	    keyCol = dbAgnostic.columnNumber(cols, '_Strain_key')
+	    ldbCol = dbAgnostic.columnNumber(cols, '_LogicalDB_key')
+	    nameCol = dbAgnostic.columnNumber(cols, 'strain')
+
+	    outputCols = [ OutputFile.AUTO, '_Object_key', 'accID', 'displayID', 'sequenceNum', 'description',
+			'_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
+	    outputRows = []
+
+	    for row in rows:
+		    accID = row[idCol]
+		    outputRows.append( [ row[keyCol], accID, accID, sequenceNum(accID), row[nameCol],
+				row[ldbCol], displayType, mgitypeKey] )
+
+	    logger.debug ('Found %d strain IDs' % len(rows))
+
+	    accessionFile.writeToFile (outputCols, outputCols[1:], outputRows)
+	    logger.debug ('Wrote strain IDs to file')
+
+	    del cols, rows, outputCols, outputRows
+	    gc.collect()
+	    return
+
 	def main (self):
 		global BASIC_ID_COUNT, SPLIT_ID_COUNT
 
@@ -1368,6 +1408,9 @@ class AccessionGatherer:
 		# build the large file
 
 		accessionFile = OutputFile.OutputFile (ACCESSION_FILE)
+		
+		self.fillStrains (accessionFile)
+		logMemory()
 		
 		# fillStrainMarkers must be done before fillSequences, so the mgpCache is populated
 		self.fillStrainMarkers (accessionFile)

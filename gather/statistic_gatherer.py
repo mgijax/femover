@@ -8,6 +8,7 @@ import dbAgnostic
 import Gatherer
 import logger
 import types
+import StrainUtils
 
 ###--- helper function ---###
 
@@ -32,6 +33,12 @@ def getExtraStat(statisticName):
 	return None 
 	
 ### Globals ###
+
+# default value, override from database
+SNP_BUILD_NUMBER = 'dbSNP'	
+cols, rows = dbAgnostic.execute('select snp_data_version from mgi_dbinfo')
+if rows:
+	SNP_BUILD_NUMBER = rows[0][0]
 
 STATS = {}			# statistic name : (tooltip, SQL command) or (tooltip, integer value of count)
 GROUPS = {}			# group name : [ statistic names ]
@@ -407,34 +414,29 @@ PLY_STRAINS_SNPS = 'Strains with SNPs'
 PLY_RFLP = 'RFLP records'
 PLY_PCR = 'PCR polymorphism records'
 PLY_GENES = 'Genes with polymorphisms (RFLP, PCR)'
-PLY_MARKERS = 'Markers with polymorphisms (RFLP, PCR)'
 PLY_STRAINS = 'Strains'
 
-STATS[PLY_REFSNPS] = ('', getExtraStat(PLY_REFSNPS))
-STATS[PLY_STRAINS_SNPS] = ('', getExtraStat(PLY_STRAINS_SNPS))
-STATS[PLY_RFLP] = ('',
+STATS[PLY_REFSNPS] = ('From %s' % SNP_BUILD_NUMBER, getExtraStat(PLY_REFSNPS))
+STATS[PLY_STRAINS_SNPS] = ('Strains that have been analyzed in %s' % SNP_BUILD_NUMBER, getExtraStat(PLY_STRAINS_SNPS))
+STATS[PLY_RFLP] = ('Restriction Fragment Length Polymorphism records',
 	'''select count(pr._Reference_key)
 		from PRB_Probe pp, PRB_RFLV pr, PRB_Reference ref, VOC_Term vt
 		where pp._SegmentType_key = vt._Term_key and pr._Reference_key = ref._Reference_key
 			and ref._Probe_key = pp._Probe_key and vt.term != 'primer' ''')
-STATS[PLY_PCR] = ('',
+STATS[PLY_PCR] = ('Polymerase Chain Reaction polymorphism records',
 	'''select count(pr._Reference_key)
 		from PRB_Probe pp, PRB_RFLV pr, PRB_Reference ref, VOC_Term vt
 		where pp._SegmentType_key = vt._Term_key and pr._Reference_key = ref._Reference_key
 			and ref._Probe_key = pp._Probe_key and vt.term = 'primer' ''')
-STATS[PLY_GENES] = ('',
+STATS[PLY_GENES] = ('Genes with RFLP and/or PCR polymorphism data',
 	'''SELECT COUNT(DISTINCT pr._Marker_key)
 		FROM PRB_RFLV pr, MRK_Marker m
 		WHERE pr._Marker_key = m._Marker_key AND m._Marker_Status_key IN (1,3) AND m._Marker_Type_key = 1''')
-STATS[PLY_MARKERS] = ('',
-	'''SELECT COUNT(DISTINCT pr._Marker_key)
-		FROM PRB_RFLV pr, MRK_Marker m 
-		WHERE pr._Marker_key = m._Marker_key AND m._Marker_Status_key IN (1,3)''')
-STATS[PLY_STRAINS] = ('', 'SELECT COUNT(1) FROM PRB_Strain WHERE standard = 1')
+STATS[PLY_STRAINS] = ('Strains in MGI with detail pages',
+	'SELECT COUNT(1) FROM %s' % StrainUtils.getStrainTempTable())
 
-GROUPS[POLYMORPHISMS_MINI_HOME] = [ PLY_REFSNPS, PLY_STRAINS, PLY_RFLP, PLY_PCR ]
-GROUPS[POLYMORPHISMS_STATS_PAGE] = [ PLY_REFSNPS, PLY_STRAINS_SNPS, PLY_RFLP, PLY_PCR, PLY_GENES,
-	PLY_MARKERS, PLY_STRAINS ]
+GROUPS[POLYMORPHISMS_MINI_HOME] = [ PLY_STRAINS, PLY_STRAINS_SNPS, PLY_REFSNPS, PLY_RFLP, PLY_PCR ]
+GROUPS[POLYMORPHISMS_STATS_PAGE] = [ PLY_STRAINS, PLY_STRAINS_SNPS, PLY_REFSNPS, PLY_RFLP, PLY_PCR, PLY_GENES ]
 
 ###--- home page statistics ---###
 

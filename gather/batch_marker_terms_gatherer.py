@@ -17,7 +17,6 @@ snpIDTable = 'tmp_snp_id'
 otherIDTable = 'tmp_other_id'
 
 ldbCache = None			# dictionary mapping from _LogicalDB_key to name
-gotOrphans = False		# have we retrieved the orphan strain markers yet?
 
 ###--- Functions ---###
 
@@ -256,34 +255,6 @@ def loadGOCaches():
 	logger.debug (' - Collected %d relationships for %d child GO terms' % (len(rows), len(ancestors) ))
 	return ids,ancestors
 
-def getOrphanStrainMarkers():
-	# 1. on the first call: get a list of all the orphan strain markers, where each item in the list is:
-	#		[ acc ID, term type, null marker key, strain marker key ]
-	# 2. on subsequent calls: get an empty list
-	
-	global gotOrphans
-	
-	out = []
-	if not gotOrphans:
-		cmd = '''select msm._StrainMarker_key, a.accID, a._LogicalDB_key
-			from mrk_strainmarker msm
-			inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
-			where msm._Marker_key is null
-			order by 1'''
-	
-		(cols, rows) = dbAgnostic.execute(cmd)
-		keyCol = Gatherer.columnNumber(cols, '_StrainMarker_key')
-		idCol = Gatherer.columnNumber(cols, 'accID')
-		ldbCol = Gatherer.columnNumber(cols, '_LogicalDB_key')
-	
-		for row in rows:
-			out.append( [ row[idCol], getLogicalDB(row[ldbCol]), None, row[keyCol] ] )
-		
-		logger.debug('Got %d orphan strain markers' % len(out))
-		gotOrphans = True
-		
-	return out
-	
 ###--- Classes ---###
 
 class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
@@ -326,7 +297,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 		for row in rows:
 			pair = (row[keyCol], row[termCol].lower())
 			if not done.has_key(pair):
-				out.append ( [ row[termCol], row[typeCol], row[keyCol], None ] )
+				out.append ( [ row[termCol], row[typeCol], row[keyCol] ] )
 				done[pair] = 1
 				validKeys[row[keyCol]] = 1
 
@@ -379,7 +350,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 
 			# if we made it this far, add the ID
 
-			out.append ( [ accID, ldb, marker, None ] )
+			out.append ( [ accID, ldb, marker ] )
 			done[triple] = 1
 
 		logger.debug ('Got %d %s rows' % (len(out), dataType))
@@ -392,7 +363,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 			delCount = 0
 			i = len(out) - 1
 			while i >= 0:
-				[ accID, ldb, marker, canonicalMarker ] = out[i]
+				[ accID, ldb, marker ] = out[i]
 				
 				if marker in ncbiExcluded:
 					if ldb.startswith ('NCBI Gene Model'):
@@ -461,7 +432,7 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 					continue
 				
 				for id in self.ids[key]:
-					row = [ id, label, markerKey, None ]
+					row = [ id, label, markerKey ]
 					out.append (row)
 
 				# remember that we've done this marker/term pair
@@ -478,28 +449,29 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 		return out
 	
 	def getStrainMarkerRows (self, validKeys):
-		# returns a list of strain marker-based rows with columns as:
-		#	[ term, term_type, marker_key, strain marker key  ]
-		# Note that either the marker key or the strain marker key will be filled in, but
-		# not both.  The other will be None.
+		# returns a list of rows for strain marker IDs with columns as:
+		#	[ term, term_type, marker_key  ]
+		# Note that we are associating the strain marker IDs with their respective
+		# canonical markers, not with the strain markers themselves (which are not
+		# returned by the batch query tool).
 		
 		out = []								# list of output rows
 		cols, rows = self.results[5]
 
 		markerCol = Gatherer.columnNumber (cols, 'canonical_marker_key')
-		strainMarkerCol = Gatherer.columnNumber (cols, 'strain_marker_key')
 		idCol = Gatherer.columnNumber (cols, 'accID')
 		ldbCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
 		
 		for row in rows:
+			markerKey = row[markerCol]
+			if not validKeys.has_key(markerKey):
+				continue
+
 			accID = row[idCol]
 			ldb = getLogicalDB(row[ldbCol])
+			out.append( [ accID, ldb, markerKey ] )
 			
-			# The ID needs to be associated with both the canonical marker and the strain marker.
-			out.append( [ accID, ldb, row[markerCol], None ] )
-			out.append( [ accID, ldb, None, row[strainMarkerCol] ] )
-			
-		logger.debug('Got %d strain marker rows' % len(out))
+		logger.debug('Got %d strain marker ID rows' % len(out))
 		return out
 
 	def collateResults (self):
@@ -516,9 +488,8 @@ class BatchMarkerTermsGatherer (Gatherer.ChunkGatherer):
 		goRows = self.getGORows(validKeys)
 		strainMarkerRows = self.getStrainMarkerRows(validKeys)
 		
-		self.finalColumns = [ 'term', 'term_type', '_Marker_key', '_Strain_Marker_key' ]
-		self.finalResults = nomenRows + sequenceRows + otherRows + goRows + snpRows \
-			+ strainMarkerRows + getOrphanStrainMarkers()
+		self.finalColumns = [ 'term', 'term_type', '_Marker_key' ]
+		self.finalResults = nomenRows + sequenceRows + otherRows + goRows + snpRows + strainMarkerRows
 		return
 
 ###--- globals ---###
@@ -586,24 +557,21 @@ cmds = [
 			and t.row_num < %%d
 			and a._AnnotType_key = 1000''' % mouseMarkerTable, 
 			
-	# 5. strain markers associated with canonical markers, with their IDs 
-	#	that should be associated with both
-	'''select msm._StrainMarker_key as strain_marker_key,
-			msm._Marker_key as canonical_marker_key,
+	# 5. strain markers IDs that should be associated with their corresponding
+	#	canonical markers
+	'''select msm._Marker_key as canonical_marker_key,
 			a.accID, a._LogicalDB_key
 		from %s t, mrk_strainmarker msm, acc_accession a
 		where t.row_num >= %%d and t.row_num < %%d
 			and t._Marker_key = msm._Marker_key
 			and msm._StrainMarker_key = a._Object_key
 			and a._MGIType_key = 44
-		order by 2, 1''' % mouseMarkerTable,
+		order by 1''' % mouseMarkerTable,
 	]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [
-	Gatherer.AUTO, 'term', 'term_type', '_Marker_key', '_Strain_Marker_key',
-	]
+fieldOrder = [ Gatherer.AUTO, 'term', 'term_type', '_Marker_key', ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'batch_marker_terms'

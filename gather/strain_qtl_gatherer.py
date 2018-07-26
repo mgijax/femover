@@ -53,7 +53,7 @@ class StrainQTLGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select s._Strain_key, m._Marker_key, m.symbol as marker_symbol, ma.accID as marker_id,
-			a._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id
+			a._Allele_key, a.symbol as allele_symbol, aa.accID as allele_id, m.name as marker_name
 		from %s s, all_allele a, voc_term t, acc_accession aa, mrk_marker m, acc_accession ma
 		where s._Strain_key = a._Strain_key
 			and a._Allele_Type_key = t._Term_key
@@ -73,7 +73,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Strain_key', '_Marker_key', 'marker_symbol', 'marker_id',
+	Gatherer.AUTO, '_Strain_key', '_Marker_key', 'marker_symbol', 'marker_name', 'marker_id',
 	'_Allele_key', 'allele_symbol', 'allele_id', 'sequence_num',
 	]
 
