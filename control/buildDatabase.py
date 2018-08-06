@@ -251,8 +251,12 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_source', 'sequence_sequence_num',
 		'sequence_clone_collection', 'sequence_provider_map',
 	]
+#STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
+#		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data', 'strain_snp',
+#		'strain_mpd_data', 'strain_annotation', 'strain_collection', 'strain_grid',
+#	]
 STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
-		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data', 'strain_snp',
+		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data',
 		'strain_mpd_data', 'strain_annotation', 'strain_collection', 'strain_grid',
 	]
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent', 'term_child',
@@ -1564,9 +1568,12 @@ def main():
 	logger.info ('source: %s:%s:%s' % (config.SOURCE_TYPE, config.SOURCE_HOST, config.SOURCE_DATABASE))
 	logger.info ('target: %s:%s:%s' % (config.TARGET_TYPE, config.TARGET_HOST, config.TARGET_DATABASE))
 	
-	if sourceContainsPrivateData():
-		raise error, 'Error: Source database contains private data.  Need to run MGI_deletePrivateData.csh'
-	
+	# to determine if the source database still has private data...
+        if config.RUN_CONTAINS_PRIVATE == '1':
+		if sourceContainsPrivateData():
+			raise error, 'Error: Source database contains private data.  Need to run MGI_deletePrivateData.csh'
+	return
+
 	dbInfoTable.dropTable()
 	if FULL_BUILD:
 		dropTables(gatherers)

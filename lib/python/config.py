@@ -130,6 +130,7 @@ SOURCE_HOST = os.environ['%s_DBSERVER' % prefix]
 SOURCE_DATABASE = os.environ['%s_DBNAME' % prefix]
 SOURCE_USER = os.environ['%s_DBUSER' % prefix]
 SOURCE_PASSWORD = getPassword(os.environ['%s_DBPASSWORDFILE' % prefixPW], SOURCE_USER)
+RUN_CONTAINS_PRIVATE = os.environ['RUN_CONTAINS_PRIVATE']
 
 ###--- target database connection (read-write) ---###
 
