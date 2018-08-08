@@ -251,12 +251,8 @@ SEQUENCES = [ 'sequence', 'sequence_counts', 'sequence_gene_model',
 		'sequence_source', 'sequence_sequence_num',
 		'sequence_clone_collection', 'sequence_provider_map',
 	]
-#STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
-#		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data', 'strain_snp',
-#		'strain_mpd_data', 'strain_annotation', 'strain_collection', 'strain_grid',
-#	]
 STRAINS = [ 'strain', 'strain_id', 'strain_to_reference', 'strain_mutation', 'strain_attribute',
-		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data',
+		'strain_synonym', 'strain_qtl', 'strain_sequence_num', 'strain_imsr_data', 'strain_snp',
 		'strain_mpd_data', 'strain_annotation', 'strain_collection', 'strain_grid',
 	]
 VOCABULARIES = [ 'vocabulary', 'term_id', 'term_synonym', 'term_descendent', 'term_child',
