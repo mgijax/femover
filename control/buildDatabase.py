@@ -1572,7 +1572,6 @@ def main():
         if config.RUN_CONTAINS_PRIVATE == '1':
 		if sourceContainsPrivateData():
 			raise error, 'Error: Source database contains private data.  Need to run MGI_deletePrivateData.csh'
-	return
 
 	dbInfoTable.dropTable()
 	if FULL_BUILD:
