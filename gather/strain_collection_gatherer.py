@@ -12,6 +12,7 @@ import logger
 collections = [
 	('docc_founder_strains.txt', 'DOCCFounders'),		# filename, collection name
 	('hdp_strains.txt', 'HDP'),
+	('cc_strains.txt', 'CC'),
 	]
 
 class StrainCollectionGatherer (Gatherer.Gatherer):
