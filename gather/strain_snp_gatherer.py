@@ -9,6 +9,7 @@ import StrainUtils
 import symbolsort
 import KeyGenerator
 import gc
+import Checksum
 
 ###--- Globals ---###
 
@@ -37,7 +38,7 @@ def compareRows(a, b):
 
 ###--- Classes ---###
 
-class StrainSnpGatherer (Gatherer.CachingMultiFileGatherer):
+class StrainSnpGatherer (Gatherer.FileCacheGatherer):
 	# Is: a data gatherer for the strain_snp_row and strain_snp_cell tables
 	# Has: queries to execute against the source database
 	# Does: queries the source database for SNP counts for strains,
@@ -310,8 +311,19 @@ files = [
 		),
 	]
 
+# checksums for this gatherer
+checksums = [
+	Checksum.Checksum('strain_snp.accession', '../data',
+		Checksum.singleCount('select count(1) from snp_accession') ),
+	Checksum.Checksum('strain_snp.consensus_snp', '../data',
+		Checksum.singleCount('select count(1) from snp_consensussnp') ),
+	Checksum.Checksum('strain_snp.coord_cache', '../data',
+		Checksum.singleCount('select count(1) from snp_coord_cache') ),
+	]
+
 # global instance of a StrainSnpGatherer
 gatherer = StrainSnpGatherer (files, cmds)
+gatherer.addChecksums(checksums)
 
 ###--- main program ---###
 

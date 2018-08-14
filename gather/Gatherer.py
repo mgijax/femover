@@ -559,6 +559,7 @@ class CachingMultiFileGatherer:
 		self.minKey = None
 		self.maxKey = None
 		self.chunkSize = None
+		self.checksums = []
 		return
 
 	def setupChunking (self,
@@ -642,7 +643,7 @@ class CachingMultiFileGatherer:
 		self.files.addRows(fileID, rows)
 		return
 
-	def go (self):
+	def go (self, dataDir = config.DATA_DIR, actualName = False):
 		# Purpose: to drive the gathering process from queries
 		#	through writing the output file
 		# Returns: nothing
@@ -657,7 +658,7 @@ class CachingMultiFileGatherer:
 		# create output files
 		for (tableName, inFieldOrder, outFieldOrder) in self.outputFiles:
 			fileID = self.files.createFile(tableName, inFieldOrder,
-				outFieldOrder, OutputFile.MEDIUM_CACHE)
+				outFieldOrder, OutputFile.MEDIUM_CACHE, dataDir, actualName)
 			self.tablenameToFileID[tableName] = fileID
 
 		logger.debug('Set up %d CachingOutputFiles' % len(self.outputFiles))
@@ -739,3 +740,40 @@ class CachingMultiFileGatherer:
 		# Throws: nothing
 
 		return
+
+class FileCacheGatherer(CachingMultiFileGatherer):
+	# Is: a subclass of a CachingMultiFileGatherer that writes its output data to a file in
+	#	femover's data/ directory, writes checksum files to show the data's version, and then
+	#	can use those files to avoid re-fetching the data from the database for future runs
+	#	(until the data change).
+	
+	def addChecksums(self, checksums):
+		if type(checksums) == types.ListType:
+			self.checksums = self.checksums + checksums
+		else:
+			self.checksums.append(checksums)
+		return
+	
+	def checksumsMatch(self):
+		# check to see if any of the checksums failed.  If not, return True.  If so, return False.
+
+		for checksum in self.checksums:
+			if not checksum.matches():
+				return False
+		return True
+	
+	def go(self):
+		if self.checksumsMatch():
+			for (tableName, inFieldOrder, outFieldOrder) in self.outputFiles:
+				print '%s/data/%s.rpt %s' % (os.environ['FEMOVER'], tableName, tableName)
+			logger.info('Checksums all match - using existing files')
+			return
+
+		logger.info('Checksums failed - rebuilding data files')
+		
+		# update the data files, then update the checksums
+		CachingMultiFileGatherer.go(self, '../data', actualName = True)
+		for checksum in self.checksums:
+			checksum.update()
+		return
+	

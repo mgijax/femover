@@ -31,13 +31,19 @@ class OutputFile:
 	# basic class for handling writing from a gatherer to a file in the
 	# file system
 
-	def __init__ (self, prefix):
+	def __init__ (self, prefix, dataDir = config.DATA_DIR, actualName = False):
 		filename = prefix + '.'
 
-		(fd, path) = tempfile.mkstemp (suffix = '.rpt',
-			prefix = filename, dir = config.DATA_DIR, text = True)
+		self.fd = None		# file descriptor (for temp files generated on every run)
+		self.fp = None		# file pointer (for reusable cached files)
+		
+		if not actualName:
+			(self.fd, path) = tempfile.mkstemp (suffix = '.rpt',
+				prefix = filename, dir = dataDir, text = True)
+		else:
+			path = '../data/%srpt' % filename
+			self.fp = open(path, 'w')
 
-		self.fd = fd
 		self.path = path
 		self.rowCount = 0
 		self.columnCount = 0
@@ -48,7 +54,11 @@ class OutputFile:
 		return
 
 	def close (self):
-		os.close(self.fd)
+		if self.fd != None:
+			os.close(self.fd)
+		elif self.fp != None:
+			self.fp.close()
+			
 		self.isOpen = False
 		logger.debug ('Closed output file: %s' % self.path)
 		return
@@ -116,7 +126,10 @@ class OutputFile:
 						out.append (str(value))
 
 			cleanedout = [clean(col) for col in out]
-			os.write (self.fd, '\t'.join(cleanedout) + '\n')
+			if self.fd != None:
+				os.write (self.fd, '\t'.join(cleanedout) + '\n')
+			elif self.fp != None:
+				self.fp.write('\t'.join(cleanedout) + '\n')
 
 		self.rowCount = self.rowCount + len(rows)
 		return
@@ -133,9 +146,11 @@ class CachingOutputFile:
 				# ...expect when rows received
 		outFieldOrder,	# list of strings; order of fieldnames in 
 				# ...which to write out fields to data file
-		cacheSize = MEDIUM_CACHE	# integer; nr of rows to cache
+		cacheSize = MEDIUM_CACHE,	# integer; nr of rows to cache
+		dataDir = config.DATA_DIR,	# string; path to directory for the file
+		actualName = False
 		):
-		self.outputFile = OutputFile(tableName)
+		self.outputFile = OutputFile(tableName, dataDir, actualName)
 		self.tableName = tableName
 		self.inFieldOrder = inFieldOrder
 		self.outFieldOrder = outFieldOrder
@@ -203,12 +218,12 @@ class CachingOutputFileFactory:
 		self.outputFiles = {}
 		return
 
-	def createFile (self, prefix, inFieldOrder, outFieldOrder, cacheSize):
+	def createFile (self, prefix, inFieldOrder, outFieldOrder, cacheSize, dataDir = config.DATA_DIR,
+			actualName = False):
 		# create a new CachingOutputFile with the given parameters
 		# and return an integer identifier for it
 
-		f = CachingOutputFile(prefix, inFieldOrder, outFieldOrder,
-			cacheSize)
+		f = CachingOutputFile(prefix, inFieldOrder, outFieldOrder, cacheSize, dataDir, actualName)
 		num = len(self.outputFiles) + 1
 		self.outputFiles[num] = f
 		return num
