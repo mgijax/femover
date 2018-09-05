@@ -13,6 +13,7 @@ import GenotypeClassifier
 import gc
 import top
 import Lookup
+import VocabUtils
 
 # annotation data specific imports
 import go_annot_extensions
@@ -29,6 +30,16 @@ from annotation.tooltip import TooltipFinder
 # name of table that will hold all the _annot_keys 
 #	for the currently processed batch
 BATCH_TEMP_TABLE = 'annotation_batch_tmp'
+
+# name of table that will hold all the _annot_keys, properly ordered
+TEMP_TABLE = 'ordered_annotations'
+
+# header terms for GO, MP, EMAPA vocabularies
+HEADER_TEMP_TABLE = VocabUtils.getHeaderTermTempTable()
+
+# minimum and maximum row_num values included in TEMP_TABLE
+MIN_ROW_NUM = 0
+MAX_ROW_NUM = 0
 
 ###--- controlled vocabulary lookups ---###
 
@@ -339,32 +350,22 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 		
 		# Get terms for GO
 		
-		cmd = '''select t._Term_key as header_key,
-		t._term_key
+		cmd = '''select t._Term_key as header_key, t._term_key
 		from voc_term t
-		join voc_annot va on
-			va._term_key = t._term_key
-		join %s abt on
-			abt._annot_key = va._annot_key
+		join voc_annot va on (va._term_key = t._term_key)
+		join %s abt on (abt._annot_key = va._annot_key)
+		join %s headers on (t._Term_key = headers._Term_key)
 		where t._Vocab_key = 4
-			and t.abbreviation is not null
-			and t.sequenceNum is not null
 		union
-		select h._Term_key as header_key, 
-		t._term_key
-		from voc_term h
-		join dag_closure dc on
-			dc._ancestorobject_key = h._term_key
-		join voc_term t on
-			t._term_key = dc._descendentobject_key
-		join voc_annot va on
-			va._term_key = t._term_key
-		join %s abt on
-			abt._annot_key = va._annot_key
+		select h._Term_key as header_key, t._term_key
+		from %s h
+		join dag_closure dc on (dc._ancestorobject_key = h._term_key)
+		join voc_term t on (t._term_key = dc._descendentobject_key)
+		join voc_annot va on (va._term_key = t._term_key)
+		join %s abt on (abt._annot_key = va._annot_key)
 		where h._Vocab_key = 4
-			and h.abbreviation is not null
-			and h.sequenceNum is not null
-		''' % (BATCH_TEMP_TABLE, BATCH_TEMP_TABLE)
+		order by 2, 1
+		''' % (BATCH_TEMP_TABLE, HEADER_TEMP_TABLE, HEADER_TEMP_TABLE, BATCH_TEMP_TABLE)
 		
 		(cols, rows) = dbAgnostic.execute(cmd)
 		
