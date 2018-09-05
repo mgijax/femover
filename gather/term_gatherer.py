@@ -3,6 +3,7 @@
 # gathers data for the 'term' table in the front-end database
 
 import Gatherer
+import VocabUtils
 import logger
 
 ###--- Classes ---###
@@ -49,7 +50,7 @@ class TermGatherer (Gatherer.ChunkGatherer):
 cmds = [
 	'''with selected_vocabs as (select _Vocab_key
 			from voc_vocab
-			where _Vocab_key >= %d and _Vocab_key < %d
+			where _Vocab_key >= %%d and _Vocab_key < %%d
 	), primary_ids as (select a._Object_key as _Term_key, a.accID
 		from voc_term t, acc_accession a, selected_vocabs v
 		where t._Term_key = a._Object_key
@@ -91,8 +92,13 @@ cmds = [
 			and t._Term_key = n._Object_key
 			and n._DAG_key = d._DAG_key
 	)
-	select v.name as vocab, t._Term_key, t.term, t.abbreviation, t.note as definition,
-		i.accID, t.sequenceNum, t.isObsolete,
+	select v.name as vocab, t._Term_key, t.term,
+		case when h._Term_key is null then t.abbreviation
+			when h.label is not null then h.label
+			when t.abbreviation is not null then t.abbreviation
+			else t.term
+		end as abbreviation,
+		t.note as definition, i.accID, t.sequenceNum, t.isObsolete,
 		case
 			when g.abbreviation = 'C' then 'Component'
 			when g.abbreviation = 'F' then 'Function'
@@ -117,7 +123,8 @@ cmds = [
 	left outer join leaves e on (t._Term_Key = e._Term_key)
 	left outer join roots r on (t._Term_key = r._Term_key)
 	left outer join go_dags g on (t._Term_key = g._Term_key)
-	order by v.name, t.sequenceNum, t.isObsolete, t.term'''
+	left outer join %s h on (t._Term_key = h._Term_key)
+	order by v.name, t.sequenceNum, t.isObsolete, t.term''' % VocabUtils.getHeaderTermTempTable(),
 	]
 
 # order of fields (from the query results) to be written to the

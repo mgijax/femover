@@ -133,3 +133,39 @@ def getSynonym(termKey, synonymType):
 		synonymCache[termKey][synonymType] = None
 
 	return synonymCache[termKey][synonymType]
+
+###--- functions dealing with header terms ---###
+
+HEADER_TEMP_TABLE = None			# name of header temp table
+
+def getHeaderTermTempTable():
+	# Purpose: build a temp table containing header keys for the GO, MP, and EMAPA vocabularies.
+	# Returns: string; name of the temp table
+	
+	global HEADER_TEMP_TABLE
+
+	if HEADER_TEMP_TABLE:
+		return HEADER_TEMP_TABLE
+	
+	HEADER_TEMP_TABLE = 'term_headers'
+
+	cmd0 = '''with headers as (
+			select distinct _Object_key, label
+			from mgi_setmember
+			where _Set_key in (1049, 1050, 1051)
+			)
+		select v._Vocab_key, t._Term_key, v.name, t.term, t.abbreviation, h.label
+		into temporary table %s
+		from headers h, voc_term t, voc_vocab v
+		where h._Object_key = t._Term_key
+			and t._Vocab_key = v._Vocab_key
+		order by v.name, t.term''' % HEADER_TEMP_TABLE
+	
+	cmd1 = 'create index hht0 on %s (_Vocab_key)' % HEADER_TEMP_TABLE
+	cmd2 = 'create index hht1 on %s (_Term_key)' % HEADER_TEMP_TABLE
+	
+	for cmd in [ cmd0, cmd1, cmd2 ]:
+		dbAgnostic.execute(cmd)
+
+	logger.debug('Built temp table: %s' % HEADER_TEMP_TABLE)
+	return HEADER_TEMP_TABLE

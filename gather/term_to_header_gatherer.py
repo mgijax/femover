@@ -3,6 +3,7 @@
 # gathers data for the 'term_to_header' table in the front-end database
 
 import Gatherer
+import VocabUtils
 
 GO_VOCAB = 4
 MP_VOCAB = 5
@@ -19,26 +20,20 @@ TermToHeaderGatherer = Gatherer.Gatherer
 
 ###--- globals ---###
 
+headersTempTable = VocabUtils.getHeaderTermTempTable()
+
 cmds = [
 	# 0. union includes all header terms as a self-descendent to include
 	# any annotations to the header itself (top of union), plus all the
 	# descendent terms which are reachable via the DAG (bottom of union)
-	'''select t._Term_key as header_term_key,
-		t._Term_key as term_key
-	from voc_term t
-	where t._Vocab_key in (%d, %d, %d)
-		and t.abbreviation is not null
-		and t.sequenceNum is not null
+	'''select _Term_key as header_term_key,
+		_Term_key as term_key
+	from %s
 	union
 	select h._Term_key as header_term_key, t._Term_key as term_key
-	from voc_term h, dag_closure dc, voc_term t
-	where h._Vocab_key in (%d, %d, %d)
-		and h.abbreviation is not null
-		and h.sequenceNum is not null
-		and h._Term_key = dc._AncestorObject_key
-		and dc._DescendentObject_key = t._Term_key''' % (
-			GO_VOCAB, MP_VOCAB, EMAPA_VOCAB,
-			GO_VOCAB, MP_VOCAB, EMAPA_VOCAB)
+	from %s h, dag_closure dc, voc_term t
+	where h._Term_key = dc._AncestorObject_key
+		and dc._DescendentObject_key = t._Term_key''' % (headersTempTable, headersTempTable)
 	]
 
 # order of fields (from the query results) to be written to the
