@@ -263,7 +263,7 @@ def _getArticleCitations (refsKey, refs, books):
 
 	date = refs[refsKey]['pubDate']		# date preferred
 	if not date:
-		date = refs[refsKey]['year']	# settle for year
+		date = str(refs[refsKey]['year'])	# settle for year
 
 	if date:
 		tail = tail + date + ';'
