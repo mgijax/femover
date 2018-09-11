@@ -34,6 +34,7 @@ import getopt
 import top
 import string
 import re
+import SanityChecks
 
 if '.' not in sys.path:
 	sys.path.insert (0, '.')
@@ -1675,6 +1676,11 @@ if __name__ == '__main__':
 		excValue = '\n\nWARNING: The Following tasks failed and may need to be rerun:\n\t-'
 		excValue += '\n\t-'.join([l[1] for l in FAILED_DISPATCHERS])
 		print "excType: %s, excValue: %s"%(excType,excValue)
+
+	# do basic sanity checks on the database produced to look for obvious errors
+	if status == 'succeeded':
+		if not SanityChecks.databaseIsValid(DBM):
+			status = 'failed'
 
 	elapsed = hms(time.time() - START_TIME)
 	try:
