@@ -411,7 +411,7 @@ class DiseaseGatherer (Gatherer.MultiFileGatherer):
 		adfCols = [ 'alleleDiseaseKey', 'number', 'note' ]
 		adfRows = []
 
-		# definition of genotype_disease_footnote table rows
+		# definition of genotype_disease_footnote table rows (not currently written out)
 
 		gdfCols = [ 'genotypeDiseaseKey', 'number', 'note' ]
 		gdfRows = []
