@@ -105,8 +105,15 @@ fi
 echo "buildDatabase.py ${FLAGS}"
 ./buildDatabase.py ${FLAGS}
 if [ $? -ne 0 ]; then
-    echo "Build failed.  See logs for details."
-    exit 1
+	# A non-zero exit code doesn't necessarily mean the run failed, as random bus errors
+	# often seem to happen just at the end of the script.  If the script got as far as
+	# writing the "Build succeeded" message, then we can just ignore the exit code.
+	
+	LOG_OKAY=`tail -2 ${LOG_DIR}/buildDatabase.log | grep -c "Build succeeded"`
+	if [ ${LOG_OKAY} -eq 0 ]; then
+    	echo "Build failed.  See logs for details."
+    	exit 1
+    fi
 fi
 
 # rename log file so subsequent calls will not overwrite
