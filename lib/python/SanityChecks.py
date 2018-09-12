@@ -38,9 +38,9 @@ class SanityCheckSet:
             else:
                 failedCount = failedCount + 1
                 
-        logger.info('Sanity Check Report:\n')
-        logger.info('  passed: %d\n' % passedCount)
-        logger.info('  failed: %d\n' % failedCount)
+        logger.info('Sanity Check Report:')
+        logger.info('  passed: %d' % passedCount)
+        logger.info('  failed: %d' % failedCount)
                 
         return failedCount == 0
     
@@ -65,7 +65,7 @@ class TableNotEmptyCheck (SanityCheck):
         if len(rows) > 0:
             return True
 
-        logger.info('Sanity Check Failed: table %s has no rows\n' % self.tableName)
+        logger.info('Sanity Check Failed: table %s has no rows' % self.tableName)
         return False
 
 class TablesNotEmptySet (SanityCheckSet):
