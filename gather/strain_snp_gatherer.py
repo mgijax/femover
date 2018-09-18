@@ -171,8 +171,9 @@ class StrainSnpGatherer (Gatherer.FileCacheGatherer):
 				for cmpStrain in strains:
 					if refStrain != cmpStrain:
 						# using a variable to try to save two hash lookups and speed up slightly
-						ch = self.all[refStrain][cmpStrain]
-						ch[chromosome] = ch[chromosome] + 1
+						if (refAllele != '?'):
+							ch = self.all[refStrain][cmpStrain]
+							ch[chromosome] = ch[chromosome] + 1
 
 						cmpAllele = alleles[cmpStrain]
 						
