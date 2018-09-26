@@ -40,7 +40,8 @@ class SanityCheckSet:
                 
         logger.info('Sanity Check Report:')
         logger.info('  passed: %d' % passedCount)
-        logger.info('  failed: %d' % failedCount)
+        if failedCount > 0:
+            logger.info('  failed: %d' % failedCount)
                 
         return failedCount == 0
     
