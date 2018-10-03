@@ -56,7 +56,10 @@ def removeGONoDataAnnotations(cols, rows):
 def groupAnnotations(cols, rows,
                         propertiesMap={}):
         """
-        Groups rows of annotation records
+        Groups rows of annotation records.  Assumes these fields are present:
+            _AnnotEvidence_key, annotType, _Term_key, _Object_key,
+            _Qualifier_key, _EvidenceTerm_key, inferredFrom
+        Other fields can be in the records, too, but those seven must be there.
         
         Returns map of {newKey: [grouped rows]}
         """

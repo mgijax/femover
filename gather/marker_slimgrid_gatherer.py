@@ -11,6 +11,9 @@ import GOFilter
 import gc
 import os
 import VocabUtils
+import GOAnnotations
+from annotation import transform
+from _sqlite3 import Row
 
 # don't count GO annotations with NOT qualifiers
 GOFilter.keepNots(False)
@@ -35,6 +38,10 @@ NORMAL_QUALIFIER = 2181424	# normal qualifier for MP annotations
 # name of a temp table containing filtered GO annotations per marker
 GO_ANNOT_TABLE = GOFilter.getCountableAnnotationTableByMarker()
 
+# maps from evidence keys to a list of property data (for isoforms and context)
+GO_PROPERTIES_MAP = GOAnnotations.getIsoformsOfAnnotations('voc_annot',
+	GOAnnotations.getContextOfAnnotations('voc_annot') )
+
 ###--- Functions ---###
 
 def getNextHeadingKey():
@@ -48,6 +55,29 @@ def getNextSequenceNum():
 
 	MAX_SEQUENCE_NUM = MAX_SEQUENCE_NUM + 1
 	return MAX_SEQUENCE_NUM
+
+def uniqueCount(rows, ignoreColumns = []):
+	# Find the number of unique rows if we ignore the specified columns (by index)
+	
+	uniqueSet = set()
+	
+	if rows:
+		rowLength = len(rows[0])
+		for row in rows:
+			subrow = []
+
+			i = 0
+			while (i < rowLength):
+				if i not in ignoreColumns:
+					subrow.append(row[i])
+				i = i + 1
+
+			uniqueSet.add(tuple(subrow))
+
+			if (row[0] == 12184) and (str(row).find('1858') >= 0):
+				logger.debug(str(row))
+			
+	return len(uniqueSet)
 
 def setupPhenoHeaderKeys():
 	# build a temp table with the keys of the MP header terms
@@ -522,7 +552,7 @@ class HeadingCollection:
 				for (termKey, termID) in self.terms[heading]:
 					out.append ( (termKey, heading) )
 		return out
-
+	
 class MPHeadingCollection (HeadingCollection):
 	# Is: a HeadingCollection for the MP (Mammalian Phenotype) slimgrid
 
@@ -809,27 +839,52 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 
 		cols, rows = self.results[1]
 
-		markerCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-		headerCol = dbAgnostic.columnNumber (cols, '_Term_key')
-		countCol = dbAgnostic.columnNumber (cols, 'annot_count')
+		rowsByMarker = {}	# marker key -> annotated term key -> list of rows
+		byMarker = {}		# marker key -> annotated term key -> count
 
-		byMarker = {}	# marker key -> term key -> count
+		# group/roll up annotations -- returns a dictionary with keys like:
+		#	(marker key, annotated term key, qualifier, evidence code, inferred from, isoform/context value) 
+		# Values in the dictionary are lists of data rows matching that key.
+		annotGroupsMap = transform.groupAnnotations(cols, rows, propertiesMap=GO_PROPERTIES_MAP)
+		
+		headerTermKeyCol = dbAgnostic.columnNumber(cols, 'header_term_key')
 
-		# collect the non-zero counts from the database
+		# columns to ignore when counting distinct rows
+		toIgnore = [ 
+			headerTermKeyCol,
+			dbAgnostic.columnNumber(cols, '_AnnotEvidence_key'),
+			dbAgnostic.columnNumber(cols, 'annotType'),
+			dbAgnostic.columnNumber(cols, '_DAG_key'),
+			] 
+		
+		cols.append('properties')
+		for key in annotGroupsMap.keys():
+			markerKey, termKey, qualifier, evidenceCode, inferredFrom, propKey = key
+			groupRows = map(list, annotGroupsMap[key])
+			
+			headerTermKeys = []
+			for row in groupRows:
+				headerTermKey = row[headerTermKeyCol]
+				if headerTermKey not in headerTermKeys:
+					headerTermKeys.append(headerTermKey)
+					
+				# append property value to each row
+				row.append(propKey)
+			
+			if markerKey not in rowsByMarker:
+				rowsByMarker[markerKey] = {}
+				
+			for headerTermKey in headerTermKeys:
+				if headerTermKey not in rowsByMarker[markerKey]:
+					rowsByMarker[markerKey][headerTermKey] = groupRows
+				else:
+					rowsByMarker[markerKey][headerTermKey] = groupRows + rowsByMarker[markerKey][headerTermKey]
 
-		for row in rows:
-
-			# NEED TO TRANSLATE FROM HEADER TERM KEY TO HEADER KEY
-
-			markerKey = row[markerCol]
-			headerKey = row[headerCol]
-			value = row[countCol]
-
-			if not byMarker.has_key(markerKey):
-				byMarker[markerKey] = { headerKey : value }
-			else:
-				byMarker[markerKey][headerKey] = value
-
+		for markerKey in rowsByMarker.keys():
+			byMarker[markerKey] = {}
+			for headerTermKey in rowsByMarker[markerKey].keys():
+				byMarker[markerKey][headerTermKey] = uniqueCount(rowsByMarker[markerKey][headerTermKey], toIgnore)
+				
 		# write the counts to the file, filling in zero counts for
 		# headers not associated with this marker
 
@@ -857,6 +912,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 				seqNum = self.goHeaderCollection.getSeqNum(hKey)
 				color = 0
 				count = 0
+				
 				for tKey in headingTerms[hKey]:
 					if byMarker[markerKey].has_key(tKey):
 						count = count + \
@@ -999,25 +1055,27 @@ cmds = [
 	# marker has another annotation within the same DAG).  Need to get 
 	# annotations to ancestors via the DAG, plus annotations directly to
 	# the header terms themselves.
+	
+	# TBD -- Do we need to also include the isoform or context when defining a distinct annotation?
+	#	Yes, both.
+	
 	'''
 	with markers as (
 		select _Marker_key
 		from %s
 		where row_num >= %%d
 			and row_num < %%d
-	),
-	annotations as (
-		select distinct gh._Term_key, k._Marker_key, k._DAG_key,
-			k._Qualifier_key, k._EvidenceTerm_key, k.inferredFrom,
-			k._Term_key as annotated_term_key
-		from go_header_keys gh, go_closure dc, keepers k, markers m
-		where gh._Term_key = dc._AncestorObject_key
-		and dc._DescendentObject_key = k._Term_key
-		and k._Marker_key = m._Marker_key
 	)
-	select _Marker_key, _Term_key, count(1) as annot_count
-	from annotations
-	group by _Marker_key, _Term_key''' % MARKER_CACHE,	
+	select distinct k._Marker_key as _Object_key, 'GO/Marker' as annotType, k.inferredFrom,
+		k._Qualifier_key, k._EvidenceTerm_key, k._Term_key,
+		e._AnnotEvidence_key, gh._Term_key as header_term_key, k._DAG_key
+	from go_header_keys gh, go_closure dc, keepers k, markers m, voc_evidence e
+	where gh._Term_key = dc._AncestorObject_key
+		and dc._DescendentObject_key = k._Term_key
+		and k._EvidenceTerm_key = e._EvidenceTerm_key
+		and (k.inferredFrom = e.inferredFrom or (k.inferredFrom is null and e.inferredFrom is null))
+		and k._Marker_key = m._Marker_key
+		and k._Annot_key = e._Annot_key''' % MARKER_CACHE,	
 
 	# 2. Collate the GXD expression annotations for anatomy headers.  We
 	# want the count of all annotations, plus the flags for whether there
