@@ -13,7 +13,6 @@ import os
 import VocabUtils
 import GOAnnotations
 from annotation import transform
-from _sqlite3 import Row
 
 # don't count GO annotations with NOT qualifiers
 GOFilter.keepNots(False)
