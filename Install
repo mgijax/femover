@@ -57,15 +57,4 @@ fi
 chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*
 echo "Granted execute permissions for gatheres and control scripts"
 
-
-# Running Unit Tests
-cd unittest
-./all_tests.sh
-if [ $? -ne 0 ]
-then
-    echo "Unit tests failed"
-    exit 1
-fi
-cd -
-
 echo "Finished"
