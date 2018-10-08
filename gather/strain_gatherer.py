@@ -34,7 +34,7 @@ cmds = [
 			and preferred = 1
 		group by 1
 		)
-		select s._Strain_key, s.strain, a.accID, st.term as strain_type,
+		select distinct s._Strain_key, s.strain, a.accID, st.term as strain_type,
 			sp.term as species, s.standard, mnc.note as description, case
 				when ss._Strain_key is null then 0
 				else 1
