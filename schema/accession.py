@@ -42,7 +42,7 @@ keys = {
 
 comments = {
 	Table.TABLE : \
-	    'main table for accession flower; for searching by accession IDs.  While we often denormalize vocabularies in this database, we opt to normalize three vocabularies into petal tables for this flower, because the accession table is so large.  The space savings makes the normalization worth the added complexity.',
+	    'main table for accession flower; for searching by certain odd accession IDs (non-mouse marker IDs; terms and markers for InterPro IDs).  While we often denormalize vocabularies in this database, we opt to normalize three vocabularies into petal tables for this flower, because the accession table is so large.  The space savings makes the normalization worth the added complexity.',
 	Table.COLUMN : {
 	    'unique_key' : 'unique key for each row; needed to help Hibernate identify unique objects',
 	    'object_key' : 'key which identifies the object with which this ID is associated; key is unique within a given data type',
