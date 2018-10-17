@@ -140,52 +140,23 @@ class MarkerMinimapGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-        # 0. Anchor markers and their cm offsets
-	'''select m._marker_key,
-	        m.symbol, 
-                m.chromosome, 
-                o.cmoffset
-        from mrk_marker m 
-        join mrk_offset o on 
-                o._marker_key = m._marker_key
-        join mrk_anchors a on
-                a._marker_key = m._marker_key
-         where 
-                -- MGD source
-                o.source = 0
-                -- has valid CM
-                and o.cmoffset > -1.0
+        # 0. Anchor markers and their mouse cm offsets
+	'''select m._marker_key, m.symbol, m.chromosome, m.cmoffset
+        from mrk_marker m, mrk_anchors a
+	where m._marker_key = a._marker_key and m.cmoffset > -1.0
 	''',
         
-        # 1. get max cm offset for each chromosome
-        '''select max(o.cmoffset) as maxoffset,
-                m.chromosome
+        # 1. get max cm offset for each chromosome from mouse
+        '''select max(m.cmoffset) as maxoffset, m.chromosome
         from mrk_marker m
-        join mrk_offset o on
-                o._marker_key = m._marker_key
-        where 
-                -- MGD source
-                o.source = 0
-                -- is mouse
-                and m._organism_key = 1
+        where m._organism_key = 1
         group by chromosome
         ''',
         
         # 2. All markers with cm coordinates
-        '''select m._marker_key,
-                m.symbol,
-                m.chromosome,
-                o.cmoffset
+        '''select m._marker_key, m.symbol, m.chromosome, m.cmoffset
         from mrk_marker m
-        join mrk_offset o on
-                o._marker_key = m._marker_key
-        where 
-                -- MGD source
-                o.source = 0
-                -- has valid CM
-                and o.cmoffset > -1.0
-                -- is mouse
-                and m._organism_key = 1
+        where m._organism_key = 1 and m.cmoffset > -1.0
         '''
         
 	]

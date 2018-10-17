@@ -13,10 +13,6 @@ import logger
 import symbolsort
 import config
 
-###--- Globals ---###
-
-offset = 'cmOffset'
-
 ###--- Classes ---###
 
 SYMBOL = 'bySymbol'
@@ -185,7 +181,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 		columns = self.results[5][0]
 		keyCol = Gatherer.columnNumber (columns, '_Marker_key')
 		startCol = Gatherer.columnNumber (columns, 'startCoordinate')
-		cmCol = Gatherer.columnNumber (columns, offset)
+		cmCol = Gatherer.columnNumber (columns, 'cmOffset')
 		cytoCol = Gatherer.columnNumber (columns, 'cytogeneticOffset')
 		chrCol = Gatherer.columnNumber (columns, 'sequenceNum')
 		symbolCol = Gatherer.columnNumber (columns, 'symbol')
@@ -276,10 +272,10 @@ cmds = [
 		from mrk_location_cache''',
 
 	'''select c._Marker_key, c.chromosome, c.startCoordinate,
-			c.%s, c.cytogeneticOffset, c.sequenceNum, m.symbol
+			c.cmOffset, c.cytogeneticOffset, c.sequenceNum, m.symbol
 		from mrk_location_cache c, mrk_marker m
 		where c._Marker_key = m._Marker_key
-		''' % offset,
+		''',
 	'''
 	select distinct mcc._marker_key,ct.term,d._Parent_key,d.sequencenum
         from mrk_mcv_cache mcc, DAG_Edge d, DAG_Node p, DAG_Node c, VOC_Term ct

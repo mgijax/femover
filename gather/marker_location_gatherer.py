@@ -5,10 +5,6 @@
 import Gatherer
 import config
 
-###--- Globals ---###
-
-offset = 'cmOffset'
-
 ###--- Classes ---###
 
 class MarkerLocationGatherer (Gatherer.Gatherer):
@@ -34,7 +30,7 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 		# genetic chromosome
 		chrCol = Gatherer.columnNumber (cols, 'chromosome')
 	        gChrCol = Gatherer.columnNumber (cols, 'genomicChromosome')
-		cmCol = Gatherer.columnNumber (cols, offset)
+		cmCol = Gatherer.columnNumber (cols, 'cmOffset')
 		cytoCol = Gatherer.columnNumber (cols, 'cytogeneticOffset')
 		startCol = Gatherer.columnNumber (cols, 'startCoordinate')
 		endCol = Gatherer.columnNumber (cols, 'endCoordinate')
@@ -83,38 +79,28 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 					None, None, None,
 					'cytogenetic', None, None, None ] )
 
-		# add markers not in MRK_Location_Cache
+		# add markers not in MRK_Location_Cache, i.e. non-mouse markers
+		# non-mouse markers do not have cmOffsets (null)
 
 		cols = self.results[-1][0]
 		keyCol = Gatherer.columnNumber (cols, '_Marker_key')
 		chrCol = Gatherer.columnNumber (cols, 'chromosome')
-		cmCol = Gatherer.columnNumber (cols, offset)
 		cytoCol = Gatherer.columnNumber (cols, 'cytogeneticOffset')
 
 		for row in self.results[-1][1]:
-			cm = row[cmCol]
 			cyto = row[cytoCol]
 			key = row[keyCol]
 			chrom = row[chrCol]
 
-			seqNum = 0
+			seqNum = 1
 
-			if cm and (int(cm) != -1 or not cyto):
-				seqNum = seqNum + 1
-				self.finalResults.append ( [ key, seqNum,
-					chrom, '%0.2f' % cm, None,
-					None, None, None,
-					'centimorgans', 'cM', None, None ] )
 			if cyto:
-				seqNum = seqNum + 1
 				self.finalResults.append ( [ key, seqNum,
 					chrom, None, cyto,
 					None, None, None,
 					'cytogenetic', None, None, None ] )
 
-			# did we only have a chromosome?
-			if chrom and (seqNum == 0):
-				seqNum = seqNum + 1
+			else:
 				self.finalResults.append ( [ key, seqNum,
 					chrom, None, None,
 					None, None, None,
@@ -126,24 +112,19 @@ class MarkerLocationGatherer (Gatherer.Gatherer):
 cmds = [
 	# mouse and human markers are in MRK_Location_Cache
 
-	'''select distinct _Marker_key, chromosome, %s, genomicChromosome,
+	'''select distinct _Marker_key, chromosome, cmOffset, genomicChromosome,
 		provider, cytogeneticOffset, startCoordinate, endCoordinate, 
 		version, strand, mapUnits
-	from mrk_location_cache c
-	where exists (select 1 from mrk_marker m
-		where m._Marker_key = c._Marker_key)''' % offset,
+	   from mrk_location_cache
+	''',
 
-	# pick up the non-mouse, non-human organisms that are not included
-	# in MRK_Location_Cache
+	# pick up the non-mouse organisms that are not included in MRK_Location_Cache
 
-	'''select m. _Marker_key, m.chromosome, o.%s, m.cytogeneticOffset
-	from mrk_marker m
-	left outer join MRK_Offset o on (m._Marker_key = o._Marker_key
-		and o.%s >= 0)
-	where m._Marker_Status_key = 1
-		and not exists (select 1 from mrk_location_cache c
-			where m._Marker_key = c._Marker_key)''' % (offset,
-				offset),
+	'''select m. _Marker_key, m.chromosome, m.cytogeneticOffset
+	   from mrk_marker m
+	   where m._Organism_key != 1
+	   and not exists (select 1 from mrk_location_cache c where m._Marker_key = c._Marker_key)
+	''',
 	]
 
 # order of fields (from the query results) to be written to the
