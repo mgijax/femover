@@ -105,8 +105,8 @@ GROUPS[RECOMBINASE_STATS_PAGE] = GROUPS[RECOMBINASE_MINI_HOME][:]
 
 ###--- Gene Ontology (GO) statistics ---###
 
-GO_GENES = 'Mouse protein-coding genes with GO annotations'
-GO_GENES_EXPERIMENTAL = 'Mouse protein-coding genes with experimentally-derived in mouse GO annotations'
+GO_GENES = 'Mouse genes (protein-coding and non-protein coding) with GO annotations'
+GO_GENES_EXPERIMENTAL = 'Mouse genes (protein-coding and non-protein coding) with experimentally-derived in mouse GO annotations'
 GO_GENES_COMPLETE = "Mouse genes with 'complete' annotations based on current literature review"
 GO_ANNOTATIONS = 'GO annotations total'
 GO_REFERENCES = 'Unique references used for GO annotations'
@@ -121,7 +121,7 @@ STATS[GO_GENES_EXPERIMENTAL] = ('',
 		FROM VOC_Annot v, MRK_Marker m, VOC_Evidence e, VOC_Term t
 		WHERE v._AnnotType_key = 1000 AND v._Object_key = m._Marker_key AND m._Marker_Type_key = 1
 			AND v._Annot_key = e._Annot_key AND e._EvidenceTerm_key = t._Term_key
-			AND t.abbreviation IN ('ISS', 'IDA', 'IMP', 'IGI', 'IPI')''')
+			AND t.abbreviation IN ('EXP', 'IDA', 'IMP', 'IGI', 'IPI', 'IEP')''')
 STATS[GO_GENES_COMPLETE] = ('',
 	'''select count(m._Marker_key)
 		from GO_Tracking t, MRK_Marker m, ACC_Accession a
