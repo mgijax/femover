@@ -112,11 +112,11 @@ GO_ANNOTATIONS = 'GO annotations total'
 GO_REFERENCES = 'Unique references used for GO annotations'
 GO_REF_GENOME = 'Mouse genes selected for GO Reference Genome Project'
 
-STATS[GO_GENES] = ('',
+STATS[GO_GENES] = ('Annotations based on evidence from mouse experiments, orthology from other organisms, and electronic or other computational methods.',
 	'''SELECT COUNT(DISTINCT v._Object_key)
 		FROM VOC_Annot v, MRK_Marker m
 		WHERE v._AnnotType_key = 1000 AND v._Object_key = m._Marker_key AND m._Marker_Type_key = 1''')
-STATS[GO_GENES_EXPERIMENTAL] = ('',
+STATS[GO_GENES_EXPERIMENTAL] = ('Annotations based on experiments performed in the mouse or with mouse gene products.',
 	'''SELECT COUNT(DISTINCT v._Object_key)
 		FROM VOC_Annot v, MRK_Marker m, VOC_Evidence e, VOC_Term t
 		WHERE v._AnnotType_key = 1000 AND v._Object_key = m._Marker_key AND m._Marker_Type_key = 1
