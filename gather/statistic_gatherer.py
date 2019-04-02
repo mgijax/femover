@@ -500,7 +500,7 @@ class StatisticGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-	'select 1',			# real queries are in global variables; this result can be ignored
+	'select 0',			# real queries are in global variables; this result can be ignored
 	]
 
 fieldOrder = [ Gatherer.AUTO, 'statistic_key', 'name', 'tooltip',
