@@ -107,42 +107,48 @@ GROUPS[RECOMBINASE_STATS_PAGE] = GROUPS[RECOMBINASE_MINI_HOME][:]
 
 GO_GENES = 'Mouse genes (protein-coding and non-protein coding) with GO annotations'
 GO_GENES_EXPERIMENTAL = 'Mouse genes (protein-coding and non-protein coding) with experimentally-derived in mouse GO annotations'
-GO_GENES_COMPLETE = "Mouse genes with 'complete' annotations based on current literature review"
 GO_ANNOTATIONS = 'GO annotations total'
 GO_REFERENCES = 'Unique references used for GO annotations'
 GO_REF_GENOME = 'Mouse genes selected for GO Reference Genome Project'
 
 STATS[GO_GENES] = ('Annotations based on evidence from mouse experiments, orthology from other organisms, and electronic or other computational methods.',
+
 	'''SELECT COUNT(DISTINCT v._Object_key)
 		FROM VOC_Annot v, MRK_Marker m
 		WHERE v._AnnotType_key = 1000 AND v._Object_key = m._Marker_key AND m._Marker_Type_key = 1''')
+
 STATS[GO_GENES_EXPERIMENTAL] = ('Annotations based on experiments performed in the mouse or with mouse gene products.',
 	'''SELECT COUNT(DISTINCT v._Object_key)
 		FROM VOC_Annot v, MRK_Marker m, VOC_Evidence e, VOC_Term t
 		WHERE v._AnnotType_key = 1000 AND v._Object_key = m._Marker_key AND m._Marker_Type_key = 1
 			AND v._Annot_key = e._Annot_key AND e._EvidenceTerm_key = t._Term_key
 			AND t.abbreviation IN ('EXP', 'IDA', 'IMP', 'IGI', 'IPI', 'IEP')''')
-STATS[GO_GENES_COMPLETE] = ('',
-	'''select count(m._Marker_key)
-		from GO_Tracking t, MRK_Marker m, ACC_Accession a
-		where t.completion_date is not null	and t._Marker_key = m._Marker_key
-			and m._Marker_key = a._Object_key and a._MGIType_key = 2 and a._LogicalDB_key = 1
-			and a.prefixPart = 'MGI:' and a.preferred = 1''')
-STATS[GO_ANNOTATIONS] = ('', 'SELECT COUNT(1) FROM VOC_Annot v WHERE v._AnnotType_key = 1000')
+
+# copied from qcreports_db/GO_stats.py
+STATS[GO_ANNOTATIONS] = ('', 
+	'''
+	select count(a._Annot_key)
+	from VOC_Annot a, VOC_Evidence e, MRK_Marker m
+	where a._AnnotType_key  = 1000
+	and a._Annot_key = e._Annot_key
+	and a._Object_key = m._Marker_key
+	and m._Marker_Type_key in (1)
+	''')
+
 STATS[GO_REFERENCES] = ('',
 	'''SELECT COUNT(DISTINCT e._Refs_key)
 		FROM VOC_Annot v, VOC_Evidence e, ACC_Accession a
 		WHERE v._AnnotType_key = 1000 AND v._Annot_key = e._Annot_key
 			AND e._Refs_key = a._Object_key AND a._MGIType_key = 1 AND a._LogicalDB_key = 29''')
-STATS[GO_REF_GENOME] = ('',
-	'''select count(m._Marker_key)
-		from GO_Tracking t, MRK_Marker m, ACC_Accession a
-		where t.isReferenceGene = 1 and t._Marker_key = m._Marker_key
-			and m._Marker_key = a._Object_key and a._MGIType_key = 2
-			and a._LogicalDB_key = 1 and a.prefixPart = 'MGI:' and a.preferred = 1''')
 
-GROUPS[GO_MINI_HOME] = [ GO_GENES, GO_GENES_EXPERIMENTAL, GO_GENES_COMPLETE, GO_ANNOTATIONS,
-	GO_REFERENCES, GO_REF_GENOME ]
+#STATS[GO_REF_GENOME] = ('',
+#	'''select count(m._Marker_key)
+#		from GO_Tracking t, MRK_Marker m, ACC_Accession a
+#		where t.isReferenceGene = 1 and t._Marker_key = m._Marker_key
+#			and m._Marker_key = a._Object_key and a._MGIType_key = 2
+#			and a._LogicalDB_key = 1 and a.prefixPart = 'MGI:' and a.preferred = 1''')
+
+GROUPS[GO_MINI_HOME] = [ GO_GENES, GO_GENES_EXPERIMENTAL, GO_ANNOTATIONS, GO_REFERENCES]
 GROUPS[GO_STATS_PAGE] = GROUPS[GO_MINI_HOME][:]
 
 ###--- Gene Expression Database (GXD) statistics ---###
