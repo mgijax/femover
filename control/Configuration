@@ -1,4 +1,136 @@
-#!/bin/sh
-cd ..
-. ./Configuration
-cd control
+# Name: Configuration.default
+# Assumes: This will be imported into a Bourne shell (/bin/sh) script.
+# Product: femover
+
+#
+#  If the MGICONFIG environment variable does not have a local override,
+#  use the default "live" settings.
+#
+if [ "${MGICONFIG}" = "" ]
+then
+    MGICONFIG=/usr/local/mgi/live/mgiconfig
+    export MGICONFIG
+fi
+
+. ${MGICONFIG}/master.config.sh
+
+#
+# Directory and file settings.
+#
+FILE_DIR=${DATALOADSOUTPUT}/femover
+LOG_DIR=${FILE_DIR}/logs
+DATA_DIR=${FILE_DIR}/data
+
+export FILE_DIR LOG_DIR DATA_DIR
+
+#
+# Numbers of concurrent processes by stage.
+#
+CONCURRENT_CREATE=3           # create statements
+CONCURRENT_DROP=1             # drop statements for target tables (should
+                              #   now be 1 to prevent deadlocks with FK)
+CONCURRENT_GATHER=4	      # number of gatherers (extracting data from mgd)
+CONCURRENT_BCPIN=2            # bcp in statements
+CONCURRENT_CLUSTERED_INDEX=1  # create clustered index statements
+CONCURRENT_CLUSTER=1          # cluster data statements
+CONCURRENT_OPTIMIZE=1         # table optimization statements
+CONCURRENT_COMMENT=3          # create comment statements
+CONCURRENT_INDEX=2            # create index statements
+CONCURRENT_FOREIGN_KEY=1      # create foreign key statements
+
+export CONCURRENT_DROP CONCURRENT_CREATE
+export CONCURRENT_BCPIN CONCURRENT_INDEX
+export CONCURRENT_GATHER
+export CONCURRENT_FOREIGN_KEY CONCURRENT_OPTIMIZE CONCURRENT_COMMENT
+export CONCURRENT_CLUSTERED_INDEX CONCURRENT_CLUSTER
+
+#
+# Logging levels.
+#
+LOG_DEBUG=True
+LOG_INFO=True
+
+export LOG_DEBUG LOG_INFO
+
+#
+# settings for retrieving IMSR counts of strains and cell lines
+#
+IMSR_COUNT_URL="http://www.findmice.org/report/mgiCounts.txt"
+IMSR_COUNT_TIMEOUT=300		# number of seconds before a timeout occurs
+
+export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
+
+#
+# setting for retrieving IMSR strain data
+#
+IMSR_STRAIN_URL="http://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
+export IMSR_STRAIN_URL
+
+#
+# setting for retrieving MPD strain data
+#
+MPD_STRAIN_URL="https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"
+export MPD_STRAIN_URL
+
+#
+# URL for making coordinate-based links for markers to VISTA-Point
+#
+
+VISTA_POINT_URL="http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
+export VISTA_POINT_URL
+
+#
+# URL for making Ensembl GM-based links for markers to Gene Tree
+#
+
+GENE_TREE_URL="http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g=@@@@"
+export GENE_TREE_URL
+
+#
+# Miscellaneous settings
+#
+CHUNK_SIZE=100000	# for large tables, how many rows to do at once
+BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
+SOURCE_TYPE=postgres	# build from postgres, mysql
+TARGET_TYPE=postgres	# build into postgres or mysql
+REMOVE_DATA_FILES=1	# remove data fles from prior run?  (0/1)
+RUN_CONTAINS_PRIVATE=1  # determine if the source database still has private data 
+
+export CHUNK_SIZE BUILDS_IN_SYNC SOURCE_TYPE TARGET_TYPE REMOVE_DATA_FILES RUN_CONTAINS_PRIVATE
+
+# path to data file for short papers' Full Text links
+FULL_TEXT_LINKS_PATH=../data/fullTextLinks.txt
+export FULL_TEXT_LINKS_PATH
+
+# path to incidental mutations master file
+INCIDENTAL_MUTS_FILE=/bhmgiapp01data/loads/mgi/incidental_muts/curator_INC.txt
+export INCIDENTAL_MUTS_FILE
+
+GLOSSARY_PATH=../data/glossary.rcd
+export GLOSSARY_PATH
+
+PYTHONPATH=../lib/python:.:../gather:../schema:../testdata:${PYTHONPATH}
+export PYTHONPATH
+
+#
+# list of high priority gatherers, in order of precedence
+# (these will be moved up in the queue of to-do items, as they are the
+# critical path)
+#
+HIGH_PRIORITY_TABLES="accession sequence sequence_sequence_num sequence_id"
+export HIGH_PRIORITY_TABLES
+
+#
+# single-priority tables
+#
+# list of tables that require single-sequential processing
+# these tables will be skippped by the "shuffle" routine
+# the wrapper (buildDB.sh) will iterate thru each single-priority-table
+# and call "buildDB.sh -G" for each table in the list
+#
+SINGLE_PRIORITY_TABLES=""
+export SINGLE_PRIORITY_TABLES
+
+# where to find the file of headers for the MP slimgrid
+MP_SLIMGRID_HEADERS="/bhmgiapp01data/loads/mgi/vocabbrevload/mpslimload/input/mpslimload.txt"
+export MP_SLIMGRID_HEADERS
