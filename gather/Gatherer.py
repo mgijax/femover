@@ -13,6 +13,7 @@ import types
 import dbAgnostic
 import OutputFile
 import top
+import Checksum
 
 ###--- Globals ---###
 
@@ -754,16 +755,8 @@ class FileCacheGatherer(CachingMultiFileGatherer):
 			self.checksums.append(checksums)
 		return
 	
-	def checksumsMatch(self):
-		# check to see if any of the checksums failed.  If not, return True.  If so, return False.
-
-		for checksum in self.checksums:
-			if not checksum.matches():
-				return False
-		return True
-	
 	def go(self):
-		if self.checksumsMatch():
+		if Checksum.allMatch(self.checksums):
 			for (tableName, inFieldOrder, outFieldOrder) in self.outputFiles:
 				print '%s/data/%s.rpt %s' % (os.environ['FEMOVER'], tableName, tableName)
 			logger.info('Checksums all match - using existing files')
@@ -773,7 +766,6 @@ class FileCacheGatherer(CachingMultiFileGatherer):
 		
 		# update the data files, then update the checksums
 		CachingMultiFileGatherer.go(self, '../data', actualName = True)
-		for checksum in self.checksums:
-			checksum.update()
+		Checksum.updateAll(self.checksums)
 		return
 	

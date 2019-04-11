@@ -20,6 +20,7 @@ import ReferenceUtils
 import VocabUtils
 import OutputFile
 import symbolsort
+import Checksum
 
 ###--- Globals ---###
 
@@ -51,10 +52,32 @@ badRelationships = {}	# dictionary of relationship keys where the marker
 
 miGenerator = KeyGenerator.KeyGenerator('marker_interaction')
 
+# checksums -- used to track the version of the source data, so we can
+# tell whether we need to regenerate the target data files or if we can
+# re-use them
+
+checksums = [
+	# count of interaction rows and their most recent modification date
+	Checksum.Checksum('marker_interaction.rows', '../data',
+		Checksum.hashResults('select max(modification_date), count(1) from mgi_relationship where _Category_key = %d' % interactionKey)
+		),
+	# count of markers and the max marker key
+	Checksum.Checksum('marker_interaction.markers', '../data',
+		Checksum.hashResults('select max(_Object_key_1), count(distinct _Object_key_1) from mgi_relationship where _Category_key = %d' % interactionKey)
+		),
+	# count of interaction properties and their most recent modification date
+	Checksum.Checksum('marker_interaction_property.rows', '../data',
+		Checksum.hashResults('''select count(1), max(p.modification_date)
+			from mgi_relationship r, mgi_relationship_property p
+			where r._Relationship_key = p._Relationship_key
+			and r._Category_key = %d''' % interactionKey)
+		),
+	]
+
 # output files
 
-interactionFile = OutputFile.OutputFile ('marker_interaction')
-propertyFile = OutputFile.OutputFile ('marker_interaction_property')
+interactionFile = None
+propertyFile = None
 
 ###--- Functions ---###
 
@@ -62,7 +85,10 @@ def initialize():
 	# set up global variables needed for processing
 
 	global maxMarkerKey, rowsPerMarker, allMarkers, teasers
-	global badRelationships
+	global badRelationships, interactionFile, propertyFile
+
+	interactionFile = OutputFile.OutputFile ('marker_interaction', dataDir = '../data', actualName = True)
+	propertyFile = OutputFile.OutputFile ('marker_interaction_property', dataDir = '../data', actualName = True)
 
 	# find maximum marker key with interactions
 
@@ -762,6 +788,13 @@ def main():
 
 	global interactionFile, propertyFile
 
+	# if checksums all match, bail out without regenerating data files
+	if Checksum.allMatch(checksums):
+		print '%s %s' % ('../data/marker_interaction.rpt', 'marker_interaction')
+		print '%s %s' % ('../data/marker_interaction_property.rpt', 'marker_interaction_property')
+		logger.debug('Using cached data files - done')
+		return 
+
 	initialize()
 
 	doneMarkers = 0		# count of markers already processed
@@ -783,6 +816,7 @@ def main():
 
 	interactionFile.close()
 	propertyFile.close()
+	Checksum.updateAll(checksums)
 
 	# write the info out so that femover knows which output file goes with
 	# which database table
