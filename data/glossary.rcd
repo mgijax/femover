@@ -1884,6 +1884,13 @@ Eukaryotes include all organisms except <A HREF="!FEWI_URL!glossary/virus">virus
 blue-green algae. <BR>See also <A HREF="!FEWI_URL!glossary/prokaryote">prokaryote</A>. 
 ]
 
+[
+key=eumelanin 
+displayName=Eumelanin 
+definition=A pigment produced by melanocytes that ranges in color from brown to black. \ 
+<BR>See also <A HREF="!FEWI_URL!glossary/melanin">Melanin</A> and <A HREF="!FEWI_URL!glossary/pheomelanin">Pheomelanin</A>. 
+]
+
 [ 
 key=euploid 
 displayName=Euploid 
@@ -3051,6 +3058,13 @@ the haploid number; resulting cells normally contain one member of each pair of 
 <A HREF="!FEWI_URL!glossary/homolog">homologous</A> chromosomes.
 ]
 
+[
+key=melanin 
+displayName=Melanin 
+definition=Melanins are produced in melanocytes by the oxidation of tyrosine, followed by polymerization. \ 
+<BR>See also <A HREF="!FEWI_URL!glossary/eumelanin">Eumelanin</A> and <A HREF="!FEWI_URL!glossary/pheomelanin">Pheomelanin</A>. 
+]
+
 [ 
 key=membrane 
 displayName=Membrane 
@@ -3773,7 +3787,12 @@ with respect to some inherited characteristic.  Often, individuals with differen
 <A HREF="!FEWI_URL!glossary/mammalian_phenotype_ontology">Mammalian Phenotype Ontology</a>.</li></ul>
 ]
 
-
+[
+key=pheomelanin 
+displayName=Pheomelanin 
+definition=A pigment produced by melanocytes that ranges in color from yellow to red. \ 
+<BR>See also <A HREF="!FEWI_URL!glossary/eumelanin">Eumelanin</A> and <A HREF="!FEWI_URL!glossary/melanin">Melanin</A>.
+]
 
 [ 
 key=phosphorimaging 
