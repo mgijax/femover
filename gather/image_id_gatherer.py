@@ -5,6 +5,7 @@
 
 import Gatherer
 import logger
+import re
 
 ###--- Globals ---###
 
@@ -52,6 +53,26 @@ def getImageIdKey (imageKey, ldbKey, accID):
 	if not imageIdKeys.has_key(key):
 		imageIdKeys[key] = len(imageIdKeys) + 1
 	return imageIdKeys[key] 
+
+gpRE = re.compile('^([A-Za-z]+),-A([0-9]+),-A([A-Za-z]+),?-?A?([0-9]+)?:?$')
+def tweakID (ldb, accID):
+	# Some image IDs (currently GenePaint) require us to slice and dice
+	# the ID to repackage it for a new link.  (These aren't actually 
+	# IDs anyway, but rather URL parameters.)  Need to handle these formats:
+	#	MH,-A1112,-Asetstart,-A19:		(notice trailing colon)
+	#	DA,-A75,-Asetstart,-A15
+	#	FG,-A46,-Asetview
+	
+	if (ldb == 'GenePaint'):
+		match = gpRE.match(accID)
+		if match:
+			(idPrefix, idSuffix, linkType, pane) = match.groups()
+			if pane != None:
+				accID = '%s%s/%s' % (idPrefix, idSuffix, int(pane) - 1)
+			else:
+				accID = '%s%s' % (idPrefix, idSuffix)
+
+	return accID
 
 ###--- Classes ---###
 
@@ -131,7 +152,7 @@ class ImageIDGatherer (Gatherer.Gatherer):
 				idResults.append ( [ imageIdKey,
 					key,
 					r[ldbNameCol],
-					r[idCol],
+					tweakID(r[ldbNameCol], r[idCol]),
 					r[preferredCol],
 					r[privateCol],
 					otherDB,
