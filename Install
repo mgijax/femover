@@ -34,6 +34,12 @@ do
 	fi
 	ln -s "${CONFIG}" "${TOP}/${dir}/config.py"
 	echo "Created symlink: ${TOP}/${dir}/config.py"
+
+	if [ -f "${TOP}/${dir}/Configuration" ]; then
+		rm "${TOP}/${dir}/Configuration"
+	fi
+	ln -s "${TOP}/Configuration" "${TOP}/${dir}/Configuration"
+	echo "Created symlink: ${TOP}/${dir}/Configuration"
 done
 
 # back to top level...
