@@ -34,16 +34,15 @@ do
 	fi
 	ln -s "${CONFIG}" "${TOP}/${dir}/config.py"
 	echo "Created symlink: ${TOP}/${dir}/config.py"
-
-	if [ -f "${TOP}/${dir}/Configuration" ]; then
-		rm "${TOP}/${dir}/Configuration"
-	fi
-	ln -s "${TOP}/Configuration" "${TOP}/${dir}/Configuration"
-	echo "Created symlink: ${TOP}/${dir}/Configuration"
 done
 
-# back to top level...
+# create a symlink to the Configuration file from the control directory
+# because it is needed by scripts in that directory
+cd ${TOP}/control
+rm -f Configuration
+ln -s ../Configuration Configuration
 
+# back to top level...
 cd "${TOP}"
 
 # if we don't have a data and a logs directory, make them
