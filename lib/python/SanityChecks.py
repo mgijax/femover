@@ -9,7 +9,7 @@ import logger
 ###--- Constants ---###
 
 # not real tables
-NOT_TABLES = [ 'Table', 'template_table', 'config']
+NOT_TABLES = [ 'Table', 'template_table', 'config', 'Configuration', ]
 
 # tables where having zero rows is okay
 ZERO_ROWS_OKAY = [ 'marker_mrm_property' ]
