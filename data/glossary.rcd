@@ -4146,13 +4146,15 @@ with subsequent inbreeding without selection.
 [ 
 key=recombinant_inbred 
 displayName=Recombinant Inbred Strain 
-definition=In mouse, an <A HREF="!FEWI_URL!glossary/inbred_strain">inbred strain</A> of animals started from \
-a <A HREF="!FEWI_URL!glossary/cross">cross</A> between two different inbred strains followed by inbreeding \
-for at least 20 generations. A panel of recombinant inbred strains derived from a cross between two parental strains can be \
-used to establish <A HREF="!FEWI_URL!glossary/linkage">linkage</A> between any \
-<A HREF="!FEWI_URL!glossary/marker">marker</A> that is \ 
-<A HREF="!FEWI_URL!glossary/polymorphism">polymorphic</A> between the parental strains and other polymorphic \
-markers that have been typed in each strain in the panel. \
+definition=In mouse and other species, an <A HREF="!FEWI_URL!glossary/inbred_strain">inbred strain</A> started from  \
+an <A HREF="!FEWI_URL!glossary/intercross">intercross</A> of two or more strains (usually themselves fully inbred) followed \
+by inbreeding for at least 20 to 30 generations. Examples include the BXD family (an intercross of C57BL/6J and DBA/2J parental strains) \
+and the Collaborative Cross family (an intercross of eight inbred parental strains). Once genotyped or sequenced, a family of \
+recombinant inbred strains can be used to establish <A HREF="!FEWI_URL!glossary/linkage">linkage</A> between heritable differences in \
+phenotypes and <A HREF="!FEWI_URL!glossary/polymorphism">polymorphic</A> DNA markers. RI families can also be used in reverse genetic \
+studies to evaluate the pleiotropic effects of segregating variants on many phenotypes. RI strains are particularly advantageous in \
+building up large phenomes, for analysis of gene-by-environmental interactions, and for boosting effective trait heritability by \
+resampling phenotypes for multiple members of each constituent family member. \
 <BR>See also the <A HREF="${MGIHOME_URL}nomen/strains.shtml">Rules for Nomenclature of Mouse and Rat Strains</A>. 
 ]
 
