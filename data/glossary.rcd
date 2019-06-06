@@ -3319,7 +3319,8 @@ definition=Messenger RNA. An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule t
 [ 
 key=mtb 
 displayName=MTB 
-definition=<A HREF="http://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>. One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
+definition=<A HREF="http://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>, the original name for the \
+Mouse Models of Human Cancer database (MMHCdb). One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
 the mouse tumor biology.
 ]
 
