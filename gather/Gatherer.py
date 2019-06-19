@@ -762,7 +762,7 @@ class FileCacheGatherer(CachingMultiFileGatherer):
 			logger.info('Checksums all match - using existing files')
 			return
 
-		logger.info('Checksums failed - rebuilding data files')
+		logger.info('Checksums did not match - rebuilding data files')
 		
 		# update the data files, then update the checksums
 		CachingMultiFileGatherer.go(self, '../data', actualName = True)

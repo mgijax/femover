@@ -189,7 +189,7 @@ class StrainImsrDataGatherer (Gatherer.Gatherer):
 			for strainKey in strainKeys:
 				self.finalResults.append( [ strainKey, imsrID, repository, sourceURL, matchType, imsrStrain ] )
 
-		logger.debug('%d IMSR strain names failed to match' % noMatchCt)
+		logger.debug('%d IMSR strain names did not match' % noMatchCt)
 		logger.info('Produced %d output rows' % len(self.finalResults))
 		return
 	

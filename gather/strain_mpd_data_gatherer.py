@@ -220,7 +220,7 @@ class StrainMpdDataGatherer (Gatherer.Gatherer):
 			for strainKey in strainKeys:
 				self.finalResults.append( [ strainKey, mpdID, source, sourceURL, matchType, mpdStrain ] )
 
-		logger.debug('%d MPD strain IDs and names failed to match' % noMatchCt)
+		logger.debug('%d MPD strain IDs and names did not match' % noMatchCt)
 		logger.info('Produced %d output rows' % len(self.finalResults))
 		return
 	
