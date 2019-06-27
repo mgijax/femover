@@ -65,20 +65,16 @@ cmds = [
 		t._Term_key as ancestorKey,
 		t.term as ancestorTerm,
 		a.accID
-	from DAG_DAG dd,
-		DAG_Closure dc,
-		VOC_Term t,
-		ACC_Accession a,
-		VOC_Vocab v
-	where dd._DAG_key = dc._DAG_key
-		and dd._MGIType_key = 13
-		and dc._AncestorObject_key = t._Term_key
-		and t._Vocab_key = v._Vocab_key
-		and dc._AncestorObject_key = a._Object_key
+	from DAG_DAG dd
+	inner join DAG_Closure dc on (dd._DAG_key = dc._DAG_key)
+	inner join VOC_Term t on (dc._AncestorObject_key = t._Term_key)
+	inner join VOC_Vocab v on (t._Vocab_key = v._Vocab_key)
+	left outer join ACC_Accession a on (dc._AncestorObject_key = a._Object_key
 		and v._LogicalDB_key = a._LogicalDB_key
 		and a._MGIType_key = 13
 		and a.private = 0
-		and a.preferred = 1''',
+		and a.preferred = 1)
+	where dd._MGIType_key = 13''',
 	]
 
 # order of fields (from the query results) to be written to the
