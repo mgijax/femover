@@ -157,21 +157,15 @@ class HTSampleGatherer (Gatherer.Gatherer):
 			row[organismCol] = cleanOrganism(row[organismCol])
 		return
 		
-	def addAgeMinMax(self):
-		# compute and add the ageMin and ageMax fields, adding them to the list of 'cols' and to each
-		# sample in 'rows'
+	def abbreviateAges(self):
+		# update the age field to be its abbreviation for each sample in 'rows'
 		
-		self.finalColumns.append('ageMin')
-		self.finalColumns.append('ageMax')
 		ageCol = Gatherer.columnNumber(self.finalColumns, 'age')
 		
 		for row in self.finalResults:
-			age, ageMin, ageMax = AgeUtils.getAgeMinMax(row[ageCol])
-			row[ageCol] = age
-			row.append(ageMin)
-			row.append(ageMax)
+			row[ageCol] = AgeUtils.getAbbreviation(row[ageCol])
 
-		logger.debug('Computed ageMin/Max for %d samples' % len(self.finalResults))
+		logger.debug('Abbreviated ages for %d samples' % len(self.finalResults))
 		return
 	
 	def applySequenceNumbers(self):
@@ -198,7 +192,7 @@ class HTSampleGatherer (Gatherer.Gatherer):
 		
 		self.convertFinalResultsToList()
 		self.cleanOrganisms()
-		self.addAgeMinMax()
+		self.abbreviateAges()
 		self.applySequenceNumbers()
 		return
 		
@@ -206,7 +200,8 @@ class HTSampleGatherer (Gatherer.Gatherer):
 
 cmds = [
 	'''select t._Experiment_key, r.term as relevancy, t._Sample_key, s.name, s._Genotype_key,
-			o.commonName as organism, x.term as sex, s.age, s._Emapa_key, g.stage as theiler_stage
+			o.commonName as organism, x.term as sex, s.age, s._Emapa_key, g.stage as theiler_stage,
+			s.ageMin, s.ageMax
 		from %s t
 		inner join gxd_htsample s on (t._Sample_key = s._Sample_key)
 		inner join voc_term r on (s._Relevance_key = r._Term_key)
