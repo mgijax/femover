@@ -7,6 +7,7 @@ import Gatherer
 import logger
 import dbAgnostic
 import gc
+import utils
 
 ###--- Globals ---###
 
@@ -15,39 +16,34 @@ MARKER_IDS = {}		# marker key : primary ID
 
 ###--- Functions ---###
 
-def fillDictionary(dataType, cmd, dict, keyField, valueField):
-	# populates the global dictionary specified in 'dict' with values returned from 'cmd'
-	
-	logger.debug('Caching ' + dataType)
-	cols, rows = dbAgnostic.execute(cmd)
-	logger.debug(' - returned %d rows from db' % len(rows))
-
-	keyCol = Gatherer.columnNumber(cols, keyField)
-	valueCol = Gatherer.columnNumber(cols, valueField)
-	
-	for row in rows:
-		dict[row[keyCol]] = row[valueCol]
-	
-	logger.debug(' - cached %d %s' % (len(dict), dataType))
-	return
-
 def initialize():
 	# initialize this gatherer by populating global caches
 	global SYMBOLS, MARKER_IDS
 	
+	keyCache = '''select distinct _Marker_key
+		into temporary table marker_keys
+		from gxd_htsample_rnaseq'''
+	keyIndex = 'create unique index idx1 on marker_keys(_Marker_key)'
+
+	dbAgnostic.execute(keyCache)
+	dbAgnostic.execute(keyIndex)
+	logger.debug('Identified unique markers')
+	
 	symbolQuery = '''select m._Marker_key, m.symbol
 		from mrk_marker m
 		where m._Organism_key = 1
-			and exists (select 1 from gxd_htsample_rnaseq r where m._Marker_key = r._Marker_key)'''
-	fillDictionary('marker symbols', symbolQuery, SYMBOLS, '_Marker_key', 'symbol')
+			and exists (select 1 from marker_keys r where m._Marker_key = r._Marker_key)'''
+	utils.fillDictionary('marker symbols', symbolQuery, SYMBOLS, '_Marker_key', 'symbol')
 	
 	idQuery = '''select a._Object_key, a.accID
 		from acc_accession a
-		where exists (select 1 from gxd_htsample_rnaseq r where a._Object_key = r._Marker_key)
+		where exists (select 1 from marker_keys r where a._Object_key = r._Marker_key)
 			and a._MGIType_key = 2
 			and a._LogicalDB_key = 1
 			and a.preferred = 1'''
-	fillDictionary('marker IDs', idQuery, MARKER_IDS, '_Object_key', 'accID')
+	utils.fillDictionary('marker IDs', idQuery, MARKER_IDS, '_Object_key', 'accID')
+	
+	dbAgnostic.execute('drop table marker_keys')
 	return
 
 ###--- Classes ---###
@@ -105,7 +101,7 @@ gatherer = EHSMGatherer (files, cmds)
 gatherer.setupChunking (
 	'select min(_RNASeq_key) from GXD_HTSample_RNASeq',
 	'select max(_RNASeq_key) from GXD_HTSample_RNASeq',
-	500000
+	100000
 	)
 
 ###--- main program ---###

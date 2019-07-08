@@ -19,25 +19,6 @@ ORGANISM = {}
 
 ###--- Functions ---###
 
-def fillDictionary(dataType, cmd, dict, keyField, valueField, cleanupFn = None):
-	# populates the global dictionary specified in 'dict' with values returned from 'cmd'
-	
-	logger.debug('Caching ' + dataType)
-	cols, rows = dbAgnostic.execute(cmd)
-	logger.debug(' - returned %d rows from db' % len(rows))
-
-	keyCol = Gatherer.columnNumber(cols, keyField)
-	valueCol = Gatherer.columnNumber(cols, valueField)
-	
-	for row in rows:
-		if cleanupFn:
-			dict[row[keyCol]] = cleanupFn(row[valueCol])
-		else:
-			dict[row[keyCol]] = row[valueCol]
-	
-	logger.debug(' - cached %d %s' % (len(dict), dataType))
-	return
-
 def initialize():
 	global AGE, AGE_MAX, AGE_MIN, SEX, STAGE, ORGANISM
 	
@@ -53,12 +34,12 @@ def initialize():
 		from voc_term t, gxd_htsample h
 		where t._Term_key = h._Sex_key'''
 
-	fillDictionary('age per consolidated sample', ageQuery, AGE, '_RNASeqSet_key', 'age')
-	fillDictionary('ageMin per consolidated sample', ageQuery, AGE_MIN, '_RNASeqSet_key', 'ageMin')
-	fillDictionary('ageMax per consolidated sample', ageQuery, AGE_MAX, '_RNASeqSet_key', 'ageMax')
-	fillDictionary('organisms', organismQuery, ORGANISM, '_Organism_key', 'commonName', utils.cleanupOrganism)
-	fillDictionary('Theiler Stages', stageQuery, STAGE, '_Stage_key', 'stage')
-	fillDictionary('sexes', sexQuery, SEX, '_Term_key', 'term')
+	utils.fillDictionary('age per consolidated sample', ageQuery, AGE, '_RNASeqSet_key', 'age')
+	utils.fillDictionary('ageMin per consolidated sample', ageQuery, AGE_MIN, '_RNASeqSet_key', 'ageMin')
+	utils.fillDictionary('ageMax per consolidated sample', ageQuery, AGE_MAX, '_RNASeqSet_key', 'ageMax')
+	utils.fillDictionary('organisms', organismQuery, ORGANISM, '_Organism_key', 'commonName', utils.cleanupOrganism)
+	utils.fillDictionary('Theiler Stages', stageQuery, STAGE, '_Stage_key', 'stage')
+	utils.fillDictionary('sexes', sexQuery, SEX, '_Term_key', 'term')
 	return
 
 ###--- Classes ---###
@@ -116,8 +97,8 @@ files = [
 gatherer = EHCSGatherer (files, cmds)
 gatherer.setupChunking(
 	'select min(_RNASeqSet_key) from gxd_htsample_rnaseqset',
-	'select min(_RNASeqSet_key) from gxd_htsample_rnaseqset',
-	5000
+	'select max(_RNASeqSet_key) from gxd_htsample_rnaseqset',
+	50
 	)
 
 ###--- main program ---###
