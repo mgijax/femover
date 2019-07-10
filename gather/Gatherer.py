@@ -579,10 +579,10 @@ class CachingMultiFileGatherer:
 		#	against the database
 
 		cols, rows = dbAgnostic.execute(minKeyQuery)
-		self.minKey = rows[0][0]
+		self.minKey = max(rows[0][0], 0)			# default to 0 if None
 
 		cols, rows = dbAgnostic.execute(maxKeyQuery)
-		self.maxKey = rows[0][0]
+		self.maxKey = max(rows[0][0], 0)			# default to 0 if None
 
 		self.chunkSize = chunkSize
 		self.chunkingOn = True
