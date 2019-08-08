@@ -17,8 +17,6 @@ createStatement = '''CREATE TABLE %s  (
 	consolidated_measurement_key	integer				not null,
 	consolidated_sample_key			integer				not null,
 	marker_key						integer				not null,
-	marker_id						text				null,
-	marker_symbol					text				null,
 	level							text				null,
 	biological_replicate_count		integer				not null,
 	average_qn_tpm					double precision	not null,
@@ -30,8 +28,6 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
 	'consolidated_sample_key' : 'create index %s on %s (consolidated_sample_key)',
 	'marker_key' : 'create index %s on %s (marker_key)',
-	'marker_id' : 'create index %s on %s (marker_id)',
-	'marker_symbol' : 'create index %s on %s (marker_symbol)',
 	}
 
 # column name -> (related table, column in related table)
@@ -49,8 +45,6 @@ comments = {
 	Table.COLUMN : {
 		'consolidated_measurement_key' : 'primary key for this table; identifies the "combined sample", the set of samples that are biological replicates',
 		'marker_key' : 'identifies the marker for this measurement',
-		'marker_id' : 'primary ID for the marker',
-		'marker_symbol' : 'current symbol for the marker',
 		'biological_replicate_count' : 'number of samples in this set of biological replicates (can be a 1 for singleton samples)',
 		'average_qn_tpm' : 'quantile normalized Transcripts Per (kilobase) Million, averaged across the set of biological replicates.',
 		'level' : 'textual description for the level of expression',
@@ -58,8 +52,6 @@ comments = {
 	Table.INDEX : {
 		'consolidated_sample_key' : 'quick lookup for all measurements for a consolidated sample by key',
 		'marker_key' : 'quick lookup for all measurements for a marker by key',
-		'marker_id' : 'quick lookup for all measurements for a marker by primary ID',
-		'marker_symbol' : 'quick lookup for all measurements for a marker by symbol',
 		},
 	}
 
