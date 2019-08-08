@@ -47,6 +47,16 @@ class DbInitError(Exception):
 
 ###--- Functions ---###
 
+def setConnectionFE():
+	global DBM
+	DBM = dbManager.postgresManager (config.TARGET_HOST, config.TARGET_DATABASE, config.TARGET_USER, config.TARGET_PASSWORD)
+	db.set_sqlUser(config.TARGET_USER)
+	db.set_sqlPassword(config.TARGET_PASSWORD)
+	db.set_sqlServer(config.TARGET_HOST)
+	db.set_sqlDatabase(config.TARGET_DATABASE)
+	logger.debug ('Updated postgresManager to point to FE database')
+	return
+	
 def setSqlLogFile(filename):
 	global SQL_LOG_FILE
 
