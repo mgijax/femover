@@ -139,7 +139,7 @@ done
 rm -rf ${LOG_DIR}/postprocess.log
 if [ ${skipPostProcess} -eq 0 ]; then
 	echo "running post processing scripts"
-	for postscript in ${FEMOVER}/postprocess/*
+	for postscript in ${FEMOVER}/postprocess/*.sh
 	do
     		echo "${postscript}" >> ${LOG_DIR}/postprocess.log
     		${postscript} >> ${LOG_DIR}/postprocess.log
