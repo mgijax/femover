@@ -17,8 +17,6 @@ createStatement = '''CREATE TABLE %s  (
 	measurement_key		integer				not null,
 	sample_key			integer				not null,
 	marker_key			integer				not null,
-	marker_id			text				null,
-	marker_symbol		text				null,
 	average_tpm			double precision	null,
 	qn_tpm				double precision	null,
 	PRIMARY KEY(measurement_key))''' % tableName
@@ -29,8 +27,6 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
 	'sample_key' : 'create index %s on %s (sample_key)',
 	'marker_key' : 'create index %s on %s (marker_key)',
-	'marker_id' : 'create index %s on %s (marker_id)',
-	'marker_symbol' : 'create index %s on %s (marker_symbol)',
 	}
 
 # column name -> (related table, column in related table)
@@ -49,16 +45,12 @@ comments = {
 		'measurement_key' : 'unique identifier for this row',
 		'sample_key' : 'identifies the biological sample (genotype, age, sex, etc.)',
 		'marker_key' : 'identifies the marker for this measurement',
-		'marker_id' : 'primary ID for the marker',
-		'marker_symbol' : 'current symbol for the marker',
 		'average_tpm' : 'Transcripts Per (kilobase) Million, a normalized measure of the expression value for a gene in a sample, expressed as transcript-derived read counts from that gene per million reads in the sample.',
 		'qn_tpm' : 'Quantile Normalized Transcripts Per (kilobase) Million, an industry standard for comparing or combining biological replicates in high throughput expression studies',
 		},
 	Table.INDEX : {
 		'sample_key' : 'quick access to measurements for measurements for all genes for a particular sample',
 		'marker_key' : 'quick lookup for all measurements for a marker by key',
-		'marker_id' : 'quick lookup for all measurements for a marker by primary ID',
-		'marker_symbol' : 'quick lookup for all measurements for a marker by symbol',
 		},
 	}
 

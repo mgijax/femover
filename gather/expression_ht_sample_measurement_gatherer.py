@@ -7,44 +7,6 @@ import Gatherer
 import logger
 import dbAgnostic
 import gc
-import utils
-
-###--- Globals ---###
-
-SYMBOLS = {}		# marker key : symbol
-MARKER_IDS = {}		# marker key : primary ID
-
-###--- Functions ---###
-
-def initialize():
-	# initialize this gatherer by populating global caches
-	global SYMBOLS, MARKER_IDS
-	
-	keyCache = '''select distinct _Marker_key
-		into temporary table marker_keys
-		from gxd_htsample_rnaseq'''
-	keyIndex = 'create unique index idx1 on marker_keys(_Marker_key)'
-
-	dbAgnostic.execute(keyCache)
-	dbAgnostic.execute(keyIndex)
-	logger.debug('Identified unique markers')
-	
-	symbolQuery = '''select m._Marker_key, m.symbol
-		from mrk_marker m
-		where m._Organism_key = 1
-			and exists (select 1 from marker_keys r where m._Marker_key = r._Marker_key)'''
-	utils.fillDictionary('marker symbols', symbolQuery, SYMBOLS, '_Marker_key', 'symbol')
-	
-	idQuery = '''select a._Object_key, a.accID
-		from acc_accession a
-		where exists (select 1 from marker_keys r where a._Object_key = r._Marker_key)
-			and a._MGIType_key = 2
-			and a._LogicalDB_key = 1
-			and a.preferred = 1'''
-	utils.fillDictionary('marker IDs', idQuery, MARKER_IDS, '_Object_key', 'accID')
-	
-	dbAgnostic.execute('drop table marker_keys')
-	return
 
 ###--- Classes ---###
 
@@ -65,9 +27,8 @@ class EHSMGatherer (Gatherer.CachingMultiFileGatherer):
 		qnTpmCol = dbAgnostic.columnNumber(cols, 'qnTPM')
 		
 		for row in rows:
-			markerKey = row[markerKeyCol]
-			self.addRow('expression_ht_sample_measurement', [ row[sampleKeyCol], markerKey,
-				MARKER_IDS[markerKey], SYMBOLS[markerKey], row[avgTpmCol], row[qnTpmCol]	
+			self.addRow('expression_ht_sample_measurement', [ row[sampleKeyCol], row[markerKeyCol],
+				row[avgTpmCol], row[qnTpmCol]	
 				] )
 
 		logger.debug('Processed %d rows' % len(rows))
@@ -89,8 +50,8 @@ cmds = [
 # output file
 files = [
 	('expression_ht_sample_measurement',
-		[ '_Sample_key', '_Marker_key', 'accID', 'symbol', 'averageTPM', 'qnTPM' ],
-		[ Gatherer.AUTO, '_Sample_key', '_Marker_key', 'accID', 'symbol', 'averageTPM', 'qnTPM' ])
+		[ '_Sample_key', '_Marker_key', 'averageTPM', 'qnTPM' ],
+		[ Gatherer.AUTO, '_Sample_key', '_Marker_key', 'averageTPM', 'qnTPM' ])
 	]
 
 # prefix for the filename of the output file
@@ -109,5 +70,4 @@ gatherer.setupChunking (
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	initialize()
 	Gatherer.main (gatherer)
