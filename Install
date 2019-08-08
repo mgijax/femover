@@ -24,7 +24,7 @@ echo "Sourced Configuration file"
 
 CONFIG=${TOP}/lib/python/config.py
 
-for dir in gather control schema
+for dir in gather control schema postprocess
 do
 	if [ -h "${TOP}/${dir}/config.py" ]; then
 		rm "${TOP}/${dir}/config.py"
