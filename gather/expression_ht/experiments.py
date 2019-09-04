@@ -40,7 +40,7 @@ def getExperimentTempTable():
         where e._CurationState_key = t._Term_key
             and t.term = '%s' ''' % (experimentTable, C.DONE)
     
-    cmd2 = 'create unique index tgetm1 on %s (_Experiment_key)' % experimentTable
+    cmd2 = 'create unique index getm1 on %s (_Experiment_key)' % experimentTable
 
     cmd3 = '''update %s as x
         set is_in_atlas = 1
@@ -55,10 +55,8 @@ def getExperimentTempTable():
 
     dbAgnostic.execute(cmd1)
     dbAgnostic.execute(cmd2)
+    dbAgnostic.execute(cmd3)
     logger.debug('Populated %s with %d rows' % (experimentTable, getRowCount(experimentTable)))
-                
-    dbAgnostic.execute(cmd2)
-    logger.debug('Indexed %s' % experimentTable)
     return experimentTable
 
 def getExperimentIDs(onlyPrimaryIDs = False):
