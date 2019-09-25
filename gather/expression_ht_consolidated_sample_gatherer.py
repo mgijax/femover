@@ -7,6 +7,7 @@ import dbAgnostic
 import logger
 import gc
 import utils
+import AgeUtils
 
 ###--- Globals ---###
 
@@ -40,6 +41,10 @@ def initialize():
 	utils.fillDictionary('organisms', organismQuery, ORGANISM, '_Organism_key', 'commonName', utils.cleanupOrganism)
 	utils.fillDictionary('Theiler Stages', stageQuery, STAGE, '_Stage_key', 'stage')
 	utils.fillDictionary('sexes', sexQuery, SEX, '_Term_key', 'term')
+
+	# tweak age values to use abbreviations
+	for (key, age) in AGE.items():
+		AGE[key] = AgeUtils.getAbbreviation(age)
 	return
 
 ###--- Classes ---###
