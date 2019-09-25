@@ -297,11 +297,29 @@ cmds = [
 
 	# 5. count of expression assays for each marker
 	# (omit Recombinase reporter assays)
-	'''select a._Marker_key, count(a._Assay_key) as numAssay
+	'''with subtotals as (
+		select a._Marker_key,
+			count(a._Assay_key) as classical,
+			0 as rnaseq
 		from gxd_assay a
-		where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
+		where exists (select 1 from gxd_expression e
+			where a._Assay_key = e._Assay_key)
 		and a._AssayType_key != 11
-		group by a._Marker_key''',
+		group by a._Marker_key
+		union
+		select sc._Marker_key,
+			0 as classical,
+			count(distinct s._Experiment_key) as rnaseq
+		from gxd_htsample_rnaseqcombined sc,
+			gxd_htsample_rnaseq r,
+			gxd_htsample s
+		where sc._RNASeqCombined_key = r._RNASeqCombined_key
+			and r._Sample_key = s._Sample_key
+		group by sc._Marker_key
+		)
+		select _Marker_key, sum(classical) + sum(rnaseq) as combined
+		from subtotals
+		group by _Marker_key''',
 
 	# 6. count of orthologs for each marker
 	'''
@@ -337,11 +355,23 @@ cmds = [
 
 	# 8. count of GXD results for each marker (only for structures that
 	# map to EMAPS terms)
-	'''select e._Marker_key,
-			count(distinct e._Expression_key) as resultCount
+	'''with subtotals as (
+		select e._Marker_key,
+			count(distinct e._Expression_key) as classical,
+			0 as rnaseq
 		from gxd_expression e
 		where e.isForGXD = 1
-		group by e._Marker_key''',
+		group by e._Marker_key
+		union
+		select s._Marker_key,
+			0 as classical,
+			count(distinct s._RNASeqCombined_key) as rnaseq
+		from gxd_htsample_rnaseqcombined s
+		group by s._Marker_key
+		)
+		select _Marker_key, sum(classical) + sum(rnaseq) as resultCount
+		from subtotals
+		group by _Marker_key''',
 
 	# 9. count of GXD Index entries for each marker
 	'''select _Marker_key, count(1) as indexCount
