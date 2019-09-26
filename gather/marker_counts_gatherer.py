@@ -317,7 +317,7 @@ cmds = [
 			and r._Sample_key = s._Sample_key
 		group by sc._Marker_key
 		)
-		select _Marker_key, sum(classical) + sum(rnaseq) as combined
+		select _Marker_key, (sum(classical) + sum(rnaseq))::integer as numAssay
 		from subtotals
 		group by _Marker_key''',
 
@@ -369,7 +369,7 @@ cmds = [
 		from gxd_htsample_rnaseqcombined s
 		group by s._Marker_key
 		)
-		select _Marker_key, sum(classical) + sum(rnaseq) as resultCount
+		select _Marker_key, (sum(classical) + sum(rnaseq))::integer as resultCount
 		from subtotals
 		group by _Marker_key''',
 
