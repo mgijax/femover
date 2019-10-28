@@ -166,7 +166,8 @@ STATS[GXD_GENES_CODED] = ('Genes searchable using the Gene Expression Data Query
 		WHERE m._Organism_key = 1
 		AND m._Marker_Status_key in (1,3)
 		AND (EXISTS (SELECT 1 FROM GXD_Expression e
-			WHERE m._Marker_key = e._Marker_key)
+			WHERE m._Marker_key = e._Marker_key
+			AND e.isForGXD = 1)
 			OR
 			EXISTS (SELECT 1 FROM GXD_HTSample_RnaSeqCombined r
 			WHERE m._Marker_key = r._Marker_key)
