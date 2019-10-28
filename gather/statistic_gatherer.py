@@ -147,11 +147,11 @@ GROUPS[GO_STATS_PAGE] = GROUPS[GO_MINI_HOME][:]
 
 ###--- Gene Expression Database (GXD) statistics ---###
 
-GXD_GENES_INDEXED = 'Genes studied in expression references (in situ and blot assays)'
+GXD_GENES_INDEXED = 'Genes studied in expression references'
 GXD_GENES_CODED = 'Genes/markers with annotated expression results (all assay types)'
-GXD_GENES_CLASSICAL = 'Genes with annotated in situ and blot assay results'
+GXD_GENES_CLASSICAL = 'Genes/markers with in situ and blot assay results'
 GXD_GENES_RNASEQ = 'Genes/markers with RNA-Seq assay results'
-GXD_RESULTS = 'Expression assay results (all assay types)'
+GXD_RESULTS = 'Expression results (all assay types)'
 GXD_INSITU_RESULTS = 'In situ assay results'
 GXD_BLOT_RESULTS = 'Blot assay results'
 GXD_RNASEQ_RESULTS = 'RNA-Seq assay results'
@@ -159,7 +159,7 @@ GXD_IMAGES = 'Expression images'
 GXD_ASSAYS = 'Expression assays'
 GXD_MUTANTS = 'Mouse mutants with expression data'
 
-STATS[GXD_GENES_INDEXED] = ('Genes studied in expression references (in situ and blot assays', 'SELECT COUNT(DISTINCT _Marker_key) FROM GXD_Index')
+STATS[GXD_GENES_INDEXED] = ('Genes searchable using the Gene Expression Literature Query', 'SELECT COUNT(DISTINCT _Marker_key) FROM GXD_Index')
 STATS[GXD_GENES_CODED] = ('Genes searchable using the Gene Expression Data Query',
 	'''SELECT COUNT(m._Marker_key)
 		FROM MRK_Marker m
@@ -216,12 +216,27 @@ STATS[GXD_IMAGES] = ('',
 				and isr._Specimen_key = s._Specimen_key and s._Assay_key = a._Assay_key
 				and a._AssayType_key in (1,2,3,4,5,6,8,9) )
 			AS docount''')
-STATS[GXD_ASSAYS] = ('', 'select count(distinct _Assay_key) from GXD_Expression where isForGXD = 1')
-STATS[GXD_MUTANTS] = ('',
-	'''SELECT COUNT(DISTINCT a._Allele_key)
-		FROM GXD_Expression e, GXD_AlleleGenotype g, ALL_Allele a
-		WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
-			AND a.isWildType = 0 and e.isForGXD = 1''')
+STATS[GXD_ASSAYS] = ('', '''WITH data AS (
+	SELECT COUNT(DISTINCT _Assay_key) AS ct
+	FROM GXD_Expression WHERE isForGXD = 1
+	UNION
+	SELECT COUNT(distinct _Experiment_key) AS ct
+	FROM GXD_HTSample_RNASeqSet
+	)
+	SELECT SUM(ct)::INT
+	FROM data''')
+STATS[GXD_MUTANTS] = ('', '''WITH alleles AS (SELECT DISTINCT a._Allele_key
+	FROM GXD_Expression e, GXD_AlleleGenotype g, ALL_Allele a
+	WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
+	AND a.isWildType = 0 and e.isForGXD = 1
+	UNION
+	SELECT DISTINCT a._Allele_key
+	FROM GXD_HTSample_RNASeqSet e, GXD_AlleleGenotype g, ALL_Allele a
+	WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
+	AND a.isWildType = 0
+	)
+	SELECT COUNT(DISTINCT _Allele_key)
+	FROM alleles''')
 
 GROUPS[GXD_MINI_HOME] = [ GXD_GENES_INDEXED, GXD_GENES_CODED, GXD_GENES_CLASSICAL, GXD_GENES_RNASEQ, GXD_RESULTS, GXD_INSITU_RESULTS, GXD_BLOT_RESULTS, GXD_RNASEQ_RESULTS, GXD_IMAGES, GXD_ASSAYS, GXD_MUTANTS ]
 GROUPS[GXD_STATS_PAGE] = GROUPS[GXD_MINI_HOME][:]
