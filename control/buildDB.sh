@@ -102,7 +102,8 @@ elif [ "${REMOVE_DATA_FILES}" == "1" ]; then
     rm -f ${DATA_DIR}/*
 fi
 
-# run the mover with any specified flags
+# run the mover with any specified flags (except -Z, which is only for this script)
+FLAGS=`echo ${FLAGS} | sed 's/-Z//'`
 echo "buildDatabase.py ${FLAGS}"
 ./buildDatabase.py ${FLAGS}
 if [ $? -ne 0 ]; then
