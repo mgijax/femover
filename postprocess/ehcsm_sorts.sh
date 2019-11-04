@@ -36,7 +36,7 @@ DELETE FROM expression_ht_consolidated_sample_measurement_sequence_num
 EOSQL
 
 echo "Finished.  Loading new data..."
-PG_FE_DBPASSWORD=`cat ${PG_FE_DBPASSWORDFILE} | grep ${PG_FE_DBUSER} | sed 's/:/ /g' | awk '{print $5}'`
+PG_FE_DBPASSWORD=`cat ${PG_DBPASSWORDFILE} | grep ${PG_FE_DBUSER} | sed 's/:/ /g' | awk '{print $5}'`
 ../control/bulkLoadPostgres.sh ${PG_FE_DBSERVER} ${PG_FE_DBNAME} ${PG_FE_DBUSER} ${PG_FE_DBPASSWORD} ${DATA_DIR}/ehcsm.txt expression_ht_consolidated_sample_measurement_sequence_num
 
 echo "Finished at " `uptime | sed 's/ //' | awk '{print $1}'`
