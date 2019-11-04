@@ -9,12 +9,12 @@
 echo "Beginning at " `uptime | sed 's/ //' | awk '{print $1}'`
 
 #../postprocess/expression_ht_consolidated_sample_measurement_sorts.py
-../postprocess/ehcsm_sorts.py key ${DATA_DIR}/ehcsm_key.txt &
-../postprocess/ehcsm_sorts.py bySymbol ${DATA_DIR}/ehcsm_bySymbol.txt &
-../postprocess/ehcsm_sorts.py byAge ${DATA_DIR}/ehcsm_byAge.txt &
-../postprocess/ehcsm_sorts.py byStructure ${DATA_DIR}/ehcsm_byStructure.txt &
-../postprocess/ehcsm_sorts.py byExpressed ${DATA_DIR}/ehcsm_byExpressed.txt &
-../postprocess/ehcsm_sorts.py byExperiment ${DATA_DIR}/ehcsm_byExperiment.txt &
+../postprocess/ehcsm_sorts.py key ${DATA_DIR}/ehcsm_key.txt
+../postprocess/ehcsm_sorts.py bySymbol ${DATA_DIR}/ehcsm_bySymbol.txt
+../postprocess/ehcsm_sorts.py byAge ${DATA_DIR}/ehcsm_byAge.txt
+../postprocess/ehcsm_sorts.py byStructure ${DATA_DIR}/ehcsm_byStructure.txt
+../postprocess/ehcsm_sorts.py byExpressed ${DATA_DIR}/ehcsm_byExpressed.txt
+../postprocess/ehcsm_sorts.py byExperiment ${DATA_DIR}/ehcsm_byExperiment.txt
 echo "Started six sorters..."
 wait
 echo "Sorters finished.  Combining results..."
