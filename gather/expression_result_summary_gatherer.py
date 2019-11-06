@@ -1110,16 +1110,18 @@ cmds = [
 	from gxd_insituresultimage i''',
 
 	# 5. basic assay data (image key here is for gel assays)
+	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select a._Assay_key, a._AssayType_key, t.assayType,
 		a._Refs_key, a._Marker_key, a._ImagePane_key,
 		a._ReporterGene_key, t.isGelAssay
 	from gxd_assay a, gxd_assaytype t
 	where a._AssayType_key = t._AssayType_key
-	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key and e.isForGxd = 1)''',
+	and exists (select 1 from gxd_expression e where e._Assay_key = a._Assay_key and e.isForGxd = 1)
+	order by a._Assay_key''',
 
 	# 6. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
-
+	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select s._Assay_key,
 		s._Genotype_key,
 		s.age,
@@ -1132,7 +1134,8 @@ cmds = [
 		s.ageMin,
 		s.ageMax,
 		p.pattern,
-		s._specimen_key
+		s._specimen_key,
+		struct._Term_key
 	from gxd_specimen s,
 		gxd_insituresult r,
 		gxd_strength st,
@@ -1147,6 +1150,7 @@ cmds = [
 		and vte._emapa_term_key = rs._emapa_term_key
 		and vte._stage_key = rs._stage_key
 		and struct._term_key = vte._term_key
+	order by s._Assay_key, r._Result_key, struct._Term_key
 	''', 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
@@ -1157,7 +1161,7 @@ cmds = [
 	# not defined as being separate results; we will need to consolidate
 	# the strengths for the given bands to come up with a strength for
 	# the lane as a whole.
-
+	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select g._Assay_key,
 		g._Genotype_key,
 		g.age,
@@ -1168,7 +1172,8 @@ cmds = [
 		struct.term as structure,
 		g.ageMin,
 		g.ageMax,
-		g._GelLane_key
+		g._GelLane_key,
+		struct._Term_key
 	from gxd_gellane g,
 		gxd_gelband b,
 		gxd_strength st,
@@ -1182,6 +1187,7 @@ cmds = [
 		and vte._emapa_term_key = gs._emapa_term_key
 		and vte._stage_key = gs._stage_key
 		and struct._term_key = vte._term_key
+	order by g._Assay_key, g._GelLane_key, struct._Term_key
 	''',
 
 	# 8. allele pairs for genotypes cited in GXD data
