@@ -134,6 +134,41 @@ class OutputFile:
 		self.rowCount = self.rowCount + len(rows)
 		return
 
+class TrustingOutputFile (OutputFile):
+	# Is:  an OutputFile that trusts the input you send it, writing it out
+	# to disk directly, without stopping to do shuffling of columns,
+	# cleanup of text strings, conversion of None to '', or handling of the
+	# Gatherer.AUTO flag.
+
+	def writeToFile (self, fieldOrder, columns, rows):
+		# keeps the same method signature as OutputFile.writeToFile,
+		# but ignores the first two parameters and just writes out the
+		# given rows
+
+		if not rows:
+			return
+
+		if not self.columnCount:
+			self.columnCount = len(rows[0])
+
+		# only do the check for fd or fp once (rather than in the loop)
+		# for the sake of efficiency, and duplicate the loop's contents
+
+		if self.fd != None:
+			for row in rows:
+				line = '\t'.join(map(str, row))
+				os.write (self.fd, line)
+				os.write (self.fd, '\n')
+
+		elif self.fp != None:
+			for row in rows:
+				line = '\t'.join(map(str, row))
+				self.fp.write(line)
+				self.fp.write('\n')
+
+		self.rowCount = self.rowCount + len(rows)
+		return
+
 class CachingOutputFile:
 	# is a wrapper over an OutputFile, providing a limited-size memory
 	# cache and then flushing out to disk whenever that number of rows is

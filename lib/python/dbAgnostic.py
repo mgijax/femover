@@ -192,3 +192,27 @@ def mergeResultSets (cols1, rows1, cols2, rows2):
 		rows1.append(r)
 
 	return (cols1, rows1)
+
+def batchInsert(tableName, rows, batchSize = 1000):
+	# Insert the given 'rows' into 'tableName' -- processing 'batchSize'
+	# at a time.  'rows' should be a list of tuples.  Each tuple should
+	# contain the values for a single row, in the proper order.
+	# Note: does not check for quotes within inserted strings.
+
+	start = 0		# where to start iterating through rows
+	maxRow = len(rows)	# count of rows 
+
+	while start < maxRow:
+		end = start + batchSize
+
+		# current slice of data rows
+		values = rows[start:end]
+
+		cmd = 'insert into %s values %s' % (tableName,
+			','.join(map(str, values)) )
+		execute(cmd)
+
+		start = end	# prepare for next batch
+
+	logger.debug('Added %d rows to %s' % (maxRow, tableName))
+	return
