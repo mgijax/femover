@@ -36,23 +36,6 @@ TMP_GELLANE_DETECTED = 'tmp_gellane_detected'
 # that indicates whether expression was detected (1) or not (0).
 TMP_ISRESULT_DETECTED = 'tmp_isresult_detected'
 
-# This temporary table maps from current mouse marker keys to sequence numbers
-# when the markers are sorted by symbol.
-TMP_BY_SYMBOL = 'tmp_by_symbol'
-
-# This temporary table maps from current mouse marker keys and assay type keys
-# to sequence numbers when the markers are sorted by symbol primarily and
-# assay types secondarily.
-TMP_BY_SYMBOL_ASSAY_TYPE = 'tmp_by_symbol_assay_type'
-
-# This temporary table maps from sample keys to sequence numbers when they are
-# sorted by age, structure, and stage.
-TMP_BY_AGE_STRUCTURE_STAGE = 'tmp_by_age_structure_stage'
-
-# This temporary table maps from sample keys to sequence numbers when they are
-# sorted by structure, stage, and age.
-TMP_BY_STRUCTURE_STAGE_AGE = 'tmp_by_structure_stage_age'
-
 # Dictionary containing as keys the names of temp tables already produced.
 EXISTING = {}
 
@@ -61,6 +44,17 @@ EXISTING = {}
 INDEX_COUNT = 0
 
 ###--- Public Functions ---###
+
+def getSortedTable(tableName, sortString):
+	# Create a sorted table with the given 'tableName', with columns
+	# equivalent to the TMP_KEYSTONE table -- sorted according to the
+	# ORDER BY string specified in 'sortString' -- and with sequence
+	# assigned in a new column (seqNum).
+
+	if exists(tableName):
+		return tableName
+
+	return _buildSortedTable(tableName, sortString)
 
 def exists(name):
 	# determine whether temp table 'name' exists (True) or not (False)
@@ -117,6 +111,16 @@ def createIndex(table, field, isUnique = False):
 	return
 
 ###--- Private Functions ---###
+
+def _logFirstRows(title, cmd, rowCount = 5):
+	# execute 'cmd' and write the first 'rowCount' rows to the log file,
+	# headed by the given 'title'
+
+	logger.info('First %d rows for "%s"' % (rowCount, title))
+	cols, rows = dbAgnostic.execute(cmd + ' limit %d' % rowCount)
+	for row in rows:
+		logger.info(str(row))
+	return
 
 def _getRowCount(name, whereClause = ''):
 	# get the count of rows for the given table, including an optional
@@ -240,10 +244,13 @@ def _buildKeystoneTable():
 	cmd0 = '''create temporary table %s (
 		uni_key			int	not null,
 		is_classical		int	not null,
+		assay_key		int	not null,
+		old_result_key		int	not null,
 		result_key		int	not null,
 		ageMin			float	null,
 		ageMax			float	null,
 		_Stage_key		int	not null,
+		_Term_key		int	not null,
 		by_structure		int	not null,
 		by_marker		int	not null,
 		by_assay_type		int	not null,
@@ -256,8 +263,10 @@ def _buildKeystoneTable():
 	cmd1 = '''with results as (
 		select 1 as is_classical, a._Assay_key, r._Result_key,
 			s.ageMin, s.ageMax, rs._stage_key,
+			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
-			mrk.seqNum, aa.seqNum as atSeqNum, isr.is_detected
+			mrk.seqNum as mrkSeqNum,
+			aa.seqNum as atSeqNum, isr.is_detected
 		from gxd_specimen s,
 			gxd_assay a,
 			gxd_insituresult r,
@@ -277,10 +286,12 @@ def _buildKeystoneTable():
 			and a._Marker_key = mrk._Marker_key
 			and a._AssayType_key = aa._AssayType_key
 		union
-		select 1 as is_classical, g._Assay_key, g._GelLane_key,
+		select 1 as is_classical, g._Assay_key, g._GelLane_key as _Result_key,
 			g.ageMin, g.ageMax, gs._stage_key,
+			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
-			mrk.seqNum, aa.seqNum as atSeqNum, glk.is_detected
+			mrk.seqNum as mrkSeqNum,
+			aa.seqNum as atSeqNum, glk.is_detected
 		from gxd_gellane g,
 			gxd_gellanestructure gs,
 			gxd_assay a,
@@ -297,11 +308,14 @@ def _buildKeystoneTable():
 			and a._AssayType_key = aa._AssayType_key
 		)
 		insert into %s
-		select distinct row_number() over (order by _Assay_key, _Result_key, emapaSeqNum), 
-			is_classical,
-			row_number() over (order by _Assay_key, _Result_key, emapaSeqNum),
-			ageMin, ageMax, _stage_key, emapaSeqNum, seqNum, atSeqNum, is_detected
-		from results''' % (markerTable, assayTypeTable, structureTable,
+		select distinct row_number() over (order by _Assay_key, _Result_key, _Term_key), 
+			is_classical, _Assay_key, _Result_key,
+			row_number() over (order by _Assay_key, _Result_key, _Term_key),
+			ageMin, ageMax, _stage_key, _Term_key, emapaSeqNum,
+			mrkSeqNum, atSeqNum, is_detected
+		from results
+		order by _Assay_key, _Result_key, _Term_key''' % (
+			markerTable, assayTypeTable, structureTable,
 			isResultTable, markerTable, assayTypeTable,
 			structureTable, gelLaneTable, TMP_KEYSTONE)
 
@@ -309,9 +323,16 @@ def _buildKeystoneTable():
 	classicalRows = _getRowCount(TMP_KEYSTONE)
 	logger.info('Added %d classical rows' % classicalRows)
 
+	cmd1a = '''select assay_key, result_key, _Term_key, by_marker
+		from %s
+		order by assay_key, result_key, _Term_key''' % TMP_KEYSTONE
+	_logFirstRows('Classical rows in %s' % TMP_KEYSTONE, cmd1a, 10)
+
 	# Get to the set of unique sample data for each consolidated sample.
 	cmd2 = '''select distinct rsc._RNASeqCombined_key, s._Emapa_key,
-			s._Stage_key, mrk.seqNum, s.ageMin, s.ageMax,
+			s._Stage_key,
+			mrk.seqNum as mrkSeqNum,
+			s.ageMin, s.ageMax,
 			case 
 			when level.term = 'Below Cutoff' then 0
 			else 1
@@ -328,26 +349,44 @@ def _buildKeystoneTable():
 	logger.info('Added %d rows to rscmap table' % _getRowCount('rscmap'))
 	createIndex('rscmap', '_Emapa_key')
 	
-	cmd3 = 'select max(seqNum) from %s' % assayTypeTable
+	cmd2a = '''select _RNASeqCombined_key, _Emapa_key, _Stage_key, mrkSeqNum
+		from rscmap
+		order by 1, 2, 3'''
+	_logFirstRows('Rows from rscmap', cmd2a, 10)
+
+	cmd3 = 'select max(_AssayType_key) from %s' % assayTypeTable
 	cols, rows = dbAgnostic.execute(cmd3)
 	rnaseq = rows[0][0]
 
+	cmd4 = '''select seqNum
+		from %s
+		where _AssayType_key = %s''' %(assayTypeTable, rnaseq)
+	cols, rows = dbAgnostic.execute(cmd4)
+	rnaSeqType = rows[0][0]
+
 	# Insert RNA-Seq rows into the keystone table
-	cmd4 = '''insert into tmp_keystone
+	cmd5 = '''insert into tmp_keystone
 		select distinct %d + rm._RNASeqCombined_key, 0,
+			rm._RNASeqCombined_key,
+			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key, rm.ageMin, rm.ageMax,
-			rm._Stage_key, emapa.seqNum, rm.seqNum, aa.seqNum,
-			rm.is_detected
+			rm._Stage_key, rm._Emapa_key, emapa.seqNum,
+			rm.mrkSeqNum, %d, rm.is_detected
 		from rscmap rm,
-			%s aa,
 			%s emapa
 		where rm._Emapa_key = emapa._Term_key
-			and 99 = aa._AssayType_key''' % (classicalRows,
-				assayTypeTable, structureTable)
-	dbAgnostic.execute(cmd4)
+		order by rm._RNASeqCombined_key, rm.mrkSeqNum''' % (
+			classicalRows, rnaSeqType, structureTable)
+	dbAgnostic.execute(cmd5)
 
-	rnaseqRows = _getRowCount(TMP_KEYSTONE, 'where by_assay_type = %d' % rnaseq)
+	rnaseqRows = _getRowCount(TMP_KEYSTONE) - classicalRows
 	logger.info('Added %d RNA-Seq rows' % rnaseqRows) 
+
+	cmd5a = '''select assay_key, result_key, _Term_key, by_marker
+		from %s
+		where is_classical = 0
+		order by assay_key, result_key, _Term_key''' % TMP_KEYSTONE
+	_logFirstRows('RNA-Seq rows in %s' % TMP_KEYSTONE, cmd5a, 10)
 
 	setExists(TMP_KEYSTONE)
 	logger.info('Done building: %s' % TMP_KEYSTONE)
@@ -398,6 +437,12 @@ def _buildMarkerSeqnumTable():
 
 	createIndex(TMP_MARKER_SEQNUM, '_Marker_key', True)
 
+	cmd2 = '''select s.seqNum, s._Marker_key, m.symbol
+		from %s s, mrk_marker m
+		where s._Marker_key = m._Marker_key
+		order by s.seqNum''' % TMP_MARKER_SEQNUM
+	_logFirstRows(TMP_MARKER_SEQNUM, cmd2, 10)
+
 	setExists(TMP_MARKER_SEQNUM)
 	logger.info('Done building: %s' % TMP_MARKER_SEQNUM)
 	return
@@ -434,6 +479,9 @@ def _buildAssayTypeSeqnumTable():
 	logger.info('Loaded table with %d rows' % _getRowCount(TMP_ASSAYTYPE_SEQNUM))
 
 	createIndex(TMP_ASSAYTYPE_SEQNUM, '_AssayType_key', True)
+
+	cmd2 = 'select seqNum, _AssayType_key from %s' % TMP_ASSAYTYPE_SEQNUM
+	_logFirstRows(TMP_ASSAYTYPE_SEQNUM, cmd2, 20)
 
 	setExists(TMP_ASSAYTYPE_SEQNUM)
 	logger.info('Done building: %s' % TMP_ASSAYTYPE_SEQNUM)
@@ -486,7 +534,51 @@ def _buildStructureSeqnumTable():
 
 	createIndex(TMP_STRUCTURE_SEQNUM, '_Term_key', True)
 
+	cmd2 = '''select s.seqNum, s._Term_key, t.term
+		from %s s, voc_term t
+		where s._Term_key = t._Term_key
+		order by s.seqNum''' % TMP_STRUCTURE_SEQNUM
+	_logFirstRows(TMP_STRUCTURE_SEQNUM, cmd2, 10)
+
 	setExists(TMP_STRUCTURE_SEQNUM)
 	logger.info('Done building: %s' % TMP_STRUCTURE_SEQNUM)
 	return
 
+def _buildSortedTable(tableName, sortString):
+	# returns the tableName once it has been created and populated
+
+	keystone = getKeystoneTable()
+
+	logger.info('Began building: %s' % tableName)
+
+	cmd0 = '''create temporary table %s (
+		uni_key			int	not null,
+		is_classical		int	not null,
+		result_key		int	not null,
+		ageMin			float	null,
+		ageMax			float	null,
+		_Stage_key		int	not null,
+		by_structure		int	not null,
+		by_marker		int	not null,
+		by_assay_type		int	not null,
+		is_detected		int	not null,
+		seqNum			int	not null
+		)''' % tableName
+
+	dbAgnostic.execute(cmd0)
+	logger.info('Created temp table: %s' % tableName)
+
+	cmd1 = '''insert into %s
+		select uni_key, is_classical, result_key, ageMin, ageMax,
+			_Stage_key, by_structure, by_marker, by_assay_type,
+			is_detected, row_number() over (order by %s)
+		from %s
+		order by %s''' % (tableName, sortString, keystone, sortString)
+
+	dbAgnostic.execute(cmd1)
+	logger.info('Populated: %s' % tableName)
+
+	setExists(tableName)
+	logger.info('Done building: %s' % tableName)
+	dbAgnostic.commit()
+	return tableName
