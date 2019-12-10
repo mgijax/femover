@@ -80,3 +80,19 @@ def getExperimentIDs(onlyPrimaryIDs = False):
                     %s''' % (getExperimentTempTable(), C.MGITYPE_EXPERIMENT, preferredClause)
                     
     return dbAgnostic.execute(cmd0)
+
+def getExperimentIDsAsList(onlyPrimaryIDs = False):
+    # Take output from getExperimentIDs() and package it into a list of dictionaries to be
+    # returned.
+    
+    cols, rows = getExperimentIDs(onlyPrimaryIDs)
+    out = []
+    
+    for row in rows:
+        id = {}
+        c = 0
+        for col in cols:
+            id[col] = row[c]
+            c = c + 1
+        out.append(id)
+    return out

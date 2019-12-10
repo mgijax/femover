@@ -29,6 +29,7 @@ usage()
     echo "    -s : Sequences"
     echo "    -S : Strains"
     echo "    -r : References"
+    echo "    -u : Universal expression data (classical + RNA-Seq)"
     echo "    -v : Vocabularies"
     echo "    -x : eXpression (GXD Data plus GXD Literature Index)"
     echo "    -X : high-throughput expression data (from ArrayExpress)"
@@ -58,7 +59,7 @@ export TARGET_TYPE
 
 # handle the other (optional) parameters
 FLAGS=""
-POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -M -n -o -p -s -t -r -v -x -X -G -S -Z"
+POSSIBLE_FLAGS="-a -A -b -c -C -d -g -h -i -m -M -n -o -p -s -t -r -v -x -X -G -S -u -Z"
 skipPostProcess=0
 while [ $# -gt 0 ]; do
     found=0

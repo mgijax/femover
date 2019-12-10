@@ -7,6 +7,9 @@ import logger
 import GXDUniUtils
 import OutputFile
 
+from expression_ht import experiments
+GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
+
 # first - build the needed keystone table
 keystoneTable = GXDUniUtils.getKeystoneTable()
 

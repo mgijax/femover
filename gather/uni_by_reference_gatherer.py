@@ -1,6 +1,6 @@
 #!/usr/local/bin/python
 # 
-# gathers data for the 'uni_by_age' table in the front-end database
+# gathers data for the 'uni_by_reference' table in the front-end database
 
 import Gatherer
 import logger
@@ -12,13 +12,13 @@ GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
 
 # fields we can order by
 orderBy = [
+	'by_reference',
+	'by_marker',
+	'by_assay_type',
 	'ageMin',
 	'ageMax',
 	'by_structure',
 	'_Stage_key',
-	'is_detected desc',
-	'by_marker',
-	'by_assay_type',
 	'uni_key'
 ]
 
@@ -27,8 +27,8 @@ sortedTable = GXDUniUtils.getSortedTable('sorted_table', ', '.join(orderBy))
 
 ###--- Classes ---###
 
-class ByAgeGatherer (Gatherer.ChunkGatherer):
-	# Is: a data gatherer for the uni_by_age table
+class ByReferenceGatherer (Gatherer.ChunkGatherer):
+	# Is: a data gatherer for the uni_by_reference table
 	# Has: queries to execute against the source database
 	# Does: queries the source database for primary data for both classical
 	#	and RNA-Seq expression results, collates results, writes
@@ -65,10 +65,10 @@ fieldOrder = [
 	]
 
 # prefix for the filename of the output file
-filenamePrefix = 'uni_by_age'
+filenamePrefix = 'uni_by_reference'
 
-# global instance of a ByAgeGatherer
-gatherer = ByAgeGatherer (filenamePrefix, fieldOrder, cmds)
+# global instance of a ByReferenceGatherer
+gatherer = ByReferenceGatherer (filenamePrefix, fieldOrder, cmds)
 
 ###--- main program ---###
 

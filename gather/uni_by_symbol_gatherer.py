@@ -7,6 +7,9 @@ import logger
 import GXDUniUtils
 import OutputFile
 
+from expression_ht import experiments
+GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
+
 # fields we can order by
 orderBy = [
 	'by_marker',

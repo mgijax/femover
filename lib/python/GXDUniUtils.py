@@ -11,6 +11,10 @@ import VocabSorter
 
 ###--- Global Variables ---###
 
+# List of dictionaries, each of which describes an RNA-Seq experiment ID with at least
+# these fields:  _Experiment_key, accID
+EXPT_ID_LIST = None
+
 # This temporary table maps from a classical result key or an RNA-Seq
 # consolidated measurement key to its corresponding universal key (uni_key)
 # and contains values needed for sorting the results in various ways.
@@ -36,6 +40,14 @@ TMP_GELLANE_DETECTED = 'tmp_gellane_detected'
 # that indicates whether expression was detected (1) or not (0).
 TMP_ISRESULT_DETECTED = 'tmp_isresult_detected'
 
+# This temporary table maps from a reference key to a precomputed sequence
+# integer sequence number (sorted by J: number).
+TMP_REFERENCE = 'tmp_reference'
+
+# This temporary table maps from an RNA-Seq experiment key to a precomputed sequence
+# integer sequence number (sorted by experiment ID number).
+TMP_RNASEQ_ID = 'tmp_rnaseq_id'
+
 # Dictionary containing as keys the names of temp tables already produced.
 EXISTING = {}
 
@@ -44,6 +56,13 @@ EXISTING = {}
 INDEX_COUNT = 0
 
 ###--- Public Functions ---###
+
+def setExptIDList(idList):
+	# set the given idList for use in sorting by RNA-Seq experiment IDs as reference IDs.
+
+	global EXPT_ID_LIST
+	EXPT_ID_LIST = idList
+	return
 
 def getSortedTable(tableName, sortString):
 	# Create a sorted table with the given 'tableName', with columns
@@ -85,6 +104,16 @@ def getAssayTypeSeqnumTable():
 	if not exists(TMP_ASSAYTYPE_SEQNUM):
 		_buildAssayTypeSeqnumTable()
 	return TMP_ASSAYTYPE_SEQNUM
+
+def getInSituResultTable():
+	if not exists(TMP_ISRESULT_DETECTED):
+		_getInSituResultTable()
+	return TMP_ISRESULT_DETECTED
+
+def getGelLaneTable():
+	if not exists(TMP_GELLANE_DETECTED):
+		_getGelLaneTable()
+	return TMP_GELLANE_DETECTED
 
 def getStructureSeqnumTable():
 	# get the name of the (EMAPA) structure sequence number table, creating
@@ -129,6 +158,13 @@ def _getRowCount(name, whereClause = ''):
 	cols, rows = dbAgnostic.execute(cmd)
 	return rows[0][0]
 
+def _getMaxValue(table, field, whereClause = ''):
+	# get the count of rows for the given table, including an optional
+	# WHERE clause (if specified)
+	cmd = 'select max(%s) from %s %s' % (field, table, whereClause)
+	cols, rows = dbAgnostic.execute(cmd)
+	return rows[0][0]
+
 def _getInSituResultTable():
 	# Build the cache table of "is expressed" values for in situ results,
 	# returning the table's name once it's been built.
@@ -158,7 +194,10 @@ def _getInSituResultTable():
 			and gs.strength not in ('Absent', 'Not Applicable') )
 		group by 1)
 		insert into %s
-		select _Result_key, positiveCount
+		select _Result_key, case
+			when positiveCount = 0 then 0
+			else 1
+			end
 		from positiveCounts''' % TMP_ISRESULT_DETECTED
 
 	dbAgnostic.execute(cmd1)
@@ -169,6 +208,81 @@ def _getInSituResultTable():
 	logger.info('Done building: %s' % TMP_ISRESULT_DETECTED)
 	return TMP_ISRESULT_DETECTED
 
+def _getReferenceTable():
+	# Build and get a cache table of reference keys and precomputed sequence
+	# numbers for ordering them by J: number.  Return the table's name once
+	# it's built.
+	
+	if exists(TMP_REFERENCE):
+		return TMP_REFERENCE
+	
+	cmd1 = 'drop table if exists %s' % TMP_REFERENCE
+	dbAgnostic.execute(cmd1)
+
+	logger.info('Began building: %s' % TMP_REFERENCE)
+	
+	cmd = '''select a._Object_key as _Refs_key, a.numericPart as seqNum
+		into %s
+		from acc_accession a
+		where a._MGIType_key = 1
+			and a._LogicalDB_key = 1
+			and a.preferred = 1
+			and a.prefixPart = 'J:'
+			and exists (select 1 from gxd_assay g where g._Refs_key = a._Object_key)
+	''' % TMP_REFERENCE
+	dbAgnostic.execute(cmd)
+	
+	createIndex(TMP_REFERENCE, '_Refs_key')
+	logger.info('Filled and indexed table with %d rows' % _getRowCount(TMP_REFERENCE))
+	
+	logger.info('Done building: %s' % TMP_REFERENCE) 
+	setExists(TMP_REFERENCE)
+	return TMP_REFERENCE
+
+def _getRnaSeqExptTable():
+	# Build and get a cache table of RNA-Seq experiments and their sequence numbers
+	# (for sorting by the reference column, which uses experiment IDs for RNA-Seq).
+	
+	if exists(TMP_RNASEQ_ID):
+		return TMP_RNASEQ_ID
+	
+	if EXPT_ID_LIST == None:
+		raise Exception('EXPT_ID_LIST is not defined.  Must call setExptIDList().')
+
+	# will need other references to see what the max sequence number already is (so we
+	# can put RNA-Seq experiments after it)
+	referenceTable = _getReferenceTable()
+
+	toSort = []
+	for id in EXPT_ID_LIST:
+		toSort.append ( (id['_experiment_key'], id['accid']) )
+	toSort.sort(_symbolCompare)
+	logger.info('Sorted experiment IDs')
+
+	toLoad = []
+	seqNum = _getMaxValue(referenceTable, 'seqNum')
+	for (key, accID) in toSort:
+		seqNum = seqNum + 1
+		toLoad.append( (key, seqNum) )
+	logger.info('Built ID list to batch load')
+
+	logger.info('Began building: %s' % TMP_RNASEQ_ID)
+	
+	cmd0 = '''create temporary table %s (
+		_Experiment_key	int	not null,
+		seqNum			int	not null
+		)''' % TMP_RNASEQ_ID
+	dbAgnostic.execute(cmd0)
+	
+	dbAgnostic.batchInsert(TMP_RNASEQ_ID, toLoad)
+
+	createIndex(TMP_RNASEQ_ID, '_Experiment_key')
+	logger.info('Filled and indexed table with %d rows' % _getRowCount(TMP_RNASEQ_ID))
+
+	logger.info('Done building: %s' % TMP_RNASEQ_ID)
+	setExists(TMP_RNASEQ_ID)
+	return TMP_RNASEQ_ID
+	
 def _getGelLaneTable():
 	# Build the cache table of "is expressed" values for gel lanes,
 	# returning the table's name once it's been built.
@@ -201,11 +315,13 @@ def _getGelLaneTable():
 		group by 1
 		)
 		insert into %s
-		select _GelLane_key, case
-			when positiveCount = 0 then 0
+		select g._GelLane_key, case
+			when p.positiveCount = 0 then 0
+			when p.positiveCount is null then 0
 			else 1
 			end
-		from positiveCounts''' % TMP_GELLANE_DETECTED
+		from gxd_gellane g
+        left outer join positiveCounts p on (g._GelLane_key = p._GelLane_key)''' % TMP_GELLANE_DETECTED
 	dbAgnostic.execute(cmd1)
 	createIndex(TMP_GELLANE_DETECTED, '_GelLane_key')
 	logger.info("Filled and indexed table")
@@ -238,6 +354,7 @@ def _buildKeystoneTable():
 	structureTable = getStructureSeqnumTable()
 	gelLaneTable = _getGelLaneTable()
 	isResultTable = _getInSituResultTable()
+	referenceTable = _getReferenceTable()
 
 	logger.info('Began building: %s' % TMP_KEYSTONE)
 
@@ -254,7 +371,8 @@ def _buildKeystoneTable():
 		by_structure		int	not null,
 		by_marker		int	not null,
 		by_assay_type		int	not null,
-		is_detected		int	not null
+		is_detected		int	not null,
+		by_reference	int	not null
 		)''' % TMP_KEYSTONE
 
 	dbAgnostic.execute(cmd0)
@@ -266,7 +384,7 @@ def _buildKeystoneTable():
 			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
 			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, isr.is_detected
+			aa.seqNum as atSeqNum, isr.is_detected, a._Refs_key
 		from gxd_specimen s,
 			gxd_assay a,
 			gxd_insituresult r,
@@ -282,7 +400,7 @@ def _buildKeystoneTable():
 			and s._Assay_key = a._Assay_key
 			and rs._Emapa_Term_key = emapa._Term_key
 			and struct._Term_key = emapa._Term_key
-			and a._AssayType_key not in (10,11)
+			and exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key and e.isForGxd = 1)
 			and a._Marker_key = mrk._Marker_key
 			and a._AssayType_key = aa._AssayType_key
 		union
@@ -291,7 +409,7 @@ def _buildKeystoneTable():
 			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
 			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, glk.is_detected
+			aa.seqNum as atSeqNum, glk.is_detected, a._Refs_key
 		from gxd_gellane g,
 			gxd_gellanestructure gs,
 			gxd_assay a,
@@ -306,18 +424,20 @@ def _buildKeystoneTable():
 			and gs._emapa_term_key = emapa._Term_key
 			and a._Marker_key = mrk._Marker_key
 			and a._AssayType_key = aa._AssayType_key
+			and exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key and e.isForGXD = 1)
 		)
 		insert into %s
-		select distinct row_number() over (order by _Assay_key, _Result_key, _Term_key), 
-			is_classical, _Assay_key, _Result_key,
-			row_number() over (order by _Assay_key, _Result_key, _Term_key),
-			ageMin, ageMax, _stage_key, _Term_key, emapaSeqNum,
-			mrkSeqNum, atSeqNum, is_detected
-		from results
-		order by _Assay_key, _Result_key, _Term_key''' % (
+		select distinct row_number() over (order by r._Assay_key, r._Result_key, r._Term_key), 
+			r.is_classical, r._Assay_key, r._Result_key,
+			row_number() over (order by r._Assay_key, r._Result_key, r._Term_key),
+			r.ageMin, r.ageMax, r._stage_key, r._Term_key, r.emapaSeqNum,
+			r.mrkSeqNum, r.atSeqNum, r.is_detected, t.seqNum
+		from results r, %s t
+		where r._Refs_key = t._Refs_key
+		order by r._Assay_key, r._Result_key, r._Term_key''' % (
 			markerTable, assayTypeTable, structureTable,
 			isResultTable, markerTable, assayTypeTable,
-			structureTable, gelLaneTable, TMP_KEYSTONE)
+			structureTable, gelLaneTable, TMP_KEYSTONE, referenceTable)
 
 	dbAgnostic.execute(cmd1)
 	classicalRows = _getRowCount(TMP_KEYSTONE)
@@ -328,6 +448,15 @@ def _buildKeystoneTable():
 		order by assay_key, result_key, _Term_key''' % TMP_KEYSTONE
 	_logFirstRows('Classical rows in %s' % TMP_KEYSTONE, cmd1a, 10)
 
+	cmd1b = '''select count(1) from %s k, gxd_assay a
+		where k.assay_key = a._Assay_key
+			and a._AssayType_key in (%s)'''
+	cols, rows = dbAgnostic.execute(cmd1b % (TMP_KEYSTONE, '1, 6, 9'))
+	logger.info(' - %d In situ rows' % rows[0][0])
+
+	cols, rows = dbAgnostic.execute(cmd1b % (TMP_KEYSTONE, '2, 3, 4, 5, 8'))
+	logger.info(' - %d Gel rows' % rows[0][0])
+
 	# Get to the set of unique sample data for each consolidated sample.
 	cmd2 = '''select distinct rsc._RNASeqCombined_key, s._Emapa_key,
 			s._Stage_key,
@@ -336,7 +465,8 @@ def _buildKeystoneTable():
 			case 
 			when level.term = 'Below Cutoff' then 0
 			else 1
-			end as is_detected
+			end as is_detected,
+			s._Experiment_key
 		into temporary table rscmap
 		from gxd_htsample_rnaseq rsc, gxd_htsample s, %s mrk,
 			gxd_htsample_rnaseqcombined c, voc_term level
@@ -364,19 +494,25 @@ def _buildKeystoneTable():
 	cols, rows = dbAgnostic.execute(cmd4)
 	rnaSeqType = rows[0][0]
 
+	# get the ordering table for experiment IDs
+	exptOrderingTable = _getRnaSeqExptTable()
+
 	# Insert RNA-Seq rows into the keystone table
-	cmd5 = '''insert into tmp_keystone
+	cmd5 = '''insert into %s
 		select distinct %d + rm._RNASeqCombined_key, 0,
 			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key, rm.ageMin, rm.ageMax,
 			rm._Stage_key, rm._Emapa_key, emapa.seqNum,
-			rm.mrkSeqNum, %d, rm.is_detected
+			rm.mrkSeqNum, %d, rm.is_detected, expt.seqNum
 		from rscmap rm,
-			%s emapa
+			%s emapa,
+			%s expt
 		where rm._Emapa_key = emapa._Term_key
+			and rm._Experiment_key = expt._Experiment_key
 		order by rm._RNASeqCombined_key, rm.mrkSeqNum''' % (
-			classicalRows, rnaSeqType, structureTable)
+			TMP_KEYSTONE, classicalRows, rnaSeqType, structureTable,
+			exptOrderingTable)
 	dbAgnostic.execute(cmd5)
 
 	rnaseqRows = _getRowCount(TMP_KEYSTONE) - classicalRows
@@ -506,11 +642,7 @@ def _buildStructureSeqnumTable():
 	# classical experiments
 	cmd0 = '''select t._Term_key
 		from voc_term t
-		where t._Vocab_key = 90
-			and (exists (select(1) from gxd_htsample s
-				where t._Term_key = s._Emapa_key)
-				or exists (select(1) from gxd_expression e
-				where t._Term_key = e._Emapa_Term_key) )'''
+		where t._Vocab_key = 90'''
 
 	cols, rows = dbAgnostic.execute(cmd0)
 	keyCol = dbAgnostic.columnNumber(cols, '_Term_key')
