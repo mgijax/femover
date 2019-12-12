@@ -141,16 +141,6 @@ def createIndex(table, field, isUnique = False):
 
 ###--- Private Functions ---###
 
-def _logFirstRows(title, cmd, rowCount = 5):
-	# execute 'cmd' and write the first 'rowCount' rows to the log file,
-	# headed by the given 'title'
-
-	logger.info('First %d rows for "%s"' % (rowCount, title))
-	cols, rows = dbAgnostic.execute(cmd + ' limit %d' % rowCount)
-	for row in rows:
-		logger.info(str(row))
-	return
-
 def _getRowCount(name, whereClause = ''):
 	# get the count of rows for the given table, including an optional
 	# WHERE clause (if specified)
@@ -443,11 +433,6 @@ def _buildKeystoneTable():
 	classicalRows = _getRowCount(TMP_KEYSTONE)
 	logger.info('Added %d classical rows' % classicalRows)
 
-	cmd1a = '''select assay_key, result_key, _Term_key, by_marker
-		from %s
-		order by assay_key, result_key, _Term_key''' % TMP_KEYSTONE
-	_logFirstRows('Classical rows in %s' % TMP_KEYSTONE, cmd1a, 10)
-
 	cmd1b = '''select count(1) from %s k, gxd_assay a
 		where k.assay_key = a._Assay_key
 			and a._AssayType_key in (%s)'''
@@ -479,11 +464,6 @@ def _buildKeystoneTable():
 	logger.info('Added %d rows to rscmap table' % _getRowCount('rscmap'))
 	createIndex('rscmap', '_Emapa_key')
 	
-	cmd2a = '''select _RNASeqCombined_key, _Emapa_key, _Stage_key, mrkSeqNum
-		from rscmap
-		order by 1, 2, 3'''
-	_logFirstRows('Rows from rscmap', cmd2a, 10)
-
 	cmd3 = 'select max(_AssayType_key) from %s' % assayTypeTable
 	cols, rows = dbAgnostic.execute(cmd3)
 	rnaseq = rows[0][0]
@@ -517,12 +497,6 @@ def _buildKeystoneTable():
 
 	rnaseqRows = _getRowCount(TMP_KEYSTONE) - classicalRows
 	logger.info('Added %d RNA-Seq rows' % rnaseqRows) 
-
-	cmd5a = '''select assay_key, result_key, _Term_key, by_marker
-		from %s
-		where is_classical = 0
-		order by assay_key, result_key, _Term_key''' % TMP_KEYSTONE
-	_logFirstRows('RNA-Seq rows in %s' % TMP_KEYSTONE, cmd5a, 10)
 
 	setExists(TMP_KEYSTONE)
 	logger.info('Done building: %s' % TMP_KEYSTONE)
@@ -573,12 +547,6 @@ def _buildMarkerSeqnumTable():
 
 	createIndex(TMP_MARKER_SEQNUM, '_Marker_key', True)
 
-	cmd2 = '''select s.seqNum, s._Marker_key, m.symbol
-		from %s s, mrk_marker m
-		where s._Marker_key = m._Marker_key
-		order by s.seqNum''' % TMP_MARKER_SEQNUM
-	_logFirstRows(TMP_MARKER_SEQNUM, cmd2, 10)
-
 	setExists(TMP_MARKER_SEQNUM)
 	logger.info('Done building: %s' % TMP_MARKER_SEQNUM)
 	return
@@ -615,9 +583,6 @@ def _buildAssayTypeSeqnumTable():
 	logger.info('Loaded table with %d rows' % _getRowCount(TMP_ASSAYTYPE_SEQNUM))
 
 	createIndex(TMP_ASSAYTYPE_SEQNUM, '_AssayType_key', True)
-
-	cmd2 = 'select seqNum, _AssayType_key from %s' % TMP_ASSAYTYPE_SEQNUM
-	_logFirstRows(TMP_ASSAYTYPE_SEQNUM, cmd2, 20)
 
 	setExists(TMP_ASSAYTYPE_SEQNUM)
 	logger.info('Done building: %s' % TMP_ASSAYTYPE_SEQNUM)
@@ -665,12 +630,6 @@ def _buildStructureSeqnumTable():
 	logger.info('Loaded table with %d rows' % _getRowCount(TMP_STRUCTURE_SEQNUM))
 
 	createIndex(TMP_STRUCTURE_SEQNUM, '_Term_key', True)
-
-	cmd2 = '''select s.seqNum, s._Term_key, t.term
-		from %s s, voc_term t
-		where s._Term_key = t._Term_key
-		order by s.seqNum''' % TMP_STRUCTURE_SEQNUM
-	_logFirstRows(TMP_STRUCTURE_SEQNUM, cmd2, 10)
 
 	setExists(TMP_STRUCTURE_SEQNUM)
 	logger.info('Done building: %s' % TMP_STRUCTURE_SEQNUM)
