@@ -23,15 +23,14 @@ createStatement = '''CREATE TABLE %s  (
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'result_key' : 'create index %s on %s (result_key)',
-	'is_classical' : 'create index %s on %s (is_classical)',
+	'is_classical' : 'create index %s on %s (is_classical)'
 	}
 
 # column name -> (related table, column in related table)
 keys = {}
 
 # index used to cluster data in the table
-clusteredIndex = None
+clusteredIndex = ('result_key', 'create index %s on %s (result_key)')
 
 # comments describing the table, columns, and indexes
 comments = {
