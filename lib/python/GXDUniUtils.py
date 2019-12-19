@@ -1,4 +1,4 @@
-# Name: GXDUniUtils.py
+#i Name: GXDUniUtils.py
 # Purpose: Contains code for bringing classical expression results and RNA-Seq
 #	consolidated sample measurements together into a set of universal
 #	expression results.  These eventually feed into the gxdResult Solr index
@@ -156,8 +156,10 @@ def _getMaxValue(table, field, whereClause = ''):
 	return rows[0][0]
 
 def _getInSituResultTable():
-	# Build the cache table of "is expressed" values for in situ results,
-	# returning the table's name once it's been built.
+	# Build the cache table of "is detected" values for in situ results,
+	# returning the table's name once it's been built.  The table maps from
+	# a _Result_key to a 0 (ambiguous, not specified), 1 (no), or 2 (yes) flag
+	# that can be sorted by priority in descending order.
 
 	if exists(TMP_ISRESULT_DETECTED):
 		return TMP_ISRESULT_DETECTED
@@ -175,21 +177,15 @@ def _getInSituResultTable():
 	dbAgnostic.execute(cmd0)
 	logger.info("Created table");
 
-	cmd1 = '''with positiveCounts as (
-		select gi._Result_key,
-			count(distinct gs._Strength_key) as positiveCount
-		from gxd_insituresult gi
-		left outer join gxd_strength gs on (
-			gi._Strength_key = gs._Strength_key
-			and gs.strength not in ('Absent', 'Not Applicable') )
-		group by 1)
-		insert into %s
-		select _Result_key, case
-			when positiveCount = 0 then 0
-			else 1
-			end
-		from positiveCounts''' % TMP_ISRESULT_DETECTED
-
+	cmd1 = '''insert into %s
+		select g._Result_key, case
+			when s.strength in ('Ambiguous', 'Not Specified') then 0
+			when s.strength in ('Absent', 'Not Applicable') then 1
+			else 2
+			end as is_detected
+		from gxd_insituresult g, gxd_strength s
+		where g._Strength_key = s._Strength_key''' % TMP_ISRESULT_DETECTED
+	
 	dbAgnostic.execute(cmd1)
 	createIndex(TMP_ISRESULT_DETECTED, '_Result_key')
 	logger.info("Filled and indexed table")
@@ -200,7 +196,7 @@ def _getInSituResultTable():
 
 def _getReferenceTable():
 	# Build and get a cache table of reference keys and precomputed sequence
-	# numbers for ordering them by J: number.  Return the table's name once
+	# numbers for ordering them by author.  Return the table's name once
 	# it's built.
 	
 	if exists(TMP_REFERENCE):
@@ -211,16 +207,40 @@ def _getReferenceTable():
 
 	logger.info('Began building: %s' % TMP_REFERENCE)
 	
-	cmd = '''select a._Object_key as _Refs_key, a.numericPart as seqNum
-		into %s
-		from acc_accession a
-		where a._MGIType_key = 1
-			and a._LogicalDB_key = 1
-			and a.preferred = 1
-			and a.prefixPart = 'J:'
-			and exists (select 1 from gxd_assay g where g._Refs_key = a._Object_key)
-	''' % TMP_REFERENCE
-	dbAgnostic.execute(cmd)
+	cmd0 = '''create temporary table %s (
+		_Refs_key	int	not null,
+		seqNum		int	not null
+		)''' % TMP_REFERENCE
+	dbAgnostic.execute(cmd0)
+
+	# Note the fallback here to ordering by title if a reference has a null authors field; currently
+	# there are no such papers cited in GXD data, but we have the fallback just in case.
+	cmd1 = '''select _Refs_key, case
+			when authors is not null then authors
+			else title
+			end as authors
+		from bib_refs r
+		where exists (select 1 from gxd_expression e where e._Refs_key = r._Refs_key)'''
+
+	cols, rows = dbAgnostic.execute(cmd1)
+	keyCol = dbAgnostic.columnNumber(cols, '_Refs_key')
+	authorsCol = dbAgnostic.columnNumber(cols, 'authors')
+
+	toSort = []
+	for row in rows:
+		toSort.append( (row[keyCol], row[authorsCol]) )
+	logger.info('Got %d references' % len(toSort))
+
+	toSort.sort(_symbolCompare)
+	logger.info('Sorted %d references by authors' % len(toSort))
+
+	toLoad = []
+	seqNum = 0
+	for (key, authors) in toSort:
+		seqNum = seqNum + 1
+		toLoad.append( (key, seqNum) )
+
+	dbAgnostic.batchInsert(TMP_REFERENCE, toLoad)
 	
 	createIndex(TMP_REFERENCE, '_Refs_key')
 	logger.info('Filled and indexed table with %d rows' % _getRowCount(TMP_REFERENCE))
@@ -274,8 +294,10 @@ def _getRnaSeqExptTable():
 	return TMP_RNASEQ_ID
 	
 def _getGelLaneTable():
-	# Build the cache table of "is expressed" values for gel lanes,
-	# returning the table's name once it's been built.
+	# Build the cache table of "is detected" values for in gel lanes,
+	# returning the table's name once it's been built.  The table maps from
+	# a _GelLane_key to a 0 (ambiguous, not specified), 1 (no), or 2 (yes) flag
+	# that can be sorted by priority in descending order.
 
 	if exists(TMP_GELLANE_DETECTED):
 		return TMP_GELLANE_DETECTED
@@ -284,8 +306,8 @@ def _getGelLaneTable():
 
 	# Need to build a temp table with all gel lane keys and a flag to
 	# indicate whether there was expression detected in any of the bands
-	# for that lane.  Start each flag as "no" and upgrade to "yes" as
-	# needed.
+	# for that lane.  Start each flag as "ambiguous / not specified" (0)
+	# and upgrade to "no" (1) or "yes" (2) as needed.
 
 	cmd0 = '''create temporary table %s (
 		_GelLane_key	int	not null,
@@ -294,28 +316,41 @@ def _getGelLaneTable():
 	dbAgnostic.execute(cmd0)
 	logger.info("Created table");
 
-	cmd1 = '''with positiveCounts as (
-		select gl._GelLane_key,
-			count(distinct gb._GelBand_key) as positiveCount
-		from gxd_gellane gl
-		left outer join gxd_gelband gb on (gl._GelLane_key = gb._GelLane_key)
-		left outer join gxd_strength gs on (gb._Strength_key = gs._Strength_key)
-		where gs.strength not in ('Absent', 'Not Applicable')
-			or gb._GelBand_key is null
-		group by 1
-		)
-		insert into %s
-		select g._GelLane_key, case
-			when p.positiveCount = 0 then 0
-			when p.positiveCount is null then 0
-			else 1
-			end
-		from gxd_gellane g
-        left outer join positiveCounts p on (g._GelLane_key = p._GelLane_key)''' % TMP_GELLANE_DETECTED
+	# start as ambiguous / not specified (0)
+	cmd1 = '''insert into %s
+		select gl._GelLane_key, 0 as is_detected
+		from gxd_gellane gl''' % TMP_GELLANE_DETECTED
+		
 	dbAgnostic.execute(cmd1)
 	createIndex(TMP_GELLANE_DETECTED, '_GelLane_key')
 	logger.info("Filled and indexed table")
 
+	# upgrade those having absent or not applicable (1)
+	cmd2 = '''update %s
+		set is_detected = 1
+		where _GelLane_key in (select f._GelLane_key
+			from %s f, gxd_gelband gb, gxd_strength gs
+			where f._GelLane_key = gb._GelLane_key
+			and gb._Strength_key = gs._Strength_key
+			and gs.strength in ('Absent', 'Not Applicable')
+			)''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
+
+	dbAgnostic.execute(cmd2)
+	logger.info("Flagged negative expression")
+	
+	# further upgrade those having any other status (all positive expression) (2)
+	cmd3 = '''update %s
+		set is_detected = 2
+		where _GelLane_key in (select f._GelLane_key
+			from %s f, gxd_gelband gb, gxd_strength gs
+			where f._GelLane_key = gb._GelLane_key
+			and gb._Strength_key = gs._Strength_key
+			and gs.strength not in ('Absent', 'Not Applicable', 'Ambiguous', 'Not Specified')
+			)''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
+	
+	dbAgnostic.execute(cmd3)
+	logger.info("Flagged positive expression")
+	
 	setExists(TMP_GELLANE_DETECTED)
 	logger.info('Done building: %s' % TMP_GELLANE_DETECTED)
 	return TMP_GELLANE_DETECTED

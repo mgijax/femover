@@ -12,8 +12,8 @@ GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
 
 # fields we can order by
 orderBy = [
-	'by_structure',
 	'_Stage_key',
+	'by_structure',
 	'ageMin',
 	'ageMax',
 	'is_detected desc',

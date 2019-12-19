@@ -14,8 +14,8 @@ GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
 orderBy = [
 	'ageMin',
 	'ageMax',
-	'by_structure',
 	'_Stage_key',
+	'by_structure',
 	'is_detected desc',
 	'by_marker',
 	'by_assay_type',

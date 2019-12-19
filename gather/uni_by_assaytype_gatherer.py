@@ -16,8 +16,8 @@ orderBy = [
 	'by_marker',
 	'ageMin',
 	'ageMax',
-	'by_structure',
 	'_Stage_key',
+	'by_structure',
 	'is_detected desc',
 	'uni_key'
 ]

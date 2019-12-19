@@ -17,8 +17,8 @@ orderBy = [
 	'by_assay_type',
 	'ageMin',
 	'ageMax',
-	'by_structure',
 	'_Stage_key',
+	'by_structure',
 	'uni_key'
 ]
 
