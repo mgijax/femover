@@ -483,8 +483,8 @@ def _buildKeystoneTable():
 			mrk.seqNum as mrkSeqNum,
 			s.ageMin, s.ageMax,
 			case 
-			when level.term = 'Below Cutoff' then 0
-			else 1
+			when level.term = 'Below Cutoff' then 1
+			else 2
 			end as is_detected,
 			s._Experiment_key
 		into temporary table rscmap
