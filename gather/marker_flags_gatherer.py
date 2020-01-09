@@ -41,7 +41,14 @@ class MarkerFlagsGatherer (Gatherer.Gatherer):
 				if GXDUtils.isWildType(row[genotypeCol], row[assayCol]):
 					wildtype[markerKey] = 1
 		
-		logger.debug('Found %d markers with wildtype GXD data' % len(wildtype))
+		logger.debug('Found %d markers with classical wildtype GXD data' % len(wildtype))
+		
+		cols, rows = self.results[2]
+		for row in rows:
+			wildtype[row[0]] = 1
+
+		logger.debug('Found %d markers with RNA-Seq wildtype GXD data' % len(rows))
+		
 		return wildtype
 	
 	def collateResults(self):
@@ -88,9 +95,24 @@ cmds = [
 		from gxd_expression
 		where isForGXD = 1''',
 
-	# 2. all markers (ensuring that our new marker_flags table also has all markers)
+	# 2. markers associated with an RNA-Seq experiment using a wild-type genotype
+	'''with wildtype_samples as (
+		select s._Sample_key
+		from gxd_htsample s
+		where not exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
+		)
+		select m._Marker_key
+		from mrk_marker m
+		where m._Organism_key = 1
+			and exists (select 1
+				from gxd_htsample_rnaseq r, wildtype_samples s
+				where m._Marker_key = r._Marker_key
+				and r._Sample_key = s._Sample_key)''',
+
+	# 3. all markers (ensuring that our new marker_flags table also has all markers)
 	'''select m._Marker_key
 		from mrk_marker m''',
+		
 	]
 
 # order of fields (from the query results) to be written to the
