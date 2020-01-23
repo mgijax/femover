@@ -1188,7 +1188,7 @@ cmds = [
 		and vte._emapa_term_key = gs._emapa_term_key
 		and vte._stage_key = gs._stage_key
 		and struct._term_key = vte._term_key
-	order by g._Assay_key, b._GelBand_key, struct._Term_key
+	order by g._Assay_key, b._GelLane_key, struct._Term_key
 	''',
 
 	# 8. allele pairs for genotypes cited in GXD data
