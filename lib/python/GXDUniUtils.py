@@ -385,17 +385,18 @@ def _buildKeystoneTable():
 
 	cmd0 = '''create temporary table %s (
 		uni_key			int	not null,
-		is_classical		int	not null,
+		is_classical	int	not null,
+		assay_type_key	int	not null,
 		assay_key		int	not null,
-		old_result_key		int	not null,
+		old_result_key	int	not null,
 		result_key		int	not null,
 		ageMin			float	null,
 		ageMax			float	null,
 		_Stage_key		int	not null,
 		_Term_key		int	not null,
-		by_structure		int	not null,
+		by_structure	int	not null,
 		by_marker		int	not null,
-		by_assay_type		int	not null,
+		by_assay_type	int	not null,
 		is_detected		int	not null,
 		by_reference	int	not null
 		)''' % TMP_KEYSTONE
@@ -404,7 +405,7 @@ def _buildKeystoneTable():
 	logger.info('Created temp table: %s' % TMP_KEYSTONE)
 
 	cmd1 = '''with results as (
-		select 1 as is_classical, a._Assay_key, r._Result_key,
+		select 1 as is_classical, a._AssayType_key, a._Assay_key, r._Result_key,
 			s.ageMin, s.ageMax, rs._stage_key,
 			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
@@ -429,31 +430,29 @@ def _buildKeystoneTable():
 			and a._Marker_key = mrk._Marker_key
 			and a._AssayType_key = aa._AssayType_key
 		union
-		select 1 as is_classical, g._Assay_key, g._GelLane_key as _Result_key,
-			g.ageMin, g.ageMax, gs._stage_key,
+		select 1 as is_classical, e._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
+			e.ageMin, e.ageMax, e._stage_key,
 			emapa._Term_key,
 			emapa.seqNum as emapaSeqNum,
 			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, glk.is_detected, a._Refs_key
+			aa.seqNum as atSeqNum, glk.is_detected, e._Refs_key
 		from gxd_gellane g,
-			gxd_gellanestructure gs,
-			gxd_assay a,
+			gxd_expression e,
 			%s mrk,
 			%s aa,
 			%s emapa,
 			%s glk
 		where g._GelControl_key = 1
-			and g._Assay_key = a._Assay_key
-			and g._GelLane_key = gs._GelLane_key
+			and g._GelLane_key = e._GelLane_key
+			and e.isForGXD = 1
 			and g._GelLane_key = glk._GelLane_key
-			and gs._emapa_term_key = emapa._Term_key
-			and a._Marker_key = mrk._Marker_key
-			and a._AssayType_key = aa._AssayType_key
-			and exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key and e.isForGXD = 1)
+			and e._emapa_term_key = emapa._Term_key
+			and e._Marker_key = mrk._Marker_key
+			and e._AssayType_key = aa._AssayType_key
 		)
 		insert into %s
 		select distinct row_number() over (order by r._Assay_key, r._Result_key, r._Term_key), 
-			r.is_classical, r._Assay_key, r._Result_key,
+			r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
 			row_number() over (order by r._Assay_key, r._Result_key, r._Term_key),
 			r.ageMin, r.ageMax, r._stage_key, r._Term_key, r.emapaSeqNum,
 			r.mrkSeqNum, r.atSeqNum, r.is_detected, t.seqNum
@@ -514,7 +513,7 @@ def _buildKeystoneTable():
 
 	# Insert RNA-Seq rows into the keystone table
 	cmd5 = '''insert into %s
-		select distinct %d + rm._RNASeqCombined_key, 0,
+		select distinct %d + rm._RNASeqCombined_key, 0, 99,
 			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key, rm.ageMin, rm.ageMax,
@@ -679,14 +678,14 @@ def _buildSortedTable(tableName, sortString):
 
 	cmd0 = '''create temporary table %s (
 		uni_key			int	not null,
-		is_classical		int	not null,
+		is_classical	int	not null,
 		result_key		int	not null,
 		ageMin			float	null,
 		ageMax			float	null,
 		_Stage_key		int	not null,
-		by_structure		int	not null,
+		by_structure	int	not null,
 		by_marker		int	not null,
-		by_assay_type		int	not null,
+		by_assay_type	int	not null,
 		is_detected		int	not null,
 		seqNum			int	not null
 		)''' % tableName
