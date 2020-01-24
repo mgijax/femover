@@ -1150,7 +1150,7 @@ cmds = [
 		and vte._emapa_term_key = rs._emapa_term_key
 		and vte._stage_key = rs._stage_key
 		and struct._term_key = vte._term_key
-	order by s._Assay_key, r._Result_key, struct._Term_key
+	order by s._Assay_key, r._Result_key, rs._Stage_key, struct._Term_key
 	''', 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
@@ -1188,7 +1188,7 @@ cmds = [
 		and vte._emapa_term_key = gs._emapa_term_key
 		and vte._stage_key = gs._stage_key
 		and struct._term_key = vte._term_key
-	order by g._Assay_key, b._GelLane_key, struct._Term_key
+	order by g._Assay_key, b._GelLane_key, gs._Stage_key, struct._Term_key
 	''',
 
 	# 8. allele pairs for genotypes cited in GXD data

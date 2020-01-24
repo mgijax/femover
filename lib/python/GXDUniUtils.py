@@ -406,62 +406,51 @@ def _buildKeystoneTable():
 
 	cmd1 = '''with results as (
 		select 1 as is_classical, a._AssayType_key, a._Assay_key, r._Result_key,
-			s.ageMin, s.ageMax, rs._stage_key,
-			emapa._Term_key,
-			emapa.seqNum as emapaSeqNum,
-			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, isr.is_detected, a._Refs_key
+			s.ageMin, s.ageMax, rs._stage_key, rs._Emapa_Term_key as _Term_key,
+			a._Marker_key, isr.is_detected, a._Refs_key
 		from gxd_specimen s,
 			gxd_assay a,
 			gxd_insituresult r,
 			gxd_isresultstructure rs,
-			voc_term struct,
-			%s mrk,
-			%s aa,
-			%s emapa,
 			%s isr
 		where s._Specimen_key = r._Specimen_key
 			and r._Result_key = rs._Result_key
 			and r._Result_key = isr._Result_key
 			and s._Assay_key = a._Assay_key
-			and rs._Emapa_Term_key = emapa._Term_key
-			and struct._Term_key = emapa._Term_key
-			and exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key and e.isForGxd = 1)
-			and a._Marker_key = mrk._Marker_key
-			and a._AssayType_key = aa._AssayType_key
+			and exists (select 1 from gxd_expression e where s._Assay_key = e._Assay_key and e.isForGxd = 1)
 		union
-		select 1 as is_classical, e._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
-			e.ageMin, e.ageMax, e._stage_key,
-			emapa._Term_key,
-			emapa.seqNum as emapaSeqNum,
-			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, glk.is_detected, e._Refs_key
+		select 1 as is_classical, a._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
+			g.ageMin, g.ageMax, s._stage_key, s._Emapa_Term_key as _Term_key,
+			a._Marker_key, glk.is_detected, a._Refs_key
 		from gxd_gellane g,
-			gxd_expression e,
-			%s mrk,
-			%s aa,
-			%s emapa,
+			gxd_assay a,
+			gxd_gellanestructure s,
 			%s glk
 		where g._GelControl_key = 1
-			and g._GelLane_key = e._GelLane_key
-			and e.isForGXD = 1
+			and g._Assay_key = a._Assay_key
+			and g._GelLane_key = s._GelLane_key
+			and exists (select 1 from gxd_expression e where g._GelLane_key = e._GelLane_key and e.isForGXD = 1)
 			and g._GelLane_key = glk._GelLane_key
-			and e._emapa_term_key = emapa._Term_key
-			and e._Marker_key = mrk._Marker_key
-			and e._AssayType_key = aa._AssayType_key
 		)
 		insert into %s
-		select distinct row_number() over (order by r._Assay_key, r._Result_key, r._Term_key), 
+		select distinct row_number() over (order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key), 
 			r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
-			row_number() over (order by r._Assay_key, r._Result_key, r._Term_key),
-			r.ageMin, r.ageMax, r._stage_key, r._Term_key, r.emapaSeqNum,
-			r.mrkSeqNum, r.atSeqNum, r.is_detected, t.seqNum
-		from results r, %s t
-		where r._Refs_key = t._Refs_key
-		order by r._Assay_key, r._Result_key, r._Term_key''' % (
-			markerTable, assayTypeTable, structureTable,
-			isResultTable, markerTable, assayTypeTable,
-			structureTable, gelLaneTable, TMP_KEYSTONE, referenceTable)
+			row_number() over (order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key),
+			r.ageMin, r.ageMax, r._stage_key, r._Term_key, emapa.seqNum as emapaSeqNum,
+			mrk.seqNum as mrkSeqNum,
+			aa.seqNum as atSeqNum, r.is_detected, ref.seqNum
+		from results r,
+			%s ref,
+			%s emapa,
+			%s mrk,
+			%s aa
+		where r._Refs_key = ref._Refs_key
+			and r._Term_key = emapa._Term_key
+			and r._Marker_key = mrk._Marker_key
+			and r._AssayType_key = aa._AssayType_key
+		order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key''' % (
+			isResultTable, gelLaneTable, TMP_KEYSTONE,
+			referenceTable, structureTable, markerTable, assayTypeTable)
 
 	dbAgnostic.execute(cmd1)
 	classicalRows = _getRowCount(TMP_KEYSTONE)
