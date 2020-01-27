@@ -18,6 +18,7 @@ import ReferenceCitations
 import types
 import VocabSorter
 import GXDUtils
+import GXDUniUtils
 import OutputFile
 import gc
 
@@ -36,8 +37,8 @@ NEGATIVE_STRENGTHS = ['Absent']
 
 CACHE_SIZE = OutputFile.LARGE_CACHE
 
-# HERE:
-# -----
+CLASSICAL_KEY_TABLE = GXDUniUtils.getClassicalKeyTable()
+
 # Already garbage collected after processing query results.  Now need to use
 # factory to instantiate writers for the 5 output files, then switch to using
 # them.
@@ -486,6 +487,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		patternCol = Gatherer.columnNumber (cols, 'pattern')
 		specimenKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
+		assignedKeyCol = Gatherer.columnNumber(cols, '_Assigned_key')
 
 		for row in rows:
 			assayKey = row[assayCol]
@@ -498,7 +500,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				row[ageCol], row[strengthCol], row[resultCol],
 				emapsKey, row[ageMinCol],
 				row[ageMaxCol], row[patternCol],row[specimenKeyCol],
-				row[stageCol], row[structureCol] ])
+				row[stageCol], row[structureCol], row[assignedKeyCol] ])
 
 		logger.debug ('Got extra data for %d in situ assays' % \
 			len(extras))
@@ -526,6 +528,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
 		ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
 		gelLaneCol = Gatherer.columnNumber (cols, '_GelLane_key')
+		assignedKeyCol = Gatherer.columnNumber (cols, '_Assigned_key')
 
 		# as a pre-processing step, compute the strength for each
 		# gel lane / structure pair
@@ -582,13 +585,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 				row[ageCol], strength,
 				emapsKey, row[ageMinCol],
 				row[ageMaxCol],
-				row[stageCol], row[structureCol] ] )
+				row[stageCol], row[structureCol], row[assignedKeyCol] ] )
 		    else:
 			extras[row[assayCol]] = [ [ row[genotypeCol],
 				row[ageCol], strength,
 				emapsKey, row[ageMinCol],
 				row[ageMaxCol],
-				row[stageCol], row[structureCol] ] ]
+				row[stageCol], row[structureCol], row[assignedKeyCol] ] ]
 
 		logger.debug ('Got extra data for %d gel assays' % \
 			len(extras))
@@ -722,8 +725,6 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 		# now, we need to walk through our assays to populate the list
 		# of data for each table
 
-		newKey = 0		# unique key for each result
-
 		for [ assayKey, assayType, assayTypeKey, refsKey, markerKey, imagepaneKey,
 		    reporterGeneKey, isGel ] in assays:
 			
@@ -749,7 +750,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			if isGel:
 			    [ genotypeKey, age, strength,
 				emapsKey, ageMin, ageMax,
-				stage, structure ] = items
+				stage, structure, assignedKey ] = items
 
 			    pattern = None
 			    specimenKey = None
@@ -763,7 +764,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			    [ genotypeKey, age, strength, resultKey,
 				emapsKey, ageMin, ageMax,
 				pattern,specimenKey,
-				stage, structure ] = items
+				stage, structure, assignedKey ] = items
 
 			    if panesForInSituResults.has_key(resultKey):
 				panes = panesForInSituResults[resultKey]
@@ -777,9 +778,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 			# while we are in here, add count statistics of tissues
 			self.addMarkerTissueCount(markerKey,emapsKey,stage, structure, strength)
 
-			newKey = newKey + 1
-
-			outRow = [ newKey,
+			outRow = [ assignedKey,
 			    assayKey,
 			    assayType,
 			    assayIDs[assayKey],
@@ -806,7 +805,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			FILES.addRow(ersFile, outRow)
 
-			sortRow = [ newKey,
+			sortRow = [ assignedKey,
 			    assayKey,
 			    assayTypeKey,
 			    symbols[markerKey],
@@ -819,11 +818,11 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			sortRows.append (sortRow)
 
-			ageMinMax[newKey] = (ageMin, ageMax)
+			ageMinMax[assignedKey] = (ageMin, ageMax)
 
 			for paneKey in panes:
 			    ertiCount = ertiCount + 1
-			    paneRow = [ newKey, paneKey, ertiCount ]
+			    paneRow = [ assignedKey, paneKey, ertiCount ]
 			    FILES.addRow(ertiFile, paneRow)
 
 			# include anatomical structures for the result -- used
@@ -835,7 +834,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
 			for (accID, structure) in highLevelTerms:
 				FILES.addRow(erasFile,
-					[ newKey, accID, structure ] )
+					[ assignedKey, accID, structure ] )
 
 		logger.debug ('Got %d GXD result summary rows' % \
 			FILES.getRowCount(ersFile))
@@ -1110,7 +1109,6 @@ cmds = [
 	from gxd_insituresultimage i''',
 
 	# 5. basic assay data (image key here is for gel assays)
-	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select a._Assay_key, a._AssayType_key, t.assayType,
 		a._Refs_key, a._Marker_key, a._ImagePane_key,
 		a._ReporterGene_key, t.isGelAssay
@@ -1121,7 +1119,6 @@ cmds = [
 
 	# 6. additional data for in situ assays (note that there can be > 1
 	# structures per result key)
-	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select s._Assay_key,
 		s._Genotype_key,
 		s.age,
@@ -1135,8 +1132,10 @@ cmds = [
 		s.ageMax,
 		p.pattern,
 		s._specimen_key,
-		struct._Term_key
+		struct._Term_key,
+		ck._Assigned_key
 	from gxd_specimen s,
+		%s ck,
 		gxd_insituresult r,
 		gxd_strength st,
 		gxd_isresultstructure rs,
@@ -1150,8 +1149,12 @@ cmds = [
 		and vte._emapa_term_key = rs._emapa_term_key
 		and vte._stage_key = rs._stage_key
 		and struct._term_key = vte._term_key
-	order by s._Assay_key, r._Result_key, rs._Stage_key, struct._Term_key
-	''', 
+		and s._Assay_key = ck._Assay_key
+		and r._Result_key = ck._Result_key
+		and rs._Stage_key = ck._Stage_key
+		and rs._Emapa_Term_key = ck._Emapa_Term_key
+	order by ck._Assigned_key
+	''' % CLASSICAL_KEY_TABLE, 
 
 	# 7. additional data for gel assays (skip control lanes)  (note that
 	# there can be > 1 structures per gel lane).  A gel assay may have
@@ -1161,7 +1164,6 @@ cmds = [
 	# not defined as being separate results; we will need to consolidate
 	# the strengths for the given bands to come up with a strength for
 	# the lane as a whole.
-	# Note: Ordering is important for gatherers using GXDUniUtils.py
 	'''select g._Assay_key,
 		g._Genotype_key,
 		g.age,
@@ -1174,13 +1176,15 @@ cmds = [
 		g.ageMax,
 		g._GelLane_key,
 		struct._Term_key,
-		b._GelBand_key
+		b._GelBand_key,
+		ck._Assigned_key
 	from gxd_gellane g,
 		gxd_gelband b,
 		gxd_strength st,
 		gxd_gellanestructure gs,
 		voc_term_emaps vte,
-		voc_term struct
+		voc_term struct,
+		%s ck
 	where g._GelControl_key = 1
 		and g._GelLane_key = b._GelLane_key
 		and b._Strength_key = st._Strength_key
@@ -1188,8 +1192,12 @@ cmds = [
 		and vte._emapa_term_key = gs._emapa_term_key
 		and vte._stage_key = gs._stage_key
 		and struct._term_key = vte._term_key
-	order by g._Assay_key, b._GelLane_key, gs._Stage_key, struct._Term_key
-	''',
+		and g._Assay_key = ck._Assay_key
+		and g._GelLane_key = ck._Result_key
+		and gs._Stage_key = ck._Stage_key
+		and vte._Emapa_Term_key = ck._Emapa_Term_key
+	order by ck._Assigned_key
+	''' % CLASSICAL_KEY_TABLE,
 
 	# 8. allele pairs for genotypes cited in GXD data
 	'''select gap._Genotype_key,

@@ -55,7 +55,19 @@ EXISTING = {}
 # will be uniquely named.
 INDEX_COUNT = 0
 
+# Name of table where we assign unique keys to classical results.
+TMP_CLASSICAL_KEYS = 'tmp_classical_keys'
+
 ###--- Public Functions ---###
+
+def getClassicalKeyTable():
+	# build (if necessary) and get a table that identifies the assigned key value for each
+	# classical expression result
+	
+	if not exists(TMP_CLASSICAL_KEYS):
+		_assignClassicalKeys()
+		
+	return TMP_CLASSICAL_KEYS
 
 def setExptIDList(idList):
 	# set the given idList for use in sorting by RNA-Seq experiment IDs as reference IDs.
@@ -155,6 +167,68 @@ def _getMaxValue(table, field, whereClause = ''):
 	cols, rows = dbAgnostic.execute(cmd)
 	return rows[0][0]
 
+def _assignClassicalKeys():
+	# Build the temp table where we assign unique keys to classical expression results.
+	# Assumes we've already checked that the table does not exist yet.
+	
+	logger.info('Began building: %s' % TMP_CLASSICAL_KEYS)
+
+	# Temp table will have the four keys that uniquely define a result, plus an assigned key that can
+	# be used to uniquely identify that result.
+	cmd0 = '''create temporary table %s (
+		_Assay_key int not null,
+		_Result_key int not null,
+		_Stage_key int not null,
+		_Emapa_Term_key int not null,
+		_Assigned_key int not null)''' % TMP_CLASSICAL_KEYS
+	dbAgnostic.execute(cmd0)
+	
+	# First add in situ results to the temp table, assigning new key based on a prescribed ordering.
+	# Remember to exclude results for recombinase data (require isForGXD = 1).
+	cmd1 = '''insert into %s
+		select s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key,
+			row_number() over (order by s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key)
+		from gxd_specimen s,
+			gxd_insituresult r,
+			gxd_isresultstructure i
+		where s._Specimen_key = r._Specimen_key
+			and r._Result_key = i._Result_key
+			and exists (select 1 from gxd_expression ge where s._Assay_key = ge._Assay_key and ge.isForGXD = 1)
+		order by s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key''' % TMP_CLASSICAL_KEYS
+	dbAgnostic.execute(cmd1)
+	
+	maxKey = _getMaxValue(TMP_CLASSICAL_KEYS, '_Assigned_key')
+	logger.info(' - added %d in situ results' % maxKey)
+
+	# Then add blot results to the temp table, likewise assigning them new keys based on the prescribed
+	# ordering.  Note that these are numbered after the in situ assays and that the gel lane key serves
+	# as the result key for these.
+	cmd3 = '''insert into %s
+		select g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key,
+			%d + row_number() over (order by g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key)
+		from gxd_gellane g,
+			gxd_gellanestructure gs,
+			voc_term_emaps vte
+		where g._GelControl_key = 1
+			and g._GelLane_key = gs._GelLane_key
+			and vte._emapa_term_key = gs._emapa_term_key
+			and vte._stage_key = gs._stage_key
+		order by g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key''' % (TMP_CLASSICAL_KEYS, maxKey)
+	dbAgnostic.execute(cmd3)
+	
+	rowCount = _getRowCount(TMP_CLASSICAL_KEYS)
+	logger.info(' - added %d blot results' % (rowCount - maxKey))
+
+	createIndex(TMP_CLASSICAL_KEYS, '_Assay_key')
+	createIndex(TMP_CLASSICAL_KEYS, '_Result_key')
+	createIndex(TMP_CLASSICAL_KEYS, '_Stage_key')
+	createIndex(TMP_CLASSICAL_KEYS, '_Emapa_Term_key')
+	logger.info(' - added indexes')
+
+	logger.info('Done building: %s' % TMP_CLASSICAL_KEYS)
+	setExists(TMP_CLASSICAL_KEYS)
+	return TMP_CLASSICAL_KEYS
+	
 def _getInSituResultTable():
 	# Build the cache table of "is detected" values for in situ results,
 	# returning the table's name once it's been built.  The table maps from
@@ -374,6 +448,7 @@ def _buildKeystoneTable():
 	# _RNASeqCombined_key in the production-style database's 
 	# GXD_HTSample_RNASeqCombined table.
 
+	classicalKeyTable = getClassicalKeyTable()
 	assayTypeTable = getAssayTypeSeqnumTable()
 	markerTable = getMarkerSeqnumTable()
 	structureTable = getStructureSeqnumTable()
@@ -433,13 +508,11 @@ def _buildKeystoneTable():
 			and g._GelLane_key = glk._GelLane_key
 		)
 		insert into %s
-		select distinct row_number() over (order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key), 
-			r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
-			row_number() over (order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key),
-			r.ageMin, r.ageMax, r._stage_key, r._Term_key, emapa.seqNum as emapaSeqNum,
-			mrk.seqNum as mrkSeqNum,
-			aa.seqNum as atSeqNum, r.is_detected, ref.seqNum
+		select distinct ck._Assigned_key, r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
+			ck._Assigned_key, r.ageMin, r.ageMax, r._stage_key, r._Term_key, emapa.seqNum as emapaSeqNum,
+			mrk.seqNum as mrkSeqNum, aa.seqNum as atSeqNum, r.is_detected, ref.seqNum
 		from results r,
+			%s ck,
 			%s ref,
 			%s emapa,
 			%s mrk,
@@ -448,8 +521,12 @@ def _buildKeystoneTable():
 			and r._Term_key = emapa._Term_key
 			and r._Marker_key = mrk._Marker_key
 			and r._AssayType_key = aa._AssayType_key
-		order by r._Assay_key, r._Result_key, r._Stage_key, r._Term_key''' % (
-			isResultTable, gelLaneTable, TMP_KEYSTONE,
+			and r._Assay_key = ck._Assay_key
+			and r._Result_key = ck._Result_key
+			and r._Stage_key = ck._Stage_key
+			and r._Term_key = ck._Emapa_Term_key
+		order by ck._Assigned_key''' % (
+			isResultTable, gelLaneTable, TMP_KEYSTONE, TMP_CLASSICAL_KEYS,
 			referenceTable, structureTable, markerTable, assayTypeTable)
 
 	dbAgnostic.execute(cmd1)
