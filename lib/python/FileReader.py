@@ -71,6 +71,10 @@ class FileReader:
 			raise Exception('Path %s does not exist' % path)
 		return
 
+	def getPath(self):
+		# returns the path to the file
+		return self.path
+	
 	def getColumnNames(self):
 		# returns list of column headers for the file
 		self._readFile()

@@ -142,13 +142,32 @@ cmds = [
 		where _MGIType_key = 11
 		group by _Object_key''',
 
-	# 3. count of expression assay results for each allele
-	'''select gag._Allele_key, count(distinct _Expression_key) as expCount
-		from gxd_allelegenotype gag,
-			gxd_expression ge
-		where gag._Genotype_key = ge._Genotype_key
-			and ge.isForGXD = 1
-		group by gag._Allele_key''',
+	# 3. count of expression assay results for each allele, now including RNA-Seq data
+	'''with rnaseq as (select gag._Allele_key, count(distinct r._RnaSeqCombined_key) as expCount
+			from gxd_htsample s, gxd_allelegenotype gag, gxd_htsample_rnaseq r
+			where s._Genotype_key = gag._Genotype_key
+				and s._Sample_key = r._Sample_key
+				group by 1
+		),
+        classical as (select gag._Allele_key, count(distinct _Expression_key) as expCount
+			from gxd_allelegenotype gag, gxd_expression ge
+			where gag._Genotype_key = ge._Genotype_key
+				and ge.isForGXD = 1
+			group by gag._Allele_key
+		),
+		joint as (select a._Allele_key, case when r.expCount is null then 0
+				else r.expCount
+				end as rnaseqCount,
+			case when c.expCount is null then 0
+				else c.expCount
+				end as classicalCount
+			from all_allele a
+			left outer join rnaseq r on (a._Allele_key = r._Allele_key)
+			left outer join classical c on (a._Allele_key = c._Allele_key)
+		)
+		select _Allele_key, (rnaseqCount + classicalCount) as expCount
+		from joint
+		where rnaseqCount > 0 or classicalCount > 0''',
 
 	# 4. "mutation involves" relationships for an allele
 	'''select r._Object_key_1 as _Allele_key,

@@ -36,6 +36,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 		descriptionCol = Gatherer.columnNumber(cols, 'description')
 		studyTypeKeyCol = Gatherer.columnNumber(cols, '_StudyType_key')
 		methodKeyCol = Gatherer.columnNumber(cols, '_ExperimentType_key')
+		isInAtlasCol = Gatherer.columnNumber(cols, 'is_in_atlas')
 
 		self.finalColumns = fieldOrder
 		self.finalResults = []
@@ -51,7 +52,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 			method = getTerm(row[methodKeyCol])
 
 			self.finalResults.append ([ experimentKey, primaryID, getTerm(row[sourceKeyCol]),
-				row[nameCol], row[descriptionCol], studyType, method, sampleCounts[experimentKey] ])
+				row[nameCol], row[descriptionCol], studyType, method, sampleCounts[experimentKey], row[isInAtlasCol] ])
 
 		logger.debug ('Compiled %d data rows' % len(self.finalResults))
 		return
@@ -60,7 +61,7 @@ class HTExperimentGatherer (Gatherer.Gatherer):
 
 cmds = [
 	# 0. basic experiment data
-	'''select e._Experiment_key, e._Source_key, e.name, e.description, e._StudyType_key, e._ExperimentType_key
+	'''select e._Experiment_key, e._Source_key, e.name, e.description, e._StudyType_key, e._ExperimentType_key, t.is_in_atlas
 		from %s t, gxd_htexperiment e
 		where t._Experiment_key = e._Experiment_key''' % experiments.getExperimentTempTable()
 	]
@@ -68,7 +69,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	'_Experiment_key', 'accID', 'source', 'name', 'description', 'study_type', 'method', 'sample_count'
+	'_Experiment_key', 'accID', 'source', 'name', 'description', 'study_type', 'method', 'sample_count', 'is_in_atlas'
 	]
 
 # prefix for the filename of the output file

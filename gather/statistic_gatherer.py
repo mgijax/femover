@@ -154,19 +154,61 @@ GROUPS[GO_STATS_PAGE] = GROUPS[GO_MINI_HOME][:]
 ###--- Gene Expression Database (GXD) statistics ---###
 
 GXD_GENES_INDEXED = 'Genes studied in expression references'
-GXD_GENES_CODED = 'Genes with annotated expression results'
-GXD_RESULTS = 'Expression assay results'
+GXD_GENES_CODED = 'Genes/markers with annotated expression results (all assay types)'
+GXD_GENES_CLASSICAL = 'Genes/markers with in situ and blot assay results'
+GXD_GENES_RNASEQ = 'Genes/markers with RNA-Seq assay results'
+GXD_RESULTS = 'Expression results (all assay types)'
+GXD_INSITU_RESULTS = 'In situ assay results'
+GXD_BLOT_RESULTS = 'Blot assay results'
+GXD_RNASEQ_RESULTS = 'RNA-Seq assay results'
 GXD_IMAGES = 'Expression images'
 GXD_ASSAYS = 'Expression assays'
 GXD_MUTANTS = 'Mouse mutants with expression data'
 
 STATS[GXD_GENES_INDEXED] = ('Genes searchable using the Gene Expression Literature Query', 'SELECT COUNT(DISTINCT _Marker_key) FROM GXD_Index')
 STATS[GXD_GENES_CODED] = ('Genes searchable using the Gene Expression Data Query',
+	'''SELECT COUNT(m._Marker_key)
+		FROM MRK_Marker m
+		WHERE m._Organism_key = 1
+		AND m._Marker_Status_key in (1,3)
+		AND (EXISTS (SELECT 1 FROM GXD_Expression e
+			WHERE m._Marker_key = e._Marker_key
+			AND e.isForGXD = 1)
+			OR
+			EXISTS (SELECT 1 FROM GXD_HTSample_RnaSeqCombined r
+			WHERE m._Marker_key = r._Marker_key)
+		)''')
+STATS[GXD_GENES_CLASSICAL] = ('',
 	'''SELECT COUNT(DISTINCT ge._Marker_key)
 		FROM GXD_Expression ge, MRK_Marker mm
 		WHERE ge._Marker_key = mm._Marker_key AND mm._Organism_key = 1
 			AND mm._Marker_Status_key IN (1,3) and ge.isForGXD = 1''')
-STATS[GXD_RESULTS] = ('', 'SELECT COUNT(1) FROM GXD_Expression where isForGXD = 1')
+STATS[GXD_GENES_RNASEQ] = ('',
+	'''SELECT COUNT(m._Marker_key)
+	FROM MRK_Marker m
+	WHERE m._Organism_key = 1
+	AND m._Marker_Status_key IN (1,3)
+	AND EXISTS (SELECT 1 FROM GXD_HTSample_RnaSeqCombined r
+	  WHERE m._Marker_key = r._Marker_key)''')
+STATS[GXD_RESULTS] = ('',
+	'''WITH rowcounts AS (SELECT count(1) AS rowcount
+	FROM GXD_Expression 
+	WHERE isForGXD = 1
+	UNION
+	SELECT COUNT(1) AS rowcount
+	FROM gxd_htsample_rnaseqcombined
+	)
+	SELECT SUM(rowcount)::INTEGER AS total
+	FROM rowcounts''')
+STATS[GXD_INSITU_RESULTS] = ('', '''SELECT COUNT(DISTINCT _Expression_key)
+	FROM GXD_Expression
+	WHERE isForGXD = 1
+	AND _AssayType_key in (6, 9, 1)''')
+STATS[GXD_BLOT_RESULTS] = ('', '''SELECT COUNT(DISTINCT _Expression_key)
+	FROM GXD_Expression
+	WHERE isForGXD = 1
+	AND _AssayType_key in (2, 3, 4, 5, 8)''')
+STATS[GXD_RNASEQ_RESULTS] = ('', 'SELECT COUNT(1) FROM gxd_htsample_rnaseqcombined')
 STATS[GXD_IMAGES] = ('',
 	'''select count(docount._ImagePane_key)
 		from ( select distinct ip._ImagePane_key from IMG_ImagePane ip, IMG_Image i, GXD_Assay a
@@ -181,14 +223,29 @@ STATS[GXD_IMAGES] = ('',
 				and isr._Specimen_key = s._Specimen_key and s._Assay_key = a._Assay_key
 				and a._AssayType_key in (1,2,3,4,5,6,8,9) )
 			AS docount''')
-STATS[GXD_ASSAYS] = ('', 'select count(distinct _Assay_key) from GXD_Expression where isForGXD = 1')
-STATS[GXD_MUTANTS] = ('',
-	'''SELECT COUNT(DISTINCT a._Allele_key)
-		FROM GXD_Expression e, GXD_AlleleGenotype g, ALL_Allele a
-		WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
-			AND a.isWildType = 0 and e.isForGXD = 1''')
+STATS[GXD_ASSAYS] = ('', '''WITH data AS (
+	SELECT COUNT(DISTINCT _Assay_key) AS ct
+	FROM GXD_Expression WHERE isForGXD = 1
+	UNION
+	SELECT COUNT(distinct _Experiment_key) AS ct
+	FROM GXD_HTSample_RNASeqSet
+	)
+	SELECT SUM(ct)::INT
+	FROM data''')
+STATS[GXD_MUTANTS] = ('', '''WITH alleles AS (SELECT DISTINCT a._Allele_key
+	FROM GXD_Expression e, GXD_AlleleGenotype g, ALL_Allele a
+	WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
+	AND a.isWildType = 0 and e.isForGXD = 1
+	UNION
+	SELECT DISTINCT a._Allele_key
+	FROM GXD_HTSample_RNASeqSet e, GXD_AlleleGenotype g, ALL_Allele a
+	WHERE e._Genotype_key = g._Genotype_key AND g._Allele_key = a._Allele_key
+	AND a.isWildType = 0
+	)
+	SELECT COUNT(DISTINCT _Allele_key)
+	FROM alleles''')
 
-GROUPS[GXD_MINI_HOME] = [ GXD_GENES_INDEXED, GXD_GENES_CODED, GXD_RESULTS, GXD_IMAGES, GXD_ASSAYS, GXD_MUTANTS ]
+GROUPS[GXD_MINI_HOME] = [ GXD_GENES_INDEXED, GXD_GENES_CODED, GXD_GENES_CLASSICAL, GXD_GENES_RNASEQ, GXD_RESULTS, GXD_INSITU_RESULTS, GXD_BLOT_RESULTS, GXD_RNASEQ_RESULTS, GXD_IMAGES, GXD_ASSAYS, GXD_MUTANTS ]
 GROUPS[GXD_STATS_PAGE] = GROUPS[GXD_MINI_HOME][:]
 
 ###--- marker statistics ---###
@@ -230,8 +287,8 @@ STATS[MRK_GENES_TRAPPED] = ('',
 STATS[MRK_GENES_MAPPED] = ('', 'SELECT COUNT(1) FROM MRK_Location_Cache WHERE startCoordinate is not null')
 
 GROUPS[MARKERS_MINI_HOME] = [ MRK_GENES, MRK_GENES_DNA, MRK_GENES_PROTEIN, MRK_GENES_GO, MRK_GENES_TRAPPED ]
-GROUPS[MARKERS_STATS_PAGE] = [ MRK_GENES, MRK_GENES_DNA, MRK_GENES_PROTEIN, MRK_GENES_GO, MRK_GENES_TRAPPED,
-	GXD_GENES_CODED, MRK_GENES_MAPPED ]
+GROUPS[MARKERS_STATS_PAGE] = [ MRK_GENES, MRK_GENES_DNA, MRK_GENES_PROTEIN, MRK_GENES_GO, MRK_GENES_TRAPPED, GXD_GENES_CODED,
+	GXD_GENES_CLASSICAL, GXD_GENES_RNASEQ, MRK_GENES_MAPPED ]
 
 ###--- orthology statistics ---###
 

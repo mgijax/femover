@@ -284,6 +284,11 @@ class ChunkGatherer (Gatherer):
 		logger.debug ('Set chunk size = %d' % self.chunkSize)
 		return
 
+	def getOutputFile (self):
+		# opens and returns a suitable OutputFile object
+
+		return OutputFile.OutputFile (self.filenamePrefix)
+
 	def go (self):
 		# We can just let key-based processing go in the traditional
 		# manner.  We only need to process chunks of results if we
@@ -309,7 +314,7 @@ class ChunkGatherer (Gatherer):
 
 		# create the output data file
 
-		out = OutputFile.OutputFile (self.filenamePrefix)
+		out = self.getOutputFile()
 
 		# work through the data chunk by chunk
 
@@ -579,10 +584,10 @@ class CachingMultiFileGatherer:
 		#	against the database
 
 		cols, rows = dbAgnostic.execute(minKeyQuery)
-		self.minKey = rows[0][0]
+		self.minKey = max(rows[0][0], 0)			# default to 0 if None
 
 		cols, rows = dbAgnostic.execute(maxKeyQuery)
-		self.maxKey = rows[0][0]
+		self.maxKey = max(rows[0][0], 0)			# default to 0 if None
 
 		self.chunkSize = chunkSize
 		self.chunkingOn = True

@@ -71,8 +71,19 @@ def _initializeMarkerSets ():
 			from gxd_expression where isrecombinase=1''',
 
 		# 1. markers with full coded expression data
-		'''select distinct _Marker_key
-		from gxd_expression''',
+		'''with classical as (select distinct _Marker_key
+				from gxd_expression
+				where isForGxd = 1),
+			wholeGenome as (select distinct _Marker_key
+				from mrk_marker m 
+				where exists (select 1
+					from gxd_htsample_rnaseqcombined c 
+					where m._Marker_key = c._Marker_key)
+			)
+			select distinct _Marker_key
+			from mrk_marker m
+			where exists (select 1 from classical c where c._Marker_key = m._Marker_key)
+				or exists (select 1 from wholeGenome g where g._Marker_key = m._Marker_key)''',
 
 		# 2. markers in GXD literature index
 		'''select distinct _Marker_key
@@ -468,19 +479,20 @@ def markerHasCre (markerKey):
 
 	return markerKey in markersWithCreData
 
-def reset():
-	# resets this module to free up memory used
+def reset(full=False):
+	# resets this module to free up memory used; set full=True to also remove marker data caches
 
 	global initializedMarkerSets, markersWithCreData, markersInGxdIndex
 	global markersWithExpressionData, currentVocabKey, markersPerTerm
 	global termsInCurrentVocab
 
-	initializedMarkerSets = False
 	currentVocabKey = None
 
-	markersWithCreData = {}
-	markersWithExpressionData = {}
-	markersInGxdIndex = {}
+	if full:
+		markersWithCreData = {}
+		markersWithExpressionData = {}
+		markersInGxdIndex = {}
+		initializedMarkerSets = False
 	markersPerTerm = {}
 	termsInCurrentVocab = {}
 

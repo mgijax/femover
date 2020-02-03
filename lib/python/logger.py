@@ -9,11 +9,18 @@ DEBUG = config.LOG_DEBUG		# boolean; log debug messages?
 INFO = config.LOG_INFO			# boolean; log informational messages?
 START_TIME = None			# float; time of first logged message
 NAME = os.path.basename (sys.argv[0])	# string; name to pre-pend to messages
-LOGFILE = os.path.join (config.LOG_DIR,
-	os.path.basename(sys.argv[0]).replace ('.py', '') + '.log')
-LOG = open (LOGFILE, 'w')
+LOGFILE = None
+LOG = None
 
 ###--- Functions ---###
+
+def setLogFile(filename):
+	global LOG, LOGFILE
+	if LOG != None:
+		LOG.close()
+	LOGFILE = os.path.join (config.LOG_DIR, filename)
+	LOG = open (LOGFILE, 'w')
+	return
 
 def getName():
 	# Purpose: get the name currently in use as a prefix for messages
@@ -139,14 +146,15 @@ def __output (
 
 	global START_TIME
 
+	if not LOG:
+		setLogFile(os.path.basename(sys.argv[0]).replace('.py', '') + '.log')
+
 	if not START_TIME:
 		START_TIME = time.time()
 
 	now = time.time()
 	elapsed = now - START_TIME
 
-#	sys.stderr.write ('%s : %s : %6.3f sec : %s\n' % (
-#		NAME, messageType, elapsed, message))
 	LOG.write ('%s : %s : %6.3f sec : %s\n' % (
 		NAME, messageType, elapsed, message))
 	LOG.flush()

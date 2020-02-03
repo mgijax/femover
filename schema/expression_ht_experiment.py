@@ -22,6 +22,7 @@ createStatement = '''CREATE TABLE %s  (
 	study_type			text		null,
 	method				text		null,
 	sample_count		int			not null,
+	is_in_atlas		int			not null,
 	PRIMARY KEY(experiment_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -31,6 +32,7 @@ indexes = {
 	'primary_id' : 'create index %s on %s (primary_id)',
 	'study_type' : 'create index %s on %s (study_type)',
 	'name' : 'create index %s on %s (name)',
+	'is_in_atlas' : 'create index %s on %s (is_in_atlas)',
 	}
 
 # column name -> (related table, column in related table)
@@ -55,6 +57,7 @@ comments = {
 	Table.INDEX : {
 		'primary_id' : 'quick lookup by primary ID',
 		'study_type' : 'baseline / differential',
+		'is_in_atlas' : 'flag to indicate if this experiment is in the expression atlas (1) or not (0)',
 		},
 	}
 
