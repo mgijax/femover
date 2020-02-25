@@ -11,8 +11,12 @@ import GOFilter
 import gc
 import os
 import VocabUtils
+import GXDUniUtils
 import GOAnnotations
 from annotation import transform
+
+from expression_ht import experiments
+GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
 
 # don't count GO annotations with NOT qualifiers
 GOFilter.keepNots(False)
@@ -194,8 +198,66 @@ def setupMPCacheTables():
 	logger.debug('created MP source annot table')
 	return
 
+def setupGxdRnaSeqTables():
+	# set up the GXD cache table for RNA-Seq data.
+	
+	# table mapping marker key to sequence number
+	MARKER_SEQNUM = GXDUniUtils.getMarkerSeqnumTable()
+	
+	# table to use for collecting RNA-Seq data for GXD
+	GXD_KEYSTONE = GXDUniUtils.getKeystoneTable()
+
+	cmd0 = '''
+		with wildtype_flag as (
+			select s._Genotype_key, 1 as isWildtype
+			from gxd_htsample s
+			where exists (select 1 from gxd_htsample_rnaseq r where s._Sample_key = r._Sample_key)
+				and not exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
+			union
+			select s._Genotype_key, 0 as isWildtype
+			from gxd_htsample s
+			where exists (select 1 from gxd_htsample_rnaseq r where s._Sample_key = r._Sample_key)
+				and exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
+		)
+		select mrk._Marker_key, ks.assay_key as _Assay_key,
+			gg._Genotype_key, vte._Term_key as _Emaps_Term_key, ks.is_detected as is_present,
+			wf.isWildtype as is_wildtype, ks.uni_key
+		into temporary table rnaseq_results
+		from %s ks,
+			%s mrk,
+			voc_term_emaps vte,
+			gxd_htsample_rnaseq rs,
+			gxd_htsample smp,
+			gxd_genotype gg,
+			wildtype_flag wf
+		where ks.is_classical = 0
+			and ks.by_marker = mrk.seqnum
+			and ks._Term_key = vte._Emapa_Term_key
+			and ks._Stage_key = vte._Stage_key
+			and ks.result_key = rs._RnaSeqCombined_key
+			and rs._Sample_key = smp._Sample_key
+			and smp._Genotype_key = gg._Genotype_key
+			and gg._Genotype_key = wf._Genotype_key
+	''' % (GXD_KEYSTONE, MARKER_SEQNUM)
+	
+	dbAgnostic.execute(cmd0)
+	logger.debug('Built RNA-Seq result table')
+	
+	for tempTable in [ GXD_KEYSTONE, MARKER_SEQNUM ]:
+		dbAgnostic.execute('drop table %s' % tempTable)
+		logger.debug('Dropped %s' % tempTable)
+		
+	dbAgnostic.execute('create index rnaMrkIdx1 on rnaseq_results(_Marker_key)')	
+	logger.debug('Added marker key index')
+	dbAgnostic.execute('create index rnaMrkIdx2 on rnaseq_results(_Emaps_Term_key)')	
+	logger.debug('Added EMAPS term key index')
+	return
+	
 def setupGxdCacheTables():
 	# sets up the cache tables necessary for GXD results
+
+	# deal with the large RNA-Seq data first
+	setupGxdRnaSeqTables()
 
 	# create a temp table which maps from expression strength values to a
 	# simple 0 for absent-ish values (absent, ambiguous, not specified) or
@@ -464,6 +526,8 @@ def setupMarkerCacheTable():
 				or exists (select 1 from voc_annot go
 					where m._Marker_key = go._Object_key
 					and go._AnnotType_key = 1000)
+				or exists (select 1 from gxd_htsample_rnaseq r
+					where m._Marker_key = r._Marker_key)
 				or exists (select 1 from %s gxd
 					where m._Marker_key = gxd._Marker_key)
 			)''' % (MARKER_CACHE, GXD_CACHE)
@@ -716,6 +780,11 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		Pre-processing & initialization queries
 		"""
 		
+		# custom anatomy setup
+		setupGxdHeaderKeys()
+		setupGxdCacheTables()
+		self.setGxdHeaderCollection(GxdHeadingCollection())
+		
 		# custom GO setup
 		setupGOHeaderKeys()
 		setupGOCacheTables()
@@ -724,11 +793,6 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
 		# custom MP setup
 		self.setMPHeaderCollection(MPHeadingCollection())
 		setupMPCacheTables()
-		
-		# custom anatomy setup
-		setupGxdHeaderKeys()
-		setupGxdCacheTables()
-		self.setGxdHeaderCollection(GxdHeadingCollection())
 		
 		# build the cache table of markers with annotations
 		setupMarkerCacheTable()
@@ -1093,10 +1157,17 @@ cmds = [
 	annotations as (
 		select dc._Emapa_Header_key as _Term_key, gc._Marker_key,
 			gc._Assay_key, gc._Genotype_key, gc._Emaps_key,
-			gc.is_present, gc.is_wildtype
+			gc.is_present, gc.is_wildtype, -1 as uni_key
 		from gxd_closure dc, markers m, gxd_cache gc
 		where dc._Emaps_key = gc._Emaps_key
 			and gc._Marker_key = m._Marker_key
+		union
+		select gc._Emapa_Header_key as _Term_key, r._Marker_key,
+			r._Assay_key, r._Genotype_key, r. _Emaps_Term_key as _Emaps_key,
+			r.is_present, r.is_wildtype, r.uni_key
+		from rnaseq_results r, markers m, gxd_closure gc
+		where r._Marker_key = m._Marker_key
+			and r._Emaps_Term_key = gc._Emaps_key
 	)
 	select _Marker_key, _Term_key,
 		count(1) as annot_count,
@@ -1122,11 +1193,6 @@ files = [ ('marker_grid_cell',
 		[ Gatherer.AUTO, 'heading_key', 'term_key', 'term_id' ],
 		),
 	]
-
-#
-# for testing
-#	'select min(_Marker_key) + 10 from MRK_Marker where _Organism_key = 1',
-#
 
 # global instance of a SlimgridGatherer
 gatherer = SlimgridGatherer (files, cmds)
