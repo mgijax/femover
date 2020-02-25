@@ -219,25 +219,23 @@ def setupGxdRnaSeqTables():
 			where exists (select 1 from gxd_htsample_rnaseq r where s._Sample_key = r._Sample_key)
 				and exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
 		)
-		select mrk._Marker_key, ks.assay_key as _Assay_key,
-			gg._Genotype_key, vte._Term_key as _Emaps_Term_key, ks.is_detected as is_present,
-			wf.isWildtype as is_wildtype, ks.uni_key
+		select mrk._Marker_key,
+			ks.assay_key as _Assay_key,
+			ks._Genotype_key,
+			vte._Term_key as _Emaps_Term_key,
+			ks.is_detected as is_present,
+			wf.isWildtype as is_wildtype,
+			ks.uni_key
 		into temporary table rnaseq_results
 		from %s ks,
 			%s mrk,
 			voc_term_emaps vte,
-			gxd_htsample_rnaseq rs,
-			gxd_htsample smp,
-			gxd_genotype gg,
 			wildtype_flag wf
 		where ks.is_classical = 0
 			and ks.by_marker = mrk.seqnum
 			and ks._Term_key = vte._Emapa_Term_key
 			and ks._Stage_key = vte._Stage_key
-			and ks.result_key = rs._RnaSeqCombined_key
-			and rs._Sample_key = smp._Sample_key
-			and smp._Genotype_key = gg._Genotype_key
-			and gg._Genotype_key = wf._Genotype_key
+			and ks._Genotype_key = wf._Genotype_key
 	''' % (GXD_KEYSTONE, MARKER_SEQNUM)
 	
 	dbAgnostic.execute(cmd0)
@@ -367,6 +365,7 @@ def setupGxdCacheTables():
 	cmd12 = '''create temporary table %s (
 		_Marker_key	int	not null,
 		_Assay_key	int	not null,
+		_Result_key	int	not null,
 		_Genotype_key	int	not null,
 		_Emaps_key	int	not null,
 		is_present	int	not null,
@@ -374,14 +373,14 @@ def setupGxdCacheTables():
 		)''' % GXD_CACHE
 
 	cmd13 = '''insert into %s
-		select ga._Marker_key, isr._Assay_key, isr._Genotype_key,
+		select ga._Marker_key, isr._Assay_key, isr._Result_key, isr._Genotype_key,
 			isr._Emaps_key, isr.is_present, 0
 		from gxd_insitu_results isr,
 			gxd_assay ga
 		where isr._Assay_key = ga._Assay_key''' % GXD_CACHE
 
 	cmd14 = '''insert into %s
-		select ga._Marker_key, ggr._Assay_key, ggr._Genotype_key,
+		select ga._Marker_key, ggr._Assay_key, ggr._GelLane_key, ggr._Genotype_key,
 			ggr._Emaps_key, ggr.is_present, 0
 		from gxd_gel_results ggr,
 			gxd_assay ga
@@ -1157,14 +1156,14 @@ cmds = [
 	annotations as (
 		select dc._Emapa_Header_key as _Term_key, gc._Marker_key,
 			gc._Assay_key, gc._Genotype_key, gc._Emaps_key,
-			gc.is_present, gc.is_wildtype, -1 as uni_key
+			gc.is_present, gc.is_wildtype, gc._Result_key, -1 as uni_key
 		from gxd_closure dc, markers m, gxd_cache gc
 		where dc._Emaps_key = gc._Emaps_key
 			and gc._Marker_key = m._Marker_key
 		union
 		select gc._Emapa_Header_key as _Term_key, r._Marker_key,
-			r._Assay_key, r._Genotype_key, r. _Emaps_Term_key as _Emaps_key,
-			r.is_present, r.is_wildtype, r.uni_key
+			r._Assay_key, r._Genotype_key, r._Emaps_Term_key as _Emaps_key,
+			r.is_present, r.is_wildtype, r.uni_key, r.uni_key
 		from rnaseq_results r, markers m, gxd_closure gc
 		where r._Marker_key = m._Marker_key
 			and r._Emaps_Term_key = gc._Emaps_key

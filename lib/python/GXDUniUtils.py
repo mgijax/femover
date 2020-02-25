@@ -473,7 +473,8 @@ def _buildKeystoneTable():
 		by_marker		int	not null,
 		by_assay_type	int	not null,
 		is_detected		int	not null,
-		by_reference	int	not null
+		by_reference	int	not null,
+		_Genotype_key	int	not null
 		)''' % TMP_KEYSTONE
 
 	dbAgnostic.execute(cmd0)
@@ -482,7 +483,7 @@ def _buildKeystoneTable():
 	cmd1 = '''with results as (
 		select 1 as is_classical, a._AssayType_key, a._Assay_key, r._Result_key,
 			s.ageMin, s.ageMax, rs._stage_key, rs._Emapa_Term_key as _Term_key,
-			a._Marker_key, isr.is_detected, a._Refs_key
+			a._Marker_key, isr.is_detected, a._Refs_key, s._Genotype_key
 		from gxd_specimen s,
 			gxd_assay a,
 			gxd_insituresult r,
@@ -496,7 +497,7 @@ def _buildKeystoneTable():
 		union
 		select 1 as is_classical, a._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
 			g.ageMin, g.ageMax, s._stage_key, s._Emapa_Term_key as _Term_key,
-			a._Marker_key, glk.is_detected, a._Refs_key
+			a._Marker_key, glk.is_detected, a._Refs_key, g._Genotype_key
 		from gxd_gellane g,
 			gxd_assay a,
 			gxd_gellanestructure s,
@@ -510,7 +511,7 @@ def _buildKeystoneTable():
 		insert into %s
 		select distinct ck._Assigned_key, r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
 			ck._Assigned_key, r.ageMin, r.ageMax, r._stage_key, r._Term_key, emapa.seqNum as emapaSeqNum,
-			mrk.seqNum as mrkSeqNum, aa.seqNum as atSeqNum, r.is_detected, ref.seqNum
+			mrk.seqNum as mrkSeqNum, aa.seqNum as atSeqNum, r.is_detected, ref.seqNum, r._Genotype_key
 		from results r,
 			%s ck,
 			%s ref,
@@ -551,7 +552,8 @@ def _buildKeystoneTable():
 			when level.term = 'Below Cutoff' then 1
 			else 2
 			end as is_detected,
-			s._Experiment_key
+			s._Experiment_key,
+			s._Genotype_key
 		into temporary table rscmap
 		from gxd_htsample_rnaseq rsc, gxd_htsample s, %s mrk,
 			gxd_htsample_rnaseqcombined c, voc_term level
@@ -584,7 +586,7 @@ def _buildKeystoneTable():
 			rm._RNASeqCombined_key,
 			rm._RNASeqCombined_key, rm.ageMin, rm.ageMax,
 			rm._Stage_key, rm._Emapa_key, emapa.seqNum,
-			rm.mrkSeqNum, %d, rm.is_detected, expt.seqNum
+			rm.mrkSeqNum, %d, rm.is_detected, expt.seqNum, rm._Genotype_key
 		from rscmap rm,
 			%s emapa,
 			%s expt
@@ -646,6 +648,7 @@ def _buildMarkerSeqnumTable():
 	logger.info('Loaded table with %d rows' % _getRowCount(TMP_MARKER_SEQNUM))
 
 	createIndex(TMP_MARKER_SEQNUM, '_Marker_key', True)
+	createIndex(TMP_MARKER_SEQNUM, 'seqNum', True)
 
 	setExists(TMP_MARKER_SEQNUM)
 	logger.info('Done building: %s' % TMP_MARKER_SEQNUM)
