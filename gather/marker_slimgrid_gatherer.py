@@ -207,6 +207,7 @@ def setupGxdRnaSeqTables():
 	# table to use for collecting RNA-Seq data for GXD
 	GXD_KEYSTONE = GXDUniUtils.getKeystoneTable()
 
+	# note that we need to convert from a 3-value is_detected value to a 2-value is_present value.
 	cmd0 = '''
 		with wildtype_flag as (
 			select s._Genotype_key, 1 as isWildtype
@@ -223,7 +224,10 @@ def setupGxdRnaSeqTables():
 			ks.assay_key as _Assay_key,
 			ks._Genotype_key,
 			vte._Term_key as _Emaps_Term_key,
-			ks.is_detected as is_present,
+			case
+				when ks.is_detected < 2 then 0
+				else 1
+			end as is_present,
 			wf.isWildtype as is_wildtype,
 			ks.uni_key
 		into temporary table rnaseq_results
