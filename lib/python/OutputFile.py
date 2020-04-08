@@ -129,7 +129,7 @@ class OutputFile:
                         if self.fd != None:
                                 os.write (self.fd, ('\t'.join(cleanedout) + '\n').encode())
                         elif self.fp != None:
-                                self.fp.write(('\t'.join(cleanedout) + '\n').encode())
+                                self.fp.write(('\t'.join(cleanedout) + '\n'))
 
                 self.rowCount = self.rowCount + len(rows)
                 return
