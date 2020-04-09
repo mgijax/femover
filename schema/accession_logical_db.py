@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,27 +14,27 @@ tableName = 'accession_logical_db'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	logical_db_key		int		not null,
-	logical_db		text	not null,
-	PRIMARY KEY(logical_db_key))''' % tableName
+        logical_db_key          int             not null,
+        logical_db              text    not null,
+        PRIMARY KEY(logical_db_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'logical_db' : 'create index %s on %s (logical_db)',
-	}
+        'logical_db' : 'create index %s on %s (logical_db)',
+        }
 
 comments = {
-	Table.TABLE : 'petal table for the accession flower; contains names for logical databases.  A logical database identifies the source of a given accession ID.',
-	Table.COLUMN : {
-	    'logical_db_key' : 'unique key identifying a logical database',
-	    'logical_db' : 'name of the logical database',
-		},
-	Table.INDEX : {
-	    'logical_db' : 'for searching by the logical database name',
-		},
-	}
+        Table.TABLE : 'petal table for the accession flower; contains names for logical databases.  A logical database identifies the source of a given accession ID.',
+        Table.COLUMN : {
+            'logical_db_key' : 'unique key identifying a logical database',
+            'logical_db' : 'name of the logical database',
+                },
+        Table.INDEX : {
+            'logical_db' : 'for searching by the logical database name',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, {}, comments)
@@ -44,4 +44,4 @@ table = Table.Table (tableName, createStatement, indexes, {}, comments)
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
