@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,11 +14,11 @@ tableName = 'strain_grid_popup_column'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	column_key		int		not null,
-	grid_cell_key	int		not null,
-	term			text	null,
-	sequence_num	int		not null,
-	PRIMARY KEY(column_key))''' % tableName
+        column_key              int             not null,
+        grid_cell_key   int             not null,
+        term                    text    null,
+        sequence_num    int             not null,
+        PRIMARY KEY(column_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -33,17 +33,17 @@ clusteredIndex = ('grid_cell_key', 'create index %s on %s (grid_cell_key)')
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'contains the column headers for the popup table for a strain phenogrid cell, one per row',
-	Table.COLUMN : {
-		'column_key' : 'unique identifier for this column data row (row is particular to a given term and grid cell)',
-		'grid_cell_key' : 'identifies which phenogrid cell was clicked to find this data (on a strain detail page)',
-		'term' : 'text of the term that is the column header',
-		'sequence_num' : 'sequence number for ordering the column headers to be displayed for a single phenogrid cell',
-		},
-	Table.INDEX : {
-		'grid_cell_key' : 'clustered index, bringing all column headers of a phenogrid cell together for fast access',
-		},
-	}
+        Table.TABLE : 'contains the column headers for the popup table for a strain phenogrid cell, one per row',
+        Table.COLUMN : {
+                'column_key' : 'unique identifier for this column data row (row is particular to a given term and grid cell)',
+                'grid_cell_key' : 'identifies which phenogrid cell was clicked to find this data (on a strain detail page)',
+                'term' : 'text of the term that is the column header',
+                'sequence_num' : 'sequence number for ordering the column headers to be displayed for a single phenogrid cell',
+                },
+        Table.INDEX : {
+                'grid_cell_key' : 'clustered index, bringing all column headers of a phenogrid cell together for fast access',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments, clusteredIndex)
@@ -53,4 +53,4 @@ table = Table.Table (tableName, createStatement, indexes, keys, comments, cluste
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
