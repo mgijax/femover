@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'Template' table in the front-end database
 # (search for all instances of Template to see what to change)
