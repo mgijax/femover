@@ -90,45 +90,45 @@ def _populateCoordCache():
     return
 
 def _populateOrganismCache():
-	# populate the global 'organismCache' with organisms for all current
-	# and pending markers
+        # populate the global 'organismCache' with organisms for all current
+        # and pending markers
 
-	global organismCache, organismKeyCache
+        global organismCache, organismKeyCache
 
-	cmd = '''select m._Marker_key, o.commonName, o._Organism_key
-		from mrk_marker m, mgi_organism o
-		where m._Organism_key = o._Organism_key
-			and m._Marker_Status_key = 1'''
+        cmd = '''select m._Marker_key, o.commonName, o._Organism_key
+                from mrk_marker m, mgi_organism o
+                where m._Organism_key = o._Organism_key
+                        and m._Marker_Status_key = 1'''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
+        (cols, rows) = dbAgnostic.execute(cmd)
 
-	keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-	orgCol = dbAgnostic.columnNumber (cols, 'commonName')
-	orgKeyCol = dbAgnostic.columnNumber (cols, '_Organism_key')
+        keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
+        orgCol = dbAgnostic.columnNumber (cols, 'commonName')
+        orgKeyCol = dbAgnostic.columnNumber (cols, '_Organism_key')
 
-	for row in rows:
-		organism = utils.cleanupOrganism(row[orgCol])
-		organismCache[row[keyCol]] = organism
-		organismKeyCache[organism] = row[orgKeyCol]
+        for row in rows:
+                organism = utils.cleanupOrganism(row[orgCol])
+                organismCache[row[keyCol]] = organism
+                organismKeyCache[organism] = row[orgKeyCol]
 
-	del cols
-	del rows
-	gc.collect()
+        del cols
+        del rows
+        gc.collect()
 
-	logger.debug ('Cached %d marker organisms' % len(organismCache))
-	logger.debug ('Cached %d organism keys' % len(organismKeyCache))
-	return
+        logger.debug ('Cached %d marker organisms' % len(organismCache))
+        logger.debug ('Cached %d organism keys' % len(organismKeyCache))
+        return
 
 def _populateSymbolCache():
-	# populate the global 'symbolCache' with symbols for mouse markers
-	# (and human markers)
+        # populate the global 'symbolCache' with symbols for mouse markers
+        # (and human markers)
 
     global symbolCache
 
     cmd = '''select _Marker_key, symbol
-		from mrk_marker
-		where _Organism_key in (1, 2)
-			and _Marker_Status_key = 1'''
+                from mrk_marker
+                where _Organism_key in (1, 2)
+                        and _Marker_Status_key = 1'''
 
     (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -378,7 +378,7 @@ def _getMarkerAllelePairs(whichSet):
     for myList in [ amRows, miRows, ecRows ]:
         for row in myList:
             pair = _bundle(row[0], row[1])    # allele + marker keys
-            if not pairs.has_key(pair):
+            if pair not in pairs:
                 unifiedList.append(row)
                 pairs[pair] = 1
 
@@ -399,7 +399,7 @@ def getMarkerCoords(markerKey):
     if len(coordCache) == 0:
         _populateCoordCache()
 
-    if coordCache.has_key(markerKey):
+    if markerKey in coordCache:
         return coordCache[markerKey]
 
     return (None, None, None, None, 9999)
@@ -442,7 +442,7 @@ def getPrimaryID (markerKey):
     if len(idCache) == 0:
         _populateIDCache()
 
-    if idCache.has_key(markerKey):
+    if markerKey in idCache:
         return idCache[markerKey]
     return None
 
@@ -457,11 +457,11 @@ def getMarkerKey (primaryID):
             _populateIDCache()
 
         keyCache = {}
-        for key in idCache.keys():
+        for key in list(idCache.keys()):
             keyCache[idCache[key]] = key
 
     primaryID = primaryID.strip()
-    if keyCache.has_key(primaryID):
+    if primaryID in keyCache:
         return keyCache[primaryID]
     return None
 
@@ -475,40 +475,40 @@ def getNonMouseEGMarkerKey (accID):
         _populateNonMouseEGCache()
 
     accID = accID.strip()
-    if nonMouseEGCache.has_key(accID):
+    if accID in nonMouseEGCache:
         return nonMouseEGCache[accID]
     return None
 
 ###--- functions dealing with nomenclature ---###
 
 def getOrganismKey (markerKey):
-	# return the _Organism_key for the marker's organism, or None if the
-	# marker key is not for a current or pending marker
+        # return the _Organism_key for the marker's organism, or None if the
+        # marker key is not for a current or pending marker
 
-	org = getOrganism(markerKey)
-	if (not org) or (not organismKeyCache.has_key(org)):
-		return None
-	return organismKeyCache[org] 
+        org = getOrganism(markerKey)
+        if (not org) or (org not in organismKeyCache):
+                return None
+        return organismKeyCache[org] 
 
 def getOrganism (markerKey):
-	# return the organism for the given marker key, or None if the key is
-	# not for a current or pending marker
+        # return the organism for the given marker key, or None if the key is
+        # not for a current or pending marker
 
-	if len(organismCache) == 0:
-		_populateOrganismCache()
+        if len(organismCache) == 0:
+                _populateOrganismCache()
 
-	if organismCache.has_key(markerKey):
-		return organismCache[markerKey]
-	return None
+        if markerKey in organismCache:
+                return organismCache[markerKey]
+        return None
 
 def getSymbol (markerKey):
-	# return the symbol for the given marker key, or None if the key is
-	# not for a mouse or human marker
+        # return the symbol for the given marker key, or None if the key is
+        # not for a mouse or human marker
 
     if len(symbolCache) == 0:
         _populateSymbolCache()
 
-    if symbolCache.has_key(markerKey):
+    if markerKey in symbolCache:
         return symbolCache[markerKey]
     return None
 
@@ -519,7 +519,7 @@ def getMarkerType (markerKey):
     if len(markerTypeCache) == 0:
         _populateMarkerTypeCache()
     
-    if markerTypeCache.has_key(markerKey):
+    if markerKey in markerTypeCache:
         return markerTypeLookup.get(markerTypeCache[markerKey])
     return None
 
@@ -537,7 +537,7 @@ def getAlleleCounts():
     alleles = {}        # alleles[markerKey] = [ allele keys ]
 
     for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
-        if alleles.has_key(markerKey):
+        if markerKey in alleles:
             if alleleKey not in alleles[markerKey]:
                 alleles[markerKey].append(alleleKey)
         else:
@@ -545,7 +545,7 @@ def getAlleleCounts():
 
     counts = {}
 
-    for markerKey in alleles.keys():
+    for markerKey in list(alleles.keys()):
         counts[markerKey] = len(alleles[markerKey])
 
     logger.debug('Found allele counts for %d markers' % len(counts))
@@ -572,15 +572,15 @@ def getAlleleCountsByType():
             continue
         
         # make sure we have the mapping from count type to its seq num
-        if not c.has_key(countTypeOrder):
+        if countTypeOrder not in c:
             c[countTypeOrder] = countType
 
         # track the alleles for each marker, separated by count type
 
-        if not m.has_key(markerKey):
+        if markerKey not in m:
             m[markerKey] = { countType : [ alleleKey ] }
 
-        elif not m[markerKey].has_key(countType):
+        elif countType not in m[markerKey]:
             m[markerKey][countType] = [ alleleKey ]
 
         elif alleleKey not in m[markerKey][countType]:
@@ -588,10 +588,10 @@ def getAlleleCountsByType():
 
     counts = {}
 
-    for markerKey in m.keys():
+    for markerKey in list(m.keys()):
         counts[markerKey] = {}
 
-        for countType in m[markerKey].keys():
+        for countType in list(m[markerKey].keys()):
             counts[markerKey][countType] = \
                 len(m[markerKey][countType])
 
@@ -609,7 +609,7 @@ def getMutationInvolvesCounts():
     m = {}
 
     for [ alleleKey, markerKey, countType, countTypeOrder ] in rows:
-        if not m.has_key(markerKey):
+        if markerKey not in m:
             m[markerKey] = [ alleleKey ]
 
         elif alleleKey not in m[markerKey]:
@@ -617,7 +617,7 @@ def getMutationInvolvesCounts():
 
     c = {}
 
-    for markerKey in m.keys():
+    for markerKey in list(m.keys()):
         c[markerKey] = len(m[markerKey])
 
     logger.debug('Found %d markers with mutation involves relationships' \
@@ -636,15 +636,15 @@ def getMutationInvolvesCounts():
 #    the traditional marker/allele route or by expresses component
 #    relationships, except "no phenotypic analysis"
 
-SRC_TABLE = None	# name of already-computed source annotation table
-MA_TABLE = []		# list of names of already-computed tables of marker
-			# ...and allele pairs (multiples allowed for different
-			# ...combinations of traditional, EC, MI relationships)
-MAG_TABLE = None	# name of already-computed table of marker, allele,
-			# ...genotype triples from SRC_TABLE
-OA_TABLE = None		# name of already-computed table of markers and annot
-			# ...keys for annotations that did not roll up and get
-			# ...included in SRC_TABLE
+SRC_TABLE = None        # name of already-computed source annotation table
+MA_TABLE = []           # list of names of already-computed tables of marker
+                        # ...and allele pairs (multiples allowed for different
+                        # ...combinations of traditional, EC, MI relationships)
+MAG_TABLE = None        # name of already-computed table of marker, allele,
+                        # ...genotype triples from SRC_TABLE
+OA_TABLE = None         # name of already-computed table of markers and annot
+                        # ...keys for annotations that did not roll up and get
+                        # ...included in SRC_TABLE
 
 mpg = 1002        # annotation type key for MP/Genotype
 mpm = 1015        # annotation type for rolled-up MP/Marker annotations
@@ -694,33 +694,33 @@ def getSourceAnnotationTable():
     return SRC_TABLE
 
 def getMarkerAlleleTable(extras = [ ec ], tblName = 'ma_pairs'):
-	# get the name of a temp table that has been populated with marker /
-	# allele pairs, including via expresses component relationships (by
-	# default).  Could pass in [ ec, mi ] to also include mutation involves
-	# relationships.
+        # get the name of a temp table that has been populated with marker /
+        # allele pairs, including via expresses component relationships (by
+        # default).  Could pass in [ ec, mi ] to also include mutation involves
+        # relationships.
 
     global MA_TABLE
 
     if tblName in MA_TABLE:
-		return tblName
+                return tblName
 
     MA_TABLE.append(tblName)
 
     cmd0 = '''create temporary table %s (
-		_Marker_key int not null,
-		_Allele_key int not null)''' % tblName
+                _Marker_key int not null,
+                _Allele_key int not null)''' % tblName
 
     cmd1 = '''insert into %s
-		select _Marker_key, _Allele_key
-		from all_allele
-		where isWildType = 0
-			and _Marker_Key is not null
-		union
-		select _Object_key_2 as _Marker_key,
-			_Object_key_1 as _Allele_key
-		from mgi_relationship
-		where _Category_key in (%s)''' % (tblName,
-			', '.join(map(str, extras)) )
+                select _Marker_key, _Allele_key
+                from all_allele
+                where isWildType = 0
+                        and _Marker_Key is not null
+                union
+                select _Object_key_2 as _Marker_key,
+                        _Object_key_1 as _Allele_key
+                from mgi_relationship
+                where _Category_key in (%s)''' % (tblName,
+                        ', '.join(map(str, extras)) )
 
     cmd2 = 'create index %s_p1 on %s (_Marker_key)' % (tblName, tblName)
     cmd3 = 'cluster %s using %s_p1' % (tblName, tblName)
@@ -789,17 +789,17 @@ def getOtherAnnotationsTable():
     pairs = getMarkerAlleleTable()
 
     cmd0 = '''select distinct p._Marker_key, va._Annot_key
-		into temporary table other_annotations
-		from voc_annot va, gxd_allelegenotype gag, %s p
-		where va._AnnotType_key = %s
-			and not exists (select 1 from %s s
-				where va._Annot_key = s._SourceAnnot_key
-				and s._Marker_key = p._Marker_key
-				)
-			and va._Term_key != %s
-			and va._Object_key = gag._Genotype_key
-			and gag._Allele_key = p._Allele_key''' % (
-				pairs, mpg, srcAnnot, npa)
+                into temporary table other_annotations
+                from voc_annot va, gxd_allelegenotype gag, %s p
+                where va._AnnotType_key = %s
+                        and not exists (select 1 from %s s
+                                where va._Annot_key = s._SourceAnnot_key
+                                and s._Marker_key = p._Marker_key
+                                )
+                        and va._Term_key != %s
+                        and va._Object_key = gag._Genotype_key
+                        and gag._Allele_key = p._Allele_key''' % (
+                                pairs, mpg, srcAnnot, npa)
 
     cmd1 = 'create index oa1 on %s (_Marker_key)' % OA_TABLE
     cmd2 = 'cluster %s using oa1' % OA_TABLE

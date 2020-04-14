@@ -1,13 +1,13 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'alleleCounts' table in the front-end database
 
 # NOTE: To add more counts:
-#	1. add a fieldname for the count as a global (like ReferenceCount)
-#	2. add a new query to 'cmds' in the main program
-#	3. add processing for the new query to collateResults(), to tie the
-#		query results to the new fieldname in each allele's dictionary
-#	4. add the new fieldname to fieldOrder in the main program
+#       1. add a fieldname for the count as a global (like ReferenceCount)
+#       2. add a new query to 'cmds' in the main program
+#       3. add processing for the new query to collateResults(), to tie the
+#               query results to the new fieldname in each allele's dictionary
+#       4. add the new fieldname to fieldOrder in the main program
 
 import Gatherer
 import logger
@@ -25,181 +25,181 @@ MutationInvolvesCount = 'mutationInvolvesMarkerCount'
 ###--- Classes ---###
 
 class AlleleCountsGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the alleleCounts table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for allele counts,
-	#	collates results, writes tab-delimited text file
+        # Is: a data gatherer for the alleleCounts table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for allele counts,
+        #       collates results, writes tab-delimited text file
 
-	def collateResults (self):
-		# Purpose: to combine the results of the various queries into
-		#	one single list of final results, with one row per
-		#	allele
+        def collateResults (self):
+                # Purpose: to combine the results of the various queries into
+                #       one single list of final results, with one row per
+                #       allele
 
-		# list of count types (like field names)
-		counts = []
+                # list of count types (like field names)
+                counts = []
 
-		# initialize dictionary for collecting data per allele
-		#	d[allele key] = { count type : count }
-		d = {}
-		for row in self.results[0][1]:
-			d[row[0]] = {}
+                # initialize dictionary for collecting data per allele
+                #       d[allele key] = { count type : count }
+                d = {}
+                for row in self.results[0][1]:
+                        d[row[0]] = {}
 
-		# counts to add in this order, with each tuple being:
-		#	(set of results, count constant, count column)
+                # counts to add in this order, with each tuple being:
+                #       (set of results, count constant, count column)
 
-		toAdd = [ (self.results[1], MarkerCount, 'mrkCount'),
-			(self.results[2], ReferenceCount, 'refCount'),
-			(self.results[3], ExpressionCount, 'expCount'),
-			(self.results[4], MutationInvolvesCount, 'miCount'),
-			]
+                toAdd = [ (self.results[1], MarkerCount, 'mrkCount'),
+                        (self.results[2], ReferenceCount, 'refCount'),
+                        (self.results[3], ExpressionCount, 'expCount'),
+                        (self.results[4], MutationInvolvesCount, 'miCount'),
+                        ]
 
-		for (r, countName, colName) in toAdd:
-			logger.debug ('Processing %s, %d rows' % (countName,
-				len(r[1])) )
-			counts.append (countName)
-			keyCol = Gatherer.columnNumber (r[0], '_Allele_key')
-			countCol = Gatherer.columnNumber (r[0], colName)
+                for (r, countName, colName) in toAdd:
+                        logger.debug ('Processing %s, %d rows' % (countName,
+                                len(r[1])) )
+                        counts.append (countName)
+                        keyCol = Gatherer.columnNumber (r[0], '_Allele_key')
+                        countCol = Gatherer.columnNumber (r[0], colName)
 
-			for row in r[1]:
-				allele = row[keyCol]
-				if d.has_key(allele):
-					d[allele][countName] = row[countCol]
-				else:
-					logger.debug (
-					'Unknown allele key: %d' % allele)
+                        for row in r[1]:
+                                allele = row[keyCol]
+                                if allele in d:
+                                        d[allele][countName] = row[countCol]
+                                else:
+                                        logger.debug (
+                                        'Unknown allele key: %d' % allele)
 
-		# non-standard handling for images; we need to collect the
-		# image keys for each allele, then get the counts from there
+                # non-standard handling for images; we need to collect the
+                # image keys for each allele, then get the counts from there
 
-		columns, rows = self.results[5]
+                columns, rows = self.results[5]
 
-		logger.debug ('Processing ImageCount, %d rows' % \
-			len(rows) )
+                logger.debug ('Processing ImageCount, %d rows' % \
+                        len(rows) )
 
-		allKeyCol = Gatherer.columnNumber (columns, '_Allele_key')
-		imgKeyCol = Gatherer.columnNumber (columns, '_Image_key')
+                allKeyCol = Gatherer.columnNumber (columns, '_Allele_key')
+                imgKeyCol = Gatherer.columnNumber (columns, '_Image_key')
 
-		# imagesPerAllele[allele key] = [ image keys ]
-		imagesPerAllele = {}
+                # imagesPerAllele[allele key] = [ image keys ]
+                imagesPerAllele = {}
 
-		for row in rows:
-			allele = row[allKeyCol]
-			image = row[imgKeyCol]
+                for row in rows:
+                        allele = row[allKeyCol]
+                        image = row[imgKeyCol]
 
-			if imagesPerAllele.has_key(allele):
-				if image not in imagesPerAllele[allele]:
-					imagesPerAllele[allele].append (image)
-			else:
-				imagesPerAllele[allele] = [ image ]
+                        if allele in imagesPerAllele:
+                                if image not in imagesPerAllele[allele]:
+                                        imagesPerAllele[allele].append (image)
+                        else:
+                                imagesPerAllele[allele] = [ image ]
 
-		alleleKeys = imagesPerAllele.keys()
-		for allele in alleleKeys:
-			if d.has_key(allele):
-				d[allele][ImageCount] = \
-					len(imagesPerAllele[allele]) 
+                alleleKeys = list(imagesPerAllele.keys())
+                for allele in alleleKeys:
+                        if allele in d:
+                                d[allele][ImageCount] = \
+                                        len(imagesPerAllele[allele]) 
 
-		counts.append (ImageCount)
-		
-		# compile the list of collated counts in self.finalResults
+                counts.append (ImageCount)
+                
+                # compile the list of collated counts in self.finalResults
 
-		self.finalResults = []
-		alleleKeys = d.keys()
-		alleleKeys.sort()
+                self.finalResults = []
+                alleleKeys = list(d.keys())
+                alleleKeys.sort()
 
-		self.finalColumns = [ '_Allele_key' ] + counts
+                self.finalColumns = [ '_Allele_key' ] + counts
 
-		for alleleKey in alleleKeys:
-			row = [ alleleKey ]
-			for count in counts:
-				if d[alleleKey].has_key(count):
-					row.append (d[alleleKey][count])
-				else:
-					row.append (0)
+                for alleleKey in alleleKeys:
+                        row = [ alleleKey ]
+                        for count in counts:
+                                if count in d[alleleKey]:
+                                        row.append (d[alleleKey][count])
+                                else:
+                                        row.append (0)
 
-			self.finalResults.append (row)
-		return
+                        self.finalResults.append (row)
+                return
 
 ###--- globals ---###
 
 cmds = [
-	# 0. all alleles
-	'''select _Allele_key from all_allele''',
+        # 0. all alleles
+        '''select _Allele_key from all_allele''',
 
-	# 1. count of markers for each allele
-	'''select _Allele_key, 1 as mrkCount
-		from all_allele 
-		where _Marker_key is not null
-	   UNION ALL
-	   select _Allele_key, 0 as mrkCount
-	    from all_allele
-	    where _Marker_key is null
-	''',
+        # 1. count of markers for each allele
+        '''select _Allele_key, 1 as mrkCount
+                from all_allele 
+                where _Marker_key is not null
+           UNION ALL
+           select _Allele_key, 0 as mrkCount
+            from all_allele
+            where _Marker_key is null
+        ''',
 
-	# 2. count of references for each allele
-	'''select _Object_key as _Allele_key, 
-			count(distinct _Refs_key) as refCount
-		from mgi_reference_assoc
-		where _MGIType_key = 11
-		group by _Object_key''',
+        # 2. count of references for each allele
+        '''select _Object_key as _Allele_key, 
+                        count(distinct _Refs_key) as refCount
+                from mgi_reference_assoc
+                where _MGIType_key = 11
+                group by _Object_key''',
 
-	# 3. count of expression assay results for each allele, now including RNA-Seq data
-	'''with rnaseq as (select gag._Allele_key, count(distinct r._RnaSeqCombined_key) as expCount
-			from gxd_htsample s, gxd_allelegenotype gag, gxd_htsample_rnaseq r
-			where s._Genotype_key = gag._Genotype_key
-				and s._Sample_key = r._Sample_key
-				group by 1
-		),
+        # 3. count of expression assay results for each allele, now including RNA-Seq data
+        '''with rnaseq as (select gag._Allele_key, count(distinct r._RnaSeqCombined_key) as expCount
+                        from gxd_htsample s, gxd_allelegenotype gag, gxd_htsample_rnaseq r
+                        where s._Genotype_key = gag._Genotype_key
+                                and s._Sample_key = r._Sample_key
+                                group by 1
+                ),
         classical as (select gag._Allele_key, count(distinct _Expression_key) as expCount
-			from gxd_allelegenotype gag, gxd_expression ge
-			where gag._Genotype_key = ge._Genotype_key
-				and ge.isForGXD = 1
-			group by gag._Allele_key
-		),
-		joint as (select a._Allele_key, case when r.expCount is null then 0
-				else r.expCount
-				end as rnaseqCount,
-			case when c.expCount is null then 0
-				else c.expCount
-				end as classicalCount
-			from all_allele a
-			left outer join rnaseq r on (a._Allele_key = r._Allele_key)
-			left outer join classical c on (a._Allele_key = c._Allele_key)
-		)
-		select _Allele_key, (rnaseqCount + classicalCount) as expCount
-		from joint
-		where rnaseqCount > 0 or classicalCount > 0''',
+                        from gxd_allelegenotype gag, gxd_expression ge
+                        where gag._Genotype_key = ge._Genotype_key
+                                and ge.isForGXD = 1
+                        group by gag._Allele_key
+                ),
+                joint as (select a._Allele_key, case when r.expCount is null then 0
+                                else r.expCount
+                                end as rnaseqCount,
+                        case when c.expCount is null then 0
+                                else c.expCount
+                                end as classicalCount
+                        from all_allele a
+                        left outer join rnaseq r on (a._Allele_key = r._Allele_key)
+                        left outer join classical c on (a._Allele_key = c._Allele_key)
+                )
+                select _Allele_key, (rnaseqCount + classicalCount) as expCount
+                from joint
+                where rnaseqCount > 0 or classicalCount > 0''',
 
-	# 4. "mutation involves" relationships for an allele
-	'''select r._Object_key_1 as _Allele_key,
-			count(distinct r._Object_key_2) as miCount
-		from mgi_relationship r, mgi_relationship_category c
-		where c._Category_key = r._Category_key
-			and c.name = 'mutation_involves'
-		group by r._Object_key_1''',
+        # 4. "mutation involves" relationships for an allele
+        '''select r._Object_key_1 as _Allele_key,
+                        count(distinct r._Object_key_2) as miCount
+                from mgi_relationship r, mgi_relationship_category c
+                where c._Category_key = r._Category_key
+                        and c.name = 'mutation_involves'
+                group by r._Object_key_1''',
 
-	# 5. allele images by key (we count them in Python, since I didn't see
-	# an obvious way to handle the 'union' in a 'select count')
-	'''select ipa._Object_key as _Allele_key,
-			ip._Image_key
-		from img_imagepane_assoc ipa,
-			img_imagepane ip
-		where ipa._MGIType_key = 11
-			and ipa._ImagePane_key = ip._ImagePane_key
-	   union
-	   select gag._Allele_key,
-	   		ip._Image_key
-	   	from img_imagepane_assoc ipa,
-			img_imagepane ip,
-			gxd_allelegenotype gag
-		where gag._Genotype_key = ipa._Object_key
-			and ipa._MGIType_key = 12
-			and ipa._ImagePane_key = ip._ImagePane_key''', 
-	]
+        # 5. allele images by key (we count them in Python, since I didn't see
+        # an obvious way to handle the 'union' in a 'select count')
+        '''select ipa._Object_key as _Allele_key,
+                        ip._Image_key
+                from img_imagepane_assoc ipa,
+                        img_imagepane ip
+                where ipa._MGIType_key = 11
+                        and ipa._ImagePane_key = ip._ImagePane_key
+           union
+           select gag._Allele_key,
+                        ip._Image_key
+                from img_imagepane_assoc ipa,
+                        img_imagepane ip,
+                        gxd_allelegenotype gag
+                where gag._Genotype_key = ipa._Object_key
+                        and ipa._MGIType_key = 12
+                        and ipa._ImagePane_key = ip._ImagePane_key''', 
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, 
-		ImageCount, MutationInvolvesCount, ]
+                ImageCount, MutationInvolvesCount, ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'allele_counts'
@@ -212,4 +212,4 @@ gatherer = AlleleCountsGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

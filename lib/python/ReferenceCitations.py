@@ -1,6 +1,6 @@
 # Module: ReferenceCitations.py
 # Purpose: to provide an easy means to access various versions of reference
-#	citations, and to provide for their creation in one place
+#       citations, and to provide for their creation in one place
 
 import dbAgnostic
 import logger
@@ -11,384 +11,384 @@ import logger
 # used to restrict the set of references we retrieve.  set by restrict().
 SOURCE_TABLE = None
 
-MINI = {}	# reference key -> mini citation
-SHORT = {}	# reference key -> short citation
-LONG = {}	# reference key -> long citation
+MINI = {}       # reference key -> mini citation
+SHORT = {}      # reference key -> short citation
+LONG = {}       # reference key -> long citation
 
-SEQUENCE_NUM = {}	# reference key -> integer to sort by long citation
-MINI_SEQ_NUM = {}	# reference key -> integer to sort by mini citation
+SEQUENCE_NUM = {}       # reference key -> integer to sort by long citation
+MINI_SEQ_NUM = {}       # reference key -> integer to sort by mini citation
 
 ###--- Private Functions ---###
 
 def _getBooks():
-	# cache book attributes
+        # cache book attributes
 
-	bookCmd = '''select _Refs_key,
-			book_au as editors,
-			book_title,
-			place,
-			publisher,
-			series_ed as edition
-		from BIB_Books'''
+        bookCmd = '''select _Refs_key,
+                        book_au as editors,
+                        book_title,
+                        place,
+                        publisher,
+                        series_ed as edition
+                from BIB_Books'''
 
-	if SOURCE_TABLE:
-		bookCmd = bookCmd + ''' b
-			where exists (select 1 from %s c
-				where b._Refs_key = c._Refs_key)''' % SOURCE_TABLE
+        if SOURCE_TABLE:
+                bookCmd = bookCmd + ''' b
+                        where exists (select 1 from %s c
+                                where b._Refs_key = c._Refs_key)''' % SOURCE_TABLE
 
-	books = {}
+        books = {}
 
-	columns, results = dbAgnostic.execute (bookCmd)
+        columns, results = dbAgnostic.execute (bookCmd)
 
-	keyCol = dbAgnostic.columnNumber (columns, '_Refs_key')
-	editorsCol = dbAgnostic.columnNumber (columns, 'editors')
-	titleCol = dbAgnostic.columnNumber (columns, 'book_title')
-	placeCol = dbAgnostic.columnNumber (columns, 'place')
-	publisherCol = dbAgnostic.columnNumber (columns, 'publisher')
-	editionCol = dbAgnostic.columnNumber (columns, 'edition')
+        keyCol = dbAgnostic.columnNumber (columns, '_Refs_key')
+        editorsCol = dbAgnostic.columnNumber (columns, 'editors')
+        titleCol = dbAgnostic.columnNumber (columns, 'book_title')
+        placeCol = dbAgnostic.columnNumber (columns, 'place')
+        publisherCol = dbAgnostic.columnNumber (columns, 'publisher')
+        editionCol = dbAgnostic.columnNumber (columns, 'edition')
 
-	for r in results:
-		key = r[keyCol]
-		book = {
-			'editors' : r[editorsCol],
-			'bookTitle' : r[titleCol],
-			'place' : r[placeCol],
-			'publisher' : r[publisherCol],
-			'edition' : r[editionCol],
-			}
-		books[key] = book
-	
-	logger.debug ('Got data for %d books' % len(books))
+        for r in results:
+                key = r[keyCol]
+                book = {
+                        'editors' : r[editorsCol],
+                        'bookTitle' : r[titleCol],
+                        'place' : r[placeCol],
+                        'publisher' : r[publisherCol],
+                        'edition' : r[editionCol],
+                        }
+                books[key] = book
+        
+        logger.debug ('Got data for %d books' % len(books))
 
-	return books
+        return books
 
 def _getRefs():
-	# cache other needed reference data 
+        # cache other needed reference data 
 
-	refs = {}
+        refs = {}
 
-	allCmd = '''select r._Refs_key,
-			c.referenceType,
-			r.authors,
-			r.title,
-			r.journal,
-			r.vol,
-			r.issue,
-			r.date as pubDate,
-			r.year,
-			r.pgs as pages
-		from BIB_Refs r, BIB_Citation_Cache c
-		where r._Refs_key = c._Refs_key'''
+        allCmd = '''select r._Refs_key,
+                        c.referenceType,
+                        r.authors,
+                        r.title,
+                        r.journal,
+                        r.vol,
+                        r.issue,
+                        r.date as pubDate,
+                        r.year,
+                        r.pgs as pages
+                from BIB_Refs r, BIB_Citation_Cache c
+                where r._Refs_key = c._Refs_key'''
 
-	if SOURCE_TABLE:
-		allCmd = allCmd + '''
-			and exists (select 1 from %s d
-				where d._Refs_key = r._Refs_key)''' % SOURCE_TABLE
+        if SOURCE_TABLE:
+                allCmd = allCmd + '''
+                        and exists (select 1 from %s d
+                                where d._Refs_key = r._Refs_key)''' % SOURCE_TABLE
 
-	columns, results = dbAgnostic.execute (allCmd)
+        columns, results = dbAgnostic.execute (allCmd)
 
-	keyCol = dbAgnostic.columnNumber (columns, '_Refs_key')
-	typeCol = dbAgnostic.columnNumber (columns, 'referenceType')
-	authorCol = dbAgnostic.columnNumber (columns, 'authors')
-	titleCol = dbAgnostic.columnNumber (columns, 'title')
-	journalCol = dbAgnostic.columnNumber (columns, 'journal')
-	volCol = dbAgnostic.columnNumber (columns, 'vol')
-	issueCol = dbAgnostic.columnNumber (columns, 'issue')
-	dateCol = dbAgnostic.columnNumber (columns, 'pubDate')
-	yearCol = dbAgnostic.columnNumber (columns, 'year')
-	pagesCol = dbAgnostic.columnNumber (columns, 'pages')
+        keyCol = dbAgnostic.columnNumber (columns, '_Refs_key')
+        typeCol = dbAgnostic.columnNumber (columns, 'referenceType')
+        authorCol = dbAgnostic.columnNumber (columns, 'authors')
+        titleCol = dbAgnostic.columnNumber (columns, 'title')
+        journalCol = dbAgnostic.columnNumber (columns, 'journal')
+        volCol = dbAgnostic.columnNumber (columns, 'vol')
+        issueCol = dbAgnostic.columnNumber (columns, 'issue')
+        dateCol = dbAgnostic.columnNumber (columns, 'pubDate')
+        yearCol = dbAgnostic.columnNumber (columns, 'year')
+        pagesCol = dbAgnostic.columnNumber (columns, 'pages')
 
-	for row in results:
-		out = {
-			'_Refs_key' : row[keyCol],
-			'referenceType' : row[typeCol],
-			'journal' : row[journalCol],
-			'vol' : row[volCol],
-			'issue' : row[issueCol],
-			'pubDate' : row[dateCol],
-			'year' : row[yearCol],
-			'pages' : row[pagesCol],
-			'authors' : row[authorCol],
-			'title' : row[titleCol],
-			}
+        for row in results:
+                out = {
+                        '_Refs_key' : row[keyCol],
+                        'referenceType' : row[typeCol],
+                        'journal' : row[journalCol],
+                        'vol' : row[volCol],
+                        'issue' : row[issueCol],
+                        'pubDate' : row[dateCol],
+                        'year' : row[yearCol],
+                        'pages' : row[pagesCol],
+                        'authors' : row[authorCol],
+                        'title' : row[titleCol],
+                        }
 
-		refs[row[keyCol]] = out
+                refs[row[keyCol]] = out
 
-	logger.debug ('Got data for %d refs' % len(refs))
+        logger.debug ('Got data for %d refs' % len(refs))
 
-	return refs
+        return refs
 
 def _getAuthors (longAuthors):
-	# if multiple authors, show only the first for mini and short
-	# citations (with trailing comma, space)
+        # if multiple authors, show only the first for mini and short
+        # citations (with trailing comma, space)
 
-	miniCitation = ''
-	shortCitation = ''
-	longCitation = ''
+        miniCitation = ''
+        shortCitation = ''
+        longCitation = ''
 
-	if longAuthors:
-		semiPos = longAuthors.find(';')
-		if semiPos >= 0:
-			authors = longAuthors.split(';')[0].strip()
-			miniCitation = authors + ', et al., '
-		else:
-			miniCitation = longAuthors + ', '
+        if longAuthors:
+                semiPos = longAuthors.find(';')
+                if semiPos >= 0:
+                        authors = longAuthors.split(';')[0].strip()
+                        miniCitation = authors + ', et al., '
+                else:
+                        miniCitation = longAuthors + ', '
 
-		shortCitation = miniCitation 
-		longCitation = longAuthors.replace (';', ',') + ', '
+                shortCitation = miniCitation 
+                longCitation = longAuthors.replace (';', ',') + ', '
 
-	return miniCitation, shortCitation, longCitation
+        return miniCitation, shortCitation, longCitation
 
 
 def _getBookCitations (refsKey, refs, books):
 
-	# three different citation types with varying author formats
+        # three different citation types with varying author formats
 
-	miniCitation, shortCitation, longCitation = _getAuthors (
-		refs[refsKey]['authors'])
+        miniCitation, shortCitation, longCitation = _getAuthors (
+                refs[refsKey]['authors'])
 
-	# get book data
+        # get book data
 
-	editors = None
-	place = None
-	bookTitle = None
-	publisher = None
-	edition = None
+        editors = None
+        place = None
+        bookTitle = None
+        publisher = None
+        edition = None
 
-	if books.has_key(refsKey):
-		editors = books[refsKey]['editors']
-		place = books[refsKey]['place']
-		bookTitle = books[refsKey]['bookTitle']
-		publisher = books[refsKey]['publisher']
-		edition = books[refsKey]['edition']
+        if refsKey in books:
+                editors = books[refsKey]['editors']
+                place = books[refsKey]['place']
+                bookTitle = books[refsKey]['bookTitle']
+                publisher = books[refsKey]['publisher']
+                edition = books[refsKey]['edition']
 
-	# chapter title
+        # chapter title
 
-	if refs[refsKey]['title']:
-		shortCitation = shortCitation + refs[refsKey]['title']
-		longCitation = longCitation + refs[refsKey]['title']
-		if bookTitle:
-			shortCitation = shortCitation + ', '
-			longCitation = longCitation + ', '
-		else:
-			shortCitation = shortCitation + '. '
-			longCitation = longCitation + '. '
+        if refs[refsKey]['title']:
+                shortCitation = shortCitation + refs[refsKey]['title']
+                longCitation = longCitation + refs[refsKey]['title']
+                if bookTitle:
+                        shortCitation = shortCitation + ', '
+                        longCitation = longCitation + ', '
+                else:
+                        shortCitation = shortCitation + '. '
+                        longCitation = longCitation + '. '
 
-	# book editors 
-	
-	titleIn = ' in '
-	if editors:
-		editors = editors.replace (';', ',')
-		longCitation = longCitation + ' in ' + editors + ' (eds), '
-		titleIn = ''
+        # book editors 
+        
+        titleIn = ' in '
+        if editors:
+                editors = editors.replace (';', ',')
+                longCitation = longCitation + ' in ' + editors + ' (eds), '
+                titleIn = ''
 
-	# book title 
+        # book title 
 
-	if bookTitle:
-		miniCitation = miniCitation + ' in ' + bookTitle + '. '
-		shortCitation = shortCitation + ' in ' + bookTitle + '. '
-		longCitation = longCitation + titleIn + bookTitle + '. '
+        if bookTitle:
+                miniCitation = miniCitation + ' in ' + bookTitle + '. '
+                shortCitation = shortCitation + ' in ' + bookTitle + '. '
+                longCitation = longCitation + titleIn + bookTitle + '. '
 
-	# edition
+        # edition
 
-	if edition:
-		longCitation = longCitation + edition + '. '
+        if edition:
+                longCitation = longCitation + edition + '. '
 
-	# date
+        # date
 
-	date = refs[refsKey]['pubDate']		# date preferred
-	if not date:
-		date = refs[refsKey]['year']	# settle for year
+        date = refs[refsKey]['pubDate']         # date preferred
+        if not date:
+                date = refs[refsKey]['year']    # settle for year
 
-	if date:
-		miniCitation = miniCitation + date
-		shortCitation = shortCitation + date
-		longCitation = longCitation + date
+        if date:
+                miniCitation = miniCitation + date
+                shortCitation = shortCitation + date
+                longCitation = longCitation + date
 
-	# pages
+        # pages
 
-	pages = refs[refsKey]['pages']
-	if pages:
-		miniCitation = miniCitation + ':' + pages + '.'
-		shortCitation = shortCitation + ':' + pages + '.'
-		longCitation = longCitation + ':' + pages + '. '
+        pages = refs[refsKey]['pages']
+        if pages:
+                miniCitation = miniCitation + ':' + pages + '.'
+                shortCitation = shortCitation + ':' + pages + '.'
+                longCitation = longCitation + ':' + pages + '. '
 
-	# place
+        # place
 
-	if place:
-		longCitation = longCitation + place + ': '
+        if place:
+                longCitation = longCitation + place + ': '
 
-	# publisher
+        # publisher
 
-	if publisher:
-		longCitation = longCitation + publisher + '.'
+        if publisher:
+                longCitation = longCitation + publisher + '.'
 
-	return miniCitation, shortCitation, longCitation
+        return miniCitation, shortCitation, longCitation
 
 def _getArticleCitations (refsKey, refs, books):
 
-	# three different citation types with varying formats
+        # three different citation types with varying formats
 
-	miniCitation, shortCitation, longCitation = _getAuthors (
-		refs[refsKey]['authors'])
+        miniCitation, shortCitation, longCitation = _getAuthors (
+                refs[refsKey]['authors'])
 
-	# for short and long, include the title (with period, space)
+        # for short and long, include the title (with period, space)
 
-	longTitle = refs[refsKey]['title']
-	if longTitle:
-		# add a final period to the title if it's missing
-		if not longTitle.endswith('.'):
-			longTitle = longTitle + '.'
+        longTitle = refs[refsKey]['title']
+        if longTitle:
+                # add a final period to the title if it's missing
+                if not longTitle.endswith('.'):
+                        longTitle = longTitle + '.'
 
-		# add a space
-		title = longTitle + ' '
+                # add a space
+                title = longTitle + ' '
 
-		shortCitation = shortCitation + title
-		longCitation = longCitation + title
+                shortCitation = shortCitation + title
+                longCitation = longCitation + title
 
-	# From here on, all three formats are the same.  We will compose this
-	# tail portion together in one string and then append it to the
-	# individual citations when complete.
+        # From here on, all three formats are the same.  We will compose this
+        # tail portion together in one string and then append it to the
+        # individual citations when complete.
 
-	tail = ''
+        tail = ''
 
-	# journal (abbreviation, period, space)
-	# TO DO: switch from journal to its abbreviation
+        # journal (abbreviation, period, space)
+        # TO DO: switch from journal to its abbreviation
 
-	journalAbbrev = refs[refsKey]['journal']
-	if journalAbbrev:
-		tail = tail + journalAbbrev + '. '
+        journalAbbrev = refs[refsKey]['journal']
+        if journalAbbrev:
+                tail = tail + journalAbbrev + '. '
 
-	# year (or date, if it exists), then semicolon
+        # year (or date, if it exists), then semicolon
 
-	date = refs[refsKey]['pubDate']		# date preferred
-	if not date:
-		date = str(refs[refsKey]['year'])	# settle for year
+        date = refs[refsKey]['pubDate']         # date preferred
+        if not date:
+                date = str(refs[refsKey]['year'])       # settle for year
 
-	if date:
-		tail = tail + date + ';'
+        if date:
+                tail = tail + date + ';'
 
-	# volume
+        # volume
 
-	if refs[refsKey]['vol']:
-		tail = tail + refs[refsKey]['vol']
+        if refs[refsKey]['vol']:
+                tail = tail + refs[refsKey]['vol']
 
-	# issue in parentheses
+        # issue in parentheses
 
-	if refs[refsKey]['issue']:
-		tail = tail + '(' + refs[refsKey]['issue'] + ')'
+        if refs[refsKey]['issue']:
+                tail = tail + '(' + refs[refsKey]['issue'] + ')'
 
-	# pages preceded by colon
+        # pages preceded by colon
 
-	if refs[refsKey]['pages']:
-		tail = tail + ':' + refs[refsKey]['pages']
+        if refs[refsKey]['pages']:
+                tail = tail + ':' + refs[refsKey]['pages']
 
-	# finish three citations and return them
+        # finish three citations and return them
 
-	miniCitation = miniCitation + tail
-	shortCitation = shortCitation + tail
-	longCitation = longCitation + tail
+        miniCitation = miniCitation + tail
+        shortCitation = shortCitation + tail
+        longCitation = longCitation + tail
 
-	return miniCitation, shortCitation, longCitation
+        return miniCitation, shortCitation, longCitation
 
 def _initialize():
-	global MINI, SHORT, LONG, SEQUENCE_NUM, MINI_SEQ_NUM
+        global MINI, SHORT, LONG, SEQUENCE_NUM, MINI_SEQ_NUM
 
-	MINI = {}
-	SHORT = {}
-	LONG = {}
+        MINI = {}
+        SHORT = {}
+        LONG = {}
 
-	books = _getBooks()
-	refs = _getRefs()
+        books = _getBooks()
+        refs = _getRefs()
 
-	toOrder = []
-	toOrderMini = []
+        toOrder = []
+        toOrderMini = []
 
-	referenceKeys = refs.keys()
+        referenceKeys = list(refs.keys())
 
-	for key in referenceKeys:
-		if refs[key]['referenceType'].upper() == 'BOOK':
-			miniCitation, shortCitation, longCitation = \
-				_getBookCitations (key, refs, books)
-		else:
-			miniCitation, shortCitation, longCitation = \
-				_getArticleCitations (key, refs, books)
+        for key in referenceKeys:
+                if refs[key]['referenceType'].upper() == 'BOOK':
+                        miniCitation, shortCitation, longCitation = \
+                                _getBookCitations (key, refs, books)
+                else:
+                        miniCitation, shortCitation, longCitation = \
+                                _getArticleCitations (key, refs, books)
 
-		MINI[key] = miniCitation
-		SHORT[key] = shortCitation
-		LONG[key] = longCitation
+                MINI[key] = miniCitation
+                SHORT[key] = shortCitation
+                LONG[key] = longCitation
 
-		toOrder.append ( (longCitation.lower(), key) )
-		toOrderMini.append ( (miniCitation.lower(), key) )
+                toOrder.append ( (longCitation.lower(), key) )
+                toOrderMini.append ( (miniCitation.lower(), key) )
 
-	logger.debug ('Built citations for %d refs' % len(MINI))
+        logger.debug ('Built citations for %d refs' % len(MINI))
 
-	toOrder.sort()
-	toOrderMini.sort()
+        toOrder.sort()
+        toOrderMini.sort()
 
-	i = 0
-	for (citation, key) in toOrder:
-		i = i + 1
-		SEQUENCE_NUM[key] = i
+        i = 0
+        for (citation, key) in toOrder:
+                i = i + 1
+                SEQUENCE_NUM[key] = i
 
-	j = 0
-	for (citation, key) in toOrderMini:
-		j = j + 1
-		MINI_SEQ_NUM[key] = j
+        j = 0
+        for (citation, key) in toOrderMini:
+                j = j + 1
+                MINI_SEQ_NUM[key] = j
 
-	logger.debug ('Ordered %d refs by citation' % i)
-	return
+        logger.debug ('Ordered %d refs by citation' % i)
+        return
 
 ###--- Functions ---###
 
 def getMiniCitation (refsKey):
-	if not MINI:
-		_initialize()
+        if not MINI:
+                _initialize()
 
-	if MINI.has_key(refsKey):
-		return MINI[refsKey]
-	return None
+        if refsKey in MINI:
+                return MINI[refsKey]
+        return None
 
 def getShortCitation (refsKey):
-	if not SHORT:
-		_initialize()
+        if not SHORT:
+                _initialize()
 
-	if SHORT.has_key(refsKey):
-		return SHORT[refsKey]
-	return None
+        if refsKey in SHORT:
+                return SHORT[refsKey]
+        return None
 
 def getLongCitation (refsKey):
-	if not LONG:
-		_initialize()
+        if not LONG:
+                _initialize()
 
-	if LONG.has_key(refsKey):
-		return LONG[refsKey]
-	return None
+        if refsKey in LONG:
+                return LONG[refsKey]
+        return None
 
 def getSequenceNum (refsKey):
-	if not SEQUENCE_NUM:
-		_initialize()
+        if not SEQUENCE_NUM:
+                _initialize()
 
-	if SEQUENCE_NUM.has_key(refsKey):
-		return SEQUENCE_NUM[refsKey]
-	return len(SEQUENCE_NUM) + 1
+        if refsKey in SEQUENCE_NUM:
+                return SEQUENCE_NUM[refsKey]
+        return len(SEQUENCE_NUM) + 1
 
 def getSequenceNumByMini (refsKey):
-	if not MINI_SEQ_NUM:
-		_initialize()
+        if not MINI_SEQ_NUM:
+                _initialize()
 
-	if MINI_SEQ_NUM.has_key(refsKey):
-		return MINI_SEQ_NUM[refsKey]
-	return len(MINI_SEQ_NUM) + 1
+        if refsKey in MINI_SEQ_NUM:
+                return MINI_SEQ_NUM[refsKey]
+        return len(MINI_SEQ_NUM) + 1
 
 def restrict(tableName):
-	# if you'd like to restrict reference collection to only those cited
-	# in a certain table, call this first and specify the table name
-	# (to save memory and time)
+        # if you'd like to restrict reference collection to only those cited
+        # in a certain table, call this first and specify the table name
+        # (to save memory and time)
 
-	global SOURCE_TABLE
+        global SOURCE_TABLE
 
-	SOURCE_TABLE = tableName
-	logger.debug('Restricted set of references to only those in %s' % SOURCE_TABLE)
-	return
+        SOURCE_TABLE = tableName
+        logger.debug('Restricted set of references to only those in %s' % SOURCE_TABLE)
+        return
 
