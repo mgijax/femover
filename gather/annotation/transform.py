@@ -6,7 +6,7 @@
 
 import dbAgnostic
 import GOFilter
-import constants as C
+from . import constants as C
 import Lookup
 
 EVIDENCE_CODE_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'abbreviation')

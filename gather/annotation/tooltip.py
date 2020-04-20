@@ -8,7 +8,7 @@
 import logger
 
 import dbAgnostic
-import constants as C
+from . import constants as C
 
 class TooltipFinder:
     """
@@ -121,5 +121,5 @@ class TooltipFinder:
 
 
     def getTooltip(self, accID):
-        if self.idCache.has_key(accID):
+        if accID in self.idCache:
             return self.idCache[accID]
