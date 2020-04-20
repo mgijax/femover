@@ -186,6 +186,7 @@ class AlleleSequenceNumGatherer (Gatherer.Gatherer):
 
                 self.finalColumns = [ '_Allele_key' ] + counts
                 self.finalResults = list(dict.values()) 
+                self.finalResults.sort()
                 logger.info(self.finalResults[0])
                 return
 

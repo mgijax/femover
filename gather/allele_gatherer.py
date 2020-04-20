@@ -100,7 +100,7 @@ class AlleleGatherer (Gatherer.Gatherer):
 
                 # trim trailing whitespace
 
-                for key in list(self.molNote.keys()):
+                for key in self.molNote:
                         self.molNote[key] = self.molNote[key].rstrip()
 
                 logger.debug('Found %d molecular notes' % len(self.molNote))
