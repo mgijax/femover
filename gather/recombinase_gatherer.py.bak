@@ -173,10 +173,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         #
                         # if existing allele...
                         #
-                        if allKey in alleleSystemMap:
+                        if alleleSystemMap.has_key(allKey):
 
                                 # if no existing system...
-                                if system not in alleleSystemMap[allKey]:
+                                if not alleleSystemMap[allKey].has_key(system):
 
                                         # update allele_system_key count
                                         alleleSystemKey = alleleSystemKey + 1
@@ -211,10 +211,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         #
                         # if existing allele...
                         #
-                        if allKey in alleleStructureMap:
+                        if alleleStructureMap.has_key(allKey):
 
                                 # if no existing system...
-                                if system not in alleleStructureMap[allKey]:
+                                if not alleleStructureMap[allKey].has_key(system):
                                         alleleStructureMap[allKey][system] = { structure : {
                                         'e1':'', 'e2':'', 'e3':'',
                                         'p1':'', 'p2':'', 'p3':'',
@@ -226,7 +226,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         'expressed':0}}
 
                                 # if structure...
-                                elif structure not in alleleStructureMap[allKey][system]:
+                                elif not alleleStructureMap[allKey][system].has_key(structure):
                                         alleleStructureMap[allKey][system][structure] = {
                                                 'e1':'', 'e2':'', 'e3':'',
                                                 'p1':'', 'p2':'', 'p3':'',
@@ -378,7 +378,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         # alleleData: dictonary of unique allele id:symbol 
                         # for use in other functions
                         #
-                        if allKey not in alleleData:
+                        if not alleleData.has_key(allKey):
                                 alleleData[allKey] = (row[idCol], row[symCol])
 
                 #
@@ -386,7 +386,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #
                 # write all of the alleleSystemOther information into the output file
                 #
-                for allKey in list(alleleSystemOtherMap.keys()):
+                for allKey in alleleSystemOtherMap.keys():
 
                         out.append ( (allKey, alleleSystemOtherMap[allKey]['row'][keyCol],
                     alleleSystemOtherMap[allKey]['row'][idCol],
@@ -439,9 +439,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 out = []
                 i = 0
-                alleles = list(alleleSystemMap.keys())
+                alleles = alleleSystemMap.keys()
                 for allele in alleles:
-                        systems = list(alleleSystemMap[allele].keys())
+                        systems = alleleSystemMap[allele].keys()
                         systems.sort()
 
                         alleleID = alleleData[allele][0]
@@ -458,7 +458,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                             for otherSystem in otherSystems:
                                 if otherSystem:
                                     k = alleleSystemMap[allele][otherSystem]
-                                    if k in positives:
+                                    if positives.has_key(k):
                                         i = i + 1
                                         out.append ( (i, alleleSystemKey,
                                                 alleleID, otherSystem) )
@@ -492,19 +492,19 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 bySystem = {}           # bySystem[system] = list of alleles
                                         # with expressed = 1 for this system
 
-                alleles = list(alleleSystemMap.keys())
+                alleles = alleleSystemMap.keys()
                 for allele in alleles:
-                        systems = list(alleleSystemMap[allele].keys())
+                        systems = alleleSystemMap[allele].keys()
                         for system in systems:
                                 asKey = alleleSystemMap[allele][system]
 
                                 # if this allele/system did not have expressed
                                 # = 1, then skip it
 
-                                if asKey not in positives:
+                                if not positives.has_key(asKey):
                                         continue
 
-                                if system not in bySystem:
+                                if not bySystem.has_key (system):
                                         bySystem[system] = [ allele ]
                                 else:
                                         bySystem[system].append (allele)
@@ -512,7 +512,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 out = []
                 i = 0
 
-                for system in list(bySystem.keys()):
+                for system in bySystem.keys():
                         alleles = bySystem[system]
 
                         for (allele, otherAlleles) in explode(alleles):
@@ -551,7 +551,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 for r in self.results[1][1]:
                         key = r[keyCol]
-                        if key in alleleComp:
+                        if alleleComp.has_key (key):
                                 alleleComp[key] = alleleComp[key] + r[noteCol]
                         else:
                                 alleleComp[key] = r[noteCol]
@@ -559,7 +559,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 # trim trailing whitespace from allelic composition notes
 
-                for key in list(alleleComp.keys()):
+                for key in alleleComp.keys():
                         alleleComp[key] = TagConverter.convert (
                                 alleleComp[key].rstrip() )
 
@@ -598,7 +598,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         # only keep the first ID and name found for
                         # each probe/antibody
 
-                        if key not in ids:
+                        if not ids.has_key(key):
                                 ids[key] = r[idCol]
                                 names[key] = r[nameCol] 
                 return ids, names
@@ -701,7 +701,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                         info = (i, alleleSystemKey)
                         dbResultKey = r[dbResultCol]
-                        if dbResultKey in newResultKeys:
+                        if newResultKeys.has_key(dbResultKey):
                                 newResultKeys[dbResultKey].append (info)
                         else:
                                 newResultKeys[dbResultKey] = [ info ]
@@ -724,26 +724,26 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         pPrep = r[pPrepCol]
                         aPrep = r[aPrepCol]
 
-                        if pPrep in probeIDs:
+                        if probeIDs.has_key(pPrep):
                                 row.append ('probe')
-                        elif aPrep in antibodyIDs:
+                        elif antibodyIDs.has_key(aPrep):
                                 row.append ('antibody')
                         else:
                                 row.append ('direct')
 
                         genotype = r[genotypeCol]
 
-                        if genotype in alleleComp:
+                        if alleleComp.has_key (genotype):
                                 row.append (alleleComp[genotype])
                         else:
                                 row.append (None)
 
-                        if genotype in strain:
+                        if strain.has_key (genotype):
                                 row.append (strain[genotype])
                         else:
                                 row.append (None)
 
-                        if r[assayCol] in assayNotes:
+                        if assayNotes.has_key (r[assayCol]):
                                 row.append (assayNotes[r[assayCol]])
                         else:
                                 row.append (None)
@@ -753,7 +753,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                         for (prep, dicts) in toDo:
                                 for dict in dicts:
-                                        if prep in dict:
+                                        if dict.has_key(prep):
                                                 row.append (dict[prep])
                                         else:
                                                 row.append (None)
@@ -800,7 +800,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                         logger.debug ('Sorted %d rows by %s' % (i - 1, field))
 
-                allRows = list(sorted.values())
+                allRows = sorted.values()
                 allRows.sort()
                 logger.debug ('Sorted output rows prior to load')
 
@@ -842,7 +842,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 asMax = 0
 
                 for row in rows:
-                    if row[resultCol] not in resultMap:
+                    if not resultMap.has_key(row[resultCol]):
                         logger.debug ('Unknown result key: %s' % \
                                 row[resultCol])
                         continue
@@ -861,7 +861,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                 label) )
 
                         pair = (alleleSysKey, imageKey)
-                        if pair not in done:
+                        if not done.has_key (pair):
 
                                 if alleleSysKey != lastSystemKey:
                                         asNum = asNum + 1
