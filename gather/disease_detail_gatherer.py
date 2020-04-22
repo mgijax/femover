@@ -52,17 +52,11 @@ TERM_TO_DISEASE_MODELS = {}     # dict; term key -> [ DiseaseModel objects ]
 
 ###--- Functions ---###
 
-def compareRefs (a, b):
-        # compare two references for ordering by their sequence number
+def referenceSortKey(a):
+        return ReferenceCitations.getSequenceNum(a)
 
-        return cmp(ReferenceCitations.getSequenceNum(a),
-                ReferenceCitations.getSequenceNum(b) )
-
-def compareDiseaseModels (a, b):
-        # assumes a and b are both (disease model key, DiseaseModel object);
-        # compares them for ordering by their sequence numbers
-
-        return cmp(a[1].getSequenceNum(), b[1].getSequenceNum())
+def diseaseModelSortKey(a):
+        return a[1].getSequenceNum()
 
 def getAllDiseaseModels():
         # get all DiseaseModel objects in an unordered list
@@ -314,7 +308,7 @@ def markerSortKey(a):
         # sort causative markers first (flag == 1), then non-causative (flag == 0)
         # sort by symbol within each of those categories
 
-        return (-a[1], symbolsort.splitter(a[0]))
+        return (-a[1], symbolsort.splitter(MARKER_DATA_CACHE[a[0]][1]))
 
 ###--- Classes ---###
 
@@ -559,7 +553,7 @@ class DiseaseModel:
 
         def getReferenceKeys (self):
                 if not self.refsSorted:
-                        self.refs.sort(compareRefs)
+                        self.refs.sort(key=referenceSortKey)
                         self.refsSorted = True
                 return self.refs
 
@@ -1010,7 +1004,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
 
                         # [ (disease model key, DiseaseModel object), ... ]
                         dmList = list(diseaseModels.items())
-                        dmList.sort(compareDiseaseModels)
+                        dmList.sort(key=diseaseModelSortKey)
 
                         for (dmKey, dm) in dmList:
                                 seqNum = seqNum + 1
