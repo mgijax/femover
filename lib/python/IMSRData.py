@@ -28,6 +28,8 @@ class IMSRDatabase:
                 
                 if type(lines) == bytes:
                         lines = 'n'.split(lines.decode())
+                elif type(lines[0]) == bytes:
+                        lines = [x.decode() for x in lines]
 
                 cellLines = {}
                 strains = {}
@@ -147,14 +149,14 @@ if __name__=="__main__":
         class IMSRDBTestCase(unittest.TestCase):
                 def test_queryAllCounts(self):
                         cellLineCount,strainCount,markerCount = imsrDB.queryAllCounts()
-                        print("count of cell lines = %d"%len(cellLineCount))
-                        print("count of strains = %d"%len(strainCount))
-                        print("count of markers = %d"%len(markerCount))
+                        print(("count of cell lines = %d"%len(cellLineCount)))
+                        print(("count of strains = %d"%len(strainCount)))
+                        print(("count of markers = %d"%len(markerCount)))
                         self.assertTrue(markerCount["MGI:97490"] > 0,"Pax6 count not greater than zero")
-                        print("pax6 count = %s"%markerCount["MGI:97490"])
+                        print(("pax6 count = %s"%markerCount["MGI:97490"]))
         class IMSRStrainTestCase(unittest.TestCase):
                 def test_queryStrains(self):
                         lines = imsrStrains.queryStrains()
                         self.assertTrue(len(lines) > 0, 'Failed to retrieve lines')
-                        print('Got %d strain lines' % len(lines))
+                        print(('Got %d strain lines' % len(lines)))
         unittest.main()
