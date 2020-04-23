@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -19,17 +19,17 @@ tableName = 'hdp_marker_to_reference'
 # hdp (human disease portal)
 #
 # A row in this table represents:
-#	a marker -> reference association between:
-#		a) mouse/DO (1020) via a super-simple or simple genotype
-#		b) mouse marker/allele/DO (1012) (no genotypes)
+#       a marker -> reference association between:
+#               a) mouse/DO (1020) via a super-simple or simple genotype
+#               b) mouse marker/allele/DO (1012) (no genotypes)
 #
 # See gather for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int	not null,
-	marker_key		int	not null,
-	reference_key		int	not null,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key              int     not null,
+        marker_key              int     not null,
+        reference_key           int     not null,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -49,21 +49,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'central table for the marker/reference petal, containing one row for each marker/reference',
-	Table.COLUMN : {
-		'unique_key' : 'unique key for this record',
-		'marker_key' : 'mouse marker that is annotated to DO/disease term',
-		'reference_key' : 'reference annotated to the mouse marker',
-		},
-	}
+        Table.TABLE : 'central table for the marker/reference petal, containing one row for each marker/reference',
+        Table.COLUMN : {
+                'unique_key' : 'unique key for this record',
+                'marker_key' : 'mouse marker that is annotated to DO/disease term',
+                'reference_key' : 'reference annotated to the mouse marker',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

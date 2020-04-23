@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -25,17 +25,17 @@ tableName = 'hdp_genocluster_annotation'
 # see the gatherer for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int	not null,
-	hdp_genocluster_key	int	not null,
-	term_key		int 	null,
+        unique_key              int     not null,
+        hdp_genocluster_key     int     not null,
+        term_key                int     null,
         annotation_type         int     not null,
-	qualifier_type          text    null,
-        term_type         	text    not null,
-	term_id			text	null,
-	term			text	not null,
-	has_backgroundnote	int	not null,
-	genotermref_count       int     not null,
-	PRIMARY KEY(unique_key))''' % tableName
+        qualifier_type          text    null,
+        term_type               text    not null,
+        term_id                 text    null,
+        term                    text    not null,
+        has_backgroundnote      int     not null,
+        genotermref_count       int     not null,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -58,10 +58,10 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the grid cluster flower containing data about annotations that belong to a given grid cluster',
-	Table.COLUMN : {
-		'unique_key' : 'unique identifier for this record, no other purpose',
-		'hdp_genocluster_key' : 'unique key identifying this human disease portal geno cluster',
+        Table.TABLE : 'petal table for the grid cluster flower containing data about annotations that belong to a given grid cluster',
+        Table.COLUMN : {
+                'unique_key' : 'unique identifier for this record, no other purpose',
+                'hdp_genocluster_key' : 'unique key identifying this human disease portal geno cluster',
                 'term_key' : 'term that is annotated to the marker',
                 'annotation_type' : 'type of annotation',
                 'qualifier_type' : 'type of qualifier ("normal", null)',
@@ -70,16 +70,16 @@ comments = {
                 'term' : 'text of the term itself',
                 'has_backgroundnote' : '1 if the annotation contains a background note',
                 'genotermref_count' : 'number of annotations by geno/term/refererence',
-		},
-	}
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

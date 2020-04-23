@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -27,12 +27,12 @@ tableName = 'hdp_gridcluster_marker'
 # see the gatherer for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int	not null,
-	hdp_gridcluster_key	int	not null,
-	marker_key		int	not null,
-	organism_key		int	not null,
-	symbol			text	not null,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key              int     not null,
+        hdp_gridcluster_key     int     not null,
+        marker_key              int     not null,
+        organism_key            int     not null,
+        symbol                  text    not null,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -45,7 +45,7 @@ indexes = {
 
 keys = {
         'marker_key' : ('marker', 'marker_key'),
-	'hdp_gridcluster_key' : ('hdp_gridcluster', 'hdp_gridcluster_key'),
+        'hdp_gridcluster_key' : ('hdp_gridcluster', 'hdp_gridcluster_key'),
         }
 
 # index used to cluster data in the table
@@ -53,23 +53,23 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the grid cluster flower containing data about markers that belong to a given grid cluster',
-	Table.COLUMN : {
-		'unique_key' : 'unique identifier for this record, no other purpose',
-		'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
-		'marker_key' : 'marker that is annotated to the grid cluster',
-		'organism_key' : 'organism of marker',
-		'symbol' : 'symbol of marker',
-		},
-	}
+        Table.TABLE : 'petal table for the grid cluster flower containing data about markers that belong to a given grid cluster',
+        Table.COLUMN : {
+                'unique_key' : 'unique identifier for this record, no other purpose',
+                'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
+                'marker_key' : 'marker that is annotated to the grid cluster',
+                'organism_key' : 'organism of marker',
+                'symbol' : 'symbol of marker',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

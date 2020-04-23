@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -28,10 +28,10 @@ tableName = 'hdp_gridcluster'
 # see the gatherer for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
-	hdp_gridcluster_key	int	not null,
-	homologene_id		text	null,
-	source			text	null,
-	PRIMARY KEY(hdp_gridcluster_key))''' % tableName
+        hdp_gridcluster_key     int     not null,
+        homologene_id           text    null,
+        source                  text    null,
+        PRIMARY KEY(hdp_gridcluster_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -45,21 +45,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'central table for the grid cluster petal, containing one row for each human disease portal grid cluster',
-	Table.COLUMN : {
-		'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
-		'homologene_id' : 'homologene accession id',
-		'source' : 'source of the homology cluster (HGNC, HomoloGene)',
-		},
-	}
+        Table.TABLE : 'central table for the grid cluster petal, containing one row for each human disease portal grid cluster',
+        Table.COLUMN : {
+                'hdp_gridcluster_key' : 'unique key identifying this human disease portal grid cluster',
+                'homologene_id' : 'homologene accession id',
+                'source' : 'source of the homology cluster (HGNC, HomoloGene)',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
