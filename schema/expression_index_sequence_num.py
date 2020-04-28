@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -15,10 +15,10 @@ tableName = 'expression_index_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	index_key	int	not null,
-	by_reference	int	not null,
-	by_marker	int	not null,
-	PRIMARY KEY(index_key))''' % tableName
+        index_key       int     not null,
+        by_reference    int     not null,
+        by_marker       int     not null,
+        PRIMARY KEY(index_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -32,21 +32,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the expression literature flower, containing pre-computed sorts for ordering index entries',
-	Table.COLUMN : {
-		'index_key' : 'identifies the literature index record',
-		'by_reference' : 'sort by reference (year, ID, reference key)',
-		'by_marker' : 'sort by marker symbol',
-		},
-	}
+        Table.TABLE : 'petal table for the expression literature flower, containing pre-computed sorts for ordering index entries',
+        Table.COLUMN : {
+                'index_key' : 'identifies the literature index record',
+                'by_reference' : 'sort by reference (year, ID, reference key)',
+                'by_marker' : 'sort by marker symbol',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
