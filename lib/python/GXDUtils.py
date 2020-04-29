@@ -37,7 +37,7 @@ def getAssayTypeSeq(assayType):
                        
         # check assayType.lower()
         if not isinstance(assayType, int) \
-            and not isinstance(assayType, long):
+            and not isinstance(assayType, int):
                 assayType = assayType.lower()
                 
         return assayType in ASSAY_TYPE_SEQMAP \
@@ -79,162 +79,162 @@ def abbreviateAge (
 
 ###--- functions dealing with EMAPA/EMAPS mapping ---###
 
-EMAPS_TO_EMAPA = None	# dictionary mapping EMAPS key to EMAPA key
-EMAPA_STAGE_RANGE = None	# dictionary mapping EMAPA key -> range string
-EMAPA_TERM = None		# dictionary mapping EMAPA key -> term
-EMAPA_START_STAGE = None	# dictionary mapping EMAPA key -> start stage
-EMAPA_ID = None			# dictionary mapping EMAPA key -> acc ID
+EMAPS_TO_EMAPA = None   # dictionary mapping EMAPS key to EMAPA key
+EMAPA_STAGE_RANGE = None        # dictionary mapping EMAPA key -> range string
+EMAPA_TERM = None               # dictionary mapping EMAPA key -> term
+EMAPA_START_STAGE = None        # dictionary mapping EMAPA key -> start stage
+EMAPA_ID = None                 # dictionary mapping EMAPA key -> acc ID
 
 def getEmapaID (emapaKey):
-	# get the primary accession ID for the EMAPA term with the given key
+        # get the primary accession ID for the EMAPA term with the given key
 
-	global EMAPA_ID
+        global EMAPA_ID
 
-	if EMAPA_ID == None:
-		EMAPA_ID = {}
+        if EMAPA_ID == None:
+                EMAPA_ID = {}
 
-		query = '''select a.accID,
-				t._Term_key
-			from acc_accession a,
-				voc_term t,
-				voc_vocab v
-			where a._MGIType_key = 13
-				and a._Object_key = t._Term_key
-				and t._Vocab_key = v._Vocab_key
-				and v.name = 'EMAPA'
-				and a.preferred = 1
-				and a.private = 0'''
+                query = '''select a.accID,
+                                t._Term_key
+                        from acc_accession a,
+                                voc_term t,
+                                voc_vocab v
+                        where a._MGIType_key = 13
+                                and a._Object_key = t._Term_key
+                                and t._Vocab_key = v._Vocab_key
+                                and v.name = 'EMAPA'
+                                and a.preferred = 1
+                                and a.private = 0'''
 
-		(cols, rows) = dbAgnostic.execute(query)
+                (cols, rows) = dbAgnostic.execute(query)
 
-		emapaCol = dbAgnostic.columnNumber (cols, '_Term_key')
-		idCol = dbAgnostic.columnNumber (cols, 'accID')
+                emapaCol = dbAgnostic.columnNumber (cols, '_Term_key')
+                idCol = dbAgnostic.columnNumber (cols, 'accID')
 
-		for row in rows:
-			EMAPA_ID[row[emapaCol]] = row[idCol]
+                for row in rows:
+                        EMAPA_ID[row[emapaCol]] = row[idCol]
 
-		logger.debug('Cached %d EMAPA IDs' % len(EMAPA_ID))
+                logger.debug('Cached %d EMAPA IDs' % len(EMAPA_ID))
 
-	if EMAPA_ID.has_key(emapaKey):
-		return EMAPA_ID[emapaKey]
-	return None
+        if emapaKey in EMAPA_ID:
+                return EMAPA_ID[emapaKey]
+        return None
 
 def getEmapaKey (emapsKey):
-	# get the EMAPA key corresponding to the given EMAPS key
+        # get the EMAPA key corresponding to the given EMAPS key
 
-	global EMAPS_TO_EMAPA
+        global EMAPS_TO_EMAPA
 
-	if EMAPS_TO_EMAPA == None:
-		query = '''select _emapa_term_key, _term_key
-			from voc_term_emaps'''
+        if EMAPS_TO_EMAPA == None:
+                query = '''select _emapa_term_key, _term_key
+                        from voc_term_emaps'''
 
-		(cols, rows) = dbAgnostic.execute(query)
+                (cols, rows) = dbAgnostic.execute(query)
 
-		EMAPS_TO_EMAPA = {}
+                EMAPS_TO_EMAPA = {}
 
-		emapsCol = dbAgnostic.columnNumber (cols, '_term_key')
-		emapaCol = dbAgnostic.columnNumber (cols, '_emapa_term_key')
+                emapsCol = dbAgnostic.columnNumber (cols, '_term_key')
+                emapaCol = dbAgnostic.columnNumber (cols, '_emapa_term_key')
 
-		for row in rows:
-			EMAPS_TO_EMAPA[row[emapsCol]] = row[emapaCol]
+                for row in rows:
+                        EMAPS_TO_EMAPA[row[emapsCol]] = row[emapaCol]
 
-		logger.debug('Mapped %d EMAPS terms to EMAPA' % \
-			len(EMAPS_TO_EMAPA))
+                logger.debug('Mapped %d EMAPS terms to EMAPA' % \
+                        len(EMAPS_TO_EMAPA))
 
-	if EMAPS_TO_EMAPA.has_key(emapsKey):
-		return EMAPS_TO_EMAPA[emapsKey]
-	return None
+        if emapsKey in EMAPS_TO_EMAPA:
+                return EMAPS_TO_EMAPA[emapsKey]
+        return None
 
 def getEmapaStageRange (emapaKey):
-	# get the stage range (eg- "TS1-5") for the given EMAPA key
+        # get the stage range (eg- "TS1-5") for the given EMAPA key
 
-	global EMAPA_STAGE_RANGE
+        global EMAPA_STAGE_RANGE
 
-	if EMAPA_STAGE_RANGE == None:
-		query = '''select _term_key, startStage, endStage
-			from voc_term_emapa'''
+        if EMAPA_STAGE_RANGE == None:
+                query = '''select _term_key, startStage, endStage
+                        from voc_term_emapa'''
 
-		(cols, rows) = dbAgnostic.execute(query)
+                (cols, rows) = dbAgnostic.execute(query)
 
-		EMAPA_STAGE_RANGE = {}
+                EMAPA_STAGE_RANGE = {}
 
-		emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
-		startCol = dbAgnostic.columnNumber (cols, 'startStage')
-		endCol = dbAgnostic.columnNumber (cols, 'endStage')
+                emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
+                startCol = dbAgnostic.columnNumber (cols, 'startStage')
+                endCol = dbAgnostic.columnNumber (cols, 'endStage')
 
-		for row in rows:
-			startStage = row[startCol]
-			endStage = row[endCol]
+                for row in rows:
+                        startStage = row[startCol]
+                        endStage = row[endCol]
 
-			if startStage != endStage:
-				s = 'TS%s-%s' % (startStage, endStage)
-			else:
-				s = 'TS%s' % startStage
+                        if startStage != endStage:
+                                s = 'TS%s-%s' % (startStage, endStage)
+                        else:
+                                s = 'TS%s' % startStage
 
-			EMAPA_STAGE_RANGE[row[emapaCol]] = s
+                        EMAPA_STAGE_RANGE[row[emapaCol]] = s
 
-		logger.debug('Got stage ranges for %d EMAPA terms' % \
-			len(EMAPA_STAGE_RANGE))
+                logger.debug('Got stage ranges for %d EMAPA terms' % \
+                        len(EMAPA_STAGE_RANGE))
 
-	if EMAPA_STAGE_RANGE.has_key(emapaKey):
-		return EMAPA_STAGE_RANGE[emapaKey]
-	return None
+        if emapaKey in EMAPA_STAGE_RANGE:
+                return EMAPA_STAGE_RANGE[emapaKey]
+        return None
 
 def getEmapaTerm (emapaKey):
-	# get the structure term for the given EMAPA key
+        # get the structure term for the given EMAPA key
 
-	global EMAPA_TERM
+        global EMAPA_TERM
 
-	if EMAPA_TERM == None:
-		query = '''select t._term_key, t.term
-			from voc_term t, voc_vocab v
-			where t._vocab_key = v._vocab_key
-				and v.name = 'EMAPA' '''
+        if EMAPA_TERM == None:
+                query = '''select t._term_key, t.term
+                        from voc_term t, voc_vocab v
+                        where t._vocab_key = v._vocab_key
+                                and v.name = 'EMAPA' '''
 
-		(cols, rows) = dbAgnostic.execute(query)
+                (cols, rows) = dbAgnostic.execute(query)
 
-		EMAPA_TERM = {}
+                EMAPA_TERM = {}
 
-		emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
-		termCol = dbAgnostic.columnNumber (cols, 'term')
+                emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
+                termCol = dbAgnostic.columnNumber (cols, 'term')
 
-		for row in rows:
-			EMAPA_TERM[row[emapaCol]] = row[termCol]
+                for row in rows:
+                        EMAPA_TERM[row[emapaCol]] = row[termCol]
 
-		logger.debug('Got structures for %d EMAPA terms' % \
-			len(EMAPA_TERM))
+                logger.debug('Got structures for %d EMAPA terms' % \
+                        len(EMAPA_TERM))
 
-	if EMAPA_TERM.has_key(emapaKey):
-		return EMAPA_TERM[emapaKey]
-	return None
+        if emapaKey in EMAPA_TERM:
+                return EMAPA_TERM[emapaKey]
+        return None
 
 def getEmapaStartStage (emapaKey):
-	# get the start stage (as an integer) for the given EMAPA key
+        # get the start stage (as an integer) for the given EMAPA key
 
-	global EMAPA_START_STAGE
+        global EMAPA_START_STAGE
 
-	if EMAPA_START_STAGE == None:
-		query = 'select _term_key, startStage from voc_term_emapa'
+        if EMAPA_START_STAGE == None:
+                query = 'select _term_key, startStage from voc_term_emapa'
 
-		(cols, rows) = dbAgnostic.execute(query)
+                (cols, rows) = dbAgnostic.execute(query)
 
-		EMAPA_STAGE_RANGE = {}
+                EMAPA_STAGE_RANGE = {}
 
-		emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
-		startCol = dbAgnostic.columnNumber (cols, 'startStage')
+                emapaCol = dbAgnostic.columnNumber (cols, '_term_key')
+                startCol = dbAgnostic.columnNumber (cols, 'startStage')
 
-		EMAPA_START_STAGE = {}
+                EMAPA_START_STAGE = {}
 
-		for row in rows:
-			EMAPA_START_STAGE[row[emapaCol]] = \
-				int(row[startCol])
+                for row in rows:
+                        EMAPA_START_STAGE[row[emapaCol]] = \
+                                int(row[startCol])
 
-		logger.debug('Got start stages for %d EMAPA terms' % \
-			len(EMAPA_START_STAGE))
+                logger.debug('Got start stages for %d EMAPA terms' % \
+                        len(EMAPA_START_STAGE))
 
-	if EMAPA_START_STAGE.has_key(emapaKey):
-		return EMAPA_START_STAGE[emapaKey]
-	return None
+        if emapaKey in EMAPA_START_STAGE:
+                return EMAPA_START_STAGE[emapaKey]
+        return None
 
 ###--- functions dealing with identifying high-level ---###
 ###--- EMAPA terms for each lower-level EMAPA term   ---###
@@ -252,127 +252,127 @@ START_STAGE = {}
 END_STAGE = {}
 
 def _getHighLevelTermKeys():
-	# retrieves a list of term keys for high-level EMAPA terms, including
-	# the children of "mouse" (except organ system) plus the children of
-	# "organ system".  also populates globals START_STAGE and END_STAGE.
+        # retrieves a list of term keys for high-level EMAPA terms, including
+        # the children of "mouse" (except organ system) plus the children of
+        # "organ system".  also populates globals START_STAGE and END_STAGE.
 
-	# SQL command to retrieve the data set specified in comment above
-	cmd = '''select distinct ct._Term_key, startStage, endStage
-		from voc_vocab v, voc_term pt,
-			dag_node pn, dag_edge e, dag_node cn,
-			voc_term ct, dag_dag dd, voc_term_emapa a
-		where v.name = 'EMAPA'
-			and ct._Term_key = a._Term_key
-			and v._Vocab_key = pt._Vocab_key
-			and pt.term in ('mouse', 'organ system')
-			and pt._Term_Key = pn._Object_key
-			and pn._Node_key = e._Parent_key
-			and e._Child_key = cn._Node_key
-			and cn._Object_key = ct._Term_key
-			and e._DAG_key = dd._DAG_key
-			and ct.term not in ('mouse', 'organ system')
-			and dd.name = 'EMAPA' '''
+        # SQL command to retrieve the data set specified in comment above
+        cmd = '''select distinct ct._Term_key, startStage, endStage
+                from voc_vocab v, voc_term pt,
+                        dag_node pn, dag_edge e, dag_node cn,
+                        voc_term ct, dag_dag dd, voc_term_emapa a
+                where v.name = 'EMAPA'
+                        and ct._Term_key = a._Term_key
+                        and v._Vocab_key = pt._Vocab_key
+                        and pt.term in ('mouse', 'organ system')
+                        and pt._Term_Key = pn._Object_key
+                        and pn._Node_key = e._Parent_key
+                        and e._Child_key = cn._Node_key
+                        and cn._Object_key = ct._Term_key
+                        and e._DAG_key = dd._DAG_key
+                        and ct.term not in ('mouse', 'organ system')
+                        and dd.name = 'EMAPA' '''
 
-	(cols, rows) = dbAgnostic.execute(cmd)
-	termCol = dbAgnostic.columnNumber (cols, '_Term_key')
-	startCol = dbAgnostic.columnNumber (cols, 'startStage')
-	endCol = dbAgnostic.columnNumber (cols, 'endStage')
-	
-	terms = []
-	for row in rows:
-		terms.append(row[termCol])
-		START_STAGE[row[termCol]] = int(row[startCol])
-		END_STAGE[row[termCol]] = int(row[endCol])
+        (cols, rows) = dbAgnostic.execute(cmd)
+        termCol = dbAgnostic.columnNumber (cols, '_Term_key')
+        startCol = dbAgnostic.columnNumber (cols, 'startStage')
+        endCol = dbAgnostic.columnNumber (cols, 'endStage')
+        
+        terms = []
+        for row in rows:
+                terms.append(row[termCol])
+                START_STAGE[row[termCol]] = int(row[startCol])
+                END_STAGE[row[termCol]] = int(row[endCol])
 
-	logger.debug('Got %d high level EMAPA terms' % len(terms))
-	return terms
+        logger.debug('Got %d high level EMAPA terms' % len(terms))
+        return terms
 
 def _cacheHighLevelMapping():
-	# build a cache that maps from each EMAPA term key to its associated
-	# high-level term keys
+        # build a cache that maps from each EMAPA term key to its associated
+        # high-level term keys
 
-	global TERM_TO_HIGH_LEVEL
+        global TERM_TO_HIGH_LEVEL
 
-	TERM_TO_HIGH_LEVEL = {}
-	highLevelTerms = _getHighLevelTermKeys()
+        TERM_TO_HIGH_LEVEL = {}
+        highLevelTerms = _getHighLevelTermKeys()
 
-	# initially fill in the high-level terms themselves
+        # initially fill in the high-level terms themselves
 
-	for termKey in highLevelTerms:
-		TERM_TO_HIGH_LEVEL[termKey] = [ termKey ]
+        for termKey in highLevelTerms:
+                TERM_TO_HIGH_LEVEL[termKey] = [ termKey ]
 
-	# note the high-level ancestors for each descendent term
+        # note the high-level ancestors for each descendent term
 
-	cmd = '''select distinct c._AncestorObject_key,
-			c._DescendentObject_key
-		from dag_closure c, dag_dag d
-		where c._DAG_key = d._DAG_key
-			and d.name = 'EMAPA'
-			and c._AncestorObject_key in (%s)''' % (
-				','.join(map(str, highLevelTerms)) )
+        cmd = '''select distinct c._AncestorObject_key,
+                        c._DescendentObject_key
+                from dag_closure c, dag_dag d
+                where c._DAG_key = d._DAG_key
+                        and d.name = 'EMAPA'
+                        and c._AncestorObject_key in (%s)''' % (
+                                ','.join(map(str, highLevelTerms)) )
 
-	(cols, rows) = dbAgnostic.execute(cmd)
-	ancestorCol = dbAgnostic.columnNumber (cols, '_AncestorObject_key')
-	descendentCol = dbAgnostic.columnNumber (cols, '_DescendentObject_key')
+        (cols, rows) = dbAgnostic.execute(cmd)
+        ancestorCol = dbAgnostic.columnNumber (cols, '_AncestorObject_key')
+        descendentCol = dbAgnostic.columnNumber (cols, '_DescendentObject_key')
 
-	for row in rows:
-		descendent = row[descendentCol]
-		ancestor = row[ancestorCol]
+        for row in rows:
+                descendent = row[descendentCol]
+                ancestor = row[ancestorCol]
 
-		if TERM_TO_HIGH_LEVEL.has_key(descendent):
-			TERM_TO_HIGH_LEVEL[descendent].append(ancestor)
-		else:
-			TERM_TO_HIGH_LEVEL[descendent] = [ ancestor ]
+                if descendent in TERM_TO_HIGH_LEVEL:
+                        TERM_TO_HIGH_LEVEL[descendent].append(ancestor)
+                else:
+                        TERM_TO_HIGH_LEVEL[descendent] = [ ancestor ]
 
-	logger.debug('Cached %d ancestors for %d EMAPA terms' % (
-		len(rows), len(TERM_TO_HIGH_LEVEL)) )
-	return
+        logger.debug('Cached %d ancestors for %d EMAPA terms' % (
+                len(rows), len(TERM_TO_HIGH_LEVEL)) )
+        return
 
 def getEmapaHighLevelTerms(emapaKey, stage):
-	# return a list of high level terms and IDs for the term with the
-	# given EMAPA key.  Each item in the returned list is a tuple:
-	# (EMAPA ID, EMAPA term)
+        # return a list of high level terms and IDs for the term with the
+        # given EMAPA key.  Each item in the returned list is a tuple:
+        # (EMAPA ID, EMAPA term)
 
-	if TERM_TO_HIGH_LEVEL == None:
-		_cacheHighLevelMapping()
+        if TERM_TO_HIGH_LEVEL == None:
+                _cacheHighLevelMapping()
 
-	if not TERM_TO_HIGH_LEVEL.has_key(emapaKey):
-		return []
+        if emapaKey not in TERM_TO_HIGH_LEVEL:
+                return []
 
-	intStage = int(stage)
+        intStage = int(stage)
 
-	terms = []
-	for ancestorKey in TERM_TO_HIGH_LEVEL[emapaKey]:
-		# We only want to include this high level term if the result's
-		# stage is within the term's stage range.
+        terms = []
+        for ancestorKey in TERM_TO_HIGH_LEVEL[emapaKey]:
+                # We only want to include this high level term if the result's
+                # stage is within the term's stage range.
 
-		startStage = START_STAGE[ancestorKey]
-		endStage = END_STAGE[ancestorKey]
+                startStage = START_STAGE[ancestorKey]
+                endStage = END_STAGE[ancestorKey]
 
-		if startStage <= intStage <= endStage: 
-			terms.append( (getEmapaID(ancestorKey), 
-				getEmapaTerm(ancestorKey)) )
-	return terms
+                if startStage <= intStage <= endStage: 
+                        terms.append( (getEmapaID(ancestorKey), 
+                                getEmapaTerm(ancestorKey)) )
+        return terms
 
 def unload():
-	# remove cached items from memory, allowing the space to be reclaimed
-	# and otherwise used
+        # remove cached items from memory, allowing the space to be reclaimed
+        # and otherwise used
 
-	global EMAPS_TO_EMAPA, EMAPA_STAGE_RANGE, EMAPA_TERM, EMAPA_ID
-	global EMAPA_START_STAGE, TERM_TO_HIGH_LEVEL, START_STAGE, END_STAGE
+        global EMAPS_TO_EMAPA, EMAPA_STAGE_RANGE, EMAPA_TERM, EMAPA_ID
+        global EMAPA_START_STAGE, TERM_TO_HIGH_LEVEL, START_STAGE, END_STAGE
 
-	EMAPS_TO_EMAPA = None
-	EMAPA_STAGE_RANGE = None
-	EMAPA_TERM = None
-	EMAPA_START_STAGE = None
-	EMAPA_ID = None	
-	TERM_TO_HIGH_LEVEL = None
-	START_STAGE = {}
-	END_STAGE = {}
+        EMAPS_TO_EMAPA = None
+        EMAPA_STAGE_RANGE = None
+        EMAPA_TERM = None
+        EMAPA_START_STAGE = None
+        EMAPA_ID = None 
+        TERM_TO_HIGH_LEVEL = None
+        START_STAGE = {}
+        END_STAGE = {}
 
-	gc.collect()
-	logger.debug('Reclaimed memory in GXDUtils')
-	return
+        gc.collect()
+        logger.debug('Reclaimed memory in GXDUtils')
+        return
 
 ###--- functions and variables dealing with identifying genotypes ---###
 ###--- and genotype/assay pairs as being wild-type or not         ---###
@@ -382,9 +382,9 @@ def unload():
 # - (genotype key, assay key) - for genotypes that can be considered wild-type for certain assay types
 #    These pairs must have:
 #       a. assay type = In situ reporter (knock in) (key 9)
-#	    b. only one allele pair
-#	    c. allele pair with one wild type allele and one other
-#	    d. both alleles for the assayed gene
+#           b. only one allele pair
+#           c. allele pair with one wild type allele and one other
+#           d. both alleles for the assayed gene
 WILD_TYPE = None
 
 def clearWildTypeCache():
@@ -417,7 +417,7 @@ def _cacheWildTypeData():
     
     WILD_TYPE = {}
 
-	# genotypes with no allele pairs (treat expression assays for these as wild type)
+        # genotypes with no allele pairs (treat expression assays for these as wild type)
     alwaysWild = '''select g._Genotype_key
         from gxd_genotype g
         where g._Genotype_key >= -2
@@ -429,11 +429,11 @@ def _cacheWildTypeData():
         WILD_TYPE[row[0]] = 1
     logger.debug('Cached %d always wild genotypes' % len(rows))
     
-	# also treat expression assays for these genotypes as wild type; these have:
-	#	a. assay type = In situ reporter (knock in) (key 9)
-	#	b. only one allele pair
-	#	c. allele pair with one wild type allele and one other
-	#	d. both alleles for the assayed gene
+        # also treat expression assays for these genotypes as wild type; these have:
+        #       a. assay type = In situ reporter (knock in) (key 9)
+        #       b. only one allele pair
+        #       c. allele pair with one wild type allele and one other
+        #       d. both alleles for the assayed gene
     sometimesWild = '''select distinct s._Assay_key, s._Genotype_key
         from gxd_specimen s, gxd_assay a, gxd_allelegenotype gag1, gxd_allelegenotype gag2,
             all_allele a1, all_allele a2
