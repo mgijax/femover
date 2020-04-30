@@ -92,9 +92,11 @@ def _getPostnatalAbbreviation(age):
             except:
                 pass
 
-    # last chance, see if any of the strings in 'standardTerms' is a prefix we can recognize (longest first)
-    prefixes = standardTerms.keys()
-    prefixes.sort(lambda x, y : -cmp(len(x), len(y)))
+    # last chance, see if any of the strings in 'standardTerms' is a prefix we can recognize (longest first).
+    # Sort them longest first.
+    prefixes = list(standardTerms.keys())
+    prefixes.sort(key=lambda x : len(x))
+    prefixes.reverse()
         
     for prefix in prefixes:
         if age.startswith(prefix):

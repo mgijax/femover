@@ -3,7 +3,7 @@
 
 import dbAgnostic
 import logger
-import constants as C
+from . import constants as C
 
 ###--- Globals ---###
 
@@ -31,7 +31,7 @@ def getExperimentTempTable():
     experimentTable = 'gxdht_experiments_to_move'
     cmd0 = '''create temp table %s (
                 _Experiment_key    int    not null,
-		is_in_atlas	   int    not null
+                is_in_atlas        int    not null
                 )''' % experimentTable
                 
     cmd1 = '''insert into %s
@@ -44,11 +44,11 @@ def getExperimentTempTable():
 
     cmd3 = '''update %s as x
         set is_in_atlas = 1
-	where exists (select 1
-	    from mgi_setmember msm, mgi_set ms
-	    where x._Experiment_key = msm._Object_key
-	        and msm._Set_key = ms._Set_key
-		and ms.name = 'Expression Atlas Experiments')''' % experimentTable
+        where exists (select 1
+            from mgi_setmember msm, mgi_set ms
+            where x._Experiment_key = msm._Object_key
+                and msm._Set_key = ms._Set_key
+                and ms.name = 'Expression Atlas Experiments')''' % experimentTable
 
     dbAgnostic.execute(cmd0)
     logger.debug('Created temp table %s' % experimentTable)
