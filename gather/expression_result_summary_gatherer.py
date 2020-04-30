@@ -20,6 +20,7 @@ import GXDUtils
 import GXDUniUtils
 import OutputFile
 import gc
+import dbAgnostic
 
 ReferenceCitations.restrict('GXD_Assay')    # only references tied to assays
 VocabSorter.setVocabs(91)                   # EMAPS
@@ -43,6 +44,9 @@ CLASSICAL_KEY_TABLE = GXDUniUtils.getClassicalKeyTable()
 # them.
 FILES = OutputFile.CachingOutputFileFactory()
 
+# maximum number of alleles we need to consider for sorting
+MAX_ALLELES = None
+
 ###--- Functions ---###
 
 def getIsExpressed(strength):
@@ -55,6 +59,20 @@ def getIsExpressed(strength):
         elif s in [ 'ambiguous', 'not specified' ]:
                 return 'Unknown/Ambiguous'
         return 'Yes'
+
+def setMaxAlleles():
+        # set MAX_ALLELES based on the number of maximum number of allele pairs per genotype
+        global MAX_ALLELES
+
+        cmd = 'select max(sequenceNum) from gxd_allelepair'
+        cols, rows = dbAgnostic.execute(cmd)
+
+        if len(rows) > 0:
+                MAX_ALLELES = 2 * rows[0][0]
+        else:
+                MAX_ALLELES = 14
+        logger.debug('Set MAX_ALLELES = %d' % MAX_ALLELES)
+        return
 
 # list of (old, new) pairs for use in seek-and-replace loops in abbreviate()
 TIMES = [ (' day ',''), ('week ','w '), ('month ','m '), ('year ','y ') ]
@@ -514,12 +532,20 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                 for (key, alleles) in itemList:
                         toSort.append ( (alleles, key) )
 
+                defaultAllele = (-999, ' ')             # bogus default allele to help sorting
+
                 def sortKey(a):
-                        # return a sort key for ( [ symbol 1, ..., symbol n ], allele key)
+                        # return a sort key for ( [ symbol 1, ..., symbol n ], genotype key)
+                        # must include same number of allele symbols in key then also include
+                        # the key to consistently resolve ties
 
                         key = []
                         for symbol in a[0]:
                                 key.append(symbolsort.splitter(symbol))
+                        while len(key) < MAX_ALLELES:
+                                key.append(defaultAllele)
+
+                        key.append(a[1])
                         return tuple(key)
 
                 toSort.sort(key=sortKey)
@@ -1124,6 +1150,7 @@ files = [
 # global instance of a ExpressionResultSummaryGatherer
 gatherer = ExpressionResultSummaryGatherer (files, cmds)
 gatherer.customWrites = True
+setMaxAlleles()
 
 ###--- main program ---###
 
