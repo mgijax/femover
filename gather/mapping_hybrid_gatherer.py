@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'mapping_hybrid' table in the front-end database
 
@@ -7,20 +7,20 @@ import Gatherer
 ###--- Classes ---###
 
 MappingHybridGatherer = Gatherer.Gatherer
-	# Is: a data gatherer for the mapping_hybrid table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for supplemental data for HYBRID mapping experiments,
-	#	collates results, writes tab-delimited text file
+        # Is: a data gatherer for the mapping_hybrid table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for supplemental data for HYBRID mapping experiments,
+        #       collates results, writes tab-delimited text file
 
 ###--- globals ---###
 
 cmds = [
-	'''select _Expt_key, band, case
-			when chrsOrGenes = 0 then 'chromosomes'
-			else'markers' 
-			end as concordance_type
-		from MLD_Hybrid''' 
-	]
+        '''select _Expt_key, band, case
+                        when chrsOrGenes = 0 then 'chromosomes'
+                        else'markers' 
+                        end as concordance_type
+                from MLD_Hybrid''' 
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
@@ -37,4 +37,4 @@ gatherer = MappingHybridGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)
