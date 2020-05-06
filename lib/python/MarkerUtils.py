@@ -367,12 +367,6 @@ def _getMarkerAllelePairs(whichSet):
 
     unifiedList = []
 
-    # We previously used a GroupedList here to save on memory, but this
-    # may have been a premature optimization.  We were losing big on
-    # performance, solely to save 15-20Mb.  I'm switching back to a 
-    # dictionary for now.  If memory constrains require, we can switch
-    # back to a GroupedList in the future.
-
     pairs = {}
 
     for myList in [ amRows, miRows, ecRows ]:

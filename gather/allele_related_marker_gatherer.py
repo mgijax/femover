@@ -15,7 +15,6 @@ import types
 import dbAgnostic
 import random
 import MarkerUtils 
-import GroupedList
 import gc
 import ReferenceUtils
 import VocabUtils
