@@ -13,9 +13,10 @@ import os
 import VocabUtils
 import GXDUniUtils
 import GOAnnotations
-from .annotation import transform
+import utils
+from annotation import transform
+from expression_ht import experiments
 
-from .expression_ht import experiments
 GXDUniUtils.setExptIDList(experiments.getExperimentIDsAsList(True))
 
 # don't count GO annotations with NOT qualifiers
@@ -77,9 +78,6 @@ def uniqueCount(rows, ignoreColumns = []):
 
                         uniqueSet.add(tuple(subrow))
 
-                        if (row[0] == 12184) and (str(row).find('1858') >= 0):
-                                logger.debug(str(row))
-                        
         return len(uniqueSet)
 
 def setupPhenoHeaderKeys():
@@ -925,7 +923,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
                 
                 cols.append('properties')
                 keyList = list(annotGroupsMap.keys())
-                keyList.sort()
+                keyList.sort(key=utils.stringSortKey)
                 for key in keyList:
                         markerKey, termKey, qualifier, evidenceCode, inferredFrom, propKey = key
                         groupRows = list(map(list, annotGroupsMap[key]))

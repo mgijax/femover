@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import utils
 
 ###--- Classes ---###
 
@@ -84,7 +85,7 @@ class StrainMarkerGatherer (Gatherer.Gatherer):
                 # For each marker, find the strains with no annotations.
                 missing = self.findMissingStrainsPerMarker()
                 markers = list(missing.keys())
-                markers.sort()
+                markers.sort(key=utils.intSortKey)
 
                 smKey = self.getMaxStrainMarkerKey()
                 ct = 0

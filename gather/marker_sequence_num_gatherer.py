@@ -206,7 +206,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                         if (cmOffset == None) or (cmOffset <= 0):
                                 cmOffset = maxOffset
                         if cytoband == None:
-                                cytoband == maxCytoband
+                                cytoband = maxCytoband
 
                         locations.append ( (row[chrCol], startCoord,
                                 cmOffset, cytoband, symbol, row[keyCol]) )

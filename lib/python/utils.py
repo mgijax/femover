@@ -59,3 +59,21 @@ def chromosomeSeqNum(chromosome, organismKey = 1):
         if chromosome in chromosomesByOrganism[organismKey]:
                 return chromosomesByOrganism[organismKey][chromosome]
         return 99999
+
+def intSortKey(i):
+        # return an integer sort key with None values coming first
+        if i == None:
+                return -999999
+        return i
+
+def stringSortKey(s):
+        # return string sort key with None values coming last
+        if type(s) == str:
+                return s
+        return 'zzzzzzzzzz'
+
+def floatSortKey(f):
+        # return float sort key with None values coming last
+        if f == None:
+                return 99999999999999
+        return f

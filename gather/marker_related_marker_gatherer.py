@@ -145,7 +145,7 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
                         # return sort key for sorting rows by marker key, category, term,
                         # chromosome, and coordinate
                         return (a[mrkKeyCol], a[categoryCol].lower(), a[termCol].lower(),
-                                utils.chromosomeSeqNum(a[chrCol]), a[coordCol])
+                                utils.chromosomeSeqNum(a[chrCol]), utils.floatSortKey(a[coordCol]))
 
                 rows.sort (key=rowSortKey)
                 logger.debug ('Sorted %d query %d rows' % (len(rows),
