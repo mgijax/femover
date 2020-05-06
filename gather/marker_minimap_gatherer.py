@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'marker_qtl_experiments' table in the front-end database
 
@@ -14,7 +14,7 @@ MAX_YCM_OFFSET = 47.0
 ###--- Classes ---###
 
 class MarkerMinimapGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the marker_minimap_marker table
+        # Is: a data gatherer for the marker_minimap_marker table
         
         def getAnchorMarkerMap(self):
                 """
@@ -76,7 +76,7 @@ class MarkerMinimapGatherer (Gatherer.Gatherer):
                 return maxCmMap
         
 
-	def collateResults (self):
+        def collateResults (self):
 
                 # get anchor markers for each chromosome
                 anchorMap = self.getAnchorMarkerMap()
@@ -134,17 +134,17 @@ class MarkerMinimapGatherer (Gatherer.Gatherer):
                                      'cm_offset', 
                                      'max_cm_offset' ]
 
-		self.finalResults = markerRows
+                self.finalResults = markerRows
                 
 
 ###--- globals ---###
 
 cmds = [
         # 0. Anchor markers and their mouse cm offsets
-	'''select m._marker_key, m.symbol, m.chromosome, m.cmoffset
+        '''select m._marker_key, m.symbol, m.chromosome, m.cmoffset
         from mrk_marker m, mrk_anchors a
-	where m._marker_key = a._marker_key and m.cmoffset > -1.0
-	''',
+        where m._marker_key = a._marker_key and m.cmoffset > -1.0
+        ''',
         
         # 1. get max cm offset for each chromosome from mouse
         '''select max(m.cmoffset) as maxoffset, m.chromosome
@@ -159,13 +159,13 @@ cmds = [
         where m._organism_key = 1 and m.cmoffset > -1.0
         '''
         
-	]
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, 'marker_key', 'anchor_marker_key', 'anchor_symbol', 'cm_offset', 'max_cm_offset',
-	]
+        Gatherer.AUTO, 'marker_key', 'anchor_marker_key', 'anchor_symbol', 'cm_offset', 'max_cm_offset',
+        ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_minimap_marker'
@@ -178,4 +178,4 @@ gatherer = MarkerMinimapGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

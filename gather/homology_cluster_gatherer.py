@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the homology_cluster, homology_cluster_organism, and
 # homology_cluster_organism_to_marker tables in the front-end database
@@ -18,342 +18,321 @@ HOMOLOGY = 9272150
 
 # which organisms should be given priority when ordering
 preferredOrganisms = [
-	# the big three
-	'human', 'mouse', 'rat',		
+        # the big three
+        'human', 'mouse', 'rat',                
 
-	# primates, alphabetical
-	'chimpanzee', 'rhesus macaque',
+        # primates, alphabetical
+        'chimpanzee', 'rhesus macaque',
 
-	# mammals, alphabetical
-	'cattle', 'dog',
+        # mammals, alphabetical
+        'cattle', 'dog',
 
-	# others, alphabetical
-	'chicken', 'western clawed frog', 'zebrafish',
-	]
+        # others, alphabetical
+        'chicken', 'western clawed frog', 'zebrafish',
+        ]
 
 ###--- Functions ---###
 
-def organismCompare (a, b):
-	if a in preferredOrganisms:
-		if b in preferredOrganisms:
-			# 'a' and 'b' are both preferred, so which is first
-			# in the list?
+def organismCompare (a):
+        # return a sort key for sorting organisms such that preferred organisms
+        # come first (and in the desired order), followed by others
 
-			aIndex = preferredOrganisms.index(a)
-			bIndex = preferredOrganisms.index(b)
-
-			if aIndex < bIndex:
-				return -1
-			elif aIndex > bIndex:
-				return 1
-			else:
-				return 0
-		else:
-			# only 'a' is preferred, so it goes first
-			return -1
-
-	elif b in preferredOrganisms:
-		# only 'b' is preferred, so it goes first
-		return 1
-
-	# at this point, neither 'a' nor 'b' are preferred, so just compare
-	# them against each other
-
-	return cmp(a, b)
-
-def markerCompare (a, b):
-	return symbolsort.nomenCompare (a[0], b[0])
+        if a in preferredOrganisms:
+                pref = preferredOrganisms.index(a)
+        else:
+                pref = 9999
+        return (pref, a)
 
 ###--- Classes ---###
 
 class Cluster:
-	def __init__ (self,
-		clusterKey, 
-		accID, 
-		clusterType, 
-		source, 
-		version, 
-		date,
-		secondarySource = None
-		):
+        def __init__ (self,
+                clusterKey, 
+                accID, 
+                clusterType, 
+                source, 
+                version, 
+                date,
+                secondarySource = None
+                ):
 
-		self.key = clusterKey
-		self.accID = accID
-		self.clusterType = clusterType
-		self.source = source
-		self.version = version
-		self.date = date 
-		self.secondarySource = secondarySource
-		self.organisms = {}	# organism -> [ marker key 1, ... ]
-		self.markers = {}	# marker key -> [ symbol, organism,
-					#    qualifier, refsKey, markerKey ]
-		return
+                self.key = clusterKey
+                self.accID = accID
+                self.clusterType = clusterType
+                self.source = source
+                self.version = version
+                self.date = date 
+                self.secondarySource = secondarySource
+                self.organisms = {}     # organism -> [ marker key 1, ... ]
+                self.markers = {}       # marker key -> [ symbol, organism,
+                                        #    qualifier, refsKey, markerKey ]
+                return
 
-	def addRow (self,
-		markerKey, 
-		symbol,
-		seqNum, 
-		organism, 
-		qualifier, 
-		refsKey
-		):
+        def addRow (self,
+                markerKey, 
+                symbol,
+                seqNum, 
+                organism, 
+                qualifier, 
+                refsKey
+                ):
 
-		self.markers[markerKey] = [ symbol, organism, qualifier,
-			refsKey, markerKey ]
+                self.markers[markerKey] = [ symbol, organism, qualifier,
+                        refsKey, markerKey ]
 
-		if not self.organisms.has_key(organism):
-			self.organisms[organism] = []
-		self.organisms[organism].append (markerKey)
-		return 
+                if organism not in self.organisms:
+                        self.organisms[organism] = []
+                self.organisms[organism].append (markerKey)
+                return 
 
-	def getSecondarySource(self):
-		return self.secondarySource
+        def getSecondarySource(self):
+                return self.secondarySource
 
-	def getClusterData (self):
-		return (self.key, self.accID, self.clusterType, self.source,
-			self.version, self.date)
+        def getClusterData (self):
+                return (self.key, self.accID, self.clusterType, self.source,
+                        self.version, self.date)
 
-	def getOrganisms (self):
-		organisms = self.organisms.keys()
-		organisms.sort (organismCompare)
-		return organisms
+        def getOrganisms (self):
+                organisms = list(self.organisms.keys())
+                organisms.sort (key=organismCompare)
+                return organisms
 
-	def getMarkers (self, organism):
-		# collect the markers for this organism and return list of
-		# them, each as [ symbol, organism, qualifier, refsKey,
-		# markerKey ]
+        def getMarkers (self, organism):
+                # collect the markers for this organism and return list of
+                # them, each as [ symbol, organism, qualifier, refsKey,
+                # markerKey ]
 
-		markers = []
-		for markerKey in self.organisms[organism]:
-			markers.append (self.markers[markerKey])
+                markers = []
+                for markerKey in self.organisms[organism]:
+                        markers.append (self.markers[markerKey])
 
-		# sort the markers for this organism
+                # sort the markers for this organism
 
-		markers.sort (markerCompare)
-		return markers
+                markers.sort (key=lambda a: symbolsort.splitter(a[0]))
+                return markers
 
 class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
-	# Is: a data gatherer for the homology_cluster flower
-	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for the 
-	#	homology cluster flower tables,	collates results, writes
-	#	tab-delimited text file
+        # Is: a data gatherer for the homology_cluster flower
+        # Has: queries to execute against the source database
+        # Does: queries the source database for primary data for the 
+        #       homology cluster flower tables, collates results, writes
+        #       tab-delimited text file
 
-	def collateResults (self):
+        def collateResults (self):
 
-		cols, rows = self.results[0]
+                cols, rows = self.results[0]
 
-		clusterKeyPos = Gatherer.columnNumber (cols, '_Cluster_key')
-		typePos = Gatherer.columnNumber (cols, 'clusterType')
-		sourcePos = Gatherer.columnNumber (cols, 'source')
-		idPos = Gatherer.columnNumber (cols, 'clusterID')
-		versionPos = Gatherer.columnNumber (cols, 'version')
-		datePos = Gatherer.columnNumber (cols, 'cluster_date')
-		markerPos = Gatherer.columnNumber (cols, '_Marker_key')
-		symbolPos = Gatherer.columnNumber (cols, 'symbol')
-		seqNumPos = Gatherer.columnNumber (cols, 'sequenceNum')
-		organismPos = Gatherer.columnNumber (cols, 'organism')
-		qualifierPos = Gatherer.columnNumber (cols, 'qualifier')
-		refsPos = Gatherer.columnNumber (cols, '_Refs_key')
-		secSourcePos = Gatherer.columnNumber (cols, 'secondary_source')
+                clusterKeyPos = Gatherer.columnNumber (cols, '_Cluster_key')
+                typePos = Gatherer.columnNumber (cols, 'clusterType')
+                sourcePos = Gatherer.columnNumber (cols, 'source')
+                idPos = Gatherer.columnNumber (cols, 'clusterID')
+                versionPos = Gatherer.columnNumber (cols, 'version')
+                datePos = Gatherer.columnNumber (cols, 'cluster_date')
+                markerPos = Gatherer.columnNumber (cols, '_Marker_key')
+                symbolPos = Gatherer.columnNumber (cols, 'symbol')
+                seqNumPos = Gatherer.columnNumber (cols, 'sequenceNum')
+                organismPos = Gatherer.columnNumber (cols, 'organism')
+                qualifierPos = Gatherer.columnNumber (cols, 'qualifier')
+                refsPos = Gatherer.columnNumber (cols, '_Refs_key')
+                secSourcePos = Gatherer.columnNumber (cols, 'secondary_source')
 
-		clusters = {}	# cluster key -> Cluster object
+                clusters = {}   # cluster key -> Cluster object
 
-		# Time to build Cluster objects using our data from the
-		# database.  Note that no particular ordering of records from
-		# the results is assumed.
+                # Time to build Cluster objects using our data from the
+                # database.  Note that no particular ordering of records from
+                # the results is assumed.
 
-		for row in rows:
-			clusterKey = row[clusterKeyPos]
+                for row in rows:
+                        clusterKey = row[clusterKeyPos]
 
-			if not clusters.has_key(clusterKey):
-				# We've not yet seen this cluster, so make a
-				# new object.
+                        if clusterKey not in clusters:
+                                # We've not yet seen this cluster, so make a
+                                # new object.
 
-				clusterType = row[typePos]
-				source = row[sourcePos]
-				accID = row[idPos]
-				version = row[versionPos]
-				date = row[datePos]
-				secondarySource = row[secSourcePos]
+                                clusterType = row[typePos]
+                                source = row[sourcePos]
+                                accID = row[idPos]
+                                version = row[versionPos]
+                                date = row[datePos]
+                                secondarySource = row[secSourcePos]
 
-				# custom tweaks for secondary source
-				if secondarySource == 'both':
-					secondarySource = 'HomoloGene and HGNC'
-				elif secondarySource == 'none':
-					secondarySource = ''
-				elif secondarySource == 'HG':
-					secondarySource = 'HomoloGene'
+                                # custom tweaks for secondary source
+                                if secondarySource == 'both':
+                                        secondarySource = 'HomoloGene and HGNC'
+                                elif secondarySource == 'none':
+                                        secondarySource = ''
+                                elif secondarySource == 'HG':
+                                        secondarySource = 'HomoloGene'
 
-				if date:
-					date = str(date)[:10]
+                                if date:
+                                        date = str(date)[:10]
 
-				cluster = Cluster (clusterKey, accID,
-					clusterType, source, version, date,
-					secondarySource)
+                                cluster = Cluster (clusterKey, accID,
+                                        clusterType, source, version, date,
+                                        secondarySource)
 
-				clusters[clusterKey] = cluster
-			else:
-				# Look up the cluster we already created.
-				cluster = clusters[clusterKey]
+                                clusters[clusterKey] = cluster
+                        else:
+                                # Look up the cluster we already created.
+                                cluster = clusters[clusterKey]
 
-			markerKey = row[markerPos]
-			symbol = row[symbolPos]
-			seqNum = row[seqNumPos]
-			organism = row[organismPos]
-			qualifier = row[qualifierPos]
-			refsKey = row[refsPos]
+                        markerKey = row[markerPos]
+                        symbol = row[symbolPos]
+                        seqNum = row[seqNumPos]
+                        organism = row[organismPos]
+                        qualifier = row[qualifierPos]
+                        refsKey = row[refsPos]
 
-			# cleanup of organism text
+                        # cleanup of organism text
 
-			organism = organism.replace(', laboratory', '')
-			organism = organism.replace(', domestic', '')
+                        organism = organism.replace(', laboratory', '')
+                        organism = organism.replace(', domestic', '')
 
-			cluster.addRow (markerKey, symbol, seqNum, organism, 
-				qualifier, refsKey)
+                        cluster.addRow (markerKey, symbol, seqNum, organism, 
+                                qualifier, refsKey)
 
-		# Our data is all in memory now.  Time to collate and produce
-		# our result sets.
+                # Our data is all in memory now.  Time to collate and produce
+                # our result sets.
 
-		hcCols = [ 'clusterKey', 'clusterID', 'version',
-			'cluster_date', 'source', 'secondary_source', 
-			'hasComparativeGOGraph' ]
-		hcRows = []
+                hcCols = [ 'clusterKey', 'clusterID', 'version',
+                        'cluster_date', 'source', 'secondary_source', 
+                        'hasComparativeGOGraph' ]
+                hcRows = []
 
-		hcoCols = [ 'clusterOrganismKey', 'clusterKey', 'organism',
-			'seqNum' ]
-		hcoRows = []
-		coKey = 0
+                hcoCols = [ 'clusterOrganismKey', 'clusterKey', 'organism',
+                        'seqNum' ]
+                hcoRows = []
+                coKey = 0
 
-		hcotmCols = [ 'clusterOrganismKey', '_Marker_key',
-			'_Refs_key', 'qualifier', 'seqNum' ]
-		hcotmRows = []
+                hcotmCols = [ 'clusterOrganismKey', '_Marker_key',
+                        '_Refs_key', 'qualifier', 'seqNum' ]
+                hcotmRows = []
 
-		hccCols = [ 'clusterKey', 'mouseMarkerCount',
-			'humanMarkerCount', 'ratMarkerCount',
-			'cattleMarkerCount', 'chimpMarkerCount',
-			'dogMarkerCount', 'monkeyMarkerCount',
-			'chickenMarkerCount', 'xenopusMarkerCount', 'zebrafishMarkerCount', ]
-		hccRows = []
+                hccCols = [ 'clusterKey', 'mouseMarkerCount',
+                        'humanMarkerCount', 'ratMarkerCount',
+                        'cattleMarkerCount', 'chimpMarkerCount',
+                        'dogMarkerCount', 'monkeyMarkerCount',
+                        'chickenMarkerCount', 'xenopusMarkerCount', 'zebrafishMarkerCount', ]
+                hccRows = []
 
-		clusterKeys = clusters.keys()
-		clusterKeys.sort()
+                clusterKeys = list(clusters.keys())
+                clusterKeys.sort()
 
-		logger.debug ('%d clusters' % len(clusterKeys))
+                logger.debug ('%d clusters' % len(clusterKeys))
 
-		secondarySource = None
+                secondarySource = None
 
-		for clusterKey in clusterKeys:
-			cluster = clusters[clusterKey]
+                for clusterKey in clusterKeys:
+                        cluster = clusters[clusterKey]
 
-			counts = {}
+                        counts = {}
 
-			(key, accID, clusterType, source, version, date) = \
-				cluster.getClusterData()
+                        (key, accID, clusterType, source, version, date) = \
+                                cluster.getClusterData()
 
-			hcRows.append ( [key, accID, version, date, source,
-				cluster.getSecondarySource(),
-				GOGraphs.hasComparativeGOGraph(accID) ] )
-			coSeqNum = 0
-			hcotmSeqNum = 0
+                        hcRows.append ( [key, accID, version, date, source,
+                                cluster.getSecondarySource(),
+                                GOGraphs.hasComparativeGOGraph(accID) ] )
+                        coSeqNum = 0
+                        hcotmSeqNum = 0
 
-			for organism in cluster.getOrganisms():
-				coKey = coKey + 1
-				coSeqNum = coSeqNum + 1
+                        for organism in cluster.getOrganisms():
+                                coKey = coKey + 1
+                                coSeqNum = coSeqNum + 1
 
-				hcoRows.append ( [coKey, key,
-					utils.cleanupOrganism(organism),
-					coSeqNum] )
+                                hcoRows.append ( [coKey, key,
+                                        utils.cleanupOrganism(organism),
+                                        coSeqNum] )
 
-				markers = cluster.getMarkers(organism)
-				counts[organism] = len(markers)
+                                markers = cluster.getMarkers(organism)
+                                counts[organism] = len(markers)
 
-				for [ symbol, organism, qualifier, refsKey,
-					markerKey ] in markers:
+                                for [ symbol, organism, qualifier, refsKey,
+                                        markerKey ] in markers:
 
-					hcotmSeqNum = hcotmSeqNum + 1
+                                        hcotmSeqNum = hcotmSeqNum + 1
 
-					hcotmRows.append ( [coKey, markerKey,
-						refsKey, qualifier,
-						hcotmSeqNum] )
+                                        hcotmRows.append ( [coKey, markerKey,
+                                                refsKey, qualifier,
+                                                hcotmSeqNum] )
 
-			hccRow = [ clusterKey ]
-			for organism in [ 'mouse', 'human', 'rat', 'cattle',
-					'chimpanzee', 'dog', 'rhesus macaque',
-					'chicken', 'xenopus', 'zebrafish', ]:
-				if counts.has_key(organism):
-					hccRow.append (counts[organism])
-				else:
-					hccRow.append (0)
-			hccRows.append (hccRow)
+                        hccRow = [ clusterKey ]
+                        for organism in [ 'mouse', 'human', 'rat', 'cattle',
+                                        'chimpanzee', 'dog', 'rhesus macaque',
+                                        'chicken', 'xenopus', 'zebrafish', ]:
+                                if organism in counts:
+                                        hccRow.append (counts[organism])
+                                else:
+                                        hccRow.append (0)
+                        hccRows.append (hccRow)
 
-		logger.debug ('%d organisms for clusters' % len(hcoRows))
-		logger.debug ('%d markers in clusters' % len(hcotmRows))
+                logger.debug ('%d organisms for clusters' % len(hcoRows))
+                logger.debug ('%d markers in clusters' % len(hcotmRows))
 
-		self.output.append ( (hcCols, hcRows) )
-		self.output.append ( (hcoCols, hcoRows) )
-		self.output.append ( (hcotmCols, hcotmRows) )
-		self.output.append ( (hccCols, hccRows) ) 
-		return
+                self.output.append ( (hcCols, hcRows) )
+                self.output.append ( (hcoCols, hcoRows) )
+                self.output.append ( (hcotmCols, hcotmRows) )
+                self.output.append ( (hccCols, hccRows) ) 
+                return
 
 ###--- globals ---###
 
 cmds = [
-	'''select mc._Cluster_key,
-		typ.term as clusterType,
-		src.term as source,
-		mc.clusterID,
-		mc.version,
-		mc.cluster_date,
-		mcm._Marker_key,
-		mm.symbol,
-		mcm.sequenceNum,
-		mo.commonName as organism,
-		null as qualifier,
-		null as _Refs_key,
-		p.value as secondary_source
-	from mrk_cluster mc
-	inner join mrk_clustermember mcm on (mc._Cluster_key = mcm._Cluster_key)
-	inner join mrk_marker mm on (mcm._Marker_key = mm._Marker_key)
-	inner join voc_term typ on (mc._ClusterType_key = typ._Term_key)
-	inner join mgi_organism mo on (mm._Organism_key = mo._Organism_key)
-	inner join voc_term src on (mc._ClusterSource_key = src._Term_key)
-	left outer join mgi_property p on (mc._Cluster_key = p._Object_key)
-	left outer join mgi_propertytype pt on (
-		p._PropertyType_key = pt._PropertyType_key
-		and pt.propertyType = 'HGNC/HG Hybrid Homology'
-		)
-	where mc._ClusterSource_key in (%d, %d, %d)
-		and mc._ClusterType_key = %d''' % (
-			HOMOLOGENE, HGNC, HYBRID, HOMOLOGY),
-	]
+        '''select mc._Cluster_key,
+                typ.term as clusterType,
+                src.term as source,
+                mc.clusterID,
+                mc.version,
+                mc.cluster_date,
+                mcm._Marker_key,
+                mm.symbol,
+                mcm.sequenceNum,
+                mo.commonName as organism,
+                null as qualifier,
+                null as _Refs_key,
+                p.value as secondary_source
+        from mrk_cluster mc
+        inner join mrk_clustermember mcm on (mc._Cluster_key = mcm._Cluster_key)
+        inner join mrk_marker mm on (mcm._Marker_key = mm._Marker_key)
+        inner join voc_term typ on (mc._ClusterType_key = typ._Term_key)
+        inner join mgi_organism mo on (mm._Organism_key = mo._Organism_key)
+        inner join voc_term src on (mc._ClusterSource_key = src._Term_key)
+        left outer join mgi_property p on (mc._Cluster_key = p._Object_key)
+        left outer join mgi_propertytype pt on (
+                p._PropertyType_key = pt._PropertyType_key
+                and pt.propertyType = 'HGNC/HG Hybrid Homology'
+                )
+        where mc._ClusterSource_key in (%d, %d, %d)
+                and mc._ClusterType_key = %d''' % (
+                        HOMOLOGENE, HGNC, HYBRID, HOMOLOGY),
+        ]
 
 # data about files to be written; for each:  (filename prefix, list of field
-#	names in order to be written, name of table to be loaded)
+#       names in order to be written, name of table to be loaded)
 files = [
-	('homology_cluster',
-		[ 'clusterKey', 'clusterID', 'version', 'cluster_date',
-			'source', 'secondary_source',
-			'hasComparativeGOGraph', ],
-		'homology_cluster'),
+        ('homology_cluster',
+                [ 'clusterKey', 'clusterID', 'version', 'cluster_date',
+                        'source', 'secondary_source',
+                        'hasComparativeGOGraph', ],
+                'homology_cluster'),
 
-	('homology_cluster_organism',
-		[ 'clusterOrganismKey', 'clusterKey', 'organism', 'seqNum' ],
-		'homology_cluster_organism'),
+        ('homology_cluster_organism',
+                [ 'clusterOrganismKey', 'clusterKey', 'organism', 'seqNum' ],
+                'homology_cluster_organism'),
 
-	('homology_cluster_organism_to_marker',
-		[ Gatherer.AUTO, 'clusterOrganismKey', '_Marker_key',
-			'_Refs_key', 'qualifier', 'seqNum' ],
-		'homology_cluster_organism_to_marker'),
+        ('homology_cluster_organism_to_marker',
+                [ Gatherer.AUTO, 'clusterOrganismKey', '_Marker_key',
+                        '_Refs_key', 'qualifier', 'seqNum' ],
+                'homology_cluster_organism_to_marker'),
 
-	('homology_cluster_counts',
-		[ 'clusterKey', 'mouseMarkerCount', 'humanMarkerCount',
-			'ratMarkerCount', 'cattleMarkerCount',
-			'chimpMarkerCount', 'dogMarkerCount', 
-			'monkeyMarkerCount', 'chickenMarkerCount',
-			'xenopusMarkerCount', 'zebrafishMarkerCount', ],
-		'homology_cluster_counts'),
-	]
+        ('homology_cluster_counts',
+                [ 'clusterKey', 'mouseMarkerCount', 'humanMarkerCount',
+                        'ratMarkerCount', 'cattleMarkerCount',
+                        'chimpMarkerCount', 'dogMarkerCount', 
+                        'monkeyMarkerCount', 'chickenMarkerCount',
+                        'xenopusMarkerCount', 'zebrafishMarkerCount', ],
+                'homology_cluster_counts'),
+        ]
 
 # global instance of a HomologyClusterGatherer
 gatherer = HomologyClusterGatherer (files, cmds)
@@ -363,4 +342,4 @@ gatherer = HomologyClusterGatherer (files, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'marker_mp_annotation' tables in the front-end database
 
@@ -88,7 +88,7 @@ def cacheHeaders():
         termKey = row[termCol]
         headerKey = row[headerCol]
 
-        if HEADERS.has_key(termKey):
+        if termKey in HEADERS:
             HEADERS[termKey].append(headerKey)
         else:
             HEADERS[termKey] = [ headerKey ]
@@ -102,86 +102,86 @@ def cacheHeaders():
     return HEADERS
 
 def getOtherGenotypeInfo(genotypeKey, genotypes):
-	# If the allele cache loads haven't been run, then we may be missing
-	# allele combinations.  This method finds the needed info for genotypes
-	# with missing info, so this gatherer doesn't completely fail.
+        # If the allele cache loads haven't been run, then we may be missing
+        # allele combinations.  This method finds the needed info for genotypes
+        # with missing info, so this gatherer doesn't completely fail.
 
-	# find what the current highest genotype sequence number is and 
-	# increment it for this genotype
-	mySeqNum = max(map(lambda x : x[2], genotypes.values())) + 1
+        # find what the current highest genotype sequence number is and 
+        # increment it for this genotype
+        mySeqNum = max([x[2] for x in list(genotypes.values())]) + 1
 
-	# assume we're now down to 1 note chunk per combination
-	cmd1 = '''select distinct mn._Object_key as _Genotype_key, mnc.note,
-			ps.strain, mnc.sequenceNum, a.accid
-		from gxd_genotype gg
-		left outer join mgi_note mn on (mn._MGIType_key = 12
-		 	and gg._Genotype_key = mn._Object_key)
-		left outer join mgi_notechunk mnc on (
-			mn._Note_key = mnc._Note_key)
-		left outer join mgi_notetype mnt on (
-			mn._NoteType_key = mnt._NoteType_key
-			and mnt.noteType = 'Combination Type 3')
-		left outer join prb_strain ps on (
-			gg._Strain_key = ps._Strain_key)
-		left outer join acc_accession a on (
-			gg._Genotype_key = a._Object_key
-			and a._MGIType_key = 12
-			and a._LogicalDB_key = 1)
-		where gg._Genotype_key = %d
-		order by mn._Object_key, mnc.sequenceNum''' % genotypeKey
+        # assume we're now down to 1 note chunk per combination
+        cmd1 = '''select distinct mn._Object_key as _Genotype_key, mnc.note,
+                        ps.strain, mnc.sequenceNum, a.accid
+                from gxd_genotype gg
+                left outer join mgi_note mn on (mn._MGIType_key = 12
+                        and gg._Genotype_key = mn._Object_key)
+                left outer join mgi_notechunk mnc on (
+                        mn._Note_key = mnc._Note_key)
+                left outer join mgi_notetype mnt on (
+                        mn._NoteType_key = mnt._NoteType_key
+                        and mnt.noteType = 'Combination Type 3')
+                left outer join prb_strain ps on (
+                        gg._Strain_key = ps._Strain_key)
+                left outer join acc_accession a on (
+                        gg._Genotype_key = a._Object_key
+                        and a._MGIType_key = 12
+                        and a._LogicalDB_key = 1)
+                where gg._Genotype_key = %d
+                order by mn._Object_key, mnc.sequenceNum''' % genotypeKey
 
-    	cols1, rows1 = dbAgnostic.execute(cmd1)
+        cols1, rows1 = dbAgnostic.execute(cmd1)
 
-	noteCol = Gatherer.columnNumber(cols1, 'note')
-	strainCol = Gatherer.columnNumber(cols1, 'strain')
-	idCol = Gatherer.columnNumber(cols1, 'accid')
+        noteCol = Gatherer.columnNumber(cols1, 'note')
+        strainCol = Gatherer.columnNumber(cols1, 'strain')
+        idCol = Gatherer.columnNumber(cols1, 'accid')
 
-	note = None
-	strain = None
-	accid = None
+        note = None
+        strain = None
+        accid = None
 
-	for row in rows1:
-		note = row[noteCol]
-		strain = row[strainCol]
-		accid = row[idCol]
+        for row in rows1:
+                note = row[noteCol]
+                strain = row[strainCol]
+                accid = row[idCol]
 
-	if note == None:
-		cmd2 = '''select gap._Genotype_key, a1.symbol as symbol1,
-				a2.symbol as symbol2
-			from gxd_allelepair gap	
-			left outer join all_allele a1 on (
-				gap._Allele_key_1 = a1._Allele_key)
-			left outer join all_allele a2 on (
-				gap._Allele_key_2 = a2._Allele_key)
-			where gap._Genotype_key = %d
-			order by gap.sequenceNum''' % genotypeKey
+        if note == None:
+                cmd2 = '''select gap._Genotype_key, a1.symbol as symbol1,
+                                a2.symbol as symbol2
+                        from gxd_allelepair gap 
+                        left outer join all_allele a1 on (
+                                gap._Allele_key_1 = a1._Allele_key)
+                        left outer join all_allele a2 on (
+                                gap._Allele_key_2 = a2._Allele_key)
+                        where gap._Genotype_key = %d
+                        order by gap.sequenceNum''' % genotypeKey
 
-	    	cols2, rows2 = dbAgnostic.execute(cmd2)
+                cols2, rows2 = dbAgnostic.execute(cmd2)
 
-		symbol1col = Gatherer.columnNumber(cols2, 'symbol1')
-		symbol2col = Gatherer.columnNumber(cols2, 'symbol2')
+                symbol1col = Gatherer.columnNumber(cols2, 'symbol1')
+                symbol2col = Gatherer.columnNumber(cols2, 'symbol2')
 
-		note = ''
+                note = ''
 
-		for row in rows2:
-			symbol1 = row[symbol1col]
-			symbol2 = row[symbol2col]
+                for row in rows2:
+                        symbol1 = row[symbol1col]
+                        symbol2 = row[symbol2col]
 
-			if len(note) > 0:
-				note = note + '\n'
+                        if len(note) > 0:
+                                note = note + '\n'
 
-			if symbol1:
-				note = note + symbol1
-			else:
-				note = note + '?'
+                        if symbol1:
+                                note = note + symbol1
+                        else:
+                                note = note + '?'
 
-			if symbol2:
-				note = note + '/' + symbol2
-			else:
-				note = note + '/?'
+                        if symbol2:
+                                note = note + '/' + symbol2
+                        else:
+                                note = note + '/?'
 
-	genotypes[genotypeKey] = (note, strain, mySeqNum, accid)
-	return genotypes[genotypeKey]
+        genotypes[genotypeKey] = (note, strain, mySeqNum, accid)
+        return genotypes[genotypeKey]
 
 # Due to special regex meaning of the pipe (|) symbol, we're going to convert
 # them to be @ signs instead.
@@ -201,62 +201,30 @@ def extractSymbols (note):
 
     return symbols
 
-def compareGenotypes (a, b):
-    # compare two tuples for sorting genotypes; each is:
+def compareGenotypes (a):
+    # reutrn a sort key for sorting genotypes; each is:
     #    (allele symbols, background strain, genotype key)
 
-    # sort by comma-delimited string of allele symbols
-    x = symbolsort.nomenCompare(a[0], b[0])
-    if x != 0:
-        return x
+    return (symbolsort.splitter(a[0]), symbolsort.splitter(a[1]), a[2])
 
-    # if those match, sort by background strain
-    y = symbolsort.nomenCompare(a[1], b[1])
-    if y != 0:
-        return y
-
-    # if those match, sort by genotype key
-    return cmp(a[2], b[2])
-
-def compareAnnotations (a, b):
-    # Compare two annotation rows for a marker.  Each row is a list
-    # containing:
-    # [ marker key, multigenic flag, qualifier, term, term key,
-    #   term ID, annotation key, genotype key, reference key,
-    #   jnum ID, numeric part of jnum ]
-    # Basic rules:
+def compareAnnotations (a):
+    # return a sort key that can be used for sorting markers by:
     # 0. sort by marker key
     # 1. sort by genotype key
     # 2. sort by term
-    # 3. if terms match, sort by qualifier
+    # 3. if terms match, sort by qualifier (None preferred to other qualifiers)
     # 4. fall back on sorting by annotation key, just to be deterministic
+    # Contents of parameter 'a' are:
+    #   [ marker key, multigenic flag, qualifier, term, term key,
+    #   term ID, annotation key, genotype key, reference key,
+    #   jnum ID, numeric part of jnum ]
 
-    v = cmp(a[0], b[0])
-    if v != 0:
-        return v
+    if (a[2] == None):
+        qualifier = '   '
+    else:
+        qualifier = a[2]
 
-    w = cmp(a[7], b[7])
-    if w != 0:
-        return w
-
-    x = symbolsort.nomenCompare(a[3], b[3])
-    if x != 0:
-        return x
-
-    y = 0
-    if a[2] != None:
-        if b[2] != None:
-            y = symbolsort.nomenCompare(a[2], b[2])
-            if y != 0:
-                return y 
-        else:
-            return 1
-
-    elif b[2] != None:
-        # prefer None qualifier to text qualifier
-        return -1
-
-    return cmp(a[6], b[6])
+    return (a[0], a[7], symbolsort.splitter(a[3]), symbolsort.splitter(qualifier), a[6])
 
 def getStrainIDs():
     # build and return a dictionary mapping from a genotype ID to a strain ID (where available)
@@ -336,7 +304,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
             # genotype, if there are many allele pairs.  Collect
             # the multiples by concatenating them.
 
-            if not alleles.has_key(genotypeKey):
+            if genotypeKey not in alleles:
                 alleles[genotypeKey] = chunk
             else:
                 alleles[genotypeKey] = alleles[genotypeKey] \
@@ -345,7 +313,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
             # if multiple note chunks, then the strain is simply
             # repeated with each row, so just store it once
 
-            if not strain.has_key(genotypeKey):
+            if genotypeKey not in strain:
                 strain[genotypeKey] = row[strainCol]
 
         # We need to generate the sequence numbers for the genotypes,
@@ -357,14 +325,16 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
 
         sortable = []
 
-        for genotypeKey in alleles.keys():
+        genotypeKeys = list(alleles.keys())
+        genotypeKeys.sort()
+        for genotypeKey in genotypeKeys:
             sortable.append( [
                 extractSymbols(alleles[genotypeKey]),
                 strain[genotypeKey],
                 genotypeKey
                 ] )
 
-        sortable.sort(compareGenotypes)
+        sortable.sort(key=compareGenotypes)
         genoSeqNum = 0
         genotypes = {}
 
@@ -397,7 +367,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
         # { genotype key : (allele pairs, strain, sequence num, accID)
 
         # need to sort the annotations for the marker
-        rows.sort(compareAnnotations)
+        rows.sort(key=compareAnnotations)
 
         annotSeqNum = 0        # for ordering annotations
 
@@ -427,12 +397,12 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                 mpGenoKey = GENOTYPE_KG.getKey( (markerKey,
                     genotypeKey) )
 
-		if genotypes.has_key(genotypeKey):
-	                (allelePairs, strain, genoSeqNum, accID) = \
-        	            genotypes[genotypeKey]
-		else:
-			allelePairs, strain, genoSeqNum, accID = \
-			    getOtherGenotypeInfo(genotypeKey, genotypes)
+                if genotypeKey in genotypes:
+                        (allelePairs, strain, genoSeqNum, accID) = \
+                            genotypes[genotypeKey]
+                else:
+                        allelePairs, strain, genoSeqNum, accID = \
+                            getOtherGenotypeInfo(genotypeKey, genotypes)
 
                 self.addRow (self.genoTable, [ mpGenoKey,
                     markerKey, multigenic,
@@ -464,7 +434,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                 # Since we found a new annotation, we need to
                 # record the headers for it.
 
-                if HEADERS.has_key(termKey):
+                if termKey in HEADERS:
                     for headerKey in HEADERS[termKey]:
                         self.headerRowNum = 1 + \
                             self.headerRowNum
@@ -491,7 +461,7 @@ class MarkerMpAnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                 mpRefsKey = REFS_KG.getKey ( (mpAnnotKey,
                     refsKey) )
 
-                if not mpRefsKeys.has_key(mpRefsKey):
+                if mpRefsKey not in mpRefsKeys:
                     self.addRow (self.refsTable, [ mpRefsKey,
                     mpAnnotKey, refsKey, jnumID,
                     numericPart ] )

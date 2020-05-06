@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -11,48 +11,48 @@ tableName = 'marker_to_allele'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key	int		NOT NULL,
-	marker_key	int		NOT NULL,
-	allele_key	int 		NOT NULL,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key      int             NOT NULL,
+        marker_key      int             NOT NULL,
+        allele_key      int             NOT NULL,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'allele_key' : 'create index %s on %s (allele_key, marker_key)',
-	}
+        'allele_key' : 'create index %s on %s (allele_key, marker_key)',
+        }
 
 keys = {
-	'marker_key' : ('marker', 'marker_key'),
-	'allele_key' : ('allele', 'allele_key'),
-	}
+        'marker_key' : ('marker', 'marker_key'),
+        'allele_key' : ('allele', 'allele_key'),
+        }
 
 # index used to cluster data in the table
 clusteredIndex = ('marker_key',
-	'create index %s on %s (marker_key, allele_key)')
+        'create index %s on %s (marker_key, allele_key)')
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'join table between the marker and allele flowers',
-	Table.COLUMN : {
-		'unique_key' : 'unique key identifying this association, no other purpose',
-		'marker_key' : 'identifies the marker',
-		'allele_key' : 'identifies an allele of the marker',
-		},
-	Table.INDEX : {
-		'marker_key' : 'clusters the data so all allele associations for a marker are stored together on disk, aiding quick retrieval',
-		'allele_key' : 'look up a marker by its allele',
-		},
-	}
+        Table.TABLE : 'join table between the marker and allele flowers',
+        Table.COLUMN : {
+                'unique_key' : 'unique key identifying this association, no other purpose',
+                'marker_key' : 'identifies the marker',
+                'allele_key' : 'identifies an allele of the marker',
+                },
+        Table.INDEX : {
+                'marker_key' : 'clusters the data so all allele associations for a marker are stored together on disk, aiding quick retrieval',
+                'allele_key' : 'look up a marker by its allele',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

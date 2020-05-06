@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'markerToProbe' table in the front-end database
 
@@ -7,30 +7,30 @@ import Gatherer
 ###--- Classes ---###
 
 MarkerToProbeGatherer = Gatherer.Gatherer
-	# Is: a data gatherer for the markerToProbe table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for probe/sequence
-	#	relationships, collates results, writes tab-delimited text
-	#	file
+        # Is: a data gatherer for the markerToProbe table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for probe/sequence
+        #       relationships, collates results, writes tab-delimited text
+        #       file
 
 ###--- globals ---###
 
 cmds = [
-	'''select _Probe_key,
-		_Marker_key,
-		_Refs_key,
-		relationship as qualifier
-	from prb_marker p
-	where exists (select 1 from mrk_marker m
-		where p._Marker_key = m._Marker_key)''',
-	]
+        '''select _Probe_key,
+                _Marker_key,
+                _Refs_key,
+                relationship as qualifier
+        from prb_marker p
+        where exists (select 1 from mrk_marker m
+                where p._Marker_key = m._Marker_key)''',
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Marker_key', '_Probe_key', '_Refs_key',
-	'qualifier'
-	]
+        Gatherer.AUTO, '_Marker_key', '_Probe_key', '_Refs_key',
+        'qualifier'
+        ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_to_probe'
@@ -43,4 +43,4 @@ gatherer = MarkerToProbeGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

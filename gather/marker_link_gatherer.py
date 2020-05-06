@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'marker_link' table in the front-end database
 
@@ -69,26 +69,16 @@ xenbase_url = 'http://xenbase.org/gene/expression.do?method=displayGenePageExpre
 
 ###--- Functions ---###
 
-def compareMarkerLdb (a, b):
-    # sort first by marker key, then by a custom sort for ldb key
-
-    m = cmp(a[0], b[0])        # by marker key
-    if m != 0:
-        return m
+def markerLdbSortKey (a):
+    # sort first by marker key, then by a custom sort for ldb key (preferred first); returns
+    # tuple like (marker key, preferred ldb order, ldb name)
 
     aLdb = a[1]
-    bLdb = b[1]
-
     if aLdb in LDB_ORDERING:
-        if bLdb in LDB_ORDERING:
-            return cmp (LDB_ORDERING.index(aLdb),
-                LDB_ORDERING.index(bLdb) )
-        return -1
+        return (a[0], LDB_ORDERING.index(aLdb), aLdb)
 
-    elif bLdb in LDB_ORDERING:
-        return 1
-
-    return cmp(aLdb, bLdb)
+    # non-preferred LDB, so push below the preferred ones
+    return (a[0], 99, aLdb)
 
 def sortResultSet (results, ldbKeyCol, markerKeyCol):
     # sort 'results' by marker key and a custom logical database sort
@@ -102,7 +92,7 @@ def sortResultSet (results, ldbKeyCol, markerKeyCol):
         i = i + 1
 
     # sort the new list
-    sortable.sort (compareMarkerLdb)
+    sortable.sort (key=markerLdbSortKey)
 
     # reshuffle results into a new list based on newly-sorted 'sortable'
     newList = []

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 # History
 #
@@ -17,15 +17,15 @@ tableName = 'marker_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	marker_key	int		not null,
-	by_symbol	int		not null,
-	by_name		int		not null,
-	by_marker_type	int		not null,
-	by_marker_subtype	int	not null,
-	by_organism	int		not null,
-	by_primary_id	int		not null,
-	by_location	int		not null,
-	PRIMARY KEY(marker_key))''' % tableName
+        marker_key      int             not null,
+        by_symbol       int             not null,
+        by_name         int             not null,
+        by_marker_type  int             not null,
+        by_marker_subtype       int     not null,
+        by_organism     int             not null,
+        by_primary_id   int             not null,
+        by_location     int             not null,
+        PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -39,26 +39,26 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table in the marker flower, containing pre-computed sorts for each marker',
-	Table.COLUMN : {
-		'marker_key' : 'identifies the marker',
-		'by_symbol' : 'sort by marker symbol, smart-alpha (handles embedded numbers intelligently)',
-		'by_name' : 'sort by marker name, smart-alpha (handles embedded numbers intelligently)',
-		'by_marker_type' : 'sort by marker type',
-		'by_marker_subtype' : 'sort by marker subtype/feature type',
-		'by_organism' : 'sort by organism containing the marker',
-		'by_primary_id' : 'sort by primary ID',
-		'by_location' : 'sort by location (preference to coordinates, then cM position, then cytogenetic band)',
-		},
-	}
+        Table.TABLE : 'petal table in the marker flower, containing pre-computed sorts for each marker',
+        Table.COLUMN : {
+                'marker_key' : 'identifies the marker',
+                'by_symbol' : 'sort by marker symbol, smart-alpha (handles embedded numbers intelligently)',
+                'by_name' : 'sort by marker name, smart-alpha (handles embedded numbers intelligently)',
+                'by_marker_type' : 'sort by marker type',
+                'by_marker_subtype' : 'sort by marker subtype/feature type',
+                'by_organism' : 'sort by organism containing the marker',
+                'by_primary_id' : 'sort by primary ID',
+                'by_location' : 'sort by location (preference to coordinates, then cM position, then cytogenetic band)',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
