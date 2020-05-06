@@ -1,6 +1,6 @@
-# Module: GenotypeClassifier.py
-# Purpose: to provide an easy means to determine the classification (or type)
-#	for a genotype (eg- conditional, hemizygous, etc.)
+# Module: SymbolSorter.py
+# Purpose: provides an easy way to get a sequence number for a gene symbol,
+#	when sorted in a smart-alpha manner
 
 import dbAgnostic
 import symbolsort
