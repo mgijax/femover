@@ -140,7 +140,7 @@ class ReferenceIndividualAuthorsGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-        'select _Refs_key, authors from bib_refs',
+        'select _Refs_key, authors from bib_refs order by _Refs_key',
         ]
 
 # order of fields (from the query results) to be written to the
