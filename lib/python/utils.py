@@ -66,10 +66,12 @@ def intSortKey(i):
                 return -999999
         return i
 
-def stringSortKey(s):
+def stringSortKey(s, noneFirst=False):
         # return string sort key with None values coming last
         if type(s) == str:
                 return s
+        if noneFirst:
+                return ' '
         return 'zzzzzzzzzz'
 
 def floatSortKey(f):

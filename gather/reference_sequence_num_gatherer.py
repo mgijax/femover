@@ -54,8 +54,8 @@ class ReferenceSequenceNumGatherer (Gatherer.Gatherer):
                 logger.debug ('Pulled out data to sort')
 
                 byDate.sort()
-                byAuthor.sort(key=utils.stringSortKey)
-                byTitle.sort(key=utils.stringSortKey)
+                byAuthor.sort(key=lambda x: utils.stringSortKey(x[0], True))
+                byTitle.sort(key=lambda x: utils.stringSortKey(x[0], True))
 
                 logger.debug ('Sorted data')
 
