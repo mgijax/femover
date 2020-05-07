@@ -14,7 +14,7 @@ def tupleCompare(a):
         #       endonuclease (smart-alpha), rflv key (ascending)
         
         if a[3] == None:
-                endo = '    '
+                endo = 'zzzz'
         else:
                 endo = a[3]
 
