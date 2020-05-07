@@ -74,8 +74,12 @@ def stringSortKey(s, noneFirst=False):
                 return ' '
         return 'zzzzzzzzzz'
 
-def floatSortKey(f):
+def floatSortKey(f, noneFirst=False):
         # return float sort key with None values coming last
-        if f == None:
-                return 99999999999999
-        return f
+        if type(f) == float:
+                return f
+        if type(f) == int:
+                return float(f)
+        if noneFirst:
+                return -99999999
+        return 99999999999999
