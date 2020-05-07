@@ -81,5 +81,5 @@ def floatSortKey(f, noneFirst=False):
         if type(f) == int:
                 return float(f)
         if noneFirst:
-                return -99999999
-        return 99999999999999
+                return -999999999
+        return 999999999

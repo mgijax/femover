@@ -12,6 +12,7 @@ import Gatherer
 import logger
 import symbolsort
 import config
+import utils
 
 ###--- Classes ---###
 
@@ -33,7 +34,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                 self.subTypeOrder = {}          # subTypeOrder[marker key] = seq num
                 i = 0
                 prevType=''
-                for row in self.results[6][1]:
+                for row in self.results[5][1]:
                         subtype = row[1]
                         if prevType != subtype:
                                 prevType = subtype
@@ -167,17 +168,13 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                 # sort by chromosome then start coordinate.  likewise for
                 # cM offset and cytoband.)
 
-                # to sort markers without coordinates to the end, we need to
-                # know 1 more bp than the maximum start coordinate
-                maxCoord = self.results[4][1][0][0] + 1
-
                 maxOffset = 99999999    # bigger than any cM offset
                 maxCytoband = 'ZZZZ'    # bigger than any cytoband
 
                 locations = []          # list of (chrom seq num, start coord,
                                         # cM offset, cytoband, symbol, marker key)
 
-                columns = self.results[5][0]
+                columns = self.results[4][0]
                 keyCol = Gatherer.columnNumber (columns, '_Marker_key')
                 startCol = Gatherer.columnNumber (columns, 'startCoordinate')
                 cmCol = Gatherer.columnNumber (columns, 'cmOffset')
@@ -187,29 +184,22 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
 
                 def sortKey(a):
                         # return a sort key for 'a' with appropriate handling for None values
-                        chrom, startCoord, cM, cytoband, symbol, key = a
+                        chrom, startCoord, cM, cytoband, symbol, markerKey = a
 
-                        if chrom == None:
-                                chrom = ' '
-                        if symbol == None:
-                                symbol = ' '
-                        return (chrom, startCoord, cM, cytoband, symbol, key)
+                        chromSeqNum = utils.intSortKey(chrom)
+                        symbol = utils.stringSortKey(symbol)
+                        startCoord = utils.floatSortKey(startCoord)
+                        cytoband = utils.stringSortKey(cytoband, noneFirst=True)
 
-                for row in self.results[5][1]:
-                        startCoord = row[startCol]
+                        return (chromSeqNum, startCoord, cM, cytoband, symbol, markerKey)
+
+                for row in self.results[4][1]:
                         cmOffset = row[cmCol]
-                        cytoband = row[cytoCol]
-                        symbol = row[symbolCol].lower()
-
-                        if startCoord == None:
-                                startCoord = maxCoord
                         if (cmOffset == None) or (cmOffset <= 0):
                                 cmOffset = maxOffset
-                        if cytoband == None:
-                                cytoband = maxCytoband
 
-                        locations.append ( (row[chrCol], startCoord,
-                                cmOffset, cytoband, symbol, row[keyCol]) )
+                        locations.append ( (row[chrCol], row[startCol],
+                                cmOffset, row[cytoCol], row[symbolCol].lower(), row[keyCol]) )
                 locations.sort(key=sortKey)
 
                 allKeys = {}
@@ -276,9 +266,6 @@ cmds = [
                         and ldb._Organism_key = m._Organism_key
                 order by m._Marker_key, a._LogicalDB_key, a.prefixPart,
                         a.numericPart''',
-
-        '''select max(startCoordinate) as maxStart
-                from mrk_location_cache''',
 
         '''select c._Marker_key, c.chromosome, c.startCoordinate,
                         c.cmOffset, c.cytogeneticOffset, c.sequenceNum, m.symbol
