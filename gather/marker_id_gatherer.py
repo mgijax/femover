@@ -204,7 +204,8 @@ cmds = [
                         where a._Object_key = m._Marker_key)
                 and a._Object_key >= %d
                 and a._Object_key < %d
-                and a._LogicalDB_key = ldb._LogicalDB_key''',
+                and a._LogicalDB_key = ldb._LogicalDB_key
+        order by 1, 2, 3''',
 
         # 1. some gene model IDs are shared by multiple markers; we need to
         # look up the markers sharing each gene model ID
