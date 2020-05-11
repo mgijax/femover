@@ -500,7 +500,7 @@ cmds = [
                 and exists (select 1 from mrk_marker m
                         where m._Marker_key = ge._Marker_key)
         group by ge._Marker_key, gat.assayType, vte._term_key
-        order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
+        order by ge._Marker_key, gat.assayType, vte._term_key''' % (COUNT_TYPE, COUNT),
 
         # 2. expression results by type
         '''select ge._Marker_key,
@@ -517,7 +517,7 @@ cmds = [
                 and exists (select 1 from mrk_marker m
                         where m._Marker_key = ge._Marker_key)
         group by ge._Marker_key, gat.assayType, vte._term_key
-        order by ge._Marker_key''' % (COUNT_TYPE, COUNT),
+        order by ge._Marker_key, gat.assayType, vte._term_key''' % (COUNT_TYPE, COUNT),
 
         # 3. counts of reagents by type (these need to be grouped in code, but
         # this will give us the raw counts)
@@ -570,7 +570,8 @@ cmds = [
         from pairs m, coord_counts f, mrk_marker mm
         where m._ConsensusSNP_key = f._ConsensusSNP_key
                 and m._Marker_key = mm._Marker_key
-        group by m._Marker_key''',
+        group by m._Marker_key
+        order by m._Marker_key''',
         ]
 
 # order of fields (from the query results) to be written to the
