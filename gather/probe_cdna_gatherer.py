@@ -36,7 +36,7 @@ def cacheColumnIDs (columns):
 def suppressNSNA(s):
         # push Not Specified value to the bottom, followed by Not Applicable, then anything else
         if type(s) != str:
-                return 'zzzzzz'
+                return 'zzzzzzzzz'
         if s == NS:
                 return 'zzzzzz' + s
         if s == NA:
@@ -46,9 +46,9 @@ def suppressNSNA(s):
 def suppressNSAge(f):
         # push Not Specified (-1) ages to the bottom, other ages sorted by value
         if (type(f) != float) and (type(f) != int):
-                return 999999999.9
+                return 99999999999
         if f < 0:
-                return 999999999.8
+                return 99999999999
         return f
 
 def cloneSortKey(a):
@@ -56,8 +56,10 @@ def cloneSortKey(a):
         # does smart-alpha sorting on tissue, cell line, name, and acc ID.  Of particular note, Not Specified
         # tissues sink to the bottom.  Likewise, we prefer actual ages to Not Specified ages (-1 ageMin).
 
-        tissue = suppressNSNA(a[tissueCol])
-        age = suppressNSAge(a[ageCol])
+        tissue = symbolsort.splitter(suppressNSNA(a[tissueCol]))
+        age = 0
+        if (a[ageCol] != None) and (a[ageCol].lower() == 'not specified'):
+                age = 1
         minAge = suppressNSAge(a[ageMinCol])
         maxAge = suppressNSAge(a[ageMaxCol])
         cellLine = symbolsort.splitter(a[cellLineCol])
@@ -106,7 +108,8 @@ cmds = [
                 inner join acc_accession a on (p._Probe_key = a._Object_key and a.preferred = 1 and a.private = 0
                         and a._MGIType_key = 3 and a._LogicalDB_key = 1)
                 left outer join prb_tissue t on (s._Tissue_key = t._Tissue_key)
-                left outer join voc_term vt on (s._CellLine_key = vt._Term_key)''',
+                left outer join voc_term vt on (s._CellLine_key = vt._Term_key)
+                order by 1, 5, 6, 3, 4''',
         ]
 
 # order of fields (from the query results) to be written to the
