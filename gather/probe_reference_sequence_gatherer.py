@@ -93,7 +93,8 @@ cmds = [
                         and pa._Object_key = r._Probe_key)
                 inner join acc_accession sa on (pa.accID = sa.accID
                         and sa._LogicalDB_key = 9
-                        and sa._MGIType_key = 19)'''
+                        and sa._MGIType_key = 19)
+                order by 1, 3'''
         ]
 
 # global instance of a PRSGatherer
