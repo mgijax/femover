@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'sequence_provider_map' table in the front-end database
 
@@ -7,61 +7,61 @@ import Gatherer
 ###--- Classes ---###
 
 class SequenceProviderMapGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the sequence_provider_map table
-	# Has: queries to execute against the source database
-	# Does: caches the mapping from a sequence's logical database to its
-	#	provider abbreviation (for seqfetch) in the database
+        # Is: a data gatherer for the sequence_provider_map table
+        # Has: queries to execute against the source database
+        # Does: caches the mapping from a sequence's logical database to its
+        #       provider abbreviation (for seqfetch) in the database
 
-	def postprocessResults (self):
-		"""
-		Provider abbreviations for certain logical DBs
-		"""
+        def postprocessResults (self):
+                """
+                Provider abbreviations for certain logical DBs
+                """
 
-		self.convertFinalResultsToList()
+                self.convertFinalResultsToList()
 
-		keyCol = Gatherer.columnNumber (self.finalColumns,
-			'_LogicalDB_key')
+                keyCol = Gatherer.columnNumber (self.finalColumns,
+                        '_LogicalDB_key')
 
-		newResults = []
+                newResults = []
 
-		for row in self.finalResults:
-			ldbKey = row[keyCol]
+                for row in self.finalResults:
+                        ldbKey = row[keyCol]
 
-			if ldbKey == 9:
-				abbrev = 'genbank'
-			elif ldbKey == 13:
-				abbrev = 'swissprot'
-			elif ldbKey == 27:
-				abbrev = 'refseq'
-			elif ldbKey == 41:
-				abbrev = 'trembl'
+                        if ldbKey == 9:
+                                abbrev = 'genbank'
+                        elif ldbKey == 13:
+                                abbrev = 'swissprot'
+                        elif ldbKey == 27:
+                                abbrev = 'refseq'
+                        elif ldbKey == 41:
+                                abbrev = 'trembl'
 
-			# NCBI, Ensembl, Vega
-			elif ldbKey in (59, 60, 85):
-				abbrev = 'mousegenome'
+                        # NCBI, Ensembl, Vega
+                        elif ldbKey in (59, 60, 85):
+                                abbrev = 'mousegenome'
 
-			# not sure why these map to foo, but it is the
-			# existing behavior
-			elif ldbKey in (131, 132, 133, 134):
-				abbrev = 'foo'
-			
-			# if we didn't find an abbreviation, then just skip
-			# this row and move on to the next
-			else:
-				continue
+                        # not sure why these map to foo, but it is the
+                        # existing behavior
+                        elif ldbKey in (131, 132, 133, 134):
+                                abbrev = 'foo'
+                        
+                        # if we didn't find an abbreviation, then just skip
+                        # this row and move on to the next
+                        else:
+                                continue
 
-			self.addColumn ('abbrev', abbrev, row,
-				self.finalColumns)
-			newResults.append (row)
+                        self.addColumn ('abbrev', abbrev, row,
+                                self.finalColumns)
+                        newResults.append (row)
 
-		self.finalResults = newResults
-		return
+                self.finalResults = newResults
+                return
 
 ###--- globals ---###
 
 cmds = [
-	'select _LogicalDB_key, name from acc_logicaldb',
-	]
+        'select _LogicalDB_key, name from acc_logicaldb',
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
@@ -78,4 +78,4 @@ gatherer = SequenceProviderMapGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)
