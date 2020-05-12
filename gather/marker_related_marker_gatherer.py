@@ -9,6 +9,7 @@ import logger
 import types
 import dbAgnostic
 import utils
+import symbolsort
 
 ###--- Globals ---###
 
@@ -140,12 +141,15 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
                 termCol = Gatherer.columnNumber (cols, 'relationship_term')
                 chrCol = Gatherer.columnNumber (cols, 'chromosome')
                 coordCol = Gatherer.columnNumber (cols, 'startCoordinate')
+                symbolCol = Gatherer.columnNumber (cols, 'related_marker_symbol')
 
                 def rowSortKey(a):
                         # return sort key for sorting rows by marker key, category, term,
                         # chromosome, and coordinate
                         return (a[mrkKeyCol], a[categoryCol].lower(), a[termCol].lower(),
-                                utils.chromosomeSeqNum(a[chrCol]), utils.floatSortKey(a[coordCol]))
+                                utils.chromosomeSeqNum(a[chrCol]),
+                                utils.floatSortKey(a[coordCol], noneFirst=False),
+                                symbolsort.splitter(a[symbolCol]))
 
                 rows.sort (key=rowSortKey)
                 logger.debug ('Sorted %d query %d rows' % (len(rows),
@@ -263,10 +267,6 @@ class MrmGatherer (Gatherer.MultiFileGatherer):
 
                 logger.debug ('Found %d property rows' % len(rows2))
                 self.output.append ( (cols2, rows2) )
-
-                # not yet needed:
-                # query 4 : notes for mrk-to-mrk relationships
-                # query 5 : notes for reversed mrk-to-mrk relationships
 
                 return
 
@@ -418,13 +418,6 @@ cmds = [
                         and r._Object_key_2 = m2._Marker_key
                         and m2._Marker_Status_key = 1
                 order by p._Relationship_key, p.sequenceNum''',
-
-        # 4. relationship notes (if needed for display)
-        #'''TBD''',
-
-        # 5. relationship notes (if needed for display)
-        #'''TBD''',
-
         ]
 
 # prefix for the filename of the output file
