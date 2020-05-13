@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'go_evidence_category' table in the front-end database
 
@@ -13,53 +13,53 @@ OTHER = 'Other'
 
 EXPERIMENTAL_CODES = [ 'EXP', 'IDA', 'IMP', 'IPI', 'IGI', 'IEP' ]
 HOMOLOGY_CODES = [ 'IBA', 'IKR', 'ISS', 'ISM', 'ISO', 'ISA', 'IAS', 'IBD',
-	'IMR', 'IRD' ]
+        'IMR', 'IRD' ]
 AUTOMATED_CODES = [ 'IEA', 'RCA' ]
 OTHER_CODES = [ 'IC', 'TAS', 'NAS', 'ND' ]
 
 CATEGORIES = [
-	(EXPERIMENTAL_CODES, EXPERIMENTAL),
-	(HOMOLOGY_CODES, HOMOLOGY),
-	(AUTOMATED_CODES, AUTOMATED),
+        (EXPERIMENTAL_CODES, EXPERIMENTAL),
+        (HOMOLOGY_CODES, HOMOLOGY),
+        (AUTOMATED_CODES, AUTOMATED),
 
-	# Other is the default, so we don't really need to check for it.
-	#(OTHER_CODES, OTHER),
-	]
+        # Other is the default, so we don't really need to check for it.
+        #(OTHER_CODES, OTHER),
+        ]
 
 ###--- Classes ---###
 
 class GoEvidenceCategoryGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the go_evidence_category table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for GO Evidence Codes, assigns 
-	#	them to categories, writes tab-delimited text file
+        # Is: a data gatherer for the go_evidence_category table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for GO Evidence Codes, assigns 
+        #       them to categories, writes tab-delimited text file
 
-	def collateResults(self):
-		cols, rows = self.results[0]
+        def collateResults(self):
+                cols, rows = self.results[0]
 
-		self.finalColumns = [ 'evidence_code', 'evidence_category' ]
-		self.finalResults = []
+                self.finalColumns = [ 'evidence_code', 'evidence_category' ]
+                self.finalResults = []
 
-		for row in rows:
-			abbrev = row[0]
-			category = OTHER
+                for row in rows:
+                        abbrev = row[0]
+                        category = OTHER
 
-			for (codes, codesCategory) in CATEGORIES:
-				if abbrev in codes:
-					category = codesCategory
-					break
+                        for (codes, codesCategory) in CATEGORIES:
+                                if abbrev in codes:
+                                        category = codesCategory
+                                        break
 
-			self.finalResults.append( [ abbrev, category ] )
-		return
+                        self.finalResults.append( [ abbrev, category ] )
+                return
 
 ###--- globals ---###
 
 cmds = [
-	'''select t.abbreviation
-	from voc_term t, voc_vocab v
-	where t._Vocab_key = v._Vocab_key
-	and v.name = 'GO Evidence Codes' ''' 
-	]
+        '''select t.abbreviation
+        from voc_term t, voc_vocab v
+        where t._Vocab_key = v._Vocab_key
+        and v.name = 'GO Evidence Codes' ''' 
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
@@ -76,4 +76,4 @@ gatherer = GoEvidenceCategoryGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)
