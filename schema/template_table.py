@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -15,15 +15,15 @@ tableName = 'template'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	template
-	PRIMARY KEY(template))''' % tableName
+        template
+        PRIMARY KEY(template))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'template' : 'create index %s on %s (template)',
-	}
+        'template' : 'create index %s on %s (template)',
+        }
 
 # column name -> (related table, column in related table)
 keys = {}
@@ -33,22 +33,22 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : None,
-	Table.COLUMN : {
-		'template' : '',
-		},
-	Table.INDEX : {
-		'template' : '',
-		},
-	}
+        Table.TABLE : None,
+        Table.COLUMN : {
+                'template' : '',
+                },
+        Table.INDEX : {
+                'template' : '',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
