@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,10 +14,10 @@ tableName = 'image_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	image_key		int	not null,
-	by_default		int	not null,
-	by_jnum			int	not null,
-	PRIMARY KEY(image_key))''' % tableName
+        image_key               int     not null,
+        by_default              int     not null,
+        by_jnum                 int     not null,
+        PRIMARY KEY(image_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -31,21 +31,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the image flower, providing pre-computed sorts for images',
-	Table.COLUMN : {
-		'image_key' : 'identifies the image',
-		'by_default' : 'default sort for the image (Expression, Phenotype, and Molecular images uses different sorting rules.  They are encapsulated in this field.',
-		'by_jnum' : 'sort by J: number for the reference of the image',
-		},
-	}
+        Table.TABLE : 'petal table for the image flower, providing pre-computed sorts for images',
+        Table.COLUMN : {
+                'image_key' : 'identifies the image',
+                'by_default' : 'default sort for the image (Expression, Phenotype, and Molecular images uses different sorting rules.  They are encapsulated in this field.',
+                'by_jnum' : 'sort by J: number for the reference of the image',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
