@@ -18,10 +18,10 @@ def allMatch (
     # Process the list of checksums.  If all match previous value, return True.
     # Otherwise return False (indicating data needs to be regenerated).
     
-	for checksum in checksums:
-		if not checksum.matches():
-			return False
-	return True
+        for checksum in checksums:
+                if not checksum.matches():
+                        return False
+        return True
 
 def updateAll (
     checksums       # list of Checksum objects
@@ -29,9 +29,9 @@ def updateAll (
     # Process the list of checksums and write an updated value for each to the
     # file system.
     
-	for checksum in checksums:
-		checksum.update()
-	return
+        for checksum in checksums:
+                checksum.update()
+        return
  
 def singleCount (
     sqlCmd          # string; SQL command that returns a single count
