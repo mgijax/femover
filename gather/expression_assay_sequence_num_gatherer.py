@@ -31,7 +31,7 @@ class AssaySeqNumGatherer (Gatherer.Gatherer):
                 for row in rows:
                         toOrder.append ( (row[symbolCol], row[keyCol]) )
 
-                toOrder.sort(lambda a : symbolsort.splitter(a[0]))
+                toOrder.sort(key=lambda a : symbolsort.splitter(a[0]))
 
                 markerSeqNum = {}
                 i = 0
