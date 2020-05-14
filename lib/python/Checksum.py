@@ -91,7 +91,7 @@ class Checksum:
         path = self._getPath()
         fp = open(path, 'w')
         outputLine = '%s' % self.newValue
-        fp.write(outputLine.encode())
+        fp.write(outputLine)
         fp.close()
         logger.info('Wrote %d for %s' % (self.newValue, self.filename))
         return
@@ -109,5 +109,6 @@ class Checksum:
             fp = open(path, 'r')
             line = fp.readline()
             fp.close()
-            return int(line.strip())
+            if line.strip() != '':
+                    return int(line.strip())
         return None
