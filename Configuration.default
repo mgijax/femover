@@ -130,7 +130,3 @@ export HIGH_PRIORITY_TABLES
 #
 SINGLE_PRIORITY_TABLES=""
 export SINGLE_PRIORITY_TABLES
-
-# where to find the file of headers for the MP slimgrid
-MP_SLIMGRID_HEADERS="/bhmgiapp01data/loads/mgi/vocabbrevload/mpslimload/input/mpslimload.txt"
-export MP_SLIMGRID_HEADERS
