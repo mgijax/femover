@@ -492,7 +492,7 @@ def dropForeignKeyConstraints(table):
                 id = dropFKDispatcher.schedule(s)
                 dropFKDispatcher.wait()
                 
-                checkStderr (dropFKDispatcher, id, 'Failed to drop constraint: %s' % constraint_name)
+                checkStderr (dropFKDispatcher, id, 'Failed to drop constraint: %s' % constraintName)
         return
 
 def dropTables (
