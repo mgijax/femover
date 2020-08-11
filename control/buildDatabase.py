@@ -129,6 +129,9 @@ START_TIME = time.time()
 # float; time in seconds of last call to dispatcherReport()
 REPORT_TIME = time.time()
 
+# dictionary; maps from table name to list of tuples with (table with FK defined, foreign key constraint name)
+FK_BY_TABLE = None
+
 # values for the GATHER_STATUS, BCPIN_STATUS, and INDEX_STATUS
 # global variables
 NOTYET = 0		# this piece has not started yet
@@ -421,57 +424,76 @@ def dbExecuteCmd (cmd):
 	dbExecute = os.path.join (config.CONTROL_DIR, 'dbExecute.py')
 	return "%s '%s'" % (dbExecute, cmd)
 
-def dropForeignKeyConstraints(table):
-	# Purpose: to drop the foreign key constraints that refer to the 
-	#	given table
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: drops constraints from tables from the database
-	# Throws: 'error' if problems are detected
-
-	cmd = '''select fk.table_name as fk_table,
-			cu.column_name as fk_column, 
-			pk.table_name as pk_table,
-			pt.column_name as pk_column,
-			c.constraint_name as constraint_name
-		from information_schema.referential_constraints c
-		inner join information_schema.table_constraints fk
-			on c.constraint_name = fk.constraint_name
-		inner join information_schema.table_constraints pk
-			on c.unique_constraint_name = pk.constraint_name
-		inner join information_schema.key_column_usage cu
-			on c.constraint_name = cu.constraint_name
-		inner join (select i1.table_name, i2.column_name
-			from information_schema.table_constraints i1
-			inner join information_schema.key_column_usage i2
-				on i1.constraint_name = i2.constraint_name
-			where lower(i1.constraint_type) = 'primary key') pt
-				on pt.table_name = pk.table_name
-		where lower(pk.table_name) = '%s' ''' % table.lower()
-
-	(columns, rows) = DBM.execute(cmd)
+def cacheForeignKeyNames():
+        # Purpose: look up the foreign keys for each table and cache them
 	
-	dropFKDispatcher = Dispatcher.Dispatcher(1)
+        global FK_BY_TABLE
+	
+        cmd = '''select pk.table_name as pk_table,
+            fk.table_name as fk_table,
+            cu.column_name as fk_column,
+            pk.table_name as pk_table,
+            pt.column_name as pk_column,
+            c.constraint_name as constraint_name
+        from information_schema.referential_constraints c
+        inner join information_schema.table_constraints fk
+            on c.constraint_name = fk.constraint_name
+        inner join information_schema.table_constraints pk
+            on c.unique_constraint_name = pk.constraint_name
+        inner join information_schema.key_column_usage cu
+            on c.constraint_name = cu.constraint_name
+        inner join (select i1.table_name, i2.column_name
+            from information_schema.table_constraints i1
+        inner join information_schema.key_column_usage i2
+            on i1.constraint_name = i2.constraint_name
+        where lower(i1.constraint_type) = 'primary key') pt
+            on pt.table_name = pk.table_name'''
 
-	if not columns:
-		return
+        (columns, rows) = DBM.execute(cmd)
+	
+        dropFKDispatcher = Dispatcher.Dispatcher(1)
 
-	tableCol = columns.index('fk_table')
-	nameCol = columns.index('constraint_name') 
+        if not columns:
+            return
 
-	for row in rows:
-	    fk_table = row[tableCol]
-	    constraint_name = row[nameCol]
+        pkTableCol = columns.index('pk_table')
+        fkTableCol = columns.index('fk_table')
+        nameCol = columns.index('constraint_name') 
 
-	    s = dbExecuteCmd ('alter table %s drop constraint if exists %s' \
-		% (fk_table, constraint_name) )
+        FK_BY_TABLE = {}
+        for row in rows:
+            pkTable = row[fkTableCol]
+            fkTable = row[fkTableCol]
+            constraintName = row[nameCol]
 
-	    id = dropFKDispatcher.schedule(s)
-	    dropFKDispatcher.wait() 
+            if pkTable not in FK_BY_TABLE:
+                FK_BY_TABLE[pkTable] = []
+            FK_BY_TABLE[pkTable].append( (fkTable, constraintName) )
 
-	    checkStderr (dropFKDispatcher, id,
-		'Failed to drop constraint: %s' % constraint_name)
-	return
+        logger.info('Cached %d FK for %d tables' % (len(rows), len(FK_BY_TABLE)) )
+        return
+
+def dropForeignKeyConstraints(table):
+        # Purpose: to drop the foreign key constraints that refer to the
+        #	given table
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: drops constraints from tables from the database
+        # Throws: 'error' if problems are detected
+
+        if FK_BY_TABLE == None:
+            cacheForeignKeyNames()
+		
+        if table in FK_BY_TABLE:
+            for (fkTable, constraintName) in FK_BY_TABLE[table]:
+                dropFKDispatcher = Dispatcher.Dispatcher(1)
+                
+                s = dbExecuteCmd ('alter table %s drop constraint if exists %s' % (fkTable, constraintName) )
+                id = dropFKDispatcher.schedule(s)
+                dropFKDispatcher.wait()
+                
+                checkStderr (dropFKDispatcher, id, 'Failed to drop constraint: %s' % constraint_name)
+        return
 
 def dropTables (
 	tables		# list of table names (strings) to be regenerated
