@@ -19,6 +19,11 @@ class TermSiblingGatherer (Gatherer.ChunkGatherer):
 	def getMaxKeyQuery(self):
 		return 'select max(_Vocab_key) from voc_vocab'
 	
+	def collateResults (self):
+		self.finalColumns = self.results[3][0]
+		self.finalResults = self.results[3][1]
+		return
+
 	def postprocessResults(self):
 		# for any vocabularies without sequence numbers, compute and add them
 		# also, we need to add edge numbers
@@ -62,31 +67,37 @@ class TermSiblingGatherer (Gatherer.ChunkGatherer):
 ###--- globals ---###
 
 cmds = [
-	'''with selected_vocabs as (select _Vocab_key
-			from voc_vocab
-			where _Vocab_key >= %d and _Vocab_key < %d
-		), primary_id as (select a._Object_key as _Term_key, a.accID
-			from voc_term t, acc_accession a, selected_vocabs v
-			where t._Term_key = a._Object_key
-				and a._MGIType_key = 13
-				and a.preferred = 1
-				and a.private = 0
-				and t._Vocab_key = v._Vocab_key
-				and a._LogicalDB_key = (select min(_LogicalDB_key)
-					from acc_accession b
-					where b._MGIType_key = 13
-						and b.preferred = 1
-						and b.private = 0
-						and a._Object_key = b._Object_key)
-		), leaves as (select t._Term_key, 1 as is_leaf
-			from voc_term t, selected_vocabs v
-			where t._Vocab_key = v._Vocab_key
-				and not exists (select 1
-					from dag_node dn, dag_edge de
-					where t._Term_Key = dn._Object_key
-						and dn._Node_key = de._Parent_key)
-		)
-		select t._Vocab_key, p._Object_key as parentKey, c._Object_key as childKey, s._Object_key as siblingKey,
+	'''create temp table selected_vocabs as
+		select _Vocab_key
+		from voc_vocab
+		where _Vocab_key >= %d and _Vocab_key < %d''',
+
+	'''create temp table primary_id as
+		select a._Object_key as _Term_key, a.accID
+		from voc_term t, acc_accession a, selected_vocabs v
+		where t._Term_key = a._Object_key
+			and a._MGIType_key = 13
+			and a.preferred = 1
+			and a.private = 0
+			and t._Vocab_key = v._Vocab_key
+			and a._LogicalDB_key = (select min(_LogicalDB_key)
+				from acc_accession b
+				where b._MGIType_key = 13
+					and b.preferred = 1
+					and b.private = 0
+					and a._Object_key = b._Object_key)''',
+
+	'''create temp table leaves as
+		select t._Term_key, 1 as is_leaf
+		from voc_term t, selected_vocabs v
+		where t._Vocab_key = v._Vocab_key
+			and not exists (select 1
+				from dag_node dn, dag_edge de
+				where t._Term_Key = dn._Object_key
+					and dn._Node_key = de._Parent_key)''',
+
+	'''select t._Vocab_key, p._Object_key as parentKey,
+			c._Object_key as childKey, s._Object_key as siblingKey,
 			st.term, st.sequenceNum, l.label, id.accID,
 			case
 				when v.isSimple = 1 then 0
@@ -104,7 +115,11 @@ cmds = [
 		inner join voc_term st on (s._Object_key = st._Term_key)
 		inner join selected_vocabs vv on (t._Vocab_key = vv._Vocab_key)
 		left outer join primary_id id on (st._Term_key = id._Term_key)
-		left outer join leaves lv on (st._Term_key = lv._Term_key)'''
+		left outer join leaves lv on (st._Term_key = lv._Term_key)''',
+
+	'''drop table selected_vocabs''',
+	'''drop table primary_id''',
+	'''drop table leaves'''
 	]
 
 # order of fields (from the query results) to be written to the output file
