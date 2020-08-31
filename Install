@@ -20,6 +20,26 @@ fi
 . "${TOP}/Configuration"
 echo "Sourced Configuration file"
 
+# check that we're working with Python 3.7
+
+VER=`${PYTHON} --version 2>&1 | sed 's/[^ ]* //' | sed 's/\./ /g' | awk '{print $1,$2}'`
+if [ "${VER}" != "3 7" ]; then
+	echo "Incorrect Python version at ${PYTHON} -- must be 3.7";
+	exit 1
+fi
+
+# add/update links to the Python executable (for Python 3.7)
+
+DIRS="control gather lib/python postprocess schema testdata unittest/gatherer unittest"
+for DIR in ${DIRS}
+do
+	if [ -h ${DIR}/python ]; then
+		rm ${DIR}/python
+	fi
+	ln -s ${PYTHON} ${DIR}/python
+	echo "Added link from ${DIR}/python to ${PYTHON}"
+done
+
 # add/update links to config.py library
 
 CONFIG=${TOP}/lib/python/config.py
@@ -59,7 +79,7 @@ fi
 
 # update permissions on gatherers and controllers
 
-chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*
-echo "Granted execute permissions for gatheres and control scripts"
+chmod ug+x "${TOP}/gather/"*Gatherer.py "${TOP}/control/"*.py "${TOP}/control"/*.sh
+echo "Granted execute permissions for gatherers and control scripts"
 
 echo "Finished"

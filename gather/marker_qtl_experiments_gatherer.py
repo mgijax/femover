@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'marker_qtl_experiments' table in the front-end database
 
@@ -8,11 +8,11 @@ import logger
 ###--- Classes ---###
 
 class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the marker_qtl_experiments table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for notes for QTL mapping
-	#	experiments for QTL markers, collates results, writes
-	#	tab-delimited text file
+        # Is: a data gatherer for the marker_qtl_experiments table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for notes for QTL mapping
+        #       experiments for QTL markers, collates results, writes
+        #       tab-delimited text file
         
         def getMarkerNotes(self):
                 """
@@ -46,36 +46,36 @@ class MarkerQtlExperimentsGatherer (Gatherer.Gatherer):
         
         
 
-	def collateResults (self):
+        def collateResults (self):
 
-		# notes = [(marker key, expt key, jnumID, note type, note),...]
+                # notes = [(marker key, expt key, jnumID, note type, note),...]
                 notes = self.getMarkerNotes()
 
                 notes = list(notes)
                 notes.sort()
 
-		seqNum = 0
+                seqNum = 0
 
-		self.finalColumns = [ '_Marker_key', '_Expt_key', 'accID',
-			'note', 'ref_note', 'noteType', 'sequenceNum' ]
-		self.finalResults = []
+                self.finalColumns = [ '_Marker_key', '_Expt_key', 'accID',
+                        'note', 'ref_note', 'noteType', 'sequenceNum' ]
+                self.finalResults = []
 
-		for (markerKey, exptKey, jnumID, noteType, note, refNote) in notes:
-			seqNum = seqNum + 1
+                for (markerKey, exptKey, jnumID, noteType, note, refNote) in notes:
+                        seqNum = seqNum + 1
 
-			self.finalResults.append ( [ markerKey, exptKey,
-				jnumID,
-				note,
+                        self.finalResults.append ( [ markerKey, exptKey,
+                                jnumID,
+                                note,
                                 refNote,
-				noteType,
+                                noteType,
                                 seqNum] )
-		return
+                return
 
 ###--- globals ---###
 
 cmds = [
         # 0. QTL marker notes and associated ref notes
-	'''select mem._marker_key,
+        '''select mem._marker_key,
                 me._expt_key,
                 me._refs_key,
                 ref_acc.accid jnumid,
@@ -94,17 +94,17 @@ cmds = [
                 and ref_acc.prefixpart='J:'
         left outer join mld_notes mn on
                 mn._refs_key=me._refs_key
-	where me.exptType in ('TEXT-QTL', 'TEXT-QTL-Candidate Genes')
-	''',
+        where me.exptType in ('TEXT-QTL', 'TEXT-QTL-Candidate Genes')
+        ''',
         
-	]
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-	Gatherer.AUTO, '_Marker_key', '_Expt_key', 'accID', 'note', 'ref_note',
-	'noteType', 'sequenceNum',
-	]
+        Gatherer.AUTO, '_Marker_key', '_Expt_key', 'accID', 'note', 'ref_note',
+        'noteType', 'sequenceNum',
+        ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker_qtl_experiments'
@@ -117,4 +117,4 @@ gatherer = MarkerQtlExperimentsGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

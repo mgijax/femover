@@ -1,6 +1,7 @@
 # Name: SanityChecks.py
 # Purpose: include some basic sanity checks that can be run against a front-end database
 #   to verify that it's in a good state at the end of the femover run
+# Note: no changes needed for python 3.7
 
 import sys
 import os

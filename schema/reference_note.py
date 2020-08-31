@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -11,11 +11,11 @@ tableName = 'reference_note'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key	int	NOT NULL,
-	reference_key	int	NOT NULL,
-	note_type	text	NOT NULL,
-	note		text	NULL,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key      int     NOT NULL,
+        reference_key   int     NOT NULL,
+        note_type       text    NOT NULL,
+        note            text    NULL,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -26,29 +26,29 @@ keys = { 'reference_key' : ('reference', 'reference_key'), }
 
 # index used to cluster data in the table
 clusteredIndex = ('reference_key',
-	'create index %s on %s (reference_key, note_type)')
+        'create index %s on %s (reference_key, note_type)')
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the reference flower, containing notes associated with references',
-	Table.COLUMN : {
-		'unique_key' : 'unique identifier for this reference/note pair',
-		'reference_key' : 'identifies the reference',
-		'note_type' : 'type of note',
-		'note' : 'the note itself',
-		},
-	Table.INDEX : {
-		'reference_key' : 'clusters data together so a given reference has its notes close together on disk',
-		},
-	}
+        Table.TABLE : 'petal table for the reference flower, containing notes associated with references',
+        Table.COLUMN : {
+                'unique_key' : 'unique identifier for this reference/note pair',
+                'reference_key' : 'identifies the reference',
+                'note_type' : 'type of note',
+                'note' : 'the note itself',
+                },
+        Table.INDEX : {
+                'reference_key' : 'clusters data together so a given reference has its notes close together on disk',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

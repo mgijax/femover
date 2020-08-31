@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -11,13 +11,13 @@ tableName = 'reference_book'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	reference_key	int NOT NULL,
-	editor    	text NULL,
-	book_title  	text NULL,
-	edition  	text NULL,
-	place	  	text NULL,
-	publisher  	text NULL,
-	PRIMARY KEY(reference_key))''' % tableName
+        reference_key   int NOT NULL,
+        editor          text NULL,
+        book_title      text NULL,
+        edition         text NULL,
+        place           text NULL,
+        publisher       text NULL,
+        PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -31,24 +31,24 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the reference flower, containing data related specifically to books',
-	Table.COLUMN : {
-		'reference_key' : 'uniquely identifies the reference',
-		'editor' : 'book editor',
-		'book_title' : 'title of the book',
-		'edition' : 'which edition',
-		'place' : 'where published',
-		'publisher' : 'name of the publisher',
-		},
-	}
+        Table.TABLE : 'petal table for the reference flower, containing data related specifically to books',
+        Table.COLUMN : {
+                'reference_key' : 'uniquely identifies the reference',
+                'editor' : 'book editor',
+                'book_title' : 'title of the book',
+                'edition' : 'which edition',
+                'place' : 'where published',
+                'publisher' : 'name of the publisher',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

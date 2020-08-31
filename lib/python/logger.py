@@ -5,158 +5,158 @@ import config
 
 ###--- Globals ---###
 
-DEBUG = config.LOG_DEBUG		# boolean; log debug messages?
-INFO = config.LOG_INFO			# boolean; log informational messages?
-START_TIME = None			# float; time of first logged message
-NAME = os.path.basename (sys.argv[0])	# string; name to pre-pend to messages
+DEBUG = config.LOG_DEBUG                # boolean; log debug messages?
+INFO = config.LOG_INFO                  # boolean; log informational messages?
+START_TIME = None                       # float; time of first logged message
+NAME = os.path.basename (sys.argv[0])   # string; name to pre-pend to messages
 LOGFILE = None
 LOG = None
 
 ###--- Functions ---###
 
 def setLogFile(filename):
-	global LOG, LOGFILE
-	if LOG != None:
-		LOG.close()
-	LOGFILE = os.path.join (config.LOG_DIR, filename)
-	LOG = open (LOGFILE, 'w')
-	return
+        global LOG, LOGFILE
+        if LOG != None:
+                LOG.close()
+        LOGFILE = os.path.join (config.LOG_DIR, filename)
+        LOG = open (LOGFILE, 'w')
+        return
 
 def getName():
-	# Purpose: get the name currently in use as a prefix for messages
-	# Returns: string
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        # Purpose: get the name currently in use as a prefix for messages
+        # Returns: string
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	return NAME
+        return NAME
 
 def setName (
-	name		# string; name to pre-pend to log messages
-	):
-	# Purpose: set the name to use as a prefix for messages
-	# Returns: string
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        name            # string; name to pre-pend to log messages
+        ):
+        # Purpose: set the name to use as a prefix for messages
+        # Returns: string
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	global NAME
-	NAME = name
-	return
+        global NAME
+        NAME = name
+        return
 
 def getDebug():
-	# Purpose: get the current debug setting
-	# Returns: boolean (True if debugging, False if not)
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        # Purpose: get the current debug setting
+        # Returns: boolean (True if debugging, False if not)
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	return DEBUG
+        return DEBUG
 
 def setDebug (
-	debugOn = True		# boolean; True to turn debug messages on
-	):
-	# Purpose: turn debug logging on (True) or off (False)
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        debugOn = True          # boolean; True to turn debug messages on
+        ):
+        # Purpose: turn debug logging on (True) or off (False)
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	global DEBUG
-	DEBUG = debugOn
-	return
+        global DEBUG
+        DEBUG = debugOn
+        return
 
 def getInfo():
-	# Purpose: get the current informational message setting
-	# Returns: boolean (True if logging info messages, False if not)
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        # Purpose: get the current informational message setting
+        # Returns: boolean (True if logging info messages, False if not)
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	return INFO
+        return INFO
 
 def setInfo (
-	infoOn = True		# boolean; True to turn info messages on
-	):
-	# Purpose: turn informational logging on (True) or off (False)
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        infoOn = True           # boolean; True to turn info messages on
+        ):
+        # Purpose: turn informational logging on (True) or off (False)
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	global INFO
-	INFO = infoOn
-	return
+        global INFO
+        INFO = infoOn
+        return
 
 def info (
-	message			# string; informational message to be logged
-	):
-	# Purpose: write 'message' to the log, if we are currently logging
-	#	informational messages
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        message                 # string; informational message to be logged
+        ):
+        # Purpose: write 'message' to the log, if we are currently logging
+        #       informational messages
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	if INFO:
-		__output ('info', message)
-	return
+        if INFO:
+                __output ('info', message)
+        return
 
 def debug (
-	message			# string; debug message to be logged
-	):
-	# Purpose: write 'message' to the log, if we are currently logging
-	#	debugging messages
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
+        message                 # string; debug message to be logged
+        ):
+        # Purpose: write 'message' to the log, if we are currently logging
+        #       debugging messages
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
 
-	if DEBUG:
-		__output ('debug', message)
-	return
+        if DEBUG:
+                __output ('debug', message)
+        return
 
 def error (
-	message			# string; error message to be logged
-	):
-	# Purpose: write 'message' to the log
-	# Returns: nothing
-	# Assumes: nothing
-	# Modifies: nothing
-	# Throws: nothing
-	# Notes: We always log error messages; there is no way to turn them
-	#	off.
+        message                 # string; error message to be logged
+        ):
+        # Purpose: write 'message' to the log
+        # Returns: nothing
+        # Assumes: nothing
+        # Modifies: nothing
+        # Throws: nothing
+        # Notes: We always log error messages; there is no way to turn them
+        #       off.
 
-	__output ('error', message)
-	return
+        __output ('error', message)
+        return
 
 def close():
-	LOG.close()
-	return
+        LOG.close()
+        return
 
 def __output (
-	messageType,		# string; type of message being logged
-	message			# string; message to be logged
-	):
-	# Purpose: write 'message' of the given 'messageType' to stderr
-	# Returns: nothing
-	# Assumes: We can write to stderr.
-	# Modifies: writes to stderr; updates global START_TIME
-	# Throws: nothing
+        messageType,            # string; type of message being logged
+        message                 # string; message to be logged
+        ):
+        # Purpose: write 'message' of the given 'messageType' to stderr
+        # Returns: nothing
+        # Assumes: We can write to stderr.
+        # Modifies: writes to stderr; updates global START_TIME
+        # Throws: nothing
 
-	global START_TIME
+        global START_TIME
 
-	if not LOG:
-		setLogFile(os.path.basename(sys.argv[0]).replace('.py', '') + '.log')
+        if not LOG:
+                setLogFile(os.path.basename(sys.argv[0]).replace('.py', '') + '.log')
 
-	if not START_TIME:
-		START_TIME = time.time()
+        if not START_TIME:
+                START_TIME = time.time()
 
-	now = time.time()
-	elapsed = now - START_TIME
+        now = time.time()
+        elapsed = now - START_TIME
 
-	LOG.write ('%s : %s : %6.3f sec : %s\n' % (
-		NAME, messageType, elapsed, message))
-	LOG.flush()
-	return
+        LOG.write ('%s : %s : %6.3f sec : %s\n' % (
+                NAME, messageType, elapsed, message))
+        LOG.flush()
+        return
 

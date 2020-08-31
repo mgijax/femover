@@ -7,7 +7,7 @@ import logger
 
 import utils
 import dbAgnostic
-import constants as C
+from . import constants as C
 
 class OrganismFinder:
     """
@@ -135,6 +135,6 @@ class OrganismFinder:
         
 
     def getOrganism(self, accID):
-        if self.idCache.has_key(accID):
+        if accID in self.idCache:
             return self.organismCache[self.idCache[accID]]
     

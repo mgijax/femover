@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'markerNote' table in the front-end database
 
@@ -8,240 +8,246 @@ import gc
 
 ###--- Globals ---###
 
-MP_MARKER = 1015	# VOC_AnnotType : MP/Marker (Derived)
-DO_MARKER = 1023	# VOC_AnnotType : DO/Marker (Derived)
-NOT_QUALIFIER = 1614157	# VOC_Term NOT
-ANNOT_EVIDENCE = 25	# MGI Type for annotation evidence
-VOCAB_TERM = 13		# MGI Type for vocabulary terms
+MP_MARKER = 1015        # VOC_AnnotType : MP/Marker (Derived)
+DO_MARKER = 1023        # VOC_AnnotType : DO/Marker (Derived)
+NOT_QUALIFIER = 1614157 # VOC_Term NOT
+ANNOT_EVIDENCE = 25     # MGI Type for annotation evidence
+VOCAB_TERM = 13         # MGI Type for vocabulary terms
 
 ###--- Classes ---###
 
 class MarkerNoteGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the markerNote table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for marker notes,
-	#	collates results, writes tab-delimited text file
+        # Is: a data gatherer for the markerNote table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for primary data for marker notes,
+        #       collates results, writes tab-delimited text file
 
-	def getRolledUpNotes (self):
-		# build a cache of notes for annotations rolled up to markers
-		# Returns: { marker key : single consolidated note }
+        def getRolledUpNotes (self):
+                # build a cache of notes for annotations rolled up to markers
+                # Returns: { marker key : single consolidated note }
 
-		# assumes ordering by marker key, note number, and then
-		# sequence number
-		cols, rows = self.results[2]
-		
-		markerCol = Gatherer.columnNumber (cols, '_Marker_key')
-		noteKeyCol = Gatherer.columnNumber (cols, '_Note_key')
-		noteCol = Gatherer.columnNumber (cols, 'note')
+                # assumes ordering by marker key, note number, and then
+                # sequence number
+                cols, rows = self.results[2]
+                
+                markerCol = Gatherer.columnNumber (cols, '_Marker_key')
+                noteKeyCol = Gatherer.columnNumber (cols, '_Note_key')
+                noteCol = Gatherer.columnNumber (cols, 'note')
 
-		notes = {}
-		noteCount = 0
-		lastNoteKey = None
+                notes = {}
+                noteCount = 0
+                lastNoteKey = None
 
-		for row in rows:
-			markerKey = row[markerCol]
-			noteKey = row[noteKeyCol]
-			chunk = row[noteCol]
+                for row in rows:
+                        markerKey = row[markerCol]
+                        noteKey = row[noteKeyCol]
+                        chunk = row[noteCol]
 
-			if not notes.has_key(markerKey):
-				# This chunk starts a new note for a new
-				# marker.
+                        if markerKey not in notes:
+                                # This chunk starts a new note for a new
+                                # marker.
 
-				notes[markerKey] = [ chunk ]
-				lastNoteKey = noteKey
-				noteCount = noteCount + 1
+                                notes[markerKey] = [ chunk ]
+                                lastNoteKey = noteKey
+                                noteCount = noteCount + 1
 
-			elif lastNoteKey == noteKey:
-				# This chunk continues the prior note for the
-				# same marker.
+                        elif lastNoteKey == noteKey:
+                                # This chunk continues the prior note for the
+                                # same marker.
 
-				notes[markerKey][-1] = notes[markerKey][-1] \
-					+ chunk
+                                notes[markerKey][-1] = notes[markerKey][-1] \
+                                        + chunk
 
-			else:
-				# This chunk starts a new note for an existing
-				# marker.
+                        else:
+                                # This chunk starts a new note for an existing
+                                # marker.
 
-				notes[markerKey].append(chunk)
-				lastNoteKey = noteKey
-				noteCount = noteCount + 1
+                                notes[markerKey].append(chunk)
+                                lastNoteKey = noteKey
+                                noteCount = noteCount + 1
 
-		logger.debug ('Collected %d rolled-up notes for %d markers' \
-			% (noteCount, len(notes)) )
+                logger.debug ('Collected %d rolled-up notes for %d markers' \
+                        % (noteCount, len(notes)) )
 
-		# need to now trim whitespace from the notes and skip any
-		# duplicate notes for each marker
+                # need to now trim whitespace from the notes and skip any
+                # duplicate notes for each marker
 
-		minNotes = {}
-		noteCount = 0
+                minNotes = {}
+                noteCount = 0
 
-		for markerKey in notes.keys():
-			minNotes[markerKey] = []
+                markerKeys = list(notes.keys())
+                markerKeys.sort()
+                for markerKey in markerKeys:
+                        minNotes[markerKey] = []
 
-			for note in notes[markerKey]:
-				minNote = note.strip()
+                        for note in notes[markerKey]:
+                                minNote = note.strip()
 
-				if minNote not in minNotes[markerKey]:
-					minNotes[markerKey].append(minNote)
-					noteCount = noteCount + 1
+                                if minNote not in minNotes[markerKey]:
+                                        minNotes[markerKey].append(minNote)
+                                        noteCount = noteCount + 1
 
-		logger.debug('Removed duplicates; now %d rolled-up notes' \
-			% noteCount)
+                logger.debug('Removed duplicates; now %d rolled-up notes' \
+                        % noteCount)
 
-		del notes
-		gc.collect()
+                del notes
+                gc.collect()
 
-		# and, pull them into a single string of notes for each marker
+                # and, pull them into a single string of notes for each marker
 
-		singleNotes = {}
+                singleNotes = {}
 
-		for markerKey in minNotes.keys():
-			singleNotes[markerKey] = ' '.join(minNotes[markerKey])
+                moreKeys = list(minNotes.keys())
+                moreKeys.sort()
+                for markerKey in moreKeys:
+                        singleNotes[markerKey] = ' '.join(minNotes[markerKey])
 
-		logger.debug('Mashed rolled-up notes down to one per marker')
-		return singleNotes
+                logger.debug('Mashed rolled-up notes down to one per marker')
+                return singleNotes
 
-	def collateResults (self):
-		# m[marker key] = { note type : note }
-		m = {}
+        def collateResults (self):
+                # m[marker key] = { note type : note }
+                m = {}
 
-		# general notes, using MGI_Note tables
+                # general notes, using MGI_Note tables
 
-		keyCol = Gatherer.columnNumber (self.results[0][0],
-			'_Object_key')
-		typeCol = Gatherer.columnNumber (self.results[0][0],
-			'_NoteType_key')
-		noteCol = Gatherer.columnNumber (self.results[0][0], 'note') 
+                keyCol = Gatherer.columnNumber (self.results[0][0],
+                        '_Object_key')
+                typeCol = Gatherer.columnNumber (self.results[0][0],
+                        '_NoteType_key')
+                noteCol = Gatherer.columnNumber (self.results[0][0], 'note') 
 
-		for row in self.results[0][1]:
-			markerKey = row[keyCol]
-			noteType = Gatherer.resolve (row[typeCol],
-				'mgi_notetype', '_NoteType_key', 'noteType')
-			note = row[noteCol]
+                for row in self.results[0][1]:
+                        markerKey = row[keyCol]
+                        noteType = Gatherer.resolve (row[typeCol],
+                                'mgi_notetype', '_NoteType_key', 'noteType')
+                        note = row[noteCol]
 
-			if not m.has_key(markerKey):
-				m[markerKey] = { noteType : note }
-			elif not m[markerKey].has_key(noteType):
-				m[markerKey][noteType] = note
-			else:
-				m[markerKey][noteType] = \
-					m[markerKey][noteType] + note 
+                        if markerKey not in m:
+                                m[markerKey] = { noteType : note }
+                        elif noteType not in m[markerKey]:
+                                m[markerKey][noteType] = note
+                        else:
+                                m[markerKey][noteType] = \
+                                        m[markerKey][noteType] + note 
 
-		logger.debug('Processed %d general notes' % \
-			len(self.results[0][1]) )
+                logger.debug('Processed %d general notes' % \
+                        len(self.results[0][1]) )
 
-		# marker clips, using MRK_Notes table
+                # marker clips, using MRK_Notes table
 
-		keyCol = Gatherer.columnNumber (self.results[1][0],
-			'_Marker_key')
-		noteCol = Gatherer.columnNumber (self.results[1][0], 'note')
-		noteType = 'marker clip'
+                keyCol = Gatherer.columnNumber (self.results[1][0],
+                        '_Marker_key')
+                noteCol = Gatherer.columnNumber (self.results[1][0], 'note')
+                noteType = 'marker clip'
 
-		for row in self.results[1][1]:
-			markerKey = row[keyCol]
-			note = row[noteCol]
+                for row in self.results[1][1]:
+                        markerKey = row[keyCol]
+                        note = row[noteCol]
 
-			if not m.has_key(markerKey):
-				m[markerKey] = { noteType : note }
-			elif not m[markerKey].has_key(noteType):
-				m[markerKey][noteType] = note
-			else:
-				m[markerKey][noteType] = \
-					m[markerKey][noteType] + note 
+                        if markerKey not in m:
+                                m[markerKey] = { noteType : note }
+                        elif noteType not in m[markerKey]:
+                                m[markerKey][noteType] = note
+                        else:
+                                m[markerKey][noteType] = \
+                                        m[markerKey][noteType] + note 
 
-		logger.debug('Processed %d marker clips' % \
-			len(self.results[1][1]) )
+                logger.debug('Processed %d marker clips' % \
+                        len(self.results[1][1]) )
 
-		# bring in the notes from rolled-up annotations
+                # bring in the notes from rolled-up annotations
 
-		rollupNotes = self.getRolledUpNotes()
+                rollupNotes = self.getRolledUpNotes()
 
-		noteType = 'rolled up annotation notes'
+                noteType = 'rolled up annotation notes'
 
-		for markerKey in rollupNotes.keys():
-			note = rollupNotes[markerKey]
+                markerKeys = list(rollupNotes.keys())
+                markerKeys.sort()
+                for markerKey in markerKeys:
+                        note = rollupNotes[markerKey]
 
-			if not m.has_key(markerKey):
-				m[markerKey] = { noteType : note }
-			else:
-				m[markerKey][noteType] = note
+                        if markerKey not in m:
+                                m[markerKey] = { noteType : note }
+                        else:
+                                m[markerKey][noteType] = note
 
-		# collate into final results
+                # collate into final results
 
-		self.finalResults = []
-		self.finalColumns = [ 'markerKey', 'noteType', 'note' ]
+                self.finalResults = []
+                self.finalColumns = [ 'markerKey', 'noteType', 'note' ]
 
-		markerKeys = m.keys()
-		markerKeys.sort()
+                markerKeys = list(m.keys())
+                markerKeys.sort()
 
-		for markerKey in markerKeys:
-			noteTypes = m[markerKey].keys()
-			noteTypes.sort()
+                for markerKey in markerKeys:
+                        noteTypes = list(m[markerKey].keys())
+                        noteTypes.sort()
 
-			# trim trailing whitespace from notes
-			for noteType in noteTypes:
-				row = [ markerKey, noteType,
-					m[markerKey][noteType].rstrip() ]
-				self.finalResults.append (row)
-		return
+                        # trim trailing whitespace from notes
+                        for noteType in noteTypes:
+                                row = [ markerKey, noteType,
+                                        m[markerKey][noteType].rstrip() ]
+                                self.finalResults.append (row)
+                return
 
 ###--- globals ---###
 
 cmds = [
-	# 0. general notes
-	'''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-	from mgi_note mn, mgi_notechunk mnc
-	where mn._MGIType_key = 2
-		and mn._Note_key = mnc._Note_key
-		and exists (select 1 from mrk_marker m
-			where m._Marker_key = mn._Object_key)
-	order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+        # 0. general notes
+        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
+        from mgi_note mn, mgi_notechunk mnc
+        where mn._MGIType_key = 2
+                and mn._Note_key = mnc._Note_key
+                and exists (select 1 from mrk_marker m
+                        where m._Marker_key = mn._Object_key)
+        order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
 
-	# 1. marker clips
-	'''select _Marker_key, note
-		from mrk_notes n
-		where exists (select 1 from mrk_marker m
-			where m._Marker_key = n._Marker_key)
-		order by _Marker_key''',
+        # 1. marker clips
+        '''select _Marker_key, note
+                from mrk_notes n
+                where exists (select 1 from mrk_marker m
+                        where m._Marker_key = n._Marker_key)
+                order by _Marker_key''',
 
-	# 2. searchable notes for rolled-up DO and MP annotations
-	'''with rolled_up_annotations as (
-		select distinct va._Annot_key,
-			va._Term_key,
-			ve._AnnotEvidence_key,
-			va._Object_key as _Marker_key
-		from voc_annot va,
-			voc_evidence ve,
-			voc_term q
-		where va._AnnotType_key = %d
-			and va._Qualifier_key = q._Term_key
-			and q.term is null
-			and va._Annot_key = ve._Annot_key
-		union
-		select distinct va._Annot_key,
-			va._Term_key,
-			ve._AnnotEvidence_key,
-			va._Object_key as _Marker_key
-		from voc_annot va,
-			voc_evidence ve
-		where va._AnnotType_key = %d
-			and va._Annot_key = ve._Annot_key
-			and va._Qualifier_key != %d)
-	select r._Marker_key,
-		n._Note_key,
-		c.note,
-		c.sequenceNum
-	from rolled_up_annotations r,
-		mgi_note n,
-		mgi_notetype t,
-		mgi_notechunk c
-	where r._AnnotEvidence_key = n._Object_key
-		and n._NoteType_key = t._NoteType_key
-		and n._Note_key = c._Note_key
-		and t._MGIType_key = %d
-	order by r._Marker_key, n._Note_key, c.sequenceNum''' % (MP_MARKER,
-		DO_MARKER, NOT_QUALIFIER, ANNOT_EVIDENCE)
-	]
+        # 2. searchable notes for rolled-up DO and MP annotations
+        '''with rolled_up_annotations as (
+                select distinct va._Annot_key,
+                        va._Term_key,
+                        ve._AnnotEvidence_key,
+                        va._Object_key as _Marker_key
+                from voc_annot va,
+                        voc_evidence ve,
+                        voc_term q
+                where va._AnnotType_key = %d
+                        and va._Qualifier_key = q._Term_key
+                        and q.term is null
+                        and va._Annot_key = ve._Annot_key
+                union
+                select distinct va._Annot_key,
+                        va._Term_key,
+                        ve._AnnotEvidence_key,
+                        va._Object_key as _Marker_key
+                from voc_annot va,
+                        voc_evidence ve
+                where va._AnnotType_key = %d
+                        and va._Annot_key = ve._Annot_key
+                        and va._Qualifier_key != %d)
+        select r._Marker_key,
+                n._Note_key,
+                c.note,
+                c.sequenceNum
+        from rolled_up_annotations r,
+                mgi_note n,
+                mgi_notetype t,
+                mgi_notechunk c
+        where r._AnnotEvidence_key = n._Object_key
+                and n._NoteType_key = t._NoteType_key
+                and n._Note_key = c._Note_key
+                and t._MGIType_key = %d
+        order by r._Marker_key, n._Note_key, c.sequenceNum''' % (MP_MARKER,
+                DO_MARKER, NOT_QUALIFIER, ANNOT_EVIDENCE)
+        ]
 
 # order of fields (from the query results) to be written to the
 # output file
@@ -258,4 +264,4 @@ gatherer = MarkerNoteGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

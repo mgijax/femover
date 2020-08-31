@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,36 +14,36 @@ tableName = 'strain_sequence_num'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	strain_key		int		NOT NULL,
-	by_strain		int		NOT NULL,
-	PRIMARY KEY(strain_key))''' % tableName
+        strain_key              int             NOT NULL,
+        by_strain               int             NOT NULL,
+        PRIMARY KEY(strain_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'by_strain' : 'create index %s on %s (by_strain)',
-	}
+        'by_strain' : 'create index %s on %s (by_strain)',
+        }
 
 # column name -> (related table, column in related table)
 keys = {
-	'strain_key' : ('strain', 'strain_key'),
-	}
+        'strain_key' : ('strain', 'strain_key'),
+        }
 
 # index used to cluster data in the table
 clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'pre-computed sequence numbers for ordering strains',
-	Table.COLUMN : {
-		'strain_key' : 'identifies the strain (FK to strain table)',
-		'by_strain' : 'orders the strain by its name',
-		},
-	Table.INDEX : {
-		'by_strain' : 'easy lookup of the strains ordered between m and n',
-		},
-	}
+        Table.TABLE : 'pre-computed sequence numbers for ordering strains',
+        Table.COLUMN : {
+                'strain_key' : 'identifies the strain (FK to strain table)',
+                'by_strain' : 'orders the strain by its name',
+                },
+        Table.INDEX : {
+                'by_strain' : 'easy lookup of the strains ordered between m and n',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments, clusteredIndex)
@@ -53,4 +53,4 @@ table = Table.Table (tableName, createStatement, indexes, keys, comments, cluste
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

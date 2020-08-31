@@ -1,9 +1,9 @@
-#!/usr/local/bin/python
+#!./python
 # 
-# 	Gathers data for the glossary index and term pages
-#	Reads the glossary.rcd file from the data directory
+#       Gathers data for the glossary index and term pages
+#       Reads the glossary.rcd file from the data directory
 #
-#	Author: kstone 2013/07/10
+#       Author: kstone 2013/07/10
 #
 
 import Gatherer
@@ -14,31 +14,31 @@ import config
 
 ###--- Classes ---###
 class GlossaryGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the glossary_term table
-	def readRcd(self):
-		filepath = config.GLOSSARY_FILE
-		rcdFile = rcdlib.RcdFile (filepath, rcdlib.Rcd, 'key')
-		return rcdFile
+        # Is: a data gatherer for the glossary_term table
+        def readRcd(self):
+                filepath = config.GLOSSARY_FILE
+                rcdFile = rcdlib.RcdFile (filepath, rcdlib.Rcd, 'key')
+                return rcdFile
 
-	def collateResults(self):
-		cols = ['unique_key','glossary_key','display_name','definition']
-		rcdFile = self.readRcd()
+        def collateResults(self):
+                cols = ['unique_key','glossary_key','display_name','definition']
+                rcdFile = self.readRcd()
 
-		count = 0
-		dbrows = []	
-		count = 0
-		for key,rcd in rcdFile.items():
-			count += 1
-			definition = rcd["definition"]
-			definition = definition.replace("definition=","")
-			dbrows.append((count,key,rcd["displayName"],definition))
-			
-		self.finalColumns = cols
-		self.finalResults = dbrows
-		return
+                count = 0
+                dbrows = []     
+                count = 0
+                for key,rcd in list(rcdFile.items()):
+                        count += 1
+                        definition = rcd["definition"]
+                        definition = definition.replace("definition=","")
+                        dbrows.append((count,key,rcd["displayName"],definition))
+                        
+                self.finalColumns = cols
+                self.finalResults = dbrows
+                return
 
-	def postprocessResults(self):
-		return
+        def postprocessResults(self):
+                return
 
 ###--- globals ---###
 
@@ -62,4 +62,4 @@ gatherer = GlossaryGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

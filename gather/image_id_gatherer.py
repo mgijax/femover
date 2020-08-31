@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 # 
 # gathers data for the 'image_id' table in the front-end database
 #
@@ -10,7 +10,7 @@ import re
 ###--- Globals ---###
 
 EXCLUDE_FROM_OTHER_DBS = [ 1, 19 ]
-LDB_ORDER = [ 148, 159, 105 ]		# Eurexpress, then GenePaint
+LDB_ORDER = [ 148, 159, 105 ]           # Eurexpress, then GenePaint
 
 ###--- Functions ---###
 
@@ -18,168 +18,152 @@ ldbKeyCol = None
 ldbNameCol = None
 idCol = None
 
-def ldbCompare (a, b):
-	aKey = a[ldbKeyCol]
-	bKey = b[ldbKeyCol]
+def ldbCompare (a):
+        # preferred LDBs before all non-preferred ones, then by LDB name, then by ID
 
-	# compare based on the defined LDB_ORDER where applicable
+        prefLdb = 999
+        if a[ldbKeyCol] in LDB_ORDER:
+                prefLdb = LDB_ORDER.index(a[ldbKeyCol])
 
-	if aKey in LDB_ORDER:
-		if bKey in LDB_ORDER:
-			return cmp(LDB_ORDER.index(aKey),
-				LDB_ORDER.index(bKey))
-		return -1
-	
-	if bKey in LDB_ORDER:
-		return 1
+        return (prefLdb, a[ldbNameCol], a[idCol])
 
-	# neither row's logical db is in LDB_ORDER, so sort by logical db name
-
-	i = cmp(a[ldbNameCol], b[ldbNameCol])
-
-	if i == 0:
-		# if the logical databases matched, just sort by ID
-
-		return cmp(a[idCol], b[idCol])
-	return i
-
-imageIdKeys = {}	# (image key, logical db, ID) -> image ID key
+imageIdKeys = {}        # (image key, logical db, ID) -> image ID key
 def getImageIdKey (imageKey, ldbKey, accID):
-	# the unique ID for this record for the image ID table
+        # the unique ID for this record for the image ID table
 
-	global imageIdKeys
+        global imageIdKeys
 
-	key = (imageKey, ldbKey, accID)
-	if not imageIdKeys.has_key(key):
-		imageIdKeys[key] = len(imageIdKeys) + 1
-	return imageIdKeys[key] 
+        key = (imageKey, ldbKey, accID)
+        if key not in imageIdKeys:
+                imageIdKeys[key] = len(imageIdKeys) + 1
+        return imageIdKeys[key] 
 
 gpRE = re.compile('^([A-Za-z]+),-A([0-9]+),-A([A-Za-z]+),?-?A?([0-9]+)?:?$')
 def tweakID (ldb, accID):
-	# Some image IDs (currently GenePaint) require us to slice and dice
-	# the ID to repackage it for a new link.  (These aren't actually 
-	# IDs anyway, but rather URL parameters.)  Need to handle these formats:
-	#	MH,-A1112,-Asetstart,-A19:		(notice trailing colon)
-	#	DA,-A75,-Asetstart,-A15
-	#	FG,-A46,-Asetview
-	
-	if (ldb == 'GenePaint'):
-		match = gpRE.match(accID)
-		if match:
-			(idPrefix, idSuffix, linkType, pane) = match.groups()
-			if pane != None:
-				accID = '%s%s/%s' % (idPrefix, idSuffix, int(pane) - 1)
-			else:
-				accID = '%s%s' % (idPrefix, idSuffix)
+        # Some image IDs (currently GenePaint) require us to slice and dice
+        # the ID to repackage it for a new link.  (These aren't actually 
+        # IDs anyway, but rather URL parameters.)  Need to handle these formats:
+        #       MH,-A1112,-Asetstart,-A19:              (notice trailing colon)
+        #       DA,-A75,-Asetstart,-A15
+        #       FG,-A46,-Asetview
+        
+        if (ldb == 'GenePaint'):
+                match = gpRE.match(accID)
+                if match:
+                        (idPrefix, idSuffix, linkType, pane) = match.groups()
+                        if pane != None:
+                                accID = '%s%s/%s' % (idPrefix, idSuffix, int(pane) - 1)
+                        else:
+                                accID = '%s%s' % (idPrefix, idSuffix)
 
-	return accID
+        return accID
 
 ###--- Classes ---###
 
 class ImageIDGatherer (Gatherer.Gatherer):
-	# Is: a data gatherer for the image ID table
-	# Has: queries to execute against the source database
-	# Does: queries the source database for primary data for image IDs,
-	#	collates results, writes tab-delimited text file
+        # Is: a data gatherer for the image ID table
+        # Has: queries to execute against the source database
+        # Does: queries the source database for primary data for image IDs,
+        #       collates results, writes tab-delimited text file
 
-	def collateResults (self):
-		# slice and dice the query results to produce our set of
-		# final results
+        def collateResults (self):
+                # slice and dice the query results to produce our set of
+                # final results
 
-		global ldbKeyCol, ldbNameCol, idCol
+                global ldbKeyCol, ldbNameCol, idCol
 
-		# first, gather all the IDs by image
+                # first, gather all the IDs by image
 
-		ids = {}	# image key -> ID rows
-		cols, rows = self.results[0]
+                ids = {}        # image key -> ID rows
+                cols, rows = self.results[0]
 
-		ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
-		ldbNameCol = Gatherer.columnNumber (cols, 'logicalDB')
-		idCol = Gatherer.columnNumber (cols, 'accID')
-		keyCol = Gatherer.columnNumber (cols, 'imageKey')
-		preferredCol = Gatherer.columnNumber (cols, 'preferred')
-		privateCol = Gatherer.columnNumber (cols, 'private')
+                ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
+                ldbNameCol = Gatherer.columnNumber (cols, 'logicalDB')
+                idCol = Gatherer.columnNumber (cols, 'accID')
+                keyCol = Gatherer.columnNumber (cols, 'imageKey')
+                preferredCol = Gatherer.columnNumber (cols, 'preferred')
+                privateCol = Gatherer.columnNumber (cols, 'private')
 
-		for row in rows:
-			key = row[keyCol]
-			if ids.has_key(key):
-				ids[key].append (row)
-			else:
-				ids[key] = [ row ]
+                for row in rows:
+                        key = row[keyCol]
+                        if key in ids:
+                                ids[key].append (row)
+                        else:
+                                ids[key] = [ row ]
 
-		logger.debug ('Collected IDs for %d images' % len(ids))
+                logger.debug ('Collected IDs for %d images' % len(ids))
 
-		imageKeys = ids.keys()
-		imageKeys.sort()
+                imageKeys = list(ids.keys())
+                imageKeys.sort()
 
-		logger.debug ('Sorted %d image keys' % len(imageKeys))
+                logger.debug ('Sorted %d image keys' % len(imageKeys))
 
-		for key in imageKeys:
-			ids[key].sort(ldbCompare)
+                for key in imageKeys:
+                        ids[key].sort(key=ldbCompare)
 
-		logger.debug ('Sorted IDs for %d image keys' % len(ids))
+                logger.debug ('Sorted IDs for %d image keys' % len(ids))
 
-		# now compile our IDs into our set of final results
+                # now compile our IDs into our set of final results
 
-		idResults = []
-		idColumns = [ 'imageIdKey', 'imageKey', 'logicalDB',
-			'accID', 'preferred', 'private',
-			'isForOtherDbSection', 'sequence_num' ]
+                idResults = []
+                idColumns = [ 'imageIdKey', 'imageKey', 'logicalDB',
+                        'accID', 'preferred', 'private',
+                        'isForOtherDbSection', 'sequence_num' ]
 
-		i = 0
-		seenIdKeys = {}
+                i = 0
+                seenIdKeys = {}
 
-		for key in imageKeys:
-			for r in ids[key]:
-				imageIdKey = getImageIdKey (key,
-					r[ldbKeyCol], r[idCol])
+                for key in imageKeys:
+                        for r in ids[key]:
+                                imageIdKey = getImageIdKey (key,
+                                        r[ldbKeyCol], r[idCol])
 
-				# ensure we have no duplicate IDs (skip any
-				# duplicates)
+                                # ensure we have no duplicate IDs (skip any
+                                # duplicates)
 
-				if seenIdKeys.has_key(imageIdKey):
-					continue
-				seenIdKeys[imageIdKey] = 1
+                                if imageIdKey in seenIdKeys:
+                                        continue
+                                seenIdKeys[imageIdKey] = 1
 
-				i = i + 1
-				if r[ldbKeyCol] in EXCLUDE_FROM_OTHER_DBS:
-					otherDB = 0
-				elif r[privateCol] == 1:
-					otherDB = 0
-				else:
-					otherDB = 1
+                                i = i + 1
+                                if r[ldbKeyCol] in EXCLUDE_FROM_OTHER_DBS:
+                                        otherDB = 0
+                                elif r[privateCol] == 1:
+                                        otherDB = 0
+                                else:
+                                        otherDB = 1
 
-				idResults.append ( [ imageIdKey,
-					key,
-					r[ldbNameCol],
-					tweakID(r[ldbNameCol], r[idCol]),
-					r[preferredCol],
-					r[privateCol],
-					otherDB,
-					i
-					] )
+                                idResults.append ( [ imageIdKey,
+                                        key,
+                                        r[ldbNameCol],
+                                        tweakID(r[ldbNameCol], r[idCol]),
+                                        r[preferredCol],
+                                        r[privateCol],
+                                        otherDB,
+                                        i
+                                        ] )
 
-		self.finalColumns = idColumns
-		self.finalResults = idResults
-		logger.debug ('Got %d image ID rows' % len(idResults))
-		return
+                self.finalColumns = idColumns
+                self.finalResults = idResults
+                logger.debug ('Got %d image ID rows' % len(idResults))
+                return
 
 ###--- globals ---###
 
 cmds = [
-	# 0. all IDs for each image
-	'''select a._Object_key as imageKey, a._LogicalDB_key,
-		a.accID, a.preferred, a.private, ldb.name as logicalDB
-	from acc_accession a, acc_logicaldb ldb
-	where a._MGIType_key = 9
-		and exists (select 1 from img_image i
-			where i._Image_key = a._Object_key)
-		and a._LogicalDB_key = ldb._LogicalDB_key''',
-	]
+        # 0. all IDs for each image
+        '''select a._Object_key as imageKey, a._LogicalDB_key,
+                a.accID, a.preferred, a.private, ldb.name as logicalDB
+        from acc_accession a, acc_logicaldb ldb
+        where a._MGIType_key = 9
+                and exists (select 1 from img_image i
+                        where i._Image_key = a._Object_key)
+                and a._LogicalDB_key = ldb._LogicalDB_key''',
+        ]
 
 fieldOrder = [ 'imageIdKey', 'imageKey', 'logicalDB', 'accID',
-			'preferred', 'private', 'isForOtherDbSection',
-			'sequence_num' ]
+                        'preferred', 'private', 'isForOtherDbSection',
+                        'sequence_num' ]
 
 filenamePrefix = 'image_id'
 
@@ -191,4 +175,4 @@ gatherer = ImageIDGatherer (filenamePrefix, fieldOrder, cmds)
 # if invoked as a script, use the standard main() program for gatherers and
 # pass in our particular gatherer
 if __name__ == '__main__':
-	Gatherer.main (gatherer)
+        Gatherer.main (gatherer)

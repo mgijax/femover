@@ -18,31 +18,31 @@ class TransformationsTestCase(unittest.TestCase):
     """
     
     def test_transformAnnotTypeMPDerived(self):
-	cols = ['annottype']
-	rows = [['Mammalian Phenotype/Marker (Derived)']]
+        cols = ['annottype']
+        rows = [['Mammalian Phenotype/Marker (Derived)']]
 
-	transform.transformAnnotationType(cols, rows)
+        transform.transformAnnotationType(cols, rows)
 
-	expected = 'Mammalian Phenotype/Marker'
-	self.assertEquals(expected, rows[0][0])
+        expected = 'Mammalian Phenotype/Marker'
+        self.assertEqual(expected, rows[0][0])
 
     def test_transformAnnotTypeDODerived(self):
-	cols = ['annottype']
-	rows = [['DO/Marker (Derived)']]
+        cols = ['annottype']
+        rows = [['DO/Marker (Derived)']]
 
-	transform.transformAnnotationType(cols, rows)
+        transform.transformAnnotationType(cols, rows)
 
-	expected = 'DO/Marker'
-	self.assertEquals(expected, rows[0][0])
+        expected = 'DO/Marker'
+        self.assertEqual(expected, rows[0][0])
 
     def test_transformAnnotTypeNotDerived(self):
-	cols = ['annottype']
-	rows = [['DO/Marker']]
+        cols = ['annottype']
+        rows = [['DO/Marker']]
 
-	transform.transformAnnotationType(cols, rows)
+        transform.transformAnnotationType(cols, rows)
 
-	expected = 'DO/Marker'
-	self.assertEquals(expected, rows[0][0])
+        expected = 'DO/Marker'
+        self.assertEqual(expected, rows[0][0])
 
 
 class GroupAnnotationsTestCase(unittest.TestCase):
@@ -92,10 +92,10 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(1, len(groupMap))
-        values = groupMap.values()[0]
-        self.assertEquals(1, len(values))
-        self.assertEquals('DO/Genotype', values[0][1])
+        self.assertEqual(1, len(groupMap))
+        values = list(groupMap.values())[0]
+        self.assertEqual(1, len(values))
+        self.assertEqual('DO/Genotype', values[0][1])
         
     
     
@@ -118,7 +118,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_GO_multiple_annotations_rollup(self):
@@ -140,7 +140,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(1, len(groupMap))
+        self.assertEqual(1, len(groupMap))
         
         
     def test_GO_different_qualifier(self):
@@ -162,7 +162,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_GO_annotation_extensions_simple(self):
@@ -184,7 +184,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows, propertyMap)
     
-        self.assertEquals(1, len(groupMap))
+        self.assertEqual(1, len(groupMap))
         
         
     def test_GO_annotation_extensions_multiple_annots(self):
@@ -214,7 +214,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows, propertyMap)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_GO_annotation_extensions_duplicate_properties(self):
@@ -245,7 +245,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows, propertyMap)
     
-        self.assertEquals(1, len(groupMap))
+        self.assertEqual(1, len(groupMap))
         
         
     def test_inferredfrom(self):
@@ -272,7 +272,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_MP_multiple_annotations_do_not_rollup(self):
@@ -288,7 +288,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_MP_multiple_annotations_rollup(self):
@@ -304,7 +304,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(1, len(groupMap))
+        self.assertEqual(1, len(groupMap))
         
         
     def test_MP_qualifier_different(self):
@@ -322,7 +322,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(2, len(groupMap))
+        self.assertEqual(2, len(groupMap))
         
         
     def test_MP_qualifier_same(self):
@@ -340,7 +340,7 @@ class GroupAnnotationsTestCase(unittest.TestCase):
     
         groupMap = transform.groupAnnotations(self.cols, rows)
     
-        self.assertEquals(1, len(groupMap))
+        self.assertEqual(1, len(groupMap))
         
         
 class AggregatePropertiesTestCase(unittest.TestCase):
@@ -398,7 +398,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
-        self.assertEquals(len(aggregatedProps), 0)
+        self.assertEqual(len(aggregatedProps), 0)
         
     def test_multiple_different_properties(self):
         
@@ -425,7 +425,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
-        self.assertEquals(len(aggregatedProps), 2)
+        self.assertEqual(len(aggregatedProps), 2)
         
 
     def test_duplicate_properties(self):
@@ -452,7 +452,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
-        self.assertEquals(len(aggregatedProps), 1)
+        self.assertEqual(len(aggregatedProps), 1)
         
         
     def test_duplicate_properties_many_stanzas(self):
@@ -493,7 +493,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              qualifierKey=1)]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
-        self.assertEquals(len(aggregatedProps), 2)
+        self.assertEqual(len(aggregatedProps), 2)
         
         
     def test_duplicate_stanza_for_same_evidence(self):
@@ -519,7 +519,7 @@ class AggregatePropertiesTestCase(unittest.TestCase):
                              qualifierKey=1),]
         
         aggregatedProps = transform.getAggregatedProperties(self.cols, rows, propertiesMap)
-        self.assertEquals(len(aggregatedProps), 1)
+        self.assertEqual(len(aggregatedProps), 1)
 
 
 def suite():

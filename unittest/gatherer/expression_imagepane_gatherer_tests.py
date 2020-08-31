@@ -74,7 +74,7 @@ def _getPaneKeysBySeqMap(seqMap):
     return sorted list of keys from seqMap
             where seqMap defines the order
     """
-    l = seqMap.keys()
+    l = list(seqMap.keys())
     l.sort(key=lambda k: seqMap[k])
     
     return l
@@ -106,64 +106,64 @@ class SortByAssayTypeTestCase(unittest.TestCase):
     """
     
     def setUp(self):
-	gatherer.initSeqMaps()
+        gatherer.initSeqMaps()
         
         initMockAssayTypeSorts()
-    	
-    	# Inject test markers into SymbolSorter
-    	SymbolSorter.GENE_SYMBOL_SEQ_MAP = {
-		'pax1': 1,
-		'pax2': 2,
-		'pax10': 10
-	}
-    	
+        
+        # Inject test markers into SymbolSorter
+        SymbolSorter.GENE_SYMBOL_SEQ_MAP = {
+                'pax1': 1,
+                'pax2': 2,
+                'pax10': 10
+        }
+        
     
     ### test sort by assay type ###
     def test_sortPaneByAssayType(self):
-	"""
-    	Sort by assay type
-    	goes
-		immuno, rna in situ, in situ knockin,
-		norther blot, western blot, rt-pcr,
-		rnase protection, nuclease s1
-    			
-    	"""
-    	# register assay types in reverse order
-    	assays = [
-		[1, NUCLEASE_TYPE, 'pax10','A citation','whole mount'],
-		[2, RNASE_TYPE, 'pax10','A citation','whole mount'],
-		[3, RTPCR_TYPE, 'pax10','A citation','whole mount'],
-		[4, WESTERN_TYPE, 'pax10','A citation','whole mount'],
-		[5, NORTHERN_TYPE, 'pax10','A citation','whole mount'],
-		[6, KNOCKIN_TYPE, 'pax10','A citation','whole mount'],
-		[7, RNA_TYPE, 'pax10','A citation','whole mount'],
-		[8, IMMUNO_TYPE, 'pax10','A citation','whole mount'],
-	]
-	
-    	sortAssays(assays)
-    	
-    	sortedKeys = getPaneKeysByAssayType()
-    	self.assertEqual([8,7,6,5,4,3,2,1], sortedKeys)
-	
-	
+        """
+        Sort by assay type
+        goes
+                immuno, rna in situ, in situ knockin,
+                norther blot, western blot, rt-pcr,
+                rnase protection, nuclease s1
+                        
+        """
+        # register assay types in reverse order
+        assays = [
+                [1, NUCLEASE_TYPE, 'pax10','A citation','whole mount'],
+                [2, RNASE_TYPE, 'pax10','A citation','whole mount'],
+                [3, RTPCR_TYPE, 'pax10','A citation','whole mount'],
+                [4, WESTERN_TYPE, 'pax10','A citation','whole mount'],
+                [5, NORTHERN_TYPE, 'pax10','A citation','whole mount'],
+                [6, KNOCKIN_TYPE, 'pax10','A citation','whole mount'],
+                [7, RNA_TYPE, 'pax10','A citation','whole mount'],
+                [8, IMMUNO_TYPE, 'pax10','A citation','whole mount'],
+        ]
+        
+        sortAssays(assays)
+        
+        sortedKeys = getPaneKeysByAssayType()
+        self.assertEqual([8,7,6,5,4,3,2,1], sortedKeys)
+        
+        
     def test_sortWithinPaneByAssayType(self):
-	"""
-    	Sort by assay type within same pane
-    	Should pick the best assay type for each pane
-    			
-    	"""
-    	# nuclease is last, immuno and rna both sort above
-    	assays = [
-		[1, NUCLEASE_TYPE, 'pax10','A citation','whole mount'],
-		[1, RNA_TYPE, 'pax10','A citation','whole mount'],
+        """
+        Sort by assay type within same pane
+        Should pick the best assay type for each pane
+                        
+        """
+        # nuclease is last, immuno and rna both sort above
+        assays = [
+                [1, NUCLEASE_TYPE, 'pax10','A citation','whole mount'],
+                [1, RNA_TYPE, 'pax10','A citation','whole mount'],
                 [2, IMMUNO_TYPE, 'pax10','A citation','whole mount'],
                 [2, NUCLEASE_TYPE, 'pax10','A citation','whole mount'],
-	]
-    	
-    	sortAssays(assays)
-    	
-    	sortedKeys = getPaneKeysByAssayType()
-    	self.assertEqual([2,1], sortedKeys)
+        ]
+        
+        sortAssays(assays)
+        
+        sortedKeys = getPaneKeysByAssayType()
+        self.assertEqual([2,1], sortedKeys)
             
     def test_sortPaneByBestMarker(self):
         """

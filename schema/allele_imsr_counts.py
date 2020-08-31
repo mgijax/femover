@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,11 +14,11 @@ tableName = 'allele_imsr_counts'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	allele_key		int	not null,
-	cell_line_count		int	not null,
-	strain_count		int	not null,
-	count_for_marker	int	not null,
-	PRIMARY KEY(allele_key))''' % tableName
+        allele_key              int     not null,
+        cell_line_count         int     not null,
+        strain_count            int     not null,
+        count_for_marker        int     not null,
+        PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -32,22 +32,22 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the allele flower, containing counts of records in IMSR for each allele',
-	Table.COLUMN : {
-		'allele_key' : 'identifies the allele',
-		'cell_line_count' : 'count of cell lines in IMSR containing this allele',
-		'strain_count' : 'count of mouse strains in IMSR containing this allele',
-		'count_for_marker' : 'count of cell lines and mouse strains in IMSR which contain any allele of the same marker (gene) as this allele',
-		},
-	}
+        Table.TABLE : 'petal table for the allele flower, containing counts of records in IMSR for each allele',
+        Table.COLUMN : {
+                'allele_key' : 'identifies the allele',
+                'cell_line_count' : 'count of cell lines in IMSR containing this allele',
+                'strain_count' : 'count of mouse strains in IMSR containing this allele',
+                'count_for_marker' : 'count of cell lines and mouse strains in IMSR which contain any allele of the same marker (gene) as this allele',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

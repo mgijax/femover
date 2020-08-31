@@ -5,6 +5,10 @@
 import logger
 import dbAgnostic
 
+# cache of chromosomes for each organism (by organism key)
+#       chromosomesByOrganism[organism key][chromosome] = sequence number
+chromosomesByOrganism = {}
+
 def cleanupOrganism (organism):
 	# translate raw 'organism' value from the database to a version
 	# preferred for front-end display purposes
@@ -33,3 +37,49 @@ def fillDictionary(dataType, cmd, dict, keyField, valueField, cleanupFn = None):
 	
 	logger.debug(' - cached %d %s' % (len(dict), dataType))
 	return
+
+def chromosomeSeqNum(chromosome, organismKey = 1):
+        # returns a sequence number corresponding to the given chromosome for the given organism (default mouse)
+        global chromosomesByOrganism
+
+        if organismKey not in chromosomesByOrganism:
+                cmd = '''select c.chromosome, c.sequenceNum
+                        from mrk_chromosome c
+                        where c._Organism_key = %d''' % organismKey
+                cols, rows = dbAgnostic.execute(cmd)
+
+                chromCol = dbAgnostic.columnNumber(cols, 'chromosome')
+                seqNumCol = dbAgnostic.columnNumber(cols, 'sequenceNum')
+
+                chromosomesByOrganism[organismKey] = {}
+                for row in rows:
+                        chromosomesByOrganism[organismKey][row[chromCol]] = row[seqNumCol]
+                logger.debug('Cached %d chromosome rows for organism %d' % (len(rows), organismKey))
+
+        if chromosome in chromosomesByOrganism[organismKey]:
+                return chromosomesByOrganism[organismKey][chromosome]
+        return 99999
+
+def intSortKey(i):
+        # return an integer sort key with None values coming first
+        if i == None:
+                return -999999
+        return i
+
+def stringSortKey(s, noneFirst=False):
+        # return string sort key with None values coming last
+        if type(s) == str:
+                return s
+        if noneFirst:
+                return ' '
+        return 'zzzzzzzzzz'
+
+def floatSortKey(f, noneFirst=False):
+        # return float sort key with None values coming last
+        if type(f) == float:
+                return f
+        if type(f) == int:
+                return float(f)
+        if noneFirst:
+                return -999999999
+        return 999999999

@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,13 +14,13 @@ tableName = 'disease_group_row'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	disease_group_row_key	int		not null,
-	disease_group_key	int		not null,
-	disease_row_key		int		not null,
-	disease_key		int		not null,
-	disease		        text		not null,
-	annotated_disease       text		not null,
-	PRIMARY KEY(disease_group_row_key))''' % tableName
+        disease_group_row_key   int             not null,
+        disease_group_key       int             not null,
+        disease_row_key         int             not null,
+        disease_key             int             not null,
+        disease                 text            not null,
+        annotated_disease       text            not null,
+        PRIMARY KEY(disease_group_row_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -37,17 +37,17 @@ clusteredIndex = ('disease_group_key', 'create index %s on %s (disease_group_key
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'defines several groupings of rows for each disease (these are sections of related rows)',
-	Table.COLUMN : {
-		'disease_group_row_key' : 'uniquely identifies this disease/group/row trio',
-		'disease_group_key' : 'uniquely identifies this disease/group pair',
-		'disease_row_key' : 'uniquely identifies this disease row',
-		'disease_key' : 'foreign key to disease table to identify the disease in question',
-		},
-	Table.INDEX : {
-		'disease_group_key' : 'clustered index, keeps the groups for a given disease together on disk for fast access',
-		},
-	}
+        Table.TABLE : 'defines several groupings of rows for each disease (these are sections of related rows)',
+        Table.COLUMN : {
+                'disease_group_row_key' : 'uniquely identifies this disease/group/row trio',
+                'disease_group_key' : 'uniquely identifies this disease/group pair',
+                'disease_row_key' : 'uniquely identifies this disease row',
+                'disease_key' : 'foreign key to disease table to identify the disease in question',
+                },
+        Table.INDEX : {
+                'disease_group_key' : 'clustered index, keeps the groups for a given disease together on disk for fast access',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments, clusteredIndex)
@@ -57,4 +57,4 @@ table = Table.Table (tableName, createStatement, indexes, keys, comments, cluste
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

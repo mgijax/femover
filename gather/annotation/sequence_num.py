@@ -10,10 +10,14 @@ import symbolsort
 
 import logger
 import tempfile
-import transform
-import constants as C
+from . import transform
+from . import constants as C
 import go_isoforms
 import gc
+
+def _markerSortKey(a):
+        # return a sort key for the (marker key, marker symbol) pair
+        return symbolsort.splitter(a[1])
 
 def _createSequenceNumTables():
     """
@@ -160,7 +164,7 @@ def _createVocabDagSequenceNums():
             
             byDag = vocabSorter.sequenceNum(termKey)
             
-            temp.write("%s\t%s\t%s\n" % (termKey, byDag, annotKey) )
+            temp.write(("%s\t%s\t%s\n" % (termKey, byDag, annotKey)).encode() )
         
         temp.seek(0)
     
@@ -215,7 +219,7 @@ def _createDagStructureSequenceNums():
             
             byDag = vocabSorter.getVocabDagTermSequenceNum(termKey)
             
-            temp.write("%s\t%s\t%s\n" % (termKey, byDag, annotKey) )
+            temp.write(("%s\t%s\t%s\n" % (termKey, byDag, annotKey)).encode())
         
         temp.seek(0)
     
@@ -293,7 +297,7 @@ def _createMarkerObjectSequenceNums(vocabSorter):
     markers = []
     for row in rows:
         markers.append((row[markerKeyCol], row[symbolCol]))
-    markers.sort(key=lambda x: x[1], cmp=symbolsort.nomenCompare)
+    markers.sort(key=_markerSortKey)
     
     markerSeqMap = {}
     seqnum = 1
@@ -340,7 +344,7 @@ def _createMarkerObjectSequenceNums(vocabSorter):
         seqnum = 1
         for annot in annotsToSort:
             
-            temp.write("%s\t%s\n" % (seqnum, annot[0]) )
+            temp.write(("%s\t%s\n" % (seqnum, annot[0]) ).encode())
             seqnum += 1
             
         logger.debug("wrote %d marker/annotation seqnums" % seqnum)
@@ -405,7 +409,7 @@ def _createGenotypeObjectSequenceNums(vocabSorter):
         seqnum = 1
         for annot in annotsToSort:
             
-            temp.write("%s\t%s\n" % (seqnum, annot[0]) )
+            temp.write(("%s\t%s\n" % (seqnum, annot[0]) ).encode())
             seqnum += 1
         
         logger.debug("wrote %d genotype/annotation seqnums" % seqnum)
@@ -470,7 +474,7 @@ def _createIsoformSequenceNums():
         isoformValues = isoformProcessor.processValue( row[valueCol] )
         for isoform in isoformValues:
             isoforms.append( isoform )
-    isoforms.sort(cmp=symbolsort.nomenCompare)
+    isoforms.sort(key=symbolsort.splitter)
     
     isoformSeqnum = {}
     seqnum = 1
@@ -499,7 +503,7 @@ def _createIsoformSequenceNums():
                 else:
                     seqnum = isoformSeqnum[isoform]
             
-            temp.write("%s\t%s\t%s\t%s\n" % (isoform, seqnum, evidenceKey, annotKey) )
+            temp.write(("%s\t%s\t%s\t%s\n" % (isoform, seqnum, evidenceKey, annotKey) ).encode())
             
         logger.debug("wrote %d isoform seqnums" % seqnum)
         temp.seek(0)

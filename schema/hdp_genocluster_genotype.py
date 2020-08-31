@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -23,10 +23,10 @@ tableName = 'hdp_genocluster_genotype'
 # see the gatherer for more information
 #
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key              int     not null,
-	hdp_genocluster_key	int	not null,
-	genotype_key		int	not null,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key              int     not null,
+        hdp_genocluster_key     int     not null,
+        genotype_key            int     not null,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -45,21 +45,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'petal table for the grid cluster flower containing data about markers that belong to a given grid cluster',
-	Table.COLUMN : {
-		'unique_key' : 'unique key identifying this human disease portal geno-cluster',
-		'hdp_genocluster_key' : 'genotype-cluster key',
-		'genotype_key' : 'genotype that is annotated to the geno-cluster',
-		},
-	}
+        Table.TABLE : 'petal table for the grid cluster flower containing data about markers that belong to a given grid cluster',
+        Table.COLUMN : {
+                'unique_key' : 'unique key identifying this human disease portal geno-cluster',
+                'hdp_genocluster_key' : 'genotype-cluster key',
+                'genotype_key' : 'genotype that is annotated to the geno-cluster',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, keys, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)

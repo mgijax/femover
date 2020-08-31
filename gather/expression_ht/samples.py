@@ -3,9 +3,9 @@
 
 import dbAgnostic
 import logger
-import constants as C
+from . import constants as C
 from gc import collect
-from experiments import getRowCount, getExperimentTempTable
+from .experiments import getRowCount, getExperimentTempTable
 
 ###--- Globals ---###
 

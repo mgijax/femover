@@ -1,4 +1,4 @@
-#!/usr/local/bin/python
+#!./python
 
 import Table
 
@@ -14,16 +14,16 @@ tableName = 'marker_incidental_mut'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-	unique_key		int		not null,
-	marker_key		int		not null,
-	provider		text		not null,
-	PRIMARY KEY(unique_key))''' % tableName
+        unique_key              int             not null,
+        marker_key              int             not null,
+        provider                text            not null,
+        PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
 # table name.
 indexes = {
-	'marker_key': 'create index %s on %s (marker_key)',
+        'marker_key': 'create index %s on %s (marker_key)',
 }
 
 # index used to cluster data in the table
@@ -31,21 +31,21 @@ clusteredIndex = None
 
 # comments describing the table, columns, and indexes
 comments = {
-	Table.TABLE : 'represents the Non-Normal systems displayed on summary page',
-	Table.COLUMN : {
-		'unique_key' : 'unique key identifying this row',
-		'marker_key' : 'key for the marker',
-		'provider' : 'provider of the incidental mutation data',
-		},
-	}
+        Table.TABLE : 'represents the Non-Normal systems displayed on summary page',
+        Table.COLUMN : {
+                'unique_key' : 'unique key identifying this row',
+                'marker_key' : 'key for the marker',
+                'provider' : 'provider of the incidental mutation data',
+                },
+        }
 
 # global instance of this Table object
 table = Table.Table (tableName, createStatement, indexes, {}, comments,
-		clusteredIndex)
+                clusteredIndex)
 
 ###--- Main program ---###
 
 # if executed as a script, pass the global Table object into the general
 # main program for Table subclasses
 if __name__ == '__main__':
-	Table.main(table)
+        Table.main(table)
