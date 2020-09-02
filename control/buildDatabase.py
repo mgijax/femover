@@ -1468,7 +1468,7 @@ def readTimings():
                                 if len(cols) > 8:
                                         timings[cols[0]] = float(cols[8])
                 except:
-                        logger.debug('Failed when reading %s' % inputFile)
+                        logger.debug('Could not read %s, working around it' % inputFile)
 
         return timings
 
@@ -1682,6 +1682,8 @@ if __name__ == '__main__':
         except:
                 (excType, excValue, excTraceback) = sys.exc_info()
                 traceback.print_exception (excType, excValue, excTraceback)
+                for err in traceback.format_exception (excType, excValue, excTraceback):
+                    logger.info(err)
                 status = 'failed'
 
                 # terminate any existing subprocesses
@@ -1703,10 +1705,9 @@ if __name__ == '__main__':
                 print("excType: %s, excValue: %s"%(excType,excValue))
 
         # do basic sanity checks on the database produced to look for obvious errors
-        # TODO - enable sanity checks when scrumdev has all RNA-SEQ tables
-        #if status == 'succeeded':
-        #       if not SanityChecks.databaseIsValid(DBM):
-        #               status = 'failed'
+        if status == 'succeeded':
+               if not SanityChecks.databaseIsValid(DBM):
+                       status = 'failed'
 
         elapsed = hms(time.time() - START_TIME)
         try:
