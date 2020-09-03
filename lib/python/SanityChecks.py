@@ -10,7 +10,7 @@ import logger
 ###--- Constants ---###
 
 # not real tables
-NOT_TABLES = [ 'Table', 'template_table', 'config', 'Configuration', ]
+NOT_TABLES = [ 'Table', 'template_table', 'config', 'Configuration', 'python', 'uni_keystone', '__pycache__' ]
 
 # tables where having zero rows is okay
 ZERO_ROWS_OKAY = [ 'marker_mrm_property' ]
@@ -74,7 +74,7 @@ class TablesNotEmptySet (SanityCheckSet):
     def __init__ (self, dbm):
         SanityCheckSet.__init__ (self, dbm)
         
-        for filename in os.listdir('../schema'):
+        for filename in os.listdir('../schema/'):
             table = filename.replace('.pyc', '').replace('.py', '')
             if (table not in NOT_TABLES) and (table not in ZERO_ROWS_OKAY):
                 self.addCheck(TableNotEmptyCheck(table))
