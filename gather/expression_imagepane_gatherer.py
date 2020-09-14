@@ -11,17 +11,19 @@ import symbolsort
 
 noneType = type(None)
 
+sortCols = [0]
+
+def setSortColumns(cols):
+        # set the numeric columns to consider when sorting
+        global sortCols
+        sortCols = cols
+        return
+
 def universalSortKey(a):
-        if type(a) in ( noneType, str ):
-                return symbolsort.splitter(a)
-        if type(a) == int:
-                return symbolsort.splitter(str(a))
-        if type(a) in ( tuple, list ):
-                output = []
-                for i in a:
-                        output.append(universalSortKey(i))
-                return tuple(output)
-        return a
+        key = []
+        for col in sortCols:
+                key.append(a[col])
+        return tuple(key)
 
 ###--- Classes ---###
 
@@ -134,6 +136,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
 
                 logger.debug ('Collected %d %s assays' % (len(assays), label))
 
+                setSortColumns( [ 1, 12, 0 ])
                 assays.sort(key=universalSortKey)
                 logger.debug ('Sorted %d %s assays' % (len(assays), label))
 
@@ -387,6 +390,7 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
                                 label, markerKey, inPixeldb, i) )
 
                 details.sort()
+                setSortColumns( [ 2, 0 ])
                 panes.sort(key=universalSortKey)
 
                 idCols, idRows = self.getIDs(panes)
@@ -394,8 +398,6 @@ class ExpressionImagePaneGatherer (Gatherer.MultiFileGatherer):
                 for dataset in [ details, panes ]:
                         i = 0
                         for row in dataset:
-                                if row[0] == 1002:
-                                        logger.debug("row for 1002 = %s"%row)
                                 i = i + 1
                                 row.append (i)
                 logger.debug ('Added sequence numbers')
