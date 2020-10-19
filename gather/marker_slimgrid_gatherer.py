@@ -417,42 +417,64 @@ def setupGxdCacheTables():
                                 where gg._Genotype_key = p._Genotype_key))''' \
                                         % GXD_CACHE
 
-        cmd19 = '''with alleles as (select _Allele_key, isWildType,
-                                _Marker_key
-                        from all_allele
-                ),
-                genotypes as (select g._Genotype_key, g._Allele_key
-                        from gxd_allelegenotype g
-                        where g._Genotype_key >= 0
-                        and not exists (select 1 from gxd_allelepair gap
-                                where g._Genotype_key = gap._Genotype_key
-                                and gap.sequenceNum > 1)
-                ),
-                assays as (select s._Assay_key, s._Genotype_key
-                        from gxd_specimen s,
-                                gxd_assay a,
-                                genotypes gag1,
-                                genotypes gag2,
-                                alleles a1,
-                                alleles a2
-                        where s._Assay_key = a._Assay_key
-                                and a._AssayType_key = 9
-                                and s._Genotype_key = gag1._Genotype_key
-                                and gag1._Allele_key = a1._Allele_key
-                                and a1.isWildType = 1
-                                and s._Genotype_key = gag2._Genotype_key
-                                and gag2._Allele_key = a2._Allele_key
-                                and a2.isWildType = 0
-                                and a1._Marker_key = a._Marker_key
-                                and a2._Marker_key = a._Marker_key
-                )
-                update %s gc
+        # table of wild-type alleles
+        cmd19a = '''select _Allele_key, _Marker_key
+                into temporary table wt_alleles
+                from all_allele
+                where isWildType = 1'''
+    
+        cmd19b = 'create index wta1 on wt_alleles(_Allele_key)'
+        cmd19c = 'create index wta2 on wt_alleles(_Marker_key)'
+
+        # table of mutant alleles
+        cmd19d = '''select _Allele_key, _Marker_key
+                into temporary table mut_alleles
+                from all_allele
+                where isWildType = 0'''
+    
+        cmd19e = 'create index muta1 on mut_alleles(_Allele_key)'
+        cmd19f = 'create index muta2 on mut_alleles(_Marker_key)'
+    
+        # table of genotypes with no more than one allele pair
+        cmd19g = '''select g._Genotype_key, g._Allele_key
+                into temporary table genotypes
+                from gxd_allelegenotype g
+                where g._Genotype_key >= 0
+                and not exists (select 1 from gxd_allelepair gap
+                        where g._Genotype_key = gap._Genotype_key
+                        and gap.sequenceNum > 1)'''
+    
+        cmd19h = 'create index geno1 on genotypes(_Genotype_key)'
+        cmd19i = 'create index geno2 on genotypes(_Allele_key)'
+    
+        # table of GXD assays
+        cmd19j = '''select s._Assay_key, s._Genotype_key
+                into temporary table assays
+                from gxd_specimen s,
+                        gxd_assay a,
+                        genotypes gag1,
+                        genotypes gag2,
+                        wt_alleles a1,
+                        mut_alleles a2
+                where s._Assay_key = a._Assay_key
+                        and a._AssayType_key = 9
+                        and s._Genotype_key = gag1._Genotype_key
+                        and gag1._Allele_key = a1._Allele_key
+                        and s._Genotype_key = gag2._Genotype_key
+                        and gag2._Allele_key = a2._Allele_key
+                        and a1._Marker_key = a._Marker_key
+                        and a2._Marker_key = a._Marker_key'''
+    
+        cmd19k = '''create index assay1 on assays(_Assay_key)'''
+        cmd19l = '''create index assay2 on assays(_Genotype_key)'''
+    
+        cmd19 = '''update %s gc
                 set is_wildtype = 1
                 from assays a
                 where gc._Assay_key = a._Assay_key
                         and gc._Genotype_key = a._Genotype_key''' % GXD_CACHE
 
-        cmd19a = '''update %s
+        cmd19m = '''update %s
                 set is_wildtype = 1
                 where _Genotype_key <= 0''' % GXD_CACHE
 
@@ -462,7 +484,8 @@ def setupGxdCacheTables():
                 where is_wildtype = 0'''
         cmd20b = 'analyze %s' % GXD_CACHE
 
-        for cmd in [ cmd18, cmd19, cmd19a, cmd20, cmd20a, cmd20b ]:
+        for cmd in [ cmd18, cmd19a, cmd19b, cmd19c, cmd19d, cmd19e, cmd19f, cmd19g, cmd19h,
+                    cmd19i, cmd19j, cmd19k, cmd19l, cmd19, cmd19m, cmd20, cmd20a, cmd20b ]:
                 dbAgnostic.execute(cmd)
         logger.debug('Flagged wild-type assays')
 
