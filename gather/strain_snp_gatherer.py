@@ -24,6 +24,8 @@ STRAIN_ID = {}                          # maps from strain key to strain's prima
 ROW_KEY_GENERATOR = KeyGenerator.KeyGenerator() 
 CELL_KEY_GENERATOR = KeyGenerator.KeyGenerator()        
 
+strainTempTable = StrainUtils.getStrainTempTable()
+
 ###--- Functions ---###
 
 def dataRowKey(a):
@@ -63,7 +65,7 @@ class StrainSnpGatherer (Gatherer.FileCacheGatherer):
                 global STRAIN_SEQ_NUM, STRAIN_NAME, STRAIN_ID
                 
                 toSort = []
-                cols, rows = self.results[1]
+                cols, rows = self.results[3]
                 keyCol = Gatherer.columnNumber(cols, '_Strain_key')
                 nameCol = Gatherer.columnNumber(cols, 'strain')
                 idCol = Gatherer.columnNumber(cols, 'accID')
@@ -130,7 +132,7 @@ class StrainSnpGatherer (Gatherer.FileCacheGatherer):
                                 and cc.isMultiCoord = 0
                                 and exists (select 1 from %s t where ref._mgdStrain_key = t._Strain_key) 
                                 and ref._ConsensusSNP_key >= %d
-                                and ref._ConsensusSNP_key < %d''' % (StrainUtils.getStrainTempTable(), fromKey, toKey)
+                                and ref._ConsensusSNP_key < %d''' % (strainTempTable, fromKey, toKey)
                                 
                 cols, rows = dbAgnostic.execute(cmd)    
                 logger.debug(' - got data (%d rows)' % len(rows))
@@ -284,7 +286,13 @@ cmds = [
                         and exists (select 1 from snp_coord_cache cc where c.chromosome = cc.chromosome)
                 order by c.sequenceNum''',
         
-        # 1. get unique set of strains with SNPs
+        # 1. strains with SNPs
+        '''select distinct _mgdStrain_key into temporary table uniqueSnpStrains from snp_consensussnp_strainallele''',
+        
+        # 2. index it
+        '''create unique index mt1 on uniqueSnpStrains (_mgdStrain_key)''' ,
+
+        # 3. get unique set of strains with SNPs
         '''select p._Strain_key, p.strain, a.accID
                 from prb_strain p, %s t, acc_accession a
                 where p._Strain_key = t._Strain_key
@@ -292,11 +300,11 @@ cmds = [
                 and a._MGIType_key = 10
                 and a._LogicalDB_key = 1
                 and a.preferred = 1
-                and exists (select 1 from snp_consensussnp_strainallele s
+                and exists (select 1 from uniqueSnpStrains s
                         where t._Strain_key = s._mgdStrain_key)
-                order by p.strain''' % StrainUtils.getStrainTempTable(),
+                order by p.strain''' % strainTempTable,
                 
-        # 2. get the max consensus SNP key
+        # 4. get the max consensus SNP key
         'select max(_ConsensusSnp_key) as maxKey from snp_consensussnp',
         ]
 
