@@ -27,7 +27,7 @@ def getStrainTempTable():
     # 1. are not flagged as private (these should already have been removed by delete private data script)
     # 2. do not contain "involves", "either", " and ", or " or "
     # 3. have at least one attribute other than "Not Applicable" and "Not Specified"
-
+    
     cmd0 = '''select s._Strain_key
         into temp table %s
         from prb_strain s
@@ -125,7 +125,7 @@ def getStrainReferenceTempTable():
                 union
                 select mra._Object_key, mra._Refs_key
                 from mgi_reference_assoc mra, %s t
-                where mra._RefAssocType_key in (1009, 1010)
+                where mra._RefAssocType_key in (1009, 1010, 1031)
                         and mra._Object_key = t._Strain_key'''
             
     cmd0 = cmd0.replace('%s', getStrainTempTable())
