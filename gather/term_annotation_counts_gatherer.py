@@ -257,6 +257,7 @@ class TACGatherer (Gatherer.Gatherer):
                         where va._AnnotType_key = %d
                                 and va._Qualifier_key = q._Term_key
                                 and va._Annot_key = e._Annot_key
+                                and (q.term != 'NOT' or q.term is null)
                                 and e._EvidenceTerm_key = ev._Term_key''' % annotTypeKey
                                 
                 cols, rows = dbAgnostic.execute(cmd)
