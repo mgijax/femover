@@ -42,6 +42,7 @@ else:
 GATHER_DIR = os.path.join(INSTALL_DIR, 'gather/')
 POPULATE_DIR = os.path.join(INSTALL_DIR, 'populate/')
 DATA_DIR = os.environ['DATA_DIR']
+CACHE_DIR = os.environ['CACHE_DIR']
 SCHEMA_DIR = os.path.join(INSTALL_DIR, 'schema/')
 CONTROL_DIR = os.path.join(INSTALL_DIR, 'control/')
 LIB_DIR = os.path.join(INSTALL_DIR, 'lib/python/')
