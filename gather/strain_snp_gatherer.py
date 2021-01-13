@@ -2,6 +2,7 @@
 # 
 # gathers data for the 'strain_snp_cell' and 'strain_snp_row' tables in the front-end database
 
+import config
 import Gatherer
 import logger
 import dbAgnostic
@@ -322,11 +323,11 @@ files = [
 
 # checksums for this gatherer
 checksums = [
-        Checksum.Checksum('strain_snp.accession', '../data',
+        Checksum.Checksum('strain_snp.accession', config.CACHE_DIR,
                 Checksum.singleCount('select count(1) from snp_accession') ),
-        Checksum.Checksum('strain_snp.consensus_snp', '../data',
+        Checksum.Checksum('strain_snp.consensus_snp', config.CACHE_DIR,
                 Checksum.singleCount('select count(1) from snp_consensussnp') ),
-        Checksum.Checksum('strain_snp.coord_cache', '../data',
+        Checksum.Checksum('strain_snp.coord_cache', config.CACHE_DIR,
                 Checksum.singleCount('select count(1) from snp_coord_cache') ),
         ]
 
