@@ -65,11 +65,16 @@ ln -s ../Configuration Configuration
 # back to top level...
 cd "${TOP}"
 
-# if we don't have a data and a logs directory, make them
+# if we don't have a data, cache and a logs directory, make them
 
 if [ ! -d ${DATA_DIR} ]; then
 	mkdir -p ${DATA_DIR}
 	echo "Created data directory: ${DATA_DIR}"
+fi
+
+if [ ! -d ${CACHE_DIR} ]; then
+	mkdir -p ${CACHE_DIR}
+	echo "Created cache directory: ${CACHE_DIR}"
 fi
 
 if [ ! -d ${LOG_DIR} ]; then
