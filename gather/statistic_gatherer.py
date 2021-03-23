@@ -315,7 +315,7 @@ STATS[ORTH_GENES_WITH_ORTHOLOGS] = ('',
                 from MRK_MCV_Cache mcv, MRK_Marker m, MRK_ClusterMember mcm, MRK_Cluster mc
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 9272151
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
                         and mc._ClusterType_key = 9272150''')
 STATS[ORTH_GENES_1_TO_1] = ('',
         '''select count(distinct mcv._Marker_key)
@@ -323,17 +323,17 @@ STATS[ORTH_GENES_1_TO_1] = ('',
                         MRK_ClusterMember ocm, MRK_Marker om
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 9272151
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
                         and mc._ClusterType_key = 9272150 and mc._Cluster_key = ocm._Cluster_key
                         and ocm._Marker_key = om._Marker_key and om._Organism_key = 2
                         and not exists (select 1 from MRK_ClusterMember ocm2, MRK_Marker om2, MRK_Cluster oc2
                                 where mc._Cluster_key = ocm2._Cluster_key and ocm2._Cluster_key = oc2._Cluster_key
-                                        and oc2._ClusterSource_key = 9272151 and oc2._ClusterType_key = 9272150
+                                        and oc2._ClusterSource_key = 75885739 and oc2._ClusterType_key = 9272150
                                         and ocm2._Marker_key = om2._Marker_key and om2._Organism_key = 2
                                         and om2._Marker_key != om._Marker_key)
                         and not exists (select 1 from MRK_ClusterMember mcm2, MRK_Marker m2, MRK_Cluster mc2
                                 where mc._Cluster_key = mcm2._Cluster_key and mcm2._Cluster_key = mc2._Cluster_key
-                                        and mc2._ClusterSource_key = 9272151 and mc2._ClusterType_key = 9272150
+                                        and mc2._ClusterSource_key = 75885739 and mc2._ClusterType_key = 9272150
                                         and mcm2._Marker_key = m2._Marker_key and m2._Organism_key = 1
                                         and m2._Marker_key != m._Marker_key)''')
 
@@ -341,11 +341,11 @@ ORGANISM_QUERY = '''select count(distinct mcv._Marker_key)
                 from MRK_MCV_Cache mcv, MRK_Marker m, MRK_ClusterMember mcm, MRK_Cluster mc
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 9272151
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
                         and mc._ClusterType_key = 9272150
                         and exists (select 1 from MRK_ClusterMember ocm, MRK_Marker om, MRK_Cluster oc
                                 where mc._Cluster_key = ocm._Cluster_key and ocm._Cluster_key = oc._Cluster_key
-                                        and oc._ClusterSource_key = 9272151 and oc._ClusterType_key = 9272150
+                                        and oc._ClusterSource_key = 75885739 and oc._ClusterType_key = 9272150
                                         and ocm._Marker_key = om._Marker_key and om._Organism_key = %d)'''
 
 STATS[ORTH_GENES_WITH_HUMAN] = ('', ORGANISM_QUERY % 2)

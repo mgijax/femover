@@ -17,7 +17,7 @@ MP_MARKER = 1015                # annot type for rolled-up MP annotations
 DO_MARKER = 1023                # annot type for rolled-up disease annot.
 NOT_QUALIFIER = 1614157         # term key for NOT qualifier for disease annot.
 VOCAB = 13                      # MGI type for vocabulary terms
-HYBRID = 13764519               # cluster source for hybrid homology
+ALLIANCE_DIRECT = 75885739      # cluster source for Alliance Direct homology
 HOMOLOGY = 9272150              # homology cluster type for MRK_Cluster
 DO_HUMAN_MARKER = 1022  # annot type for disease/human marker
 DO_SLIM_SET = 1048
@@ -426,7 +426,7 @@ def getReferencesByDiseaseKey():
 gridClusters = 'gridClusters'           # section name
 gridClustersLoaded = False              # has the grid cluster data been cached?
 
-# { marker key : [ symbol, organism, homology cluster key, homologene ID ] }
+# { marker key : [ symbol, organism, homology cluster key ] }
 gridClusterMarkers = {} 
 
 # table of term/marker pairs where markers are in a homology cluster
@@ -484,9 +484,9 @@ def getRollupWithClustersTable():
                         and a._MGIType_key = %d
                         and v._Qualifier_key != %d
                         and a.preferred = 1''' % (rollupWithClustersTable,
-                                MP_MARKER, DO_MARKER, HYBRID, HOMOLOGY,
+                                MP_MARKER, DO_MARKER, ALLIANCE_DIRECT, HOMOLOGY,
                                 VOCAB, NOT_QUALIFIER, DO_HUMAN_MARKER,
-                                HYBRID, HOMOLOGY,
+                                ALLIANCE_DIRECT, HOMOLOGY,
                                 VOCAB, NOT_QUALIFIER)
 
         dbAgnostic.execute(cmd)
@@ -561,25 +561,20 @@ def getRollupNoClustersTable():
 def getClusteredMarkers():
         # get a set of data for markers with MP and/or disease annotations,
         # where those markers are in homology clusters.  Returns a tuple of
-        # (cols, rows), where the columns include:  _Cluster_key, _Marker_key,
-        # and homologene_id (optional).  Refer to MarkerUtils.py if you need
-        # other marker attributes.
+        # (cols, rows), where the columns include:  _Cluster_key and _Marker_key
+        # Refer to MarkerUtils.py if you need other marker attributes.
 
-        cmd = '''select distinct c._Cluster_key, c._Marker_key,
-                        a.accID as homologene_id
+        cmd = '''select distinct c._Cluster_key, c._Marker_key
                 from MRK_Cluster mc
                 inner join MRK_ClusterMember c on (
                         c._Cluster_key = mc._Cluster_key)
                 inner join MRK_Marker m on (c._Marker_key = m._Marker_key
                         and m._Organism_key in (1,2))
-                left outer join ACC_Accession a on (
-                        mc._Cluster_key = a._Object_key
-                        and a._LogicalDB_key = 81)
                 where mc._ClusterSource_key = %d
                         and mc._ClusterType_key = %d
                         and exists (select 1 from %s tc 
                                 where tc._Cluster_key = mc._Cluster_key)
-                order by c._Cluster_key''' % (HYBRID, HOMOLOGY,
+                order by c._Cluster_key''' % (ALLIANCE_DIRECT, HOMOLOGY,
                         getRollupWithClustersTable())
 
         cols, rows = dbAgnostic.execute(cmd)

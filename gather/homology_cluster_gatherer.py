@@ -9,9 +9,8 @@ import utils
 import logger
 import GOGraphs
 
-HOMOLOGENE = 9272151
-HGNC = 13437099
-HYBRID = 13764519
+ALLIANCE_DIRECT = 75885739
+ALLIANCE_CLUSTERED = 75885740
 HOMOLOGY = 9272150
 
 ###--- Globals ---###
@@ -154,15 +153,9 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
                                 accID = row[idPos]
                                 version = row[versionPos]
                                 date = row[datePos]
-                                secondarySource = row[secSourcePos]
 
-                                # custom tweaks for secondary source
-                                if secondarySource == 'both':
-                                        secondarySource = 'HomoloGene and HGNC'
-                                elif secondarySource == 'none':
-                                        secondarySource = ''
-                                elif secondarySource == 'HG':
-                                        secondarySource = 'HomoloGene'
+                                # secondary source should be either Alliance Direct or Alliance Clustered
+                                secondarySource = row[secSourcePos]
 
                                 if date:
                                         date = str(date)[:10]
@@ -290,21 +283,16 @@ cmds = [
                 mo.commonName as organism,
                 null as qualifier,
                 null as _Refs_key,
-                p.value as secondary_source
+                src.abbreviation as secondary_source
         from mrk_cluster mc
         inner join mrk_clustermember mcm on (mc._Cluster_key = mcm._Cluster_key)
         inner join mrk_marker mm on (mcm._Marker_key = mm._Marker_key)
         inner join voc_term typ on (mc._ClusterType_key = typ._Term_key)
         inner join mgi_organism mo on (mm._Organism_key = mo._Organism_key)
         inner join voc_term src on (mc._ClusterSource_key = src._Term_key)
-        left outer join mgi_property p on (mc._Cluster_key = p._Object_key)
-        left outer join mgi_propertytype pt on (
-                p._PropertyType_key = pt._PropertyType_key
-                and pt.propertyType = 'HGNC/HG Hybrid Homology'
-                )
         where mc._ClusterSource_key in (%d, %d, %d)
                 and mc._ClusterType_key = %d''' % (
-                        HOMOLOGENE, HGNC, HYBRID, HOMOLOGY),
+                        ALLIANCE_DIRECT, ALLIANCE_CLUSTERED, HOMOLOGY),
         ]
 
 # data about files to be written; for each:  (filename prefix, list of field
