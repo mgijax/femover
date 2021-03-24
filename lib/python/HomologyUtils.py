@@ -6,7 +6,6 @@ import gc
 import logger
 import dbAgnostic
 import VocabUtils
-from __builtin__ import None
 
 ###--- Globals ---###
 
@@ -55,14 +54,14 @@ def getSource(clusterKey):
                         return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
         return None
 
-def getSourceOfCluster(Alliance DirectClusterKey):
+def getSourceOfCluster(clusterKey):
         # Returns: source name for the cluster which was chosen as the basis
         #       of the Alliance Direct cluster with the specified key
 
         if 'derived' not in CACHED_SOURCES:
                 _loadSourceClusters()
 
-        return _lookup(DERIVED_FROM, Alliance DirectClusterKey, None) 
+        return _lookup(DERIVED_FROM, clusterKey, None) 
 
 def getMaxClusterKey():
         # Returns: maximum _Cluster_key from the database
@@ -84,12 +83,12 @@ def getMarkersPerCluster(clusterSource):
             markerKeys = list(ALLIANCE_CLUSTERED_CLUSTERS.keys())
             lookupFn = getAllianceClusteredClusterKeys
 
-        else if clusterSource == ALLIANCE_DIRECT:
+        elif clusterSource == ALLIANCE_DIRECT:
             markerKeys = list(ALLIANCE_DIRECT_CLUSTERS.keys())
             lookupFn = getAllianceDirectClusterKeys
 
         else:
-            throw Exception('Unknown clusterSource: %s' + str(clusterSource))
+            raise Exception('Unknown clusterSource: %s' % str(clusterSource))
 
         clusters = {}
 

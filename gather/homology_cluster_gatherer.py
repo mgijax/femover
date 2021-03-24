@@ -290,7 +290,7 @@ cmds = [
         inner join voc_term typ on (mc._ClusterType_key = typ._Term_key)
         inner join mgi_organism mo on (mm._Organism_key = mo._Organism_key)
         inner join voc_term src on (mc._ClusterSource_key = src._Term_key)
-        where mc._ClusterSource_key in (%d, %d, %d)
+        where mc._ClusterSource_key in (%d, %d)
                 and mc._ClusterType_key = %d''' % (
                         ALLIANCE_DIRECT, ALLIANCE_CLUSTERED, HOMOLOGY),
         ]

@@ -32,7 +32,6 @@ class GridClusterGatherer (Gatherer.MultiFileGatherer):
                 cols, rows = DPU.getClusteredMarkers()
 
                 clusterKeyCol = Gatherer.columnNumber (cols, '_Cluster_key')
-                homologeneIDCol = Gatherer.columnNumber (cols, 'homologene_id')
                 markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
 
                 # set of distinct clusters
@@ -48,18 +47,11 @@ class GridClusterGatherer (Gatherer.MultiFileGatherer):
                         hybridClusterKey = row[clusterKeyCol]
                         markerKey = row[markerKeyCol]
 
-                        # find the cluster key of the cluster from which this
-                        # hybrid cluster was derived, with HomoloGene trumping
-                        # HGNC in cases where the cluster is for both.  If
-                        # multiples, just take the last cluster key.
-
-                        if HU.getSourceOfCluster(hybridClusterKey) == 'HGNC':
-                                srcKeys = HU.getHgncClusterKeys(markerKey)
-                        else:
-                                srcKeys = HU.getHomoloGeneClusterKeys(markerKey)
+                        # if multiples, just take the last cluster key.
+                        srcKeys = HU.getAllianceDirectClusterKeys(markerKey)
 
                         srcClusterKey = srcKeys[-1]
-                        homologeneID = HU.getHomoloGeneID(srcClusterKey)
+                        homologeneID = None
                         source = HU.getSource(srcClusterKey)
 
                         if srcClusterKey not in clusterList:
@@ -85,7 +77,7 @@ class GridClusterGatherer (Gatherer.MultiFileGatherer):
                 # add other markers to their respective clusters, if those
                 # markers didn't have their own annotations
 
-                byCluster = HU.getMarkersPerCluster()
+                byCluster = HU.getMarkersPerCluster(HU.ALLIANCE_DIRECT)
                 addedCount = 0
 
                 for clusterKey in list(byCluster.keys()):
