@@ -273,7 +273,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 cmds = [
         '''select mc._Cluster_key,
                 typ.term as clusterType,
-                src.term as source,
+                src.abbreviation as source,
                 mc.clusterID,
                 mc.version,
                 mc.cluster_date,

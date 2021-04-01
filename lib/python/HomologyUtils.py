@@ -21,8 +21,6 @@ CLUSTER_SOURCES = {}            # cluster key : source key
 
 CACHED_SOURCES = {}             # term key for cached source : 1
 
-DERIVED_FROM = {}               # cluster key : (string) name of source
-
 ###--- Functions ---###
 
 def getAllianceDirectClusterKeys(markerKey):
@@ -53,15 +51,6 @@ def getSource(clusterKey):
                 if clusterKey in CLUSTER_SOURCES:
                         return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
         return None
-
-def getSourceOfCluster(clusterKey):
-        # Returns: source name for the cluster which was chosen as the basis
-        #       of the Alliance Direct cluster with the specified key
-
-        if 'derived' not in CACHED_SOURCES:
-                _loadSourceClusters()
-
-        return _lookup(DERIVED_FROM, clusterKey, None) 
 
 def getMaxClusterKey():
         # Returns: maximum _Cluster_key from the database
@@ -115,49 +104,11 @@ def _lookup(dictionary, key, default = None):
                 return dictionary[key]
         return default
 
-def _loadSourceClusters():
-        # Effects: loads data about what is the source cluster for each Alliance Direct
-        #       homology cluster
-
-        global DERIVED_FROM
-
-        if 'derived' in CACHED_SOURCES:
-                return
-        CACHED_SOURCES['derived'] = 1
-
-        cmd = '''select p.value, mc._Cluster_key
-                from MRK_ClusterMember mcm,
-                        MRK_Cluster mc,
-                        MRK_Marker m,
-                        MGI_Property p,
-                        VOC_Term t
-                where m._Organism_key in (1,2)
-                        and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key
-                        and mc._ClusterSource_key = %d
-                        and mc._ClusterType_key = %d
-                        and mc._Cluster_key = p._Object_key
-                        and p._MGIType_key = %d
-                        and p._PropertyTerm_key = t._Term_key
-                        and t.term = 'secondary source' ''' % (
-                                ALLIANCE_DIRECT, HOMOLOGY, CLUSTER)
-
-        cols, rows = dbAgnostic.execute(cmd)
-
-        srcCol = dbAgnostic.columnNumber(cols, 'value')
-        clusterCol = dbAgnostic.columnNumber(cols, '_Cluster_key')
-
-        for row in rows:
-                DERIVED_FROM[row[clusterCol]] = row[srcCol]
-
-        logger.debug('Got sources for %d clusters' % len(DERIVED_FROM))
-        return
-
 def _loadSource(sourceKey):
         # Effects: loads the cluster/marker relationships for the given
         #       homology source into memory
 
-        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS_CLUSTERS
+        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS
         global CLUSTER_SOURCES
 
         # if we've already cached this source, skip it
@@ -190,7 +141,7 @@ def _loadSource(sourceKey):
         if sourceKey == ALLIANCE_DIRECT:
                 d = ALLIANCE_DIRECT_CLUSTERS
         elif sourceKey == ALLIANCE_CLUSTERED:
-                d = ALLIANCE_CLUSTERED_CLUSTERS_CLUSTERS
+                d = ALLIANCE_CLUSTERED_CLUSTERS
 
         for row in rows:
                 clusterKey = row[clusterCol]
@@ -213,14 +164,13 @@ def _loadSource(sourceKey):
         return
 
 def unload():
-        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS_CLUSTERS, DERIVED_FROM
+        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS
         global CLUSTER_SOURCES
 
         ALLIANCE_DIRECT_CLUSTERS = {}
-        ALLIANCE_CLUSTERED_CLUSTERS_CLUSTERS = {}
+        ALLIANCE_CLUSTERED_CLUSTERS = {}
         CACHED_SOURCES = {}
         CLUSTER_SOURCES = {}
-        DERIVED_FROM = {}
         gc.collect()
         logger.debug('Unloaded caches in HomologyUtils')
         return
