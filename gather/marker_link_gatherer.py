@@ -1,4 +1,5 @@
 #!./python
+
 # 
 # gathers data for the 'marker_link' table in the front-end database
 
@@ -15,12 +16,13 @@ MGI = 1
 OMIM = 15
 ENTREZ_GENE = 55
 ZFIN_GENE = 172
+RGD = 47            # Rat Genome Database
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
 MYGENE_INFO = 178
 
-# preferred ordering for human/mouse links, by logical database
-LDB_ORDERING = [ HGNC, MGI, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL, MYGENE_INFO ]
+# preferred ordering for links, by logical database (add Alliance links later)
+LDB_ORDERING = [ HGNC, MGI, RGD, ZFIN_GENE, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL, MYGENE_INFO ]
 
 # organism 
 MOUSE = 1            
@@ -57,15 +59,30 @@ USE_NEW_WINDOW = 1
 VISTA_POINT = 'VISTA-Point'
 GENE_TREE = 'Gene Tree'
 
+ALLIANCE_MARKERS = set()
+
+###-- links to external gene detail pages ---###
+
+# URL for gene detail pages at Alliance (append HGNC, MGI, RGD, or ZFIN ID)
+ALLIANCE_GENE_URL = 'https://www.alliancegenome.org/gene/'
+
+# URL for gene detail page at RGD (append RGD ID)
+RGD_GENE_URL = 'https://rgd.mcw.edu/rgdweb/report/gene/main.html?id='
+
+# URL for gene detail page at ZFIN (append ZFIN ID)
+ZFIN_GENE_URL = 'https://zfin.org/'
+
+###--- links to expression data ---###
+
 # URL to expression data at zfin; substitute in an NCBI ID for a Zfin marker
-zfin_url = 'https://zfin.org/action/marker/%s/expression'
+zfin_exp_url = 'https://zfin.org/action/marker/%s/expression'
 
 # URL to expression data at geisha; substitute in an NCBI ID for a chicken
 # marker
-geisha_url = 'http://geisha.arizona.edu/geisha/search.jsp?search=NCBI+ID&text=%s'
+geisha_exp_url = 'http://geisha.arizona.edu/geisha/search.jsp?search=NCBI+ID&text=%s'
 
-# URL to express data at xenbase; substiture in an ID
-xenbase_url = 'http://xenbase.org/gene/expression.do?method=displayGenePageExpression&entrezId=%s&tabId=1'
+# URL to expression data at xenbase; substiture in an ID
+xenbase_exp_url = 'http://xenbase.org/gene/expression.do?method=displayGenePageExpression&entrezId=%s&tabId=1'
 
 ###--- Functions ---###
 
@@ -176,6 +193,28 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
     #    certain links, collates results, writes tab-delimited text
     #    file
 
+    def getAllianceUrl (self, markerKey, ldbKey, accID):
+        # Get the link for the detail page at the Alliance of Genome Resources (for the given data)
+        
+        url = ALLIANCE_GENE_URL
+        if ldbKey == ZFIN_GENE:
+            url = url + 'ZFIN:'
+        return url + accID
+    
+    def getAllianceInfo (self, markerKey, ldbKey, accID):
+        
+        # If we need to generate a link to an Alliance detail page for the given data,
+        # return it.  Otherwise return None.
+        
+        global ALLIANCE_MARKERS
+        
+        if markerKey not in ALLIANCE_MARKERS:
+            if ldbKey in (ZFIN_GENE, MOUSE, HGNC, RGD):
+                ALLIANCE_MARKERS.add(markerKey)
+                return 'Alliance of Genome Resources', self.getAllianceUrl(markerKey, ldbKey, accID)
+            
+        return None
+
     def getHumanHomologyRows (self):
         # returns a list with one row for each link for each human
         # marker which is included in a homology cluster.  Each row
@@ -192,6 +231,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
         ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
         markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
         idCol = Gatherer.columnNumber (cols, 'accID')
+        symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
         seqNum = 0
 
@@ -225,6 +265,11 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
                 seqNum, accID,
                 getDisplayText(ldbKey, ldbName, accID),
                 fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+            
+            allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
+            if allianceInfo != None:
+                name, url = allianceInfo
+                links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum + 10, row[symbolCol], name, url, NO_MARKUPS, NO_NEW_WINDOW ] )
 
         logger.debug ('Stored %d human homology links' % seqNum)
         return links
@@ -249,6 +294,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
         ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
         markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
         idCol = Gatherer.columnNumber (cols, 'accID')
+        symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
         seqNum = 0
 
@@ -286,6 +332,11 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
                 seqNum, displayID,
                 getDisplayText(ldbKey, ldbName, accID),
                 fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+            
+            allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
+            if allianceInfo != None:
+                name, url = allianceInfo
+                links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum + 10, row[symbolCol], name, url, NO_MARKUPS, NO_NEW_WINDOW ] )
 
         # build the coordinate-based links next, as they should come
         # last in each marker's list of links
@@ -325,13 +376,14 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             version = getVersionForVistaPoint(row[versionCol])
             seqNum = seqNum + 1
 
-            vistaPointUrl = config.VISTA_POINT_URL
-            vistaPointUrl = vistaPointUrl.replace ( '<version>', version)
-            vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
-            vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
-            vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
+# Commented out until VISTA-Point comes up to new genome build (Build 39):
+#            vistaPointUrl = config.VISTA_POINT_URL
+#            vistaPointUrl = vistaPointUrl.replace ( '<version>', version)
+#            vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
+#            vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
+#            vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
 
-            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
+#            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
 
         logger.debug ('Stored %d mouse homology links' % seqNum)
         return links
@@ -352,6 +404,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
         ldbKeyCol = Gatherer.columnNumber (cols, '_LogicalDB_key')
         markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
         idCol = Gatherer.columnNumber (cols, 'accID')
+        symbolCol = Gatherer.columnNumber (cols, 'symbol')
 
         seqNum = 0
 
@@ -379,6 +432,11 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             fullUrl = ldbUrl.replace ('@@@@', accID)
 
             links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, accID, getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+            
+            allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
+            if allianceInfo != None:
+                name, url = allianceInfo
+                links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum + 10, row[symbolCol], name, url, NO_MARKUPS, NO_NEW_WINDOW ] )
 
         logger.debug ('Stored %d other homology links' % seqNum)
         return links
@@ -416,9 +474,9 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
         self.finalResults = self.getHumanHomologyRows() + \
                     self.getMouseHomologyRows() + \
                     self.getOtherHomologyRows() + \
-                    self.getOrganismRows(4, 'mouse_marker_key', 'zfin_symbol', 'zfin_entrezgene_id', zfin_url, ZFIN_EXPRESSION_LINK_GROUP) + \
-                    self.getOrganismRows(5, 'mouse_marker_key', 'geisha_symbol', 'geisha_entrezgene_id', geisha_url, GEISHA_EXPRESSION_LINK_GROUP) + \
-                    self.getOrganismRows(6, 'mouse_marker_key', 'xenbase_symbol', 'xenbase_entrezgene_id', xenbase_url, XENBASE_EXPRESSION_LINK_GROUP)
+                    self.getOrganismRows(4, 'mouse_marker_key', 'zfin_symbol', 'zfin_entrezgene_id', zfin_exp_url, ZFIN_EXPRESSION_LINK_GROUP) + \
+                    self.getOrganismRows(5, 'mouse_marker_key', 'geisha_symbol', 'geisha_entrezgene_id', geisha_exp_url, GEISHA_EXPRESSION_LINK_GROUP) + \
+                    self.getOrganismRows(6, 'mouse_marker_key', 'xenbase_symbol', 'xenbase_entrezgene_id', xenbase_exp_url, XENBASE_EXPRESSION_LINK_GROUP)
 
         logger.debug ('Found %d total links' % \
             len(self.finalResults))
@@ -443,7 +501,8 @@ cmds = [
     # 0. human markers' IDs
     '''select a._LogicalDB_key,
         m._Marker_key,
-        a.accID
+        a.accID,
+        m.symbol
     from mrk_marker m, acc_accession a
     where m._Organism_key = %d
         and m._Marker_key = a._Object_key
@@ -456,7 +515,8 @@ cmds = [
     # 1. mouse markers' IDs
     '''select a._LogicalDB_key,
         m._Marker_key,
-        a.accID
+        a.accID,
+        m.symbol
     from mrk_marker m, acc_accession a
     where m._Organism_key = %d
         and m._Marker_key = a._Object_key
@@ -483,16 +543,17 @@ cmds = [
     # 3. other species' markers
     '''select a._LogicalDB_key,
         m._Marker_key,
-        a.accID
+        a.accID,
+        m.symbol
     from mrk_marker m, acc_accession a
     where m._Organism_key != %d
         and m._Organism_key != %d
         and m._Marker_key = a._Object_key
         and a._MGIType_key = %d
-        and a._LogicalDB_key = %d
-        and a.private = 0
+        and a._LogicalDB_key in (%d, %d, %d)
+        and (a.private = 0 or a._LogicalDB_key = %d)
         and a.preferred = 1''' % (
-            HUMAN, MOUSE, MARKER, ENTREZ_GENE),
+            HUMAN, MOUSE, MARKER, ENTREZ_GENE, ZFIN_GENE, RGD, RGD),
 
     # 4. data for ZFIN expression links (via homology)
     '''select distinct m._Marker_key as mouse_marker_key,
