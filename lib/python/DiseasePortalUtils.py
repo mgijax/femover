@@ -17,7 +17,7 @@ MP_MARKER = 1015                # annot type for rolled-up MP annotations
 DO_MARKER = 1023                # annot type for rolled-up disease annot.
 NOT_QUALIFIER = 1614157         # term key for NOT qualifier for disease annot.
 VOCAB = 13                      # MGI type for vocabulary terms
-ALLIANCE_DIRECT = 75885739      # cluster source for Alliance Direct homology
+ALLIANCE_CLUSTERED = 75885740   # cluster source for Alliance Direct homology
 HOMOLOGY = 9272150              # homology cluster type for MRK_Cluster
 DO_HUMAN_MARKER = 1022  # annot type for disease/human marker
 DO_SLIM_SET = 1048
@@ -484,9 +484,9 @@ def getRollupWithClustersTable():
                         and a._MGIType_key = %d
                         and v._Qualifier_key != %d
                         and a.preferred = 1''' % (rollupWithClustersTable,
-                                MP_MARKER, DO_MARKER, ALLIANCE_DIRECT, HOMOLOGY,
+                                MP_MARKER, DO_MARKER, ALLIANCE_CLUSTERED, HOMOLOGY,
                                 VOCAB, NOT_QUALIFIER, DO_HUMAN_MARKER,
-                                ALLIANCE_DIRECT, HOMOLOGY,
+                                ALLIANCE_CLUSTERED, HOMOLOGY,
                                 VOCAB, NOT_QUALIFIER)
 
         dbAgnostic.execute(cmd)
@@ -574,7 +574,7 @@ def getClusteredMarkers():
                         and mc._ClusterType_key = %d
                         and exists (select 1 from %s tc 
                                 where tc._Cluster_key = mc._Cluster_key)
-                order by c._Cluster_key''' % (ALLIANCE_DIRECT, HOMOLOGY,
+                order by c._Cluster_key''' % (ALLIANCE_CLUSTERED, HOMOLOGY,
                         getRollupWithClustersTable())
 
         cols, rows = dbAgnostic.execute(cmd)

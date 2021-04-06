@@ -48,7 +48,7 @@ class GridClusterGatherer (Gatherer.MultiFileGatherer):
                         markerKey = row[markerKeyCol]
 
                         # if multiples, just take the last cluster key.
-                        srcKeys = HU.getAllianceDirectClusterKeys(markerKey)
+                        srcKeys = HU.getAllianceClusteredClusterKeys(markerKey)
 
                         srcClusterKey = srcKeys[-1]
                         homologeneID = None
@@ -77,7 +77,7 @@ class GridClusterGatherer (Gatherer.MultiFileGatherer):
                 # add other markers to their respective clusters, if those
                 # markers didn't have their own annotations
 
-                byCluster = HU.getMarkersPerCluster(HU.ALLIANCE_DIRECT)
+                byCluster = HU.getMarkersPerCluster(HU.ALLIANCE_CLUSTERED)
                 addedCount = 0
 
                 for clusterKey in list(byCluster.keys()):

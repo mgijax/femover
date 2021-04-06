@@ -43,13 +43,13 @@ def getSource(clusterKey):
         # Returns: string name of the source of the cluster with the given key
 
         if clusterKey in CLUSTER_SOURCES:
-                return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
+                return VocabUtils.getAbbrev(CLUSTER_SOURCES[clusterKey])
 
         for source in [ ALLIANCE_DIRECT, ALLIANCE_CLUSTERED ]:
                 _loadSource(source)
 
                 if clusterKey in CLUSTER_SOURCES:
-                        return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
+                        return VocabUtils.getAbbrev(CLUSTER_SOURCES[clusterKey])
         return None
 
 def getMaxClusterKey():

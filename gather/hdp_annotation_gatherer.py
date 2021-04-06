@@ -210,7 +210,7 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                         # get the hybrid homology cluster(s) for this marker;
                         # if none, generate a fake cluster key.
 
-                        hybridClusterKeys = HU.getAllianceDirectClusterKeys(markerKey)
+                        hybridClusterKeys = HU.getAllianceClusteredClusterKeys(markerKey)
                         if not hybridClusterKeys:
                                 gridClusterKey = maxClusterKey + markerKey
 
