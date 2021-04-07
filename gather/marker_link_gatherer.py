@@ -167,10 +167,10 @@ def getVersionForVistaPoint (version):
     # translate the coordinate version from our database to the version
     # identifier expected for the VISTA-Point link
 
-    # currently no sophisticated logic; we just return mm10 (which is 
-    # mouse build 38)
+    # currently no sophisticated logic; we just return mm39 (which is 
+    # mouse build 39)
 
-    return 'mm10'
+    return 'mm39'
 
 def tweakHomologyValues (ldbKey, ldbName, url, associatedID):
     # allow tweaking of logical database-related values to allow overrides
