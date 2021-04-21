@@ -305,6 +305,9 @@ ORTH_GENES_WITH_CHICKEN = 'Mouse protein coding genes in homology classes with C
 ORTH_GENES_WITH_FROG = 'Mouse protein coding genes in homology classes with Western clawed frog genes'
 ORTH_GENES_WITH_ZFIN = 'Mouse protein coding genes in homology classes with Zebrafish genes'
 
+HOMOLOGY = 9272150
+ALLIANCE_DIRECT = 75885739
+
 STATS[ORTH_GENES] = ('',
         '''select count(distinct mcv._Marker_key)
                 from MRK_MCV_Cache mcv, MRK_Marker m
@@ -315,52 +318,48 @@ STATS[ORTH_GENES_WITH_ORTHOLOGS] = ('',
                 from MRK_MCV_Cache mcv, MRK_Marker m, MRK_ClusterMember mcm, MRK_Cluster mc
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
-                        and mc._ClusterType_key = 9272150''')
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = %d
+                        and mc._ClusterType_key = %d''' % (ALLIANCE_DIRECT, HOMOLOGY))
 STATS[ORTH_GENES_1_TO_1] = ('',
         '''select count(distinct mcv._Marker_key)
                 from MRK_MCV_Cache mcv, MRK_Marker m, MRK_ClusterMember mcm, MRK_Cluster mc,
                         MRK_ClusterMember ocm, MRK_Marker om
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
-                        and mc._ClusterType_key = 9272150 and mc._Cluster_key = ocm._Cluster_key
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = %d
+                        and mc._ClusterType_key = %d and mc._Cluster_key = ocm._Cluster_key
                         and ocm._Marker_key = om._Marker_key and om._Organism_key = 2
                         and not exists (select 1 from MRK_ClusterMember ocm2, MRK_Marker om2, MRK_Cluster oc2
                                 where mc._Cluster_key = ocm2._Cluster_key and ocm2._Cluster_key = oc2._Cluster_key
-                                        and oc2._ClusterSource_key = 75885739 and oc2._ClusterType_key = 9272150
+                                        and oc2._ClusterSource_key = %d and oc2._ClusterType_key = %d
                                         and ocm2._Marker_key = om2._Marker_key and om2._Organism_key = 2
                                         and om2._Marker_key != om._Marker_key)
                         and not exists (select 1 from MRK_ClusterMember mcm2, MRK_Marker m2, MRK_Cluster mc2
                                 where mc._Cluster_key = mcm2._Cluster_key and mcm2._Cluster_key = mc2._Cluster_key
-                                        and mc2._ClusterSource_key = 75885739 and mc2._ClusterType_key = 9272150
+                                        and mc2._ClusterSource_key = %d and mc2._ClusterType_key = %d
                                         and mcm2._Marker_key = m2._Marker_key and m2._Organism_key = 1
-                                        and m2._Marker_key != m._Marker_key)''')
+                                        and m2._Marker_key != m._Marker_key)''' % (ALLIANCE_DIRECT, HOMOLOGY,
+                                                                                   ALLIANCE_DIRECT, HOMOLOGY,
+                                                                                   ALLIANCE_DIRECT, HOMOLOGY))
 
 ORGANISM_QUERY = '''select count(distinct mcv._Marker_key)
                 from MRK_MCV_Cache mcv, MRK_Marker m, MRK_ClusterMember mcm, MRK_Cluster mc
                 where mcv.term = 'protein coding gene' and mcv.qualifier = 'D' and mcv._Marker_key = m._Marker_key
                         and m._Marker_Status_key in (1,3) and m._Organism_key = 1 and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = 75885739
-                        and mc._ClusterType_key = 9272150
+                        and mcm._Cluster_key = mc._Cluster_key and mc._ClusterSource_key = %d
+                        and mc._ClusterType_key = %d
                         and exists (select 1 from MRK_ClusterMember ocm, MRK_Marker om, MRK_Cluster oc
                                 where mc._Cluster_key = ocm._Cluster_key and ocm._Cluster_key = oc._Cluster_key
-                                        and oc._ClusterSource_key = 75885739 and oc._ClusterType_key = 9272150
-                                        and ocm._Marker_key = om._Marker_key and om._Organism_key = %d)'''
+                                        and oc._ClusterSource_key = %d and oc._ClusterType_key = %d
+                                        and ocm._Marker_key = om._Marker_key and om._Organism_key = %s)''' % (
+                                            ALLIANCE_DIRECT, HOMOLOGY, ALLIANCE_DIRECT, HOMOLOGY, '%d')
 
 STATS[ORTH_GENES_WITH_HUMAN] = ('', ORGANISM_QUERY % 2)
 STATS[ORTH_GENES_WITH_RAT] = ('', ORGANISM_QUERY % 40)
-STATS[ORTH_GENES_WITH_CHIMP] = ('', ORGANISM_QUERY % 10)
-STATS[ORTH_GENES_WITH_MONKEY] = ('', ORGANISM_QUERY % 94)
-STATS[ORTH_GENES_WITH_DOG] = ('', ORGANISM_QUERY % 13)
-STATS[ORTH_GENES_WITH_CATTLE] = ('', ORGANISM_QUERY % 11)
-STATS[ORTH_GENES_WITH_CHICKEN] = ('', ORGANISM_QUERY % 63)
-STATS[ORTH_GENES_WITH_FROG] = ('', ORGANISM_QUERY % 95)
 STATS[ORTH_GENES_WITH_ZFIN] = ('', ORGANISM_QUERY % 84)
 
 GROUPS[ORTHOLOGY_MINI_HOME] = [ ORTH_GENES, ORTH_GENES_WITH_ORTHOLOGS, ORTH_GENES_WITH_HUMAN, ORTH_GENES_1_TO_1,
-        ORTH_GENES_WITH_RAT, ORTH_GENES_WITH_CHIMP, ORTH_GENES_WITH_MONKEY, ORTH_GENES_WITH_DOG, ORTH_GENES_WITH_CATTLE,
-        ORTH_GENES_WITH_CHICKEN, ORTH_GENES_WITH_FROG, ORTH_GENES_WITH_ZFIN ]
+        ORTH_GENES_WITH_RAT, ORTH_GENES_WITH_ZFIN ]
 GROUPS[ORTHOLOGY_STATS_PAGE] = GROUPS[ORTHOLOGY_MINI_HOME][:]
 
 ###--- pathways statistics ---###
