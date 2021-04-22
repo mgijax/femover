@@ -297,12 +297,6 @@ ORTH_GENES_WITH_ORTHOLOGS = 'Mouse protein coding genes in homology classes'
 ORTH_GENES_WITH_HUMAN = 'Mouse protein coding genes in homology classes with Human genes'
 ORTH_GENES_1_TO_1 = 'Mouse protein coding genes in homology classes with one-to-one correspondence of Mouse and Human genes'
 ORTH_GENES_WITH_RAT = 'Mouse protein coding genes in homology classes with Rat genes'
-ORTH_GENES_WITH_CHIMP = 'Mouse protein coding genes in homology classes with Chimpanzee genes'
-ORTH_GENES_WITH_MONKEY = 'Mouse protein coding genes in homology classes with Rhesus macaque genes'
-ORTH_GENES_WITH_DOG = 'Mouse protein coding genes in homology classes with Dog genes'
-ORTH_GENES_WITH_CATTLE = 'Mouse protein coding genes in homology classes with Cattle genes'
-ORTH_GENES_WITH_CHICKEN = 'Mouse protein coding genes in homology classes with Chicken genes'
-ORTH_GENES_WITH_FROG = 'Mouse protein coding genes in homology classes with Western clawed frog genes'
 ORTH_GENES_WITH_ZFIN = 'Mouse protein coding genes in homology classes with Zebrafish genes'
 
 HOMOLOGY = 9272150
