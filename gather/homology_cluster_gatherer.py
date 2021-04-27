@@ -91,6 +91,13 @@ class Cluster:
                 return (self.key, self.accID, self.clusterType, self.source,
                         self.version, self.date)
 
+        def getMouseSymbolInCluster (self):
+                for markerKey in self.markers.keys():
+                        [ symbol, organism, qualifier, refsKey, markerKey ] = self.markers[markerKey]
+                        if organism == 'mouse':
+                                return symbol
+                return None
+            
         def getOrganisms (self):
                 organisms = list(self.organisms.keys())
                 organisms.sort (key=organismCompare)
@@ -225,7 +232,7 @@ class HomologyClusterGatherer (Gatherer.MultiFileGatherer):
 
                         hcRows.append ( [key, accID, version, date, source,
                                 cluster.getSecondarySource(),
-                                GOGraphs.hasComparativeGOGraph(accID) ] )
+                                GOGraphs.hasComparativeGOGraph(cluster.getMouseSymbolInCluster()) ] )
                         coSeqNum = 0
                         hcotmSeqNum = 0
 

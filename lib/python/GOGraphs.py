@@ -15,9 +15,9 @@ import config
 # (for markers which have a GO graph)
 MARKERS_WITH_GO_GRAPHS = {}
 
-# HomoloGene class ID -> 1
-# (for HomoloGene classes which have a GO orthology graph)
-HOMOLOGENE_CLASSES_WITH_GRAPHS = {}
+# mouse marker symbol -> 1
+# (for homology classes which have a GO orthology graph)
+HOMOLOGY_CLASSES_WITH_GRAPHS = {}
 
 # have we already initialized this module?
 INITIALIZED = False
@@ -25,40 +25,47 @@ INITIALIZED = False
 ###--- Private Functions ---###
 
 def _initialize():
-        global MARKERS_WITH_GO_GRAPHS, HOMOLOGENE_CLASSES_WITH_GRAPHS
+        global MARKERS_WITH_GO_GRAPHS, HOMOLOGY_CLASSES_WITH_GRAPHS
         global INITIALIZED
 
         MARKERS_WITH_GO_GRAPHS = {}
-        HOMOLOGENE_CLASSES_WITH_GRAPHS = {}
+        HOMOLOGY_CLASSES_WITH_GRAPHS = {}
 
         if os.path.isdir(config.GO_GRAPH_PATH):
                 # pull apart the path, with filename like:
                 #       MGI_12345.html
+                # This is for marker GO graphs.
                 filenameRE = re.compile ('([A-Z]+)_([0-9]+).html')
 
-                # or filenames for HomoloGene IDs like:
-                #       36030.html
-                hgFilenameRE = re.compile ('([0-9]+).html')
+                # or filenames for homology classes, named by mouse marker symbol, like:
+                #       Pax6.html
+                # This is for orthology GO graphs, naming based on the
+                # mouse marker in the cluster.
+                symbolRE = re.compile ('(.+).html')
 
                 items = [ ('marker', MARKERS_WITH_GO_GRAPHS),
-                        ('orthology', HOMOLOGENE_CLASSES_WITH_GRAPHS) ]
+                        ('orthology', HOMOLOGY_CLASSES_WITH_GRAPHS) ]
 
                 for (subdir, cache) in items:
                         files = glob.glob (os.path.join (config.GO_GRAPH_PATH,
                                 subdir, '*.html'))
 
+                        graphPath = os.path.join (config.GO_GRAPH_PATH, subdir) + '/'
+                        
                         for path in files:
                                 match = filenameRE.search(path)
                                 if match:
+                                        # marker GO graphs
                                         mgiID = '%s:%s' % (match.group(1),
                                                 match.group(2))
                                         cache[mgiID] = 1
 
                                 else:
-                                        match = hgFilenameRE.search(path)
+                                        # homology GO graphs
+                                        match = symbolRE.search(path)
                                         if match:
-                                                hgID = match.group(1)
-                                                cache[hgID] = 1
+                                                symbol = match.group(1).replace(graphPath, '')
+                                                cache[symbol] = 1
 
                         logger.debug ('Found %d %s GO graphs' % (
                                 len(cache), subdir) )
@@ -90,8 +97,8 @@ def hasGOGraph (markerID):
 
         return _hasGraph (markerID, MARKERS_WITH_GO_GRAPHS)
 
-def hasComparativeGOGraph (homoloGeneID):
-        # determine whether the HomoloGene class with the given 'homoloGeneID'
+def hasComparativeGOGraph (mouseSymbol):
+        # determine whether the orthology class containing the given mouse symbol
         # has a comparative GO graph (1) or not (0)
 
-        return _hasGraph (homoloGeneID, HOMOLOGENE_CLASSES_WITH_GRAPHS)
+        return _hasGraph (mouseSymbol, HOMOLOGY_CLASSES_WITH_GRAPHS)
