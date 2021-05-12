@@ -328,8 +328,8 @@ class Counter:
 
 class DiseaseRow:
         # Is: one row of data for the disease detail page, corresponding to a
-        #       single HomoloGene class
-        # Has: a unique key, a HomoloGene class key, a set of mouse genes, a
+        #       single homology class
+        # Has: a unique key, a homology class key, a set of mouse genes, a
         #       set of human genes, a disease term key, and a flag to indicate
         #       if the row is for NOT models (where the disease was expected
         #       to be found, but was not)
@@ -364,7 +364,7 @@ class DiseaseRow:
                 return self.termKey
 
         def setClassKey (self, classKey):
-                # set the HomoloGene class key for this DiseaseRow
+                # set the homology class key for this DiseaseRow
 
                 self.classKey = classKey
                 return
@@ -418,7 +418,7 @@ class DiseaseRow:
                 return self.diseaseRowKey
 
         def getClassKey (self):
-                # get the HomoloGene class key for this DiseaseRow object
+                # get the homology class key for this DiseaseRow object
 
                 return self.classKey
 
@@ -1101,7 +1101,7 @@ class DiseaseDetailGatherer (Gatherer.MultiFileGatherer):
                 # 5. genotypes expected to model the disease that did NOT
 
                 # Each of those data rows can be associated with:
-                # a. a HomoloGene homology class/cluster (only items 1-3)
+                # a. a  homology class/cluster (only items 1-3)
                 # b. zero or more genotypes for mouse models (not item 3)
                 # c. zero or more mouse markers
                 # d. zero or more human markers
@@ -1248,7 +1248,7 @@ cmds = [
         ''' % (DISEASE_MARKER, NOT_QUALIFIER),
 
         # 4. all current mouse and human markers' basic data,
-        # using the MGI-computed set of hybrid data from HGNC and HomoloGene
+        # using the MGI-computed set of clustered data from the Alliance
         
         '''with hg_clusters as (
                 select mcm._Marker_key, mcm._Cluster_key
@@ -1259,7 +1259,8 @@ cmds = [
                         mrk_marker m
                 where mcm._Cluster_key = mc._Cluster_key
                         and mc._ClusterSource_key = s._Term_key
-                        and s.term = 'HomoloGene and HGNC'
+                        and s.term = 'Alliance'
+                        and s.abbreviation = 'Alliance Clustered'
                         and mc._ClusterType_key = t._Term_key
                         and t.term = 'homology'
                         and mcm._Marker_key = m._Marker_key

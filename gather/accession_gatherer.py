@@ -137,74 +137,6 @@ class AccessionGatherer:
                 print('%s %s' % (path, DISPLAY_TYPE_FILE))
                 return
 
-        def fillNonMouseMarkers (self, accessionFile):
-                # only non-mouse markers, directed to HomoloGene class detail
-                # page
-
-                cmd = '''select mc.clusterID, mc._Cluster_key, o.commonName,
-                                m._Marker_key, a.accID, m.symbol, m.name,
-                                m.chromosome, a._LogicalDB_key,
-                                a._MGIType_key, m._Marker_Type_key
-                        from mrk_cluster mc,
-                                mrk_clustermember mcm,
-                                voc_term vt,
-                                mrk_marker m,
-                                mgi_organism o,
-                                acc_accession a
-                        where mc._Cluster_key = mcm._Cluster_key
-                                and mc._ClusterSource_key = vt._Term_key
-                                and vt.term = 'HomoloGene'
-                                and mcm._Marker_key = m._Marker_key
-                                and m._Organism_key = o._Organism_key
-                                and m._Marker_key = a._Object_key
-                                and a._MGIType_key = 2
-                                and m._Organism_key != 1
-                                and a._LogicalDB_key = %d''' % HGNC
-
-                cols, rows = dbAgnostic.execute(cmd)
-
-                clusterIdCol = dbAgnostic.columnNumber (cols, 'clusterID')
-                clusterKeyCol = dbAgnostic.columnNumber (cols, '_Cluster_key')
-                organismCol = dbAgnostic.columnNumber (cols, 'commonName')
-                keyCol = dbAgnostic.columnNumber (cols, '_Marker_key')
-                idCol = dbAgnostic.columnNumber (cols, 'accID')
-                symbolCol = dbAgnostic.columnNumber (cols, 'symbol')
-                nameCol = dbAgnostic.columnNumber (cols, 'name')
-                chromosomeCol = dbAgnostic.columnNumber (cols, 'chromosome')
-                ldbCol = dbAgnostic.columnNumber (cols, '_LogicalDB_key')
-                mgiTypeCol = dbAgnostic.columnNumber (cols, '_MGIType_key')
-                displayTypeCol = dbAgnostic.columnNumber (cols, '_Marker_Type_key')
-
-                outputCols = [ OutputFile.AUTO, '_Object_key', 'accID', 'displayID', 'sequenceNum',
-                        'description', '_LogicalDB_key', '_DisplayType_key', '_MGIType_key' ]
-                outputRows = []
-
-                for row in rows:
-                        accID = row[idCol]
-                        clusterID = row[clusterIdCol]
-
-                        displayType = Gatherer.resolve (row[displayTypeCol], 'mrk_types', '_Marker_Type_key', 'name')
-
-                        # non-mouse markers should use the fake orthology type
-                        organism = '(%s)' % row[organismCol]
-                        mgiType = ORTHOLOGY_TYPE
-
-                        # translate from non-mouse ID to its HomoloGene 
-                        # cluster ID
-                        out = [ row[keyCol], accID, clusterID, sequenceNum(clusterID),
-                                '%s, %s, Chr %s%s' % (row[symbolCol], row[nameCol], row[chromosomeCol], organism),
-                                row[ldbCol],
-                                displayTypeNum(displayType),
-                                mgiType,
-                                ]
-                        outputRows.append (out) 
-
-                logger.debug ('Found %d non-mouse marker IDs' % len(rows))
-
-                accessionFile.writeToFile (outputCols, outputCols[1:], outputRows)
-                logger.debug ('Wrote non-marker IDs to file')
-                return
-
         def fillInterProMarkers (self, accessionFile):
             # markers associated with InterPro IDs
                 cmd1 = '''select va._Object_key, a.accID, m.symbol, m.name,
@@ -295,7 +227,6 @@ class AccessionGatherer:
                 # build the large file
 
                 accessionFile = OutputFile.OutputFile (ACCESSION_FILE)
-                self.fillNonMouseMarkers (accessionFile)
                 self.fillInterProMarkers (accessionFile)
                 self.fillInterProTerms (accessionFile)
                 accessionFile.close() 

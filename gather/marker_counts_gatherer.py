@@ -338,7 +338,8 @@ cmds = [
                         join VOC_Term clustertype on clustertype._term_key = mc._clustertype_key
                         join VOC_Term source on source._term_key = mc._clustersource_key
     where clustertype.term = 'homology'
-            and source.term = 'HomoloGene'
+            and source.term = 'Alliance'
+            and source.abbreviation = 'Alliance Direct'
             and m._organism_key = 1
             and m2._organism_key != 1
             group by m._marker_key

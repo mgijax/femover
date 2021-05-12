@@ -10,78 +10,47 @@ import VocabUtils
 ###--- Globals ---###
 
 HOMOLOGY = 9272150              # term key for "homology" cluster type
-HYBRID = 13764519               # term key for "hybrid" cluster source
-HGNC = 13437099                 # term key for "HGNC" cluster source
-HOMOLOGENE = 9272151            # term key for "HomoloGene" cluster source
+ALLIANCE_DIRECT = 75885739      # term key for "Alliance Direct" cluster source
+ALLIANCE_CLUSTERED = 75885740   # term key for "Alliance Clustered" cluster source
 CLUSTER = 39                    # MGI Type key for "Cluster"
 
-HYBRID_CLUSTERS = {}            # marker key : hybrid cluster key
-HGNC_CLUSTERS = {}              # marker key : HGNC cluster key
-HOMOLOGENE_CLUSTERS = {}        # marker key : HomoloGene cluster key
+ALLIANCE_DIRECT_CLUSTERS = {}      # marker key : cluster key for Alliance Direct clusters
+ALLIANCE_CLUSTERED_CLUSTERS = {}   # marker key : Alliance Clustered cluster key
 
 CLUSTER_SOURCES = {}            # cluster key : source key
 
-HOMOLOGENE_IDS = {}             # HomoloGene cluster key : HomoloGene ID
-
 CACHED_SOURCES = {}             # term key for cached source : 1
-
-DERIVED_FROM = {}               # cluster key : (string) name of source
 
 ###--- Functions ---###
 
-def getHybridClusterKeys(markerKey):
-        # Returns: list of cluster keys (hybrid source) which contain the
+def getAllianceDirectClusterKeys(markerKey):
+        # Returns: list of cluster keys (Alliance Direct source) which contain the
         #       given mouse or human markerKey
 
-        if HYBRID not in CACHED_SOURCES:
-                _loadSource(HYBRID) 
-        return _lookup(HYBRID_CLUSTERS, markerKey, [])
+        if ALLIANCE_DIRECT not in CACHED_SOURCES:
+                _loadSource(ALLIANCE_DIRECT) 
+        return _lookup(ALLIANCE_DIRECT_CLUSTERS, markerKey, [])
 
-def getHomoloGeneClusterKeys(markerKey):
-        # Returns: list of cluster keys (HomoloGene source) which contain the
-        #       given mouse or human markerKey
-
-        if HOMOLOGENE not in CACHED_SOURCES:
-                _loadSource(HOMOLOGENE) 
-        return _lookup(HOMOLOGENE_CLUSTERS, markerKey, [])
-
-def getHgncClusterKeys(markerKey):
-        # Returns: list of cluster keys (HGNC source) which contain the given
+def getAllianceClusteredClusterKeys(markerKey):
+        # Returns: list of cluster keys (Alliance Clustered source) which contain the given
         #       mouse or human markerKey
 
-        if HGNC not in CACHED_SOURCES:
-                _loadSource(HGNC) 
-        return _lookup(HGNC_CLUSTERS, markerKey, [])
-
-def getHomoloGeneID(hgClusterKey):
-        # Returns: string accession ID for the HomoloGene cluster with the
-        #       given key
-
-        if HOMOLOGENE not in CACHED_SOURCES:
-                _loadSource(HOMOLOGENE) 
-        return _lookup(HOMOLOGENE_IDS, hgClusterKey, None)
+        if ALLIANCE_CLUSTERED not in CACHED_SOURCES:
+                _loadSource(ALLIANCE_CLUSTERED) 
+        return _lookup(ALLIANCE_CLUSTERED_CLUSTERS, markerKey, [])
 
 def getSource(clusterKey):
         # Returns: string name of the source of the cluster with the given key
 
         if clusterKey in CLUSTER_SOURCES:
-                return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
+                return VocabUtils.getAbbrev(CLUSTER_SOURCES[clusterKey])
 
-        for source in [ HYBRID, HOMOLOGENE, HGNC ]:
+        for source in [ ALLIANCE_DIRECT, ALLIANCE_CLUSTERED ]:
                 _loadSource(source)
 
                 if clusterKey in CLUSTER_SOURCES:
-                        return VocabUtils.getTerm(CLUSTER_SOURCES[clusterKey])
+                        return VocabUtils.getAbbrev(CLUSTER_SOURCES[clusterKey])
         return None
-
-def getSourceOfCluster(hybridClusterKey):
-        # Returns: source name for the cluster which was chosen as the basis
-        #       of the hybrid cluster with the specified key
-
-        if 'derived' not in CACHED_SOURCES:
-                _loadSourceClusters()
-
-        return _lookup(DERIVED_FROM, hybridClusterKey, None) 
 
 def getMaxClusterKey():
         # Returns: maximum _Cluster_key from the database
@@ -92,22 +61,28 @@ def getMaxClusterKey():
         logger.debug('Found max(_Cluster_key) = %d' % rows[0][0])
         return rows[0][0]
 
-def getMarkersPerCluster():
+def getMarkersPerCluster(clusterSource):
         # Returns: { cluster key : [ marker keys ] }
-        # Note: This is for the HGNC and HomoloGene clusters that were chosen
-        #       by the hybrid algorithm, not the hybrid clusters themselves.
+        # Note: clusterSource should be ALLIANCE_DIRECT or ALLIANCE_CLUSTERED.
 
-        for source in [ HOMOLOGENE, HGNC, HYBRID ]:
-                _loadSource(source)
+        markerKeys = None       # list of marker keys to process
+        lookupFn = None         # function to look up cluster keys for a given marker key
+
+        if clusterSource == ALLIANCE_CLUSTERED:
+            markerKeys = list(ALLIANCE_CLUSTERED_CLUSTERS.keys())
+            lookupFn = getAllianceClusteredClusterKeys
+
+        elif clusterSource == ALLIANCE_DIRECT:
+            markerKeys = list(ALLIANCE_DIRECT_CLUSTERS.keys())
+            lookupFn = getAllianceDirectClusterKeys
+
+        else:
+            raise Exception('Unknown clusterSource: %s' % str(clusterSource))
 
         clusters = {}
 
-        for markerKey in list(HYBRID_CLUSTERS.keys()):
-                if getSourceOfCluster(HYBRID_CLUSTERS[markerKey][-1]) == 'HGNC':
-                        srcKeys = getHgncClusterKeys(markerKey)
-                else:
-                        srcKeys = getHomoloGeneClusterKeys(markerKey)
-
+        for markerKey in markerKeys:
+                srcKeys = lookupFn(markerKey)
                 if not srcKeys:
                         continue
 
@@ -117,8 +92,7 @@ def getMarkersPerCluster():
                 else:
                         clusters[srcKey] = [ markerKey ]
 
-        logger.debug('Grouped %d markers into %d clusters' % (
-                len(HYBRID_CLUSTERS), len(clusters)) )
+        logger.debug('Grouped %d markers into %d clusters' % (len(markerKeys), len(clusters)) )
         return clusters
 
 def _lookup(dictionary, key, default = None):
@@ -130,50 +104,12 @@ def _lookup(dictionary, key, default = None):
                 return dictionary[key]
         return default
 
-def _loadSourceClusters():
-        # Effects: loads data about what is the source cluster for each hybrid
-        #       homology cluster
-
-        global DERIVED_FROM
-
-        if 'derived' in CACHED_SOURCES:
-                return
-        CACHED_SOURCES['derived'] = 1
-
-        cmd = '''select p.value, mc._Cluster_key
-                from MRK_ClusterMember mcm,
-                        MRK_Cluster mc,
-                        MRK_Marker m,
-                        MGI_Property p,
-                        VOC_Term t
-                where m._Organism_key in (1,2)
-                        and m._Marker_key = mcm._Marker_key
-                        and mcm._Cluster_key = mc._Cluster_key
-                        and mc._ClusterSource_key = %d
-                        and mc._ClusterType_key = %d
-                        and mc._Cluster_key = p._Object_key
-                        and p._MGIType_key = %d
-                        and p._PropertyTerm_key = t._Term_key
-                        and t.term = 'secondary source' ''' % (
-                                HYBRID, HOMOLOGY, CLUSTER)
-
-        cols, rows = dbAgnostic.execute(cmd)
-
-        srcCol = dbAgnostic.columnNumber(cols, 'value')
-        clusterCol = dbAgnostic.columnNumber(cols, '_Cluster_key')
-
-        for row in rows:
-                DERIVED_FROM[row[clusterCol]] = row[srcCol]
-
-        logger.debug('Got sources for %d clusters' % len(DERIVED_FROM))
-        return
-
 def _loadSource(sourceKey):
         # Effects: loads the cluster/marker relationships for the given
         #       homology source into memory
 
-        global CACHED_SOURCES, HYBRID_CLUSTERS, HGNC_CLUSTERS
-        global HOMOLOGENE_CLUSTERS, HOMOLOGENE_IDS, CLUSTER_SOURCES
+        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS
+        global CLUSTER_SOURCES
 
         # if we've already cached this source, skip it
 
@@ -181,22 +117,16 @@ def _loadSource(sourceKey):
                 return
         CACHED_SOURCES[sourceKey] = 1
 
-        # get the cluster/marker pairs from the database, with HomoloGene IDs
-        # being optional
+        # get the cluster/marker pairs from the database
 
-        cmd = '''select distinct c._Cluster_key, c._Marker_key,
-                        a.accID as homologene_id
+        cmd = '''select distinct c._Cluster_key, c._Marker_key
                 from MRK_Cluster mc
                 inner join MRK_ClusterMember c on (
                         c._Cluster_key = mc._Cluster_key)
                 inner join MRK_Marker m on (c._Marker_key = m._Marker_key
                         and m._Organism_key in (1,2))
-                left outer join ACC_Accession a on (
-                        mc._Cluster_key = a._Object_key
-                        and a.preferred = 1
-                        and a._LogicalDB_key = 81)
                 where mc._ClusterType_key = %d
-                        and mc._ClusterSource_key = %d''' % (HOMOLOGY,sourceKey)
+                        and mc._ClusterSource_key = %d''' % (HOMOLOGY, sourceKey)
 
         cols, rows = dbAgnostic.execute(cmd)
 
@@ -205,16 +135,13 @@ def _loadSource(sourceKey):
 
         clusterCol = dbAgnostic.columnNumber(cols, '_Cluster_key')
         markerCol = dbAgnostic.columnNumber(cols, '_Marker_key')
-        idCol = dbAgnostic.columnNumber(cols, 'homologene_id')
 
         # pick which global dictionary to populate, based on the source
 
-        if sourceKey == HYBRID:
-                d = HYBRID_CLUSTERS
-        elif sourceKey == HGNC:
-                d = HGNC_CLUSTERS
-        elif sourceKey == HOMOLOGENE:
-                d = HOMOLOGENE_CLUSTERS
+        if sourceKey == ALLIANCE_DIRECT:
+                d = ALLIANCE_DIRECT_CLUSTERS
+        elif sourceKey == ALLIANCE_CLUSTERED:
+                d = ALLIANCE_CLUSTERED_CLUSTERS
 
         for row in rows:
                 clusterKey = row[clusterCol]
@@ -232,26 +159,18 @@ def _loadSource(sourceKey):
                 else:
                         d[markerKey] = [ clusterKey ]
 
-                # for HomoloGene, we also need to pick up the IDs
-
-                if sourceKey == HOMOLOGENE:
-                        HOMOLOGENE_IDS[clusterKey] = row[idCol]
-
         logger.debug('Got %s cluster data for %d markers' % (
                 VocabUtils.getTerm(sourceKey), len(d)) )
         return
 
 def unload():
-        global CACHED_SOURCES, HYBRID_CLUSTERS, HGNC_CLUSTERS, DERIVED_FROM
-        global HOMOLOGENE_CLUSTERS, HOMOLOGENE_IDS, CLUSTER_SOURCES
+        global CACHED_SOURCES, ALLIANCE_DIRECT_CLUSTERS, ALLIANCE_CLUSTERED_CLUSTERS
+        global CLUSTER_SOURCES
 
-        HYBRID_CLUSTERS = {}
-        HGNC_CLUSTERS = {}
-        HOMOLOGENE_CLUSTERS = {}
-        HOMOLOGENE_IDS = {}
+        ALLIANCE_DIRECT_CLUSTERS = {}
+        ALLIANCE_CLUSTERED_CLUSTERS = {}
         CACHED_SOURCES = {}
         CLUSTER_SOURCES = {}
-        DERIVED_FROM = {}
         gc.collect()
         logger.debug('Unloaded caches in HomologyUtils')
         return

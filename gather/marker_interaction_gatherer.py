@@ -20,6 +20,7 @@ import VocabUtils
 import OutputFile
 import symbolsort
 import Checksum
+import config
 
 ###--- Globals ---###
 
@@ -57,15 +58,15 @@ miGenerator = KeyGenerator.KeyGenerator('marker_interaction')
 
 checksums = [
         # count of interaction rows and their most recent modification date
-        Checksum.Checksum('marker_interaction.rows', '../data',
+        Checksum.Checksum('marker_interaction.rows', config.CACHE_DIR,
                 Checksum.hashResults('select max(modification_date), count(1) from mgi_relationship where _Category_key = %d' % interactionKey)
                 ),
         # count of markers and the max marker key
-        Checksum.Checksum('marker_interaction.markers', '../data',
+        Checksum.Checksum('marker_interaction.markers', config.CACHE_DIR,
                 Checksum.hashResults('select max(_Object_key_1), count(distinct _Object_key_1) from mgi_relationship where _Category_key = %d' % interactionKey)
                 ),
         # count of interaction properties and their most recent modification date
-        Checksum.Checksum('marker_interaction_property.rows', '../data',
+        Checksum.Checksum('marker_interaction_property.rows', config.CACHE_DIR,
                 Checksum.hashResults('''select count(1), max(p.modification_date)
                         from mgi_relationship r, mgi_relationship_property p
                         where r._Relationship_key = p._Relationship_key
@@ -86,8 +87,8 @@ def initialize():
         global maxMarkerKey, rowsPerMarker, allMarkers, teasers
         global badRelationships, interactionFile, propertyFile
 
-        interactionFile = OutputFile.OutputFile ('marker_interaction', dataDir = '../data', actualName = True)
-        propertyFile = OutputFile.OutputFile ('marker_interaction_property', dataDir = '../data', actualName = True)
+        interactionFile = OutputFile.OutputFile ('marker_interaction', dataDir = config.CACHE_DIR, actualName = True)
+        propertyFile = OutputFile.OutputFile ('marker_interaction_property', dataDir = config.CACHE_DIR, actualName = True)
 
         # find maximum marker key with interactions
 
@@ -799,8 +800,8 @@ def main():
 
         # if checksums all match, bail out without regenerating data files
         if Checksum.allMatch(checksums):
-                print('%s %s' % ('../data/marker_interaction.rpt', 'marker_interaction'))
-                print('%s %s' % ('../data/marker_interaction_property.rpt', 'marker_interaction_property'))
+                print('%s/%s %s' % (config.DATA_DIR, 'marker_interaction.rpt', 'marker_interaction'))
+                print('%s/%s %s' % (config.DATA_DIR, 'marker_interaction_property.rpt', 'marker_interaction_property'))
                 logger.debug('Using cached data files - done')
                 return 
 

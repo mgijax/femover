@@ -20,8 +20,9 @@ fi
 FILE_DIR=${DATALOADSOUTPUT}/femover
 LOG_DIR=${FILE_DIR}/logs
 DATA_DIR=${FILE_DIR}/data
+CACHE_DIR=${FILE_DIR}/cache
 
-export FILE_DIR LOG_DIR DATA_DIR
+export FILE_DIR LOG_DIR DATA_DIR CACHE_DIR
 
 #
 # Numbers of concurrent processes by stage.

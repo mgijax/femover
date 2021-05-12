@@ -210,31 +210,15 @@ class HDPAnnotationGatherer (Gatherer.Gatherer):
                         # get the hybrid homology cluster(s) for this marker;
                         # if none, generate a fake cluster key.
 
-                        hybridClusterKeys = HU.getHybridClusterKeys(markerKey)
+                        hybridClusterKeys = HU.getAllianceClusteredClusterKeys(markerKey)
                         if not hybridClusterKeys:
                                 gridClusterKey = maxClusterKey + markerKey
 
                         else:
-                                # if more than one hybrid cluster, just use the
-                                # last and use it to look up info on the source
-                                # cluster that was chosen for the hybrid
-
-                                hybridClusterKey = hybridClusterKeys[-1]
-
-                                # only HGNC source goes to HGNC, otherwise
-                                # HomoloGene trumps anything else
-
-                                if HU.getSourceOfCluster(hybridClusterKey) == 'HGNC':
-                                        sourceClusterKeys = \
-                                                HU.getHgncClusterKeys(markerKey)
-                                else:
-                                        sourceClusterKeys = \
-                                                HU.getHomoloGeneClusterKeys(markerKey)
-
                                 # if more than one, just pick the last to use
                                 # as our gridClusterKey
 
-                                gridClusterKey = sourceClusterKeys[-1]
+                                gridClusterKey = hybridClusterKeys[-1]
 
                         sourceClusters[markerKey] = gridClusterKey
 

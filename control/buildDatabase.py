@@ -243,7 +243,7 @@ MARKERS = [ 'marker', 'marker_id', 'marker_synonym', 'marker_to_allele',
                 'marker_biotype_conflict', 'marker_searchable_nomenclature',
                 'homology_cluster', 'marker_qtl_experiments', 'marker_wksilvers',
                 'marker_microarray', 'marker_to_term', 'marker_related_marker',
-                'marker_interaction', 'marker_mp_annotation','marker_minimap'
+                'marker_interaction', 'marker_mp_annotation'
         ]
 PROBES = [ 'probe', 'probe_clone_collection', 'probe_to_sequence', 'probe_relative', 'probe_id',
                 'probe_cdna', 'probe_primers', 'probe_sequence_num', 'probe_note', 'probe_to_reference',

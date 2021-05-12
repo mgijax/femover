@@ -41,7 +41,7 @@ class OutputFile:
                         (self.fd, path) = tempfile.mkstemp (suffix = '.rpt',
                                 prefix = filename, dir = dataDir, text = True)
                 else:
-                        path = '../data/%srpt' % filename
+                        path = '%s/%srpt' % (dataDir, filename)
                         self.fp = open(path, 'w')
 
                 self.path = path

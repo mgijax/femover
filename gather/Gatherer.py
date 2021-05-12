@@ -761,14 +761,14 @@ class FileCacheGatherer(CachingMultiFileGatherer):
         def go(self):
                 if Checksum.allMatch(self.checksums):
                         for (tableName, inFieldOrder, outFieldOrder) in self.outputFiles:
-                                print('%s/data/%s.rpt %s' % (os.environ['FEMOVER'], tableName, tableName))
+                                print('%s/%s.rpt %s' % (os.environ['CACHE_DIR'], tableName, tableName))
                         logger.info('Checksums all match - using existing files')
                         return
 
                 logger.info('Checksums did not match - rebuilding data files')
                 
                 # update the data files, then update the checksums
-                CachingMultiFileGatherer.go(self, '../data', actualName = True)
+                CachingMultiFileGatherer.go(self, os.environ['CACHE_DIR'], actualName = True)
                 Checksum.updateAll(self.checksums)
                 return
         
