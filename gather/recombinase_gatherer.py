@@ -944,6 +944,8 @@ cmds = [
                         vte._emapa_term_key = c._emapa_term_key
                         and vte._stage_key = c._stage_key
         where c.cresystemlabel is not null
+            and c.ageMin is not null
+            and c.ageMax is not null
         order by c._Allele_key, c.cresystemlabel, c.expressed desc''',
 
         # 1
