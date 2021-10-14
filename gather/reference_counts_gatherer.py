@@ -138,10 +138,12 @@ cmds = [
                         where t._Allele_key = r._Object_key
                         and r._MGIType_key = 11)
                 select r._Refs_key, count(distinct m._Marker_key) as numMarkers
-                from marker_refs m, bib_refs r, bib_citation_cache c
+                from marker_refs m, bib_refs r, bib_citation_cache c, mrk_marker mm
                 where m._Refs_key = r._Refs_key
                         and m._Refs_key = c._Refs_key
                         and m._Marker_key is not null
+                        and m._Marker_key = mm._Marker_key
+                        and mm._marker_status_key = 1
                 group by 1''',
 
         # 2. count of probes
