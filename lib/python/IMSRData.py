@@ -17,23 +17,32 @@ class IMSRDatabase:
                 logger.debug ('IMSR_COUNT_URL : %s' % self.IMSR_COUNT_URL)
                 logger.debug ('IMSR_COUNT_TIMEOUT : %d' % self.IMSR_COUNT_TIMEOUT)
 
+                cellLines = {}
+                strains = {}
+                byMarker = {}
+
                 # TODO (kstone): add timeout when we move past python 2.4
                 #       Not supported in older versions
                 #f = urllib2.urlopen(self.IMSR_COUNT_URL, timeout=self.IMSR_COUNT_TIMEOUT)
-                f = urllib.request.urlopen(self.IMSR_COUNT_URL)
+                try:
+                    f = urllib.request.urlopen(self.IMSR_COUNT_URL)
+                except:
+                    logger.error ('Failed to open IMSR_COUNT_URL: %s' % self.IMSR_COUNT_URL)
+                    return cellLines, strains, byMarker
+
                 try:
                     lines = f.readlines()
                 finally:
                     f.close()
                 
+                if len(lines) == 0:
+                    logger.error ('Failed to read records from IMSR_COUNT_URL: %s' % self.IMSR_COUNT_URL)
+                    return cellLines, strains, byMarker
+
                 if type(lines) == bytes:
                         lines = 'n'.split(lines.decode())
                 elif type(lines[0]) == bytes:
                         lines = [x.decode() for x in lines]
-
-                cellLines = {}
-                strains = {}
-                byMarker = {}
 
                 if not lines:
                         logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
