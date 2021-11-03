@@ -19,10 +19,9 @@ ZFIN_GENE = 172
 RGD = 47            # Rat Genome Database
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
-MYGENE_INFO = 178
 
 # preferred ordering for links, by logical database (add Alliance links later)
-LDB_ORDERING = [ HGNC, MGI, RGD, ZFIN_GENE, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL, MYGENE_INFO ]
+LDB_ORDERING = [ HGNC, MGI, RGD, ZFIN_GENE, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
 
 # organism 
 MOUSE = 1            
@@ -159,8 +158,6 @@ def getDisplayText (ldbKey, ldbName, accID):
     # We can tweak the text of the link here, depending on the logical
     # database.  At present, we always use the logical db name.
 
-    if ldbName == 'MyGene':
-        return 'MyGene.info'
     return ldbName
 
 def getVersionForVistaPoint (version):
@@ -507,10 +504,10 @@ cmds = [
     where m._Organism_key = %d
         and m._Marker_key = a._Object_key
         and a._MGIType_key = %d
-        and a._LogicalDB_key in (%d, %d, %d, %d)
+        and a._LogicalDB_key in (%d, %d, %d)
         and a.private = 0
         and a.preferred = 1''' % (
-            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM, MYGENE_INFO),
+            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
 
     # 1. mouse markers' IDs
     '''select a._LogicalDB_key,
