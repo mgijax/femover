@@ -85,6 +85,11 @@ def formatAuthor (x):
                 if len(tokens[lastToken]) < 4:
                         tokens[lastToken] = tokens[lastToken].upper()
 
+        # if there is a comma as the first token, remove it.
+        if tokens:
+                if tokens[0] == ',':
+                        tokens = tokens[1:]
+
         return ' '.join(tokens)
 
 ###--- Classes ---###
