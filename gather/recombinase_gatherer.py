@@ -672,6 +672,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 aPrepCol = Gatherer.columnNumber (cols, '_AntibodyPrep_key')
                 dbResultCol = Gatherer.columnNumber (cols, '_Result_key')
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
+                cellTypesCol = Gatherer.columnNumber (cols, 'cell_types')
 
                 out = []
                 columns = [ 'resultKey', 'alleleSystemKey', 'structureKey', 'structure',
@@ -679,7 +680,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         'level', 'pattern', 'assayType', 'reporterGene',
                         'detectionMethod', 'allelicComposition', 'strain',
                         'assayNote', 'probeID', 'probeName', 'antibodyID',
-                        'antibodyName',
+                        'antibodyName', 'cell_types',
                         ]
 
                 # newResultKeys[db result key] = [ (new result key, new
@@ -758,6 +759,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         else:
                                                 row.append (None)
 
+                        row.append(r[cellTypesCol])
                         out.append (row)
 
                 logger.debug ('Found %d assay results' % len(out))
@@ -1021,12 +1023,18 @@ cmds = [
         # 5
         # main cre assay result data
         #
-        '''select distinct c._Allele_key, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
+        '''with result_cell_types as (
+            select ct._Result_key, string_agg(distinct t.term, ', ' order by t.term) as cell_types
+            from gxd_isresultcelltype ct, voc_term t
+            where ct._CellType_Term_key = t._Term_key
+            group by 1
+        )
+        select distinct c._Allele_key, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
                 a._AssayType_key, a._ReporterGene_key, a._Refs_key,
                 a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
                 s.age, s.sex, s.specimenNote, s._Genotype_key,
                 r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
-                racc.accid as jnumID, c.cresystemlabel
+                racc.accid as jnumID, c.cresystemlabel, rct.cell_types
         from  all_cre_cache c
         join gxd_assay a on
             a._assay_key = c._assay_key
@@ -1047,6 +1055,7 @@ cmds = [
         join voc_term_emaps vte on
             vte._emapa_term_key = c._emapa_term_key
             and vte._stage_key = c._stage_key
+        left outer join result_cell_types rct on (r._result_key = rct._result_key)
         where c.cresystemlabel is not null
         ''',
 
@@ -1090,7 +1099,7 @@ files = [
                         'detectionMethod', 'sex', 'allelicComposition',
                         'strain', 'assayNote', 'resultNote',
                         'specimenNote', 'probeID', 'probeName', 'antibodyID',
-                        'antibodyName', ],
+                        'antibodyName', 'celL_types' ],
                 'recombinase_assay_result'),
 
         ('recombinase_assay_result_sequence_num',
