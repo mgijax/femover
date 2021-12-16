@@ -4,6 +4,8 @@
 #
 # HISTORY
 #
+# 12/15/2021    jsb
+#        Added cell type data.
 # 02/07/2013    kstone
 #       Initial add for TR11248 (Assay Detail revamp)
 #
@@ -17,6 +19,7 @@ uniqueSpecimenKeys = set()
 uniqueResultKeys = {}
 resultCount = 0
 imagepaneCount = 0
+ctSeqNum = 0                # unique key (and sequence num) for cell type records
 
 ###--- Classes ---###
 NOT_SPECIFIED_VALUES = ['Not Specified','Not Applicable']
@@ -29,10 +32,16 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
         #       collates results, writes tab-delimited text file
 
         def collateResults(self):
+            self.processResults0()
+            self.processResults1()
+            return
+        
+        def processResults0(self):
+            # process the results of query 0 (the main query)
                 global uniqueSpecimenKeys, uniqueResultKeys
                 global resultCount, imagepaneCount
 
-                # process specimens +  results 
+                # process specimens + results 
 
                 (cols, rows) = self.results[0]
 
@@ -158,6 +167,31 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
         
                 return
 
+        def processResults1(self):
+            # process the results of query 1 (cell types for each result/structure pair)
+
+            global uniqueResultKeys, ctSeqNum
+
+            (cols, rows) = self.results[1]
+
+            # get index that identifies each column in the results of query 1
+            resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
+            emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
+            cellTypeCol = Gatherer.columnNumber (cols, 'cell_type')
+
+            for row in rows:
+                # Look up the result key used for the front-end database, based on result key and EMAPS key
+                # from the production database.  If none assigned, just skip this result.
+                resultGenKey = (row[resultKeyCol], row[emapsKeyCol])
+                if resultGenKey not in uniqueResultKeys:
+                    logger.error('Unexpected result/EMAPS pair: (%s, %s)' % resultGenKey)
+                    continue
+
+                feResultKey = uniqueResultKeys[resultGenKey]
+                ctSeqNum = ctSeqNum + 1
+                self.addRow('specimen_result_cell_type', (ctSeqNum, feResultKey, row[cellTypeCol], ctSeqNum))
+            return 
+        
         def postprocessResults(self):
                 return
 
@@ -213,6 +247,26 @@ cmds = [
             and gs._Specimen_key >= %d
             and gs._Specimen_key < %d
         ''',
+
+        # 1. Gather cell types for results; can be multiple cell types per result.
+        # (need result key and EMAPS key to identify structure-specific result keys assigned
+        # in processing of query 0)
+        '''
+        select distinct gir._result_key,
+            vte._term_key as _emaps_key,
+            ct.term as cell_type
+        from gxd_insituresult gir,
+            gxd_isresultcelltype rct, voc_term ct,
+            gxd_isresultstructure girs, voc_term_emaps vte
+        where gir._result_key = rct._result_key
+            and rct._celltype_term_key = ct._Term_key
+            and gir._result_key=girs._result_key
+            and vte._emapa_term_key = girs._emapa_term_key
+            and vte._stage_key = girs._stage_key
+            and gir._Specimen_key >= %d
+            and gir._Specimen_key < %d
+        order by 1, 2
+        ''',
         ]
 
 # list of file definitions, each a 3-item tuple:
@@ -242,7 +296,12 @@ files = [
                 [ 'specimen_result_imagepane_key', 'specimen_result_key',
                         'imagepane_key', 'imagepane_seq'],
                 [ 'specimen_result_imagepane_key', 'specimen_result_key',
-                        'imagepane_key', 'imagepane_seq'] )
+                        'imagepane_key', 'imagepane_seq'] ),
+        
+        ('specimen_result_cell_type',
+            [ 'unique_key', 'specimen_result_key', 'cell_type', 'sequence_num', ],
+            [ 'unique_key', 'specimen_result_key', 'cell_type', 'sequence_num', ]
+            ),
         ]
 
 
