@@ -10,7 +10,7 @@ import re
 ###--- Globals ---###
 
 EXCLUDE_FROM_OTHER_DBS = [ 1, 19 ]
-LDB_ORDER = [ 148, 159, 105 ]           # Eurexpress, then GenePaint
+LDB_ORDER = [ 159, 105 ]
 
 ###--- Functions ---###
 
