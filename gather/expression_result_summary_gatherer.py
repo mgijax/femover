@@ -21,6 +21,7 @@ import GXDUniUtils
 import OutputFile
 import gc
 import dbAgnostic
+import Lookup
 
 ReferenceCitations.restrict('GXD_Assay')    # only references tied to assays
 VocabSorter.setVocabs(91)                   # EMAPS
@@ -46,6 +47,9 @@ FILES = OutputFile.CachingOutputFileFactory()
 
 # maximum number of alleles we need to consider for sorting
 MAX_ALLELES = None
+
+# used to look up vocab terms corresponding to their respective term keys
+TERM_LOOKUP = Lookup.Lookup('voc_term', '_Term_key', 'term')
 
 ###--- Functions ---###
 
@@ -391,6 +395,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                 ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
                 patternCol = Gatherer.columnNumber (cols, 'pattern')
                 specimenKeyCol = Gatherer.columnNumber (cols, '_specimen_key')
+                cellTypeKeyCol = Gatherer.columnNumber (cols, '_CellType_Term_key')
                 assignedKeyCol = Gatherer.columnNumber(cols, '_Assigned_key')
 
                 for row in rows:
@@ -400,11 +405,14 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                         if not emapsKey:
                                 continue
 
+                        cellType = TERM_LOOKUP.get(row[cellTypeKeyCol])
+                        
                         extras.setdefault(assayKey,[]).append( [row[genotypeCol],
                                 row[ageCol], row[strengthCol], row[resultCol],
                                 emapsKey, row[ageMinCol],
                                 row[ageMaxCol], row[patternCol],row[specimenKeyCol],
-                                row[stageCol], row[structureCol], row[assignedKeyCol] ])
+                                row[stageCol], row[structureCol], cellType,
+                                row[assignedKeyCol] ])
 
                 logger.debug ('Got extra data for %d in situ assays' % \
                         len(extras))
@@ -661,7 +669,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                             [ genotypeKey, age, strength, resultKey,
                                 emapsKey, ageMin, ageMax,
                                 pattern,specimenKey,
-                                stage, structure, assignedKey ] = items
+                                stage, structure, cellType, assignedKey ] = items
 
                             if resultKey in panesForInSituResults:
                                 panes = panesForInSituResults[resultKey]
@@ -1035,7 +1043,8 @@ cmds = [
                 p.pattern,
                 s._specimen_key,
                 struct._Term_key,
-                ck._Assigned_key
+                ck._Assigned_key,
+                ck._CellType_Term_key
         from gxd_specimen s,
                 %s ck,
                 gxd_insituresult r,

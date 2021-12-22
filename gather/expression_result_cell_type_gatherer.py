@@ -23,6 +23,7 @@ cmds = [
             row_number() over (order by ck._Assigned_key, vt.term) as sequenceNum
         from %s ck, gxd_isresultcelltype ct, voc_term vt
         where ck._Result_key = ct._Result_key
+            and ck._CellType_Term_key = ct._CelLType_Term_key
             and ct._CellType_Term_key = vt._Term_key
         order by 1, 2''' % CLASSICAL_KEY_TABLE,
         ]
