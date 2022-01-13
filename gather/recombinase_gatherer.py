@@ -672,6 +672,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 aPrepCol = Gatherer.columnNumber (cols, '_AntibodyPrep_key')
                 dbResultCol = Gatherer.columnNumber (cols, '_Result_key')
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
+                cellTypeCol = Gatherer.columnNumber (cols, 'cell_type')
 
                 out = []
                 columns = [ 'resultKey', 'alleleSystemKey', 'structureKey', 'structure',
@@ -679,16 +680,21 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         'level', 'pattern', 'assayType', 'reporterGene',
                         'detectionMethod', 'allelicComposition', 'strain',
                         'assayNote', 'probeID', 'probeName', 'antibodyID',
-                        'antibodyName',
+                        'antibodyName', 'cell_type',
                         ]
 
+                # Note that cell types are now part of defining a unique result.
+                # (We cannot show multiple cell types per result, so each must
+                # be a unique result, even if everything else is identical.)
+                
                 # newResultKeys[db result key] = [ (new result key, new
-                #       allele/system key), ... ]
+                #       allele/system key, cell type), ... ]
                 newResultKeys = {}
 
                 i = 0
                 for r in self.results[5][1]:
                         system = r[systemCol]
+                        cellType = r[cellTypeCol]
 
                         alleleSystemKey = \
                                 alleleSystemMap[r[alleleCol]][system]
@@ -699,7 +705,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         # new result key(s) and the allele/system keys being
                         # generated
 
-                        info = (i, alleleSystemKey)
+                        info = (i, alleleSystemKey, cellType)
                         dbResultKey = r[dbResultCol]
                         if dbResultKey in newResultKeys:
                                 newResultKeys[dbResultKey].append (info)
@@ -758,6 +764,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         else:
                                                 row.append (None)
 
+                        row.append(cellType)
                         out.append (row)
 
                 logger.debug ('Found %d assay results' % len(out))
@@ -808,7 +815,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
         def findResultImages (self,
                 resultMap       # maps from old result key to (new result key,
-                                # new allele/system key)
+                                # new allele/system key, cell type)
                 ):
 
                 # associations between results and image panes is in query 6
@@ -846,7 +853,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         logger.debug ('Unknown result key: %s' % \
                                 row[resultCol])
                         continue
-                    for (resultKey, alleleSysKey) in resultMap[row[resultCol]]:
+                    for (resultKey, alleleSysKey, cellType) in resultMap[row[resultCol]]:
                         imageKey = row[imageCol]
                         label = row[labelCol]
 
@@ -944,6 +951,8 @@ cmds = [
                         vte._emapa_term_key = c._emapa_term_key
                         and vte._stage_key = c._stage_key
         where c.cresystemlabel is not null
+            and c.ageMin is not null
+            and c.ageMax is not null
         order by c._Allele_key, c.cresystemlabel, c.expressed desc''',
 
         # 1
@@ -1019,12 +1028,17 @@ cmds = [
         # 5
         # main cre assay result data
         #
-        '''select distinct c._Allele_key, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
+        '''with result_cell_types as (
+            select distinct ct._Result_key, t.term as cell_type
+            from gxd_isresultcelltype ct, voc_term t
+            where ct._CellType_Term_key = t._Term_key
+        )
+        select distinct c._Allele_key, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
                 a._AssayType_key, a._ReporterGene_key, a._Refs_key,
                 a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
                 s.age, s.sex, s.specimenNote, s._Genotype_key,
                 r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
-                racc.accid as jnumID, c.cresystemlabel
+                racc.accid as jnumID, c.cresystemlabel, rct.cell_type
         from  all_cre_cache c
         join gxd_assay a on
             a._assay_key = c._assay_key
@@ -1045,7 +1059,9 @@ cmds = [
         join voc_term_emaps vte on
             vte._emapa_term_key = c._emapa_term_key
             and vte._stage_key = c._stage_key
+        left outer join result_cell_types rct on (r._result_key = rct._result_key)
         where c.cresystemlabel is not null
+        order by c._Allele_key, r._Result_key, rct.cell_type
         ''',
 
         # 6
@@ -1088,7 +1104,7 @@ files = [
                         'detectionMethod', 'sex', 'allelicComposition',
                         'strain', 'assayNote', 'resultNote',
                         'specimenNote', 'probeID', 'probeName', 'antibodyID',
-                        'antibodyName', ],
+                        'antibodyName', 'cell_type' ],
                 'recombinase_assay_result'),
 
         ('recombinase_assay_result_sequence_num',

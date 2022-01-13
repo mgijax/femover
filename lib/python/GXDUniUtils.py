@@ -173,27 +173,28 @@ def _assignClassicalKeys():
         
         logger.info('Began building: %s' % TMP_CLASSICAL_KEYS)
 
-        # Temp table will have the four keys that uniquely define a result, plus an assigned key that can
+        # Temp table will have the five keys that uniquely define a result, plus an assigned key that can
         # be used to uniquely identify that result.
         cmd0 = '''create temporary table %s (
                 _Assay_key int not null,
                 _Result_key int not null,
                 _Stage_key int not null,
                 _Emapa_Term_key int not null,
+                _CellType_Term_key int null,
                 _Assigned_key int not null)''' % TMP_CLASSICAL_KEYS
         dbAgnostic.execute(cmd0)
         
         # First add in situ results to the temp table, assigning new key based on a prescribed ordering.
         # Remember to exclude results for recombinase data (require isForGXD = 1).
         cmd1 = '''insert into %s
-                select s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key,
-                        row_number() over (order by s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key)
-                from gxd_specimen s,
-                        gxd_insituresult r,
-                        gxd_isresultstructure i
-                where s._Specimen_key = r._Specimen_key
-                        and r._Result_key = i._Result_key
-                        and exists (select 1 from gxd_expression ge where s._Assay_key = ge._Assay_key and ge.isForGXD = 1)
+                select s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key, c._CellType_Term_key,
+                        row_number() over (order by s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key,
+                            c._CellType_Term_key)
+                from gxd_specimen s
+                inner join gxd_insituresult r on (s._Specimen_key = r._Specimen_key)
+                inner join gxd_isresultstructure i on (r._Result_key = i._Result_key)
+                left outer join gxd_isresultcelltype c on (r._Result_key = c._Result_key)
+                where exists (select 1 from gxd_expression ge where s._Assay_key = ge._Assay_key and ge.isForGXD = 1)
                 order by s._Assay_key, r._Result_key, i._Stage_key, i._Emapa_Term_key''' % TMP_CLASSICAL_KEYS
         dbAgnostic.execute(cmd1)
         
@@ -204,7 +205,7 @@ def _assignClassicalKeys():
         # ordering.  Note that these are numbered after the in situ assays and that the gel lane key serves
         # as the result key for these.
         cmd3 = '''insert into %s
-                select g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key,
+                select g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key, null as _CellType_Term_key,
                         %d + row_number() over (order by g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key)
                 from gxd_gellane g,
                         gxd_gellanestructure gs,
@@ -223,6 +224,7 @@ def _assignClassicalKeys():
         createIndex(TMP_CLASSICAL_KEYS, '_Result_key')
         createIndex(TMP_CLASSICAL_KEYS, '_Stage_key')
         createIndex(TMP_CLASSICAL_KEYS, '_Emapa_Term_key')
+        createIndex(TMP_CLASSICAL_KEYS, '_CellType_Term_key')
         logger.info(' - added indexes')
 
         logger.info('Done building: %s' % TMP_CLASSICAL_KEYS)
@@ -474,7 +476,8 @@ def _buildKeystoneTable():
                 by_assay_type   int     not null,
                 is_detected             int     not null,
                 by_reference    int     not null,
-                _Genotype_key   int     not null
+                _Genotype_key   int     not null,
+                _CellType_Term_key    int    null
                 )''' % TMP_KEYSTONE
 
         dbAgnostic.execute(cmd0)
@@ -483,21 +486,19 @@ def _buildKeystoneTable():
         cmd1 = '''with results as (
                 select 1 as is_classical, a._AssayType_key, a._Assay_key, r._Result_key,
                         s.ageMin, s.ageMax, rs._stage_key, rs._Emapa_Term_key as _Term_key,
-                        a._Marker_key, isr.is_detected, a._Refs_key, s._Genotype_key
-                from gxd_specimen s,
-                        gxd_assay a,
-                        gxd_insituresult r,
-                        gxd_isresultstructure rs,
-                        %s isr
-                where s._Specimen_key = r._Specimen_key
-                        and r._Result_key = rs._Result_key
-                        and r._Result_key = isr._Result_key
-                        and s._Assay_key = a._Assay_key
-                        and exists (select 1 from gxd_expression e where s._Assay_key = e._Assay_key and e.isForGxd = 1)
+                        a._Marker_key, isr.is_detected, a._Refs_key, s._Genotype_key,
+                        c._CellType_Term_key
+                from gxd_specimen s
+                inner join gxd_assay a on (s._Assay_key = a._Assay_key)
+                inner join gxd_insituresult r on (s._Specimen_key = r._Specimen_key)
+                inner join gxd_isresultstructure rs on (r._Result_key = rs._Result_key)
+                inner join %s isr on (r._Result_key = isr._Result_key)
+                left outer join gxd_isresultcellline c on (r._Result_key = c._Result_key)
+                where exists (select 1 from gxd_expression e where s._Assay_key = e._Assay_key and e.isForGxd = 1)
                 union
                 select 1 as is_classical, a._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
                         g.ageMin, g.ageMax, s._stage_key, s._Emapa_Term_key as _Term_key,
-                        a._Marker_key, glk.is_detected, a._Refs_key, g._Genotype_key
+                        a._Marker_key, glk.is_detected, a._Refs_key, g._Genotype_key, null as _CellType_Term_key
                 from gxd_gellane g,
                         gxd_assay a,
                         gxd_gellanestructure s,
@@ -511,7 +512,8 @@ def _buildKeystoneTable():
                 insert into %s
                 select distinct ck._Assigned_key, r.is_classical, r._AssayType_key, r._Assay_key, r._Result_key,
                         ck._Assigned_key, r.ageMin, r.ageMax, r._stage_key, r._Term_key, emapa.seqNum as emapaSeqNum,
-                        mrk.seqNum as mrkSeqNum, aa.seqNum as atSeqNum, r.is_detected, ref.seqNum, r._Genotype_key
+                        mrk.seqNum as mrkSeqNum, aa.seqNum as atSeqNum, r.is_detected, ref.seqNum, r._Genotype_key,
+                        r._CellType_Term_key
                 from results r,
                         %s ck,
                         %s ref,
@@ -526,6 +528,9 @@ def _buildKeystoneTable():
                         and r._Result_key = ck._Result_key
                         and r._Stage_key = ck._Stage_key
                         and r._Term_key = ck._Emapa_Term_key
+                        and ((r._CellType_Term_key = ck._CellType_Term_key) or 
+                            ((r._CellType_Term_key is null) and (ck._CellType_Term_key is null))
+                            )
                 order by ck._Assigned_key''' % (
                         isResultTable, gelLaneTable, TMP_KEYSTONE, TMP_CLASSICAL_KEYS,
                         referenceTable, structureTable, markerTable, assayTypeTable)

@@ -257,6 +257,7 @@ class TACGatherer (Gatherer.Gatherer):
                         where va._AnnotType_key = %d
                                 and va._Qualifier_key = q._Term_key
                                 and va._Annot_key = e._Annot_key
+                                and (q.term != 'NOT' or q.term is null)
                                 and e._EvidenceTerm_key = ev._Term_key''' % annotTypeKey
                                 
                 cols, rows = dbAgnostic.execute(cmd)
@@ -324,7 +325,23 @@ class TACGatherer (Gatherer.Gatherer):
                         del collector
                         del ancestors
                         gc.collect()
-                        logger.debug(' - finished cleanup')
+                        logger.debug(' - finished initial cleanup')
+                        
+                logger.debug('Beginning EMAPA/EMAPS...')
+                cols2, rows2 = self.results[1]
+                
+                vocabNameCol = Gatherer.columnNumber(cols2, 'name')
+                termCol = Gatherer.columnNumber(cols2, '_Term_key')
+                objectCountCol = Gatherer.columnNumber(cols2, 'objectCount')
+                annotCountCol = Gatherer.columnNumber(cols2, 'annotCount')
+                
+                # Notice that for each row, we currently zero out the direct annotation counts, as they are
+                # not needed for the Quick Search (which is currently the target for these counts.)
+                for row in rows2:
+                    self.finalResults.append( (row[termCol], row[vocabNameCol], 0, row[objectCountCol],
+                        0, row[annotCountCol]) )
+
+                logger.debug(' - finished EMAPA/EMAPS cleanup')
                 return
 
 ###--- globals ---###
@@ -337,6 +354,15 @@ cmds = [
                 where vat.name in ('%s', '%s', '%s', '%s')
                         and vat._MGIType_key = t._MGIType_key
                         and vat._Vocab_key = v._Vocab_key''' % (MP_GENOTYPE, GO_MARKER, HPO_DO, DO_GENOTYPE),
+                        
+        # 1. get the EMAPA/EMAPS counts that are already pre-computed in VOC_Annot_Count_Cache.  Note that these are
+        # currently only for the purposes of the Quick Search, which only needs the "with descendants" counts, so 
+        # the others are zeroed out.
+        '''select c._Term_key, v.name, c.objectCount, c.annotCount
+            from voc_annot_count_cache c, voc_term t, voc_vocab v
+            where c._Term_Key = t._Term_key
+            and t._Vocab_key = v._Vocab_key
+            and v.name in ('EMAPA', 'EMAPS')'''
         ]
 
 # order of fields (from the query results) to be written to the output file

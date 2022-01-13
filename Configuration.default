@@ -104,7 +104,7 @@ FULL_TEXT_LINKS_PATH=../data/fullTextLinks.txt
 export FULL_TEXT_LINKS_PATH
 
 # path to incidental mutations master file
-INCIDENTAL_MUTS_FILE=/bhmgiapp01data/loads/mgi/incidental_muts/curator_INC.txt
+INCIDENTAL_MUTS_FILE=../data/curator_INC.txt
 export INCIDENTAL_MUTS_FILE
 
 GLOSSARY_PATH=../data/glossary.rcd

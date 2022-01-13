@@ -32,6 +32,7 @@ createStatement = '''CREATE TABLE %s  (
         probe_name              text    null,
         antibody_id             text    null,
         antibody_name           text    null,
+        cell_types              text    null,
         PRIMARY KEY(result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -75,6 +76,7 @@ comments = {
                 'probe_name' : 'name of the probe',
                 'antibody_id' : 'primary ID of the antibody',
                 'antibody_name' : 'name of the antibody',
+                'cell_types' : 'comma-separated list of cell types',
                 },
         Table.INDEX : {
                 'allele_system_key' : 'clusters data so all results for an allele/system pair are stored on disk together, to aid efficiency',
