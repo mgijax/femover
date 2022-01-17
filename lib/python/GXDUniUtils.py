@@ -493,7 +493,7 @@ def _buildKeystoneTable():
                 inner join gxd_insituresult r on (s._Specimen_key = r._Specimen_key)
                 inner join gxd_isresultstructure rs on (r._Result_key = rs._Result_key)
                 inner join %s isr on (r._Result_key = isr._Result_key)
-                left outer join gxd_isresultcellline c on (r._Result_key = c._Result_key)
+                left outer join gxd_isresultcelltype c on (r._Result_key = c._Result_key)
                 where exists (select 1 from gxd_expression e where s._Assay_key = e._Assay_key and e.isForGxd = 1)
                 union
                 select 1 as is_classical, a._AssayType_key, g._Assay_key, g._GelLane_key as _Result_key,
