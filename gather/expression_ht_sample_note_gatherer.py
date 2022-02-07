@@ -18,12 +18,11 @@ HTSampleNoteGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-        '''select t._Experiment_key, t._Sample_key, y.noteType, c.note
-                from %s t, mgi_note n, mgi_notetype y, mgi_notechunk c
+        '''select t._Experiment_key, t._Sample_key, y.noteType, n.note
+                from %s t, mgi_note n, mgi_notetype y
                 where t._Sample_key = n._Object_key
                         and n._MGIType_key = %d
                         and n._NoteType_key = y._NoteType_key
-                        and n._Note_key = c._Note_key
                 order by t._Experiment_key''' % (samples.getSampleTempTable(), C.MGITYPE_SAMPLE)
         ]
 

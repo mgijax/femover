@@ -395,19 +395,16 @@ def getPropertyRows(startAllele, endAllele):
         # markers are current
 
         cmd2 = '''select r._Relationship_key,
-                        c._Note_key,
-                        c.sequenceNum,
-                        c.note
+                        n._Note_key,
+                        n.note
                 from mgi_relationship r,
                         mgi_notetype t,
                         mgi_note n,
-                        mgi_notechunk c,
                         mrk_marker m
                 where r._Relationship_key = n._Object_key
                         and r._Category_key in (%d, %d)
                         and t._NoteType_key = n._NoteType_key
                         and t._MGIType_key = 40
-                        and n._Note_key = c._Note_key
                         and r._Object_key_1 >= %d
                         and r._Object_key_1 <= %d
                         and r._Object_key_2 = m._Marker_key

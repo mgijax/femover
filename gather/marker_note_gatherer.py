@@ -195,13 +195,12 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 
 cmds = [
         # 0. general notes
-        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-        from mgi_note mn, mgi_notechunk mnc
+        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mn.note
+        from mgi_note mn
         where mn._MGIType_key = 2
-                and mn._Note_key = mnc._Note_key
                 and exists (select 1 from mrk_marker m
                         where m._Marker_key = mn._Object_key)
-        order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+        order by mn._Object_key, mn._Note_key''',
 
         # 1. marker clips
         '''select _Marker_key, note
@@ -235,17 +234,14 @@ cmds = [
                         and va._Qualifier_key != %d)
         select r._Marker_key,
                 n._Note_key,
-                c.note,
-                c.sequenceNum
+                n.note
         from rolled_up_annotations r,
                 mgi_note n,
-                mgi_notetype t,
-                mgi_notechunk c
+                mgi_notetype t
         where r._AnnotEvidence_key = n._Object_key
                 and n._NoteType_key = t._NoteType_key
-                and n._Note_key = c._Note_key
                 and t._MGIType_key = %d
-        order by r._Marker_key, n._Note_key, c.sequenceNum''' % (MP_MARKER,
+        order by r._Marker_key, n._Note_key''' % (MP_MARKER,
                 DO_MARKER, NOT_QUALIFIER, ANNOT_EVIDENCE)
         ]
 

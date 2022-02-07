@@ -97,24 +97,21 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
 
 cmds = [
         # 0. main query to get traditionally-stored allele notes
-        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-        from mgi_note mn, mgi_notechunk mnc
+        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mn.note
+        from mgi_note mn
         where mn._MGIType_key = 11
-                and mn._Note_key = mnc._Note_key
                 and exists (select 1 from all_allele a
                         where a._Allele_key = mn._Object_key)
-        order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+        order by mn._Object_key, mn._Note_key''',
 
         # 1. add in derivation notes
-        '''select a._Allele_key, n._Note_key, nc.sequenceNum, nc.note 
+        '''select a._Allele_key, n._Note_key, nc.sequenceNum, n.note 
         from all_allele_cellLine a, all_cellline mc, 
-                mgi_note n, mgi_notechunk nc 
+                mgi_note n
         where a._MutantCellLine_key = mc._CellLine_key 
                 and mc._Derivation_key = n._Object_key 
                 and n._NoteType_key = %d
-                and n._Note_key = nc._Note_key 
-        order by a._Allele_key, n._Note_key, nc.sequenceNum''' % \
-                DERIVATION_NOTE_TYPE,
+        order by a._Allele_key, n._Note_key''' % DERIVATION_NOTE_TYPE,
 
         # 2. add in driver note
         '''
