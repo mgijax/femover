@@ -111,13 +111,11 @@ def getOtherGenotypeInfo(genotypeKey, genotypes):
         mySeqNum = max([x[2] for x in list(genotypes.values())]) + 1
 
         # assume we're now down to 1 note chunk per combination
-        cmd1 = '''select distinct mn._Object_key as _Genotype_key, mnc.note,
-                        ps.strain, mnc.sequenceNum, a.accid
+        cmd1 = '''select distinct mn._Object_key as _Genotype_key, mn.note,
+                        ps.strain, a.accid
                 from gxd_genotype gg
                 left outer join mgi_note mn on (mn._MGIType_key = 12
                         and gg._Genotype_key = mn._Object_key)
-                left outer join mgi_notechunk mnc on (
-                        mn._Note_key = mnc._Note_key)
                 left outer join mgi_notetype mnt on (
                         mn._NoteType_key = mnt._NoteType_key
                         and mnt.noteType = 'Combination Type 3')
@@ -128,7 +126,7 @@ def getOtherGenotypeInfo(genotypeKey, genotypes):
                         and a._MGIType_key = 12
                         and a._LogicalDB_key = 1)
                 where gg._Genotype_key = %d
-                order by mn._Object_key, mnc.sequenceNum''' % genotypeKey
+                order by mn._Object_key''' % genotypeKey
 
         cols1, rows1 = dbAgnostic.execute(cmd1)
 
@@ -594,9 +592,9 @@ cmds = [
             and a._LogicalDB_key = 1
             and a._MGIType_key = 12
         )
-    select distinct mn._Object_key as _Genotype_key, mnc.note, ps.strain,
-        mnc.sequenceNum, a.acc_id
-    from mgi_note mn, mgi_notechunk mnc, mgi_notetype mnt, genotypes g,
+    select distinct mn._Object_key as _Genotype_key, mn.note, ps.strain,
+        a.acc_id
+    from mgi_note mn, mgi_notetype mnt, genotypes g,
         gxd_genotype gg, prb_strain ps, acc_ids a
     where g._Genotype_key = mn._Object_key
         and g._Genotype_key = gg._Genotype_key
@@ -604,9 +602,8 @@ cmds = [
         and mn._MGIType_key = 12
         and mn._NoteType_key = mnt._NoteType_key
         and mnt.noteType = 'Combination Type 3'
-        and mn._Note_key = mnc._Note_key
         and g._Genotype_key = a._Genotype_key
-    order by mn._Object_key, mnc.sequenceNum''',    
+    order by mn._Object_key''',    
 
     # 1. get the annotations and their references for the set of markers
     # (either rolled-up or other annotations)

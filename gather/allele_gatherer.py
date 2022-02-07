@@ -298,18 +298,14 @@ cmds = [
         where a._Marker_key = m._Marker_key''',
 
         # 2. Inducible allele notes
-        '''select n._Object_key, c.note, c.sequenceNum
-        from mgi_note n, mgi_notechunk c
-        where n._Note_key = c._Note_key
-                and n._NoteType_key = 1032
-        order by c.sequenceNum''',
+        '''select n._Object_key, n.note
+        from mgi_note n
+        where n._NoteType_key = 1032''',
 
         # 3. Molecular allele notes
-        '''select n._Object_key, c.note, c.sequenceNum
-        from mgi_note n, mgi_notechunk c
-        where n._Note_key = c._Note_key
-                and n._NoteType_key = 1021
-        order by c.sequenceNum''',
+        '''select n._Object_key, n.note
+        from mgi_note n
+        where n._NoteType_key = 1021''',
 
         # 4. Deltagen/Lexicon Knockout data
         'select _Allele_key, holder, companyID, repository, jrsID from ALL_Knockout_Cache',

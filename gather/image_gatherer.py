@@ -241,11 +241,9 @@ cmds = [
                 from acc_accession
                 where _MGIType_key = 9 and _LogicalDB_key = 19''',
 
-        '''select n._Object_key, nc.note, n._NoteType_key, nc.sequenceNum
-                from mgi_note n, mgi_notechunk nc
-                where n._NoteType_key in (1023,1024,1039)
-                        and n._Note_key = nc._Note_key
-                order by nc.sequenceNum''',
+        '''select n._Object_key, n.note, n._NoteType_key
+                from mgi_note n
+                where n._NoteType_key in (1023,1024,1039)''',
 
         '''select _Object_key, accID
                 from acc_accession

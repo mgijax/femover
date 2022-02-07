@@ -330,12 +330,11 @@ cmds = [
         # 2. allele QF : phenotype popup field
         '''select vt.term,
                 ms.synonym AS shortHeader,
-                mnc.note AS searchExpression,
+                mn.note AS searchExpression,
                 vt.sequenceNum
         from voc_term vt, 
                 voc_vocab vv,
                 mgi_note mn,
-                mgi_notechunk mnc, 
                 mgi_notetype mnt, 
                 dag_dag dd, 
                 dag_node dn, 
@@ -354,7 +353,6 @@ cmds = [
                 and ms._SynonymType_key = mst._SynonymType_key 
                 and mst.synonymType = 'Synonym Type 1' 
                 and vt._Term_key = mn._Object_key 
-                and mn._Note_key = mnc._Note_key 
                 and mn._MGIType_key = 13 
                 and mn._NoteType_key = mnt._NoteType_key 
                 and mnt.noteType = 'Note Type 1'

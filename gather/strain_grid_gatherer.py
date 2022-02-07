@@ -358,19 +358,17 @@ cmds = [
                         and a._Qualifier_key = 2181423''' % StrainUtils.getStrainTempTable(),
                         
         # 1. genotype data related to our selected set of strains
-        '''select g._Genotype_key, mnc.note as allele_pairs
+        '''select g._Genotype_key, mn.note as allele_pairs
                 from %s s,
                         gxd_genotype g,
                         mgi_note mn,
-                        mgi_notechunk mnc,
                         mgi_notetype mnt
                 where s._Strain_key = g._Strain_key
                         and g._Genotype_key = mn._Object_key
                         and mn._MGIType_key = 12
                         and mn._NoteType_key = mnt._NoteType_key
                         and mnt.noteType = 'Combination Type 1'
-                        and mn._Note_key = mnc._Note_key
-                        and mnc.sequenceNum = 1
+                        and mn.sequenceNum = 1
                 order by g._Genotype_key''' % StrainUtils.getStrainTempTable(),
         ]
 

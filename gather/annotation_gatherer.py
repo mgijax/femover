@@ -183,7 +183,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                         vep.stanza,
                         vep.sequencenum,
                         vep.value,
-                        nc.note as display_value
+                        n.note as display_value
                         from voc_evidence ve
                         join %s abt on
                                 abt._annot_key = ve._annot_key
@@ -194,8 +194,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                         left outer join mgi_note n on
                                 n._object_key = vep._evidenceproperty_key
                                 and n._notetype_key = %d
-                        left outer join mgi_notechunk nc on
-                                nc._note_key = n._note_key
                         where ve._evidenceterm_key in (%s)
                                 and vep._propertyterm_key in (%s)
                         order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum
@@ -257,7 +255,7 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                         vep.stanza,
                         vep.sequencenum,
                         vep.value,
-                        nc.note displayValue
+                        n.note displayValue
                         from voc_evidence ve
                         join %s abt on
                                 abt._annot_key = ve._annot_key
@@ -268,8 +266,6 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                         join mgi_note n on
                                 n._object_key = vep._evidenceproperty_key
                                 and n._notetype_key = %s
-                        join mgi_notechunk nc on
-                                nc._note_key = n._note_key
                         where vep._propertyterm_key in (%s)
                         order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum
                 ''' % (BATCH_TEMP_TABLE, 
