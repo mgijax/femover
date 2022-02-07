@@ -16,12 +16,11 @@ TermNoteGatherer = Gatherer.Gatherer
 
 cmds = [
         # 0. start with public comments for GO terms and MP terms
-        '''select tt._Term_key, c.note, 'Comment' as noteType
-                from mgi_notetype t, mgi_note n, voc_term tt, voc_vocab v, mgi_notechunk c
+        '''select tt._Term_key, n.note, 'Comment' as noteType
+                from mgi_notetype t, mgi_note n, voc_term tt, voc_vocab v
                 where t._MGIType_key = 13
                         and t._NoteType_key = n._NoteType_key
                         and n._Object_key = tt._Term_key
-                        and n._Note_key = c._Note_key
                         and tt._Vocab_key = v._Vocab_key
                         and t.noteType = 'Public Vocabulary Term Comment'
                         and v.name in ('GO', 'Mammalian Phenotype', 'Human Phenotype Ontology', 'Disease Ontology') ''',

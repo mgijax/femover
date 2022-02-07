@@ -1328,16 +1328,13 @@ cmds = [
         select ve._annot_key,
                 ve._annotevidence_key,
                 nc.note,
-                sequenceNum,
                 mn._notetype_key
         from voc_evidence ve,
-                mgi_note mn,
-                mgi_notechunk nc
+                mgi_note mn
         where mn._mgitype_key=25
                 and mn._notetype_key in (%s)
                 and ve._annotevidence_key=mn._object_key
-                and nc._note_key=mn._note_key
-        order by ve._annotevidence_key, nc._note_key,nc.sequenceNum
+        order by ve._annotevidence_key, mn._note_key
         '''%(",".join(MP_NOTETYPES)),
         # 3. get header term sequences by genotype
         '''

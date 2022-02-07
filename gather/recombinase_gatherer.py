@@ -958,21 +958,17 @@ cmds = [
         # 1
         # genetic strain/background info by genotype
         #
-        '''select distinct s._Genotype_key, mnc.note, mnc.sequenceNum,
-                t.strain
+        '''select distinct s._Genotype_key, mn.note, t.strain
         from all_cre_cache c,
                 gxd_specimen s,
                 mgi_note mn,
-                mgi_notechunk mnc,
                 gxd_genotype g,
                 prb_strain t
         where c._Assay_key = s._assay_key
                 and s._Genotype_key = mn._Object_key
                 and mn._NoteType_key = 1018
-                and mn._Note_key = mnc._Note_key
                 and s._Genotype_key = g._Genotype_key
-                and g._Strain_key = t._Strain_key
-        order by mnc.sequenceNum''',
+                and g._Strain_key = t._Strain_key'''
 
         # 2
         # assay notes by assay key

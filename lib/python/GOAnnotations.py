@@ -37,15 +37,14 @@ def getContextOfAnnotations(
             vep.stanza,
             vep.sequencenum,
             vep.value,
-            nc.note as display_value
+            n.note as display_value
         from voc_evidence ve
         join %s abt on (abt._annot_key = ve._annot_key
             and abt._AnnotType_key = 1000)
         join voc_evidence_property vep on (vep._annotevidence_key = ve._annotevidence_key)
         join voc_term prop on (prop._term_key = vep._propertyterm_key)
         left outer join mgi_note n on (n._object_key = vep._evidenceproperty_key) and n._notetype_key = %d
-                left outer join mgi_notechunk nc on (nc._note_key = n._note_key)
-                where ve._evidenceterm_key in (%s)
+        where ve._evidenceterm_key in (%s)
                     and vep._propertyterm_key in (%s)
         order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum''' % (
                         tableName,
@@ -112,7 +111,7 @@ def getIsoformsOfAnnotations(
                         vep.stanza,
                         vep.sequencenum,
                         vep.value,
-                        nc.note displayValue
+                        n.note displayValue
                 from voc_evidence ve
                 join %s abt on (abt._annot_key = ve._annot_key
                     and abt._AnnotType_key = 1000)
@@ -120,7 +119,6 @@ def getIsoformsOfAnnotations(
                 join voc_term prop on (prop._term_key = vep._propertyterm_key)
                 join mgi_note n on (n._object_key = vep._evidenceproperty_key
                     and n._notetype_key = %s)
-                join mgi_notechunk nc on (nc._note_key = n._note_key)
                 where vep._propertyterm_key in (%s)
                 order by ve._annot_key, ve._refs_key, vep.stanza, vep.sequencenum
                 ''' % (tableName,

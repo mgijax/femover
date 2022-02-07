@@ -17,12 +17,11 @@ HTExperimentNoteGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-        '''select t._Experiment_key, y.notetype, c.note
-                from %s t, mgi_note n, mgi_notetype y, mgi_notechunk c
+        '''select t._Experiment_key, y.notetype, n.note
+                from %s t, mgi_note n, mgi_notetype y
                 where t._Experiment_key = n._Object_key
                         and n._MGIType_key = %d
                         and n._NoteType_key = y._NoteType_key
-                        and n._Note_key = c._Note_key
                         and y.private = 0
                 order by t._Experiment_key, y.notetype''' % (
                                 experiments.getExperimentTempTable(), C.MGITYPE_EXPERIMENT)

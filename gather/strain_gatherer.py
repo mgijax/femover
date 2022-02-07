@@ -35,7 +35,7 @@ cmds = [
                 group by 1
                 )
                 select distinct s._Strain_key, s.strain, a.accID, st.term as strain_type,
-                        sp.term as species, s.standard, mnc.note as description, case
+                        sp.term as species, s.standard, mn.note as description, case
                                 when ss._Strain_key is null then 0
                                 else 1
                                 end as is_sequenced
@@ -46,7 +46,6 @@ cmds = [
                 left outer join sequenced_strains ss on (s._Strain_key = ss._Strain_key) 
                 left outer join mgi_note mn on (s._Strain_key = mn._Object_key
                         and mn._NoteType_key = 1013)
-                left outer join mgi_notechunk mnc on (mn._Note_key = mnc._Note_key)
                 left outer join acc_accession a on (
                         s._Strain_key = a._Object_key
                         and a._MGIType_key = 10

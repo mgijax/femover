@@ -125,13 +125,12 @@ class MarkerNoteGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mnc.note
-        from mgi_note mn, mgi_notechunk mnc
+        '''select mn._Object_key, mn._Note_key, mn._NoteType_key, mn.note
+        from mgi_note mn
         where mn._MGIType_key = 1
-                and mn._Note_key = mnc._Note_key
                 and exists (select 1 from bib_refs m
                         where m._Refs_key = mn._Object_key)
-        order by mn._Object_key, mn._Note_key, mnc.sequenceNum''',
+        order by mn._Object_key, mn._Note_key''',
         ]
 
 # order of fields (from the query results) to be written to the
