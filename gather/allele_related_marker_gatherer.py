@@ -409,7 +409,7 @@ def getPropertyRows(startAllele, endAllele):
                         and r._Object_key_1 <= %d
                         and r._Object_key_2 = m._Marker_key
                         and m._Marker_Status_key = 1
-                order by r._Relationship_key, c._Note_key, c.sequenceNum''' % (
+                order by r._Relationship_key, n._Note_key''' % (
                         mutationInvolvesKey, expressedComponentKey,
                         startAllele, endAllele)
 
