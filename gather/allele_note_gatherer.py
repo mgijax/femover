@@ -105,7 +105,7 @@ cmds = [
         order by mn._Object_key, mn._Note_key''',
 
         # 1. add in derivation notes
-        '''select a._Allele_key, n._Note_key, nc.sequenceNum, n.note 
+        '''select a._Allele_key, n._Note_key, n.note 
         from all_allele_cellLine a, all_cellline mc, 
                 mgi_note n
         where a._MutantCellLine_key = mc._CellLine_key 
