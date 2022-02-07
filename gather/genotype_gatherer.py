@@ -171,15 +171,13 @@ class GenotypeGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 noteCmd = '''select mn._Object_key as _Genotype_key,
-                        mnc.note
+                        mn.note
                 from mgi_note mn,
-                        mgi_notechunk mnc,
                         mgi_notetype mnt
                 where mn._MGIType_key = 12
                         and mn._NoteType_key = mnt._NoteType_key
                         and mnt.noteType = '%s'
-                        and mn._Note_key = mnc._Note_key
-                order by mn._Object_key, mnc.sequenceNum'''
+                order by mn._Object_key'''
 cmds = [
         # 0. "Combination Type 3" notes for use on allele summary page
         noteCmd % 'Combination Type 3',
