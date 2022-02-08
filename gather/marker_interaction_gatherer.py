@@ -508,7 +508,7 @@ def getPropertyRows(startMarker, endMarker):
                         and t._MGIType_key = 40
                         and r._Object_key_1 >= %d
                         and r._Object_key_1 <= %d
-                order by r._Relationship_key, c._Note_key''' % (
+                order by r._Relationship_key, n._Note_key''' % (
                         interactionKey, startMarker, endMarker)
 
         (cols2, rows2) = dbAgnostic.execute(cmd2)
