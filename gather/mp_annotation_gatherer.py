@@ -418,7 +418,6 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         return self.noteMap
                 cols, rows = self.results[2]
                 cur_note_chunk = ''
-                last_seq = 1
                 last_evidence_key=-1
 
                 # type of note we are building that has not yet been stored
@@ -428,20 +427,19 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                 for row in rows:
                         evidence_key = row[1]
                         note_chunk = row[2]
-                        seq = row[3]
-                        notetype_key = row[4]
-                        if seq <= last_seq:
-                                # we have a new note, we can stop adding chunks, save the previously built note, and start a new one.
-                                full_note = cur_note_chunk.strip()
-                                if full_note:
-                                    self.noteMap.setdefault(last_evidence_key,[]).append((full_note,note_type))
-                                cur_note_chunk = ''
-                                if notetype_key==BS_NOTETYPE:
-                                        # append special label for background sensitivity notes
-                                        cur_note_chunk = 'Background Sensitivity: '
+                        notetype_key = row[3]
+
+                        # we have a new note, we can stop adding chunks, save the previously built note, and start a new one.
+                        full_note = cur_note_chunk.strip()
+                        if full_note:
+                            self.noteMap.setdefault(last_evidence_key,[]).append((full_note,note_type))
+                        cur_note_chunk = ''
+                        if notetype_key==BS_NOTETYPE:
+                            # append special label for background sensitivity notes
+                            cur_note_chunk = 'Background Sensitivity: '
+
                         # combine note chunks, and set the list of notes by mgd evidence key
                         cur_note_chunk = '%s%s'%(cur_note_chunk,note_chunk)
-                        last_seq = seq
                         last_evidence_key=evidence_key
                         note_type = notetype_key
 
@@ -1327,7 +1325,7 @@ cmds = [
         '''
         select ve._annot_key,
                 ve._annotevidence_key,
-                nc.note,
+                mn.note,
                 mn._notetype_key
         from voc_evidence ve,
                 mgi_note mn
