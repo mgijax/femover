@@ -968,7 +968,7 @@ cmds = [
                 and s._Genotype_key = mn._Object_key
                 and mn._NoteType_key = 1018
                 and s._Genotype_key = g._Genotype_key
-                and g._Strain_key = t._Strain_key'''
+                and g._Strain_key = t._Strain_key''',
 
         # 2
         # assay notes by assay key

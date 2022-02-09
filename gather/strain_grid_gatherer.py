@@ -368,7 +368,6 @@ cmds = [
                         and mn._MGIType_key = 12
                         and mn._NoteType_key = mnt._NoteType_key
                         and mnt.noteType = 'Combination Type 1'
-                        and mn.sequenceNum = 1
                 order by g._Genotype_key''' % StrainUtils.getStrainTempTable(),
         ]
 
