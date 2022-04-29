@@ -24,16 +24,18 @@ import Gatherer
 import logger
 import re
 import TagConverter
+import json
 
-# ageTranslation : used to translate an all_cre_cache.age/ageMin/ageMax
-# to the appropriate age/ageMin/ageMax bucket for recombinase display
-ageTranslation = {'e1': [0.0, 8.9],
-             'e2': [8.91, 13.9],
-             'e3': [14.0, 21.0],
-             'p1': [21.01, 42.01],
-             'p2': [42.02, 63.01],
-             'p3': [63.02, 1846.0],
-        };
+# ageBins : used to translate an all_cre_cache.age/ageMin/ageMax
+# to the appropriate age/ageMin/ageMax buckets for recombinase display
+ageBins = [
+    { "name": 'e1', "agemin":0.0,   "agemax":8.9 },
+    { "name": 'e2', "agemin":8.91,  "agemax":13.9 },
+    { "name": 'e3', "agemin":14.0,  "agemax":21.0 },
+    { "name": 'p1', "agemin":21.01, "agemax":42.01 },
+    { "name": 'p2', "agemin":42.02, "agemax":63.01 },
+    { "name": 'p3', "agemin":63.02, "agemax":1846.0 },
+]
 
 ###--- Functions ---###
 
@@ -109,6 +111,35 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #
                 alleleStructureMap = {}
 
+                # init a record of counts for one cell
+                def initCellCounts () :
+                    return {
+                        'd' : 0,    # detected in this structure/system or descendants
+                        'nd' : 0,   # not detected in the structure
+                        'amb' : 0,  # ambiguous in this structure
+                        'ndd': 0,   # not detected (and ambiguous) in descendants
+                    }
+                # init data for a system level row
+                def initAlleleSystemRow (row) :
+                    return {
+                        'row':row,
+                        'cellData':[ initCellCounts() for b in ageBins ],
+                        'e1':'', 'e2':'', 'e3':'',
+                        'p1':'', 'p2':'', 'p3':'',
+                        'image':0
+                    }
+                # init data for a structure level row
+                def initAlleleStructureRow (alleleSysteKey) :
+                    row = initAlleleSystemRow(None)
+                    row.update({
+                        'isPostnatal':0,
+                        'isPostnatalOther':0,
+                        'alleleSystemKey':alleleSystemKey,
+                        'printName':'',
+                        'expressed':0
+                    })
+                    return row
+
                 # query 0 - defines allele / system pairs.  We need to number
                 # these and store them in data set 0
 
@@ -123,6 +154,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 ageMinCol = Gatherer.columnNumber (cols, 'ageMin')
                 ageMaxCol = Gatherer.columnNumber (cols, 'ageMax')
                 expCol = Gatherer.columnNumber (cols, 'expressed')
+                strCol = Gatherer.columnNumber (cols, 'strength')
                 hasImageCol = Gatherer.columnNumber (cols, 'hasImage')
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
 
@@ -153,7 +185,13 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 alleleSystemKey = 0
 
                 #
-                # iterate thru each row of allele/system/structure/age
+                # TODO: iterate through the rows once to find all the structures involved and
+                # their ancestor/descendant relationships. this will be used for rolling up
+                # annotation counts during a second iteration.
+                #
+
+                #
+                # second iteration. iterate thru each row of allele/system/structure/age and tally the counts.
                 #
                 for row in rows:
 
@@ -167,91 +205,61 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         hasImage = row[hasImageCol]
                         printName = structure
                         expressed = row[expCol]
+                        strength = row[strCol]
+                        ambiguous = strength == "Ambiguous"
+
+                        if not allKey in alleleSystemMap:
+                            alleleSystemMap[allKey] = {}
+
+                        if not system in alleleSystemMap[allKey]:
+                            alleleSystemKey = alleleSystemKey + 1
+                            alleleSystemMap[allKey][system] = alleleSystemKey
+                            alleleSystemOtherMap[alleleSystemKey] = initAlleleSystemRow(row)
+                        #
+                        systemCounts = alleleSystemOtherMap[alleleSystemKey]
 
                         #
-                        # alleleSystemMap
+                        if allKey not in alleleStructureMap :
+                                alleleStructureMap[allKey] = {}
+                        if system not in alleleStructureMap[allKey] :
+                                alleleStructureMap[allKey][system] = {}
+                        if structure not in alleleStructureMap[allKey][system] :
+                                alleleStructureMap[allKey][system][structure] = initAlleleStructureRow(alleleSystemKey)
                         #
-                        # if existing allele...
-                        #
-                        if allKey in alleleSystemMap:
-
-                                # if no existing system...
-                                if system not in alleleSystemMap[allKey]:
-
-                                        # update allele_system_key count
-                                        alleleSystemKey = alleleSystemKey + 1
-
-                                        # add new system/new alele_system_key
-                                        alleleSystemMap[allKey][system] = alleleSystemKey
-
-                                        # add new allele_system_key/age values
-                                        alleleSystemOtherMap[alleleSystemKey] = { 
-                                                'row':row,
-                                                'e1':'', 'e2':'', 'e3':'',
-                                                'p1':'', 'p2':'', 'p3':'',
-                                                'image':0}
-
-                        # if new allele, then add new allele + system
-                        else:
-                                # update allele_system_key count
-                                alleleSystemKey = alleleSystemKey + 1
-
-                                # new allele/new system
-                                alleleSystemMap[allKey] = { system : alleleSystemKey }
-
-                                # new allele_system_key/age values
-                                alleleSystemOtherMap[alleleSystemKey] = { 
-                                          'row':row,
-                                          'e1':'', 'e2':'', 'e3':'',
-                                          'p1':'', 'p2':'', 'p3':'',
-                                          'image':0}
+                        structureCounts = alleleStructureMap[allKey][system][structure]
 
                         #
-                        # alleleStructureMap
+                        # TODO: get the structure counts for ancestors of this structure
+                        # that are also in the results
                         #
-                        # if existing allele...
+                                
                         #
-                        if allKey in alleleStructureMap:
-
-                                # if no existing system...
-                                if system not in alleleStructureMap[allKey]:
-                                        alleleStructureMap[allKey][system] = { structure : {
-                                        'e1':'', 'e2':'', 'e3':'',
-                                        'p1':'', 'p2':'', 'p3':'',
-                                        'isPostnatal':0,
-                                        'isPostnatalOther':0,
-                                        'alleleSystemKey':alleleSystemKey,
-                                        'image':0,
-                                        'printName':'',
-                                        'expressed':0}}
-
-                                # if structure...
-                                elif structure not in alleleStructureMap[allKey][system]:
-                                        alleleStructureMap[allKey][system][structure] = {
-                                                'e1':'', 'e2':'', 'e3':'',
-                                                'p1':'', 'p2':'', 'p3':'',
-                                                'isPostnatal':0,
-                                                'isPostnatalOther':0,
-                                                'alleleSystemKey':alleleSystemKey,
-                                                'image':0,
-                                                'printName':'',
-                                                'expressed':0}
-
-                        else:
-                                # new allele/new system/new structure/ages
-                                alleleStructureMap[allKey] = { system : { structure : {
-                                          'e1':'', 'e2':'', 'e3':'',
-                                          'p1':'', 'p2':'', 'p3':'',
-                                          'isPostnatal':0,
-                                          'isPostnatalOther':0,
-                                          'alleleSystemKey':alleleSystemKey,
-                                          'image':0,
-                                          'printName':'',
-                                          'expressed':0}}}
-
+                        # tally the counts
                         #
-                        # process age information
-                        #
+
+                        for binIndex, ageBin in enumerate(ageBins):
+                                ageName = ageBin['name']
+                                ageMinTrans = ageBin['agemin']
+                                ageMaxTrans = ageBin['agemax']
+                                cellDataSystem = systemCounts['cellData'][binIndex]
+                                cellData = structureCounts['cellData'][binIndex]
+
+                                # if result age does not overlap this bin, skip it
+                                if ageMin > ageMaxTrans or ageMax < ageMinTrans:
+                                    continue
+                                # Add to cell counts for this structure (rollup happens below)
+                                if ambiguous:
+                                    cellData['amb'] += 1
+                                    cellDataSystem['ndd'] += 1
+                                    # TODO: rollup
+                                elif expressed:
+                                    cellData['d'] += 1
+                                    cellDataSystem['d'] += 1
+                                    # TODO: rollup
+                                else:
+                                    cellData['nd'] += 1
+                                    cellDataSystem['ndd'] += 1
+                                    # TODO: rollup
 
                         #
                         # if age == 'postnatal adult', assign to 'p3' (Adult)
@@ -260,8 +268,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         #
 
                         if age in ['postnatal adult', 'postnatal']:
-                                alleleStructureMap[allKey][system][structure]['p3'] = row[expCol]
-                                alleleStructureMap[allKey][system][structure]['isPostnatal'] = 1
+                                structureCounts['p3'] = row[expCol]
+                                structureCounts['isPostnatal'] = 1
 
                         #
                         # use translation
@@ -270,43 +278,25 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                                                                 # keep track of age if it contains 'postnatal %'
                                 if age.find('postnatal') >= 0:
-                                        alleleStructureMap[allKey][system][structure]['isPostnatalOther'] = 1
+                                        structureCounts['isPostnatalOther'] = 1
 
-                                # search the ageTranslation translation
-                                for ageName in ageTranslation:
+                                # search the ageBin translations
+                                for ageBin in ageBins:
 
-                                        ageMinTrans = ageTranslation[ageName][0]
-                                        ageMaxTrans = ageTranslation[ageName][1]
+                                        ageName = ageBin['name']
+                                        ageMinTrans = ageBin['agemin']
+                                        ageMaxTrans = ageBin['agemax']
 
                                         #
-                                        # ages may fall within an ageMin/ageMax area
-                                        # if both are outside the box, continue
-                                        # else process
-                                        #
-                                        # ageMin between ageMinTrans and ageMaxTrans
-                                        # ageMax between ageMinTrans and ageMaxTrans
+                                        # Count result in every bin where age ranges overlap
                                         #
 
-                                        if (ageMin >= ageMinTrans and ageMin <= ageMaxTrans) \
-                                                or \
-                                           (ageMax >= ageMinTrans and ageMax <= ageMaxTrans):
+                                        if ageMin <= ageMaxTrans and ageMax >= ageMinTrans :
+                                                if structureCounts[ageName] != 1:
+                                                        structureCounts[ageName] = row[expCol]
 
-                                                # null or 0 : can always be turned on
-                                                # 1 : cannot be turned off
-                                                # that is, 1 trumps
-                
-                                                for ageVal in ['e1', 'e2', 'e3', 'p1', 'p2', 'p3']:
-                                                        if ageName == ageVal and \
-                                                           alleleStructureMap[allKey][system][structure][ageVal] != 1:
-                                                                alleleStructureMap[allKey][system][structure][ageVal] = \
-                                                                                row[expCol]
-
-                                                        #
-                                                        # if the age falls into the 'p3' category
-                                                        # then set isPostnatal = true
-                                                        #
-                                                        if ageName == ageVal and ageName == 'p3':
-                                                                alleleStructureMap[allKey][system][structure]['isPostnatal'] = 1
+                                                if ageName == 'p3':
+                                                        structureCounts['isPostnatal'] = 1
 
                         #
                         # if structure contains a 'postnatal %' but no 'postnatal' value
@@ -317,10 +307,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         #        "postnatal" : p3 on
                         #        "postnatal month 1-2": p3 off
                         #
-                        if alleleStructureMap[allKey][system][structure]['p3'] == 1 \
-                           and alleleStructureMap[allKey][system][structure]['isPostnatalOther'] == 1 \
-                           and alleleStructureMap[allKey][system][structure]['isPostnatal'] == 0:
-                               alleleStructureMap[allKey][system][structure]['p3'] = ''
+                        if structureCounts['p3'] == 1 \
+                           and structureCounts['isPostnatalOther'] == 1 \
+                           and structureCounts['isPostnatal'] == 0:
+                               structureCounts['p3'] = ''
 
                         #
                         # set alleleSystemOtherMap (system) age-value to alleleStructureMap (structure) age-value
@@ -332,22 +322,22 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         # 
                         for ageVal in ['e1', 'e2', 'e3', 'p1', 'p2', 'p3']:
 
-                                if alleleSystemOtherMap[alleleSystemKey][ageVal] != 1 \
-                                   and alleleStructureMap[allKey][system][structure][ageVal] != '':
-                                        alleleSystemOtherMap[alleleSystemKey][ageVal] = \
-                                                alleleStructureMap[allKey][system][structure][ageVal]
+                                if systemCounts[ageVal] != 1 \
+                                   and structureCounts[ageVal] != '':
+                                        systemCounts[ageVal] = \
+                                                structureCounts[ageVal]
 
                         #
                         # set alleleSystemOtherMap:hasImage (system)
                         #
-                        if hasImage == 1 and alleleSystemOtherMap[alleleSystemKey]['image'] == 0:
-                                alleleSystemOtherMap[alleleSystemKey]['image'] = hasImage
+                        if hasImage == 1 and systemCounts['image'] == 0:
+                                systemCounts['image'] = hasImage
 
                         #
                         # set alleleStructureMap:hasImage (
                         #
-                        if hasImage == 1 and alleleStructureMap[allKey][system][structure]['image'] == 0:
-                                alleleStructureMap[allKey][system][structure]['image'] = hasImage
+                        if hasImage == 1 and structureCounts['image'] == 0:
+                                structureCounts['image'] = hasImage
 
                         #
                         # set structure/printName
@@ -397,14 +387,16 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                     alleleSystemOtherMap[allKey]['p1'],
                     alleleSystemOtherMap[allKey]['p2'],
                     alleleSystemOtherMap[allKey]['p3'],
-                    alleleSystemOtherMap[allKey]['image'])
+                    alleleSystemOtherMap[allKey]['image'],
+                    json.dumps(alleleSystemOtherMap[allKey]['cellData']),
+                    )
                         )
 
                 columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
                         'system',
                         'age_e1', 'age_e2', 'age_e3',
                         'age_p1', 'age_p2', 'age_p3',
-                        'has_image']
+                        'has_image', 'cell_data']
 
                 logger.debug ('Found %d allele/system pairs' % alleleSystemKey)
                 logger.debug ('Found %d alleles' % len(alleleData))
@@ -611,7 +603,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 sCols = ['alleleSystemKey','structure','structureSeq',
                          'age_e1', 'age_e2', 'age_e3',
                          'age_p1', 'age_p2', 'age_p3',
-                         'has_image']
+                         'has_image', 'cell_data']
 
                 sRows = []
                 count = 0
@@ -632,7 +624,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                                 alleleStructureMap[allele][system][structure]['p1'],
                                                 alleleStructureMap[allele][system][structure]['p2'],
                                                 alleleStructureMap[allele][system][structure]['p3'],
-                                                alleleStructureMap[allele][system][structure]['image']))
+                                                alleleStructureMap[allele][system][structure]['image'],
+                                                json.dumps(alleleStructureMap[allele][system][structure]['cellData'])
+                                                ))
 
                 logger.debug ('Found %d recombinase_system_structures' % len(sRows))
                 return sCols,sRows 
@@ -944,7 +938,7 @@ cmds = [
         # make sure 'expression' is ordered descending so that the '1' are encountered first
         #
         '''select c._Allele_key, c.accID, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
-                c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, 
+                c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, c.strength,
                 c.hasImage, c.cresystemlabel
         from all_cre_cache c
                 join voc_term_emaps vte on
@@ -1082,7 +1076,7 @@ files = [
                 [ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system',
                         'age_e1', 'age_e2', 'age_e3',
                         'age_p1', 'age_p2', 'age_p3',
-                        'has_image'],
+                        'has_image','cell_data'],
                 'recombinase_allele_system'),
 
         ('recombinase_other_system',
@@ -1131,7 +1125,7 @@ files = [
                 [ Gatherer.AUTO, 'alleleSystemKey', 'structure','structureSeq',
                         'age_e1', 'age_e2', 'age_e3',
                         'age_p1', 'age_p2', 'age_p3',
-                        'has_image' ],
+                        'has_image', 'cell_data' ],
                 'recombinase_system_structure'),
 
         ]

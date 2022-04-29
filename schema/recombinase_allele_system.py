@@ -25,6 +25,7 @@ createStatement = '''CREATE TABLE %s  (
         age_p2                  int             null,
         age_p3                  int             null,
         has_image               int             not null,
+        cell_data               text            not null,
         PRIMARY KEY(allele_system_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -55,6 +56,7 @@ comments = {
                 'age_p2' : 'postnatal age 42.02-63.01',
                 'age_p3' : 'postnatal age 63.02-1846',
                 'has_image' : '1 if this allele has at least one displayable image, 0 if not',
+                'cell_data' : 'JSON string encoding list of counts per age bin',
                 },
         Table.INDEX : {
                 'allele_key' : 'quick lookup by allele key',
