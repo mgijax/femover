@@ -73,6 +73,45 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #       alleleData, columns, out, \
                 #       affectedCols, affected, unaffectedCols, unaffected
 
+                #-----------------------------------------------
+                # Load a lookup table of recombinase system labels and their EMAPA term keys
+                # Why: the ALL_Cre_Cache table contains the recombinase system names but not their
+                # keys, which we need to do rollup of annotation counts.
+                sysLabel2emapaKey = {}
+                cols, rows = self.results[7]
+                sysKeyCol = Gatherer.columnNumber (cols, '_emapa_term_key')
+                sysLabelCol = Gatherer.columnNumber (cols, 'label')
+                for row in rows:
+                    sysLabel2emapaKey[row[sysLabelCol]] = row[sysKeyCol]
+
+
+                #-----------------------------------------------
+                # Load a mapping from EMAPS key to the distinct EMAPA keys of its ancestors
+                emaps2ancestors = {}
+                cols, rows = self.results[8]
+                emapsCol = Gatherer.columnNumber (cols, '_emaps_term_key')
+                emapaCol = Gatherer.columnNumber (cols, '_emapa_term_key')
+                for row in rows:
+                    emapsKey = row[emapsCol]
+                    emapaKey = row[emapaCol]
+                    emaps2ancestors.setdefault(emapsKey, set()).add(emapaKey)
+
+                #-----------------------------------------------
+                # Load mapping from EMAPA term key to dpc age range of that term
+                emapaKey2ages = {}
+                cols, rows = self.results[9]
+                emapaCol = Gatherer.columnNumber (cols, '_emapa_term_key')
+                dpcMinCol = Gatherer.columnNumber (cols, 'dpcmin')
+                dpcMaxCol = Gatherer.columnNumber (cols, 'dpcmax')
+                for row in rows:
+                    emapaKey2ages[row[emapaCol]] = [row[dpcMinCol], row[dpcMaxCol]]
+
+                # returns true iff the specified EMAPA term exists (at all) during the specified age range.
+                def existsAt (emapaKey, ageMin, ageMax):
+                    existsMin, existsMax = emapaKey2ages[emapaKey]
+                    return ageMax >= existsMin and ageMin <= existsMax
+
+                #-----------------------------------------------
                 #
                 # alleleSystemMap[allele key] = {system : allele_system_key}
                 #
@@ -111,36 +150,51 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #
                 alleleStructureMap = {}
 
+                # alleleKey -> emapaKey -> system or structure counts obj
+                allele2counts = {}
+
+                #-----------------------------------------------
+                # Functions for initializing accounting data structures
+                #
                 # init a record of counts for one cell
-                def initCellCounts () :
+                def initCellCounts (allKey, emapaKey, ageBin) :
+                    sv = existsAt(emapaKey, ageBin['agemin'], ageBin['agemax'])
                     return {
                         'd' : 0,    # detected in this structure/system or descendants
                         'nd' : 0,   # not detected in the structure
                         'amb' : 0,  # ambiguous in this structure
-                        'ndd': 0,   # not detected (and ambiguous) in descendants
+                        'ndd': 0,   # not detected (or ambiguous) in descendants
+                        'sv': sv,   # is structure valid for this age range
                     }
+
                 # init data for a system level row
-                def initAlleleSystemRow (row) :
+                def initAlleleSystemRow (allKey, emapaKey, row) :
+                    acounts = allele2counts.setdefault(allKey,{})
+                    cts = acounts.get(emapaKey, None)
+                    if not cts:
+                        cts = [ initCellCounts(allKey, emapaKey, b) for b in ageBins ]
+                        acounts[emapaKey] = cts
                     return {
                         'row':row,
-                        'cellData':[ initCellCounts() for b in ageBins ],
+                        'cellData':cts,
                         'e1':'', 'e2':'', 'e3':'',
                         'p1':'', 'p2':'', 'p3':'',
                         'image':0
                     }
                 # init data for a structure level row
-                def initAlleleStructureRow (alleleSysteKey) :
-                    row = initAlleleSystemRow(None)
-                    row.update({
+                def initAlleleStructureRow (allKey, emapaKey, alleleSystemKey) :
+                    counts = initAlleleSystemRow(allKey, emapaKey, None)
+                    counts.update({
                         'isPostnatal':0,
                         'isPostnatalOther':0,
                         'alleleSystemKey':alleleSystemKey,
                         'printName':'',
                         'expressed':0
                     })
-                    return row
+                    return counts
 
-                # query 0 - defines allele / system pairs.  We need to number
+                #-----------------------------------------------
+                # main query - defines allele / system pairs.  We need to number
                 # these and store them in data set 0
 
                 cols, rows = self.results[0]
@@ -148,6 +202,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 idCol = Gatherer.columnNumber (cols, 'accID')
                 emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
                 structureCol = Gatherer.columnNumber (cols, 'structure')
+                emapaKeyCol = Gatherer.columnNumber (cols, '_emapa_term_key')
                 stageCol = Gatherer.columnNumber (cols, '_stage_key')
                 symCol = Gatherer.columnNumber (cols, 'symbol')
                 ageCol = Gatherer.columnNumber (cols, 'age')
@@ -157,6 +212,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 strCol = Gatherer.columnNumber (cols, 'strength')
                 hasImageCol = Gatherer.columnNumber (cols, 'hasImage')
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
+                assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
 
                 #
                 # alleleData: dictonary of unique allele id:symbol for use in other functions
@@ -185,28 +241,32 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 alleleSystemKey = 0
 
                 #
-                # TODO: iterate through the rows once to find all the structures involved and
-                # their ancestor/descendant relationships. this will be used for rolling up
-                # annotation counts during a second iteration.
+                # first iteration.  Initialize count data structures for all the rows.
+                # create index of emapaKey -> counts for that row
                 #
-
+                # P.S. Remember that rows returned by the query are annotations to EMAPS terms,
+                # while rows in the result are at the EMAPA level. I.e., there is an implicit rollup
+                # of EMAPS annotations to EMAPA terms. Then there is the additional (explicit) rollup
+                # to EMAPA ancestors.
                 #
-                # second iteration. iterate thru each row of allele/system/structure/age and tally the counts.
+                # P.P.S. Also remember that each row of the ALL_Cre_Cache table is represented once for each
+                # recombinase system the row's structure falls under.
                 #
                 for row in rows:
-
                         allKey = row[keyCol]
-                        system = row[systemCol]
-                        structure = row[structureCol]
-                        emapsKey = row[emapsKeyCol]
-                        age = row[ageCol]
-                        ageMin = row[ageMinCol]
-                        ageMax = row[ageMaxCol]
-                        hasImage = row[hasImageCol]
-                        printName = structure
-                        expressed = row[expCol]
-                        strength = row[strCol]
-                        ambiguous = strength == "Ambiguous"
+                        structure = row[structureCol] # name of the annotated structure
+                        emapsKey = row[emapsKeyCol]   # EMAPS key of the annotated structure
+                        emapaKey = row[emapaKeyCol]   # EMAPA key corresp to the EMAPS key
+                        system = row[systemCol]       # name of cre system for the annotated structure
+                        systemKey = sysLabel2emapaKey[system] # emapa key of the system
+
+                        # emapaDpcMin, emapaDpcMax = emapaKey2ages[emapaKey]
+                        # ageMinTrans <= emapaDpcMax and ageMaxTrans >= emapaDpcMin
+
+                        #
+                        # Set flag: this is a "cre system row" if the annotated structure's EMAPA
+                        # key matches the systems's key.
+                        isSystemRow = emapaKey == systemKey
 
                         if not allKey in alleleSystemMap:
                             alleleSystemMap[allKey] = {}
@@ -214,136 +274,92 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         if not system in alleleSystemMap[allKey]:
                             alleleSystemKey = alleleSystemKey + 1
                             alleleSystemMap[allKey][system] = alleleSystemKey
-                            alleleSystemOtherMap[alleleSystemKey] = initAlleleSystemRow(row)
-                        #
+                            alleleSystemOtherMap[alleleSystemKey] = initAlleleSystemRow(allKey, systemKey, row)
+
+                        if not isSystemRow:
+                            if allKey not in alleleStructureMap :
+                                    alleleStructureMap[allKey] = {}
+                            if system not in alleleStructureMap[allKey] :
+                                    alleleStructureMap[allKey][system] = {}
+                            if structure not in alleleStructureMap[allKey][system] :
+                                    alleleStructureMap[allKey][system][structure] \
+                                        = initAlleleStructureRow(allKey, emapaKey, alleleSystemKey)
+                                    alleleStructureMap[allKey][system][structure]['printName'] = structure
+                # end for
+
+
+                #
+                # second iteration. iterate thru each row of allele/system/structure/age and tally the counts.
+                #
+                tallied = set()
+                for row in rows:
+
+                        allKey = row[keyCol]          # allele key
+                        allId = row[idCol]            # MGI id of allele
+                        structure = row[structureCol] # name of the annotated structure
+                        emapsKey = row[emapsKeyCol]   # EMAPS key of the annotated structure
+                        emapaKey = row[emapaKeyCol]   # EMAPA key corresp to the EMAPS key
+                        system = row[systemCol]       # name of cre system for the annotated structure
+                        systemKey = sysLabel2emapaKey[system] # emapa key of the system
+                        age = row[ageCol]
+                        ageMin = row[ageMinCol]
+                        ageMax = row[ageMaxCol]
+                        hasImage = row[hasImageCol]
+                        printName = structure
+                        expressed = row[expCol]
+                        strength = row[strCol]
+                        assayKey = row[assayKeyCol]
+                        ambiguous = strength == "Ambiguous"
+                        isSystemRow = emapaKey == systemKey
+
+                        alleleSystemKey = alleleSystemMap[allKey][system]
                         systemCounts = alleleSystemOtherMap[alleleSystemKey]
 
-                        #
-                        if allKey not in alleleStructureMap :
-                                alleleStructureMap[allKey] = {}
-                        if system not in alleleStructureMap[allKey] :
-                                alleleStructureMap[allKey][system] = {}
-                        if structure not in alleleStructureMap[allKey][system] :
-                                alleleStructureMap[allKey][system][structure] = initAlleleStructureRow(alleleSystemKey)
-                        #
-                        structureCounts = alleleStructureMap[allKey][system][structure]
+                        if isSystemRow:
+                            structureCounts = systemCounts
+                        else:
+                            structureCounts = alleleStructureMap[allKey][system][structure]
+
+                        # Rollup helper function. For all the ancestor rows of the current row, bump the count
+                        # of the specified field (e,g, 'd', or 'ndd') in the specified column
+                        def rollup (binIndex,field) :
+                            ancestorKeys = emaps2ancestors.get(emapsKey, [])
+                            for emapaKey in ancestorKeys:
+                                counts = allele2counts[allKey].get(emapaKey, None)
+                                # not every ancestor is present in the results...
+                                if counts:
+                                    counts[binIndex][field] += 1
 
                         #
-                        # TODO: get the structure counts for ancestors of this structure
-                        # that are also in the results
+                        # tally the counts. 
+                        # Unfortunately rows in ALL_Cre_Cache do not exactly correspond to expression results.
+                        # The same underlying expression result may be represented in multiple rows of the cache table.
+                        # The main source of repetition is that a structure may be under ore than one system.
+                        # Create composite keys. 
+                        # Then, only tally each result once.
                         #
-                                
-                        #
-                        # tally the counts
-                        #
-
-                        for binIndex, ageBin in enumerate(ageBins):
+                        key = (allKey,emapsKey,age,expressed,strength,assayKey)
+                        if not key in tallied:
+                            tallied.add(key)
+                            for binIndex, ageBin in enumerate(ageBins):
                                 ageName = ageBin['name']
                                 ageMinTrans = ageBin['agemin']
                                 ageMaxTrans = ageBin['agemax']
-                                cellDataSystem = systemCounts['cellData'][binIndex]
                                 cellData = structureCounts['cellData'][binIndex]
-
+                                
                                 # if result age does not overlap this bin, skip it
                                 if ageMin > ageMaxTrans or ageMax < ageMinTrans:
                                     continue
                                 # Add to cell counts for this structure (rollup happens below)
                                 if ambiguous:
                                     cellData['amb'] += 1
-                                    cellDataSystem['ndd'] += 1
-                                    # TODO: rollup
+                                    rollup(binIndex, 'ndd')
                                 elif expressed:
                                     cellData['d'] += 1
-                                    cellDataSystem['d'] += 1
-                                    # TODO: rollup
+                                    rollup(binIndex, 'd')
                                 else:
                                     cellData['nd'] += 1
-                                    cellDataSystem['ndd'] += 1
-                                    # TODO: rollup
-
-                        #
-                        # if age == 'postnatal adult', assign to 'p3' (Adult)
-                        # if age == 'postnatal', assign to 'p3' (Postnatal-not specified) 
-                        # else use translation
-                        #
-
-                        if age in ['postnatal adult', 'postnatal']:
-                                structureCounts['p3'] = row[expCol]
-                                structureCounts['isPostnatal'] = 1
-
-                        #
-                        # use translation
-                        #
-                        else:
-
-                                                                # keep track of age if it contains 'postnatal %'
-                                if age.find('postnatal') >= 0:
-                                        structureCounts['isPostnatalOther'] = 1
-
-                                # search the ageBin translations
-                                for ageBin in ageBins:
-
-                                        ageName = ageBin['name']
-                                        ageMinTrans = ageBin['agemin']
-                                        ageMaxTrans = ageBin['agemax']
-
-                                        #
-                                        # Count result in every bin where age ranges overlap
-                                        #
-
-                                        if ageMin <= ageMaxTrans and ageMax >= ageMinTrans :
-                                                if structureCounts[ageName] != 1:
-                                                        structureCounts[ageName] = row[expCol]
-
-                                                if ageName == 'p3':
-                                                        structureCounts['isPostnatal'] = 1
-
-                        #
-                        # if structure contains a 'postnatal %' but no 'postnatal' value
-                        #       then turn off the 'p3'/postnatal-not specified value
-                        #
-                        # example:
-                        #        "postnatal", "postnatal month 1-2" : p3 on
-                        #        "postnatal" : p3 on
-                        #        "postnatal month 1-2": p3 off
-                        #
-                        if structureCounts['p3'] == 1 \
-                           and structureCounts['isPostnatalOther'] == 1 \
-                           and structureCounts['isPostnatal'] == 0:
-                               structureCounts['p3'] = ''
-
-                        #
-                        # set alleleSystemOtherMap (system) age-value to alleleStructureMap (structure) age-value
-                        # that is, push the structure age-values up-to the system level
-                        #
-                        # an existing 1 cannot be overriden
-                        # an existing 0 cannot be overriden
-                        # 1 trumps 0 which trumps ''
-                        # 
-                        for ageVal in ['e1', 'e2', 'e3', 'p1', 'p2', 'p3']:
-
-                                if systemCounts[ageVal] != 1 \
-                                   and structureCounts[ageVal] != '':
-                                        systemCounts[ageVal] = \
-                                                structureCounts[ageVal]
-
-                        #
-                        # set alleleSystemOtherMap:hasImage (system)
-                        #
-                        if hasImage == 1 and systemCounts['image'] == 0:
-                                systemCounts['image'] = hasImage
-
-                        #
-                        # set alleleStructureMap:hasImage (
-                        #
-                        if hasImage == 1 and structureCounts['image'] == 0:
-                                structureCounts['image'] = hasImage
-
-                        #
-                        # set structure/printName
-                        # this does not really need to be repeated...
-                        #
-                        alleleStructureMap[allKey][system][structure]['printName'] = printName
+                                    rollup(binIndex, 'ndd')
 
                         #
                         # affected
@@ -365,7 +381,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         affected.append (triple)
                                         
                         #
-                        # alleleData: dictonary of unique allele id:symbol 
+                        # alleleData: maps allele key to allele (accID, symbol) 
                         # for use in other functions
                         #
                         if allKey not in alleleData:
@@ -937,9 +953,11 @@ cmds = [
         # all allele / system / structure / age information
         # make sure 'expression' is ordered descending so that the '1' are encountered first
         #
-        '''select c._Allele_key, c.accID, c._stage_key, vte._term_key as _emaps_key, c.emapaterm as structure,
+        '''select c._Allele_key, c.accID,
+                c._stage_key, vte._term_key as _emaps_key,
+                c._emapa_term_key, c.emapaterm as structure,
                 c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, c.strength,
-                c.hasImage, c.cresystemlabel
+                c.hasImage, c.cresystemlabel, c._assay_key
         from all_cre_cache c
                 join voc_term_emaps vte on
                         vte._emapa_term_key = c._emapa_term_key
@@ -1067,6 +1085,54 @@ cmds = [
                 and g._Result_key = r._Result_key
                 and r._Specimen_key = s._Specimen_key
                 and s._Assay_key = c._Assay_key''',
+
+        # 7
+        # Need a lookup table of names/_emapa_term_keys for all recombinase systems.
+        #
+        '''
+        select 
+            sm._object_key as _emapa_term_key,
+            case when sm.label is not null then sm.label else ea.term end as label
+        from
+            mgi_setmember sm,
+            voc_term ea
+        where sm._set_key = 1047
+        and sm._object_key = ea._term_key
+        ''',
+
+        # 8
+        # In order to roll up annotation counts, need EMAP dag closure info.
+        # Need mapping from EMAPS key to the EMAPA keys of all ancestors.
+        # Follow path: EMAPS term -> EMAPS ancestors -> corresp EMAPA terms
+        '''
+        select
+            es._term_key as _emaps_term_key,
+            esa._emapa_term_key
+        from
+            voc_term_emaps es,
+            dag_closure dc,
+            voc_term_emaps esa
+        where
+            es._term_key = dc._descendentobject_key
+            and dc._ancestorobject_key = esa._term_key
+        ''',
+
+        # 9
+        # Need age range for every emapa term (so we can draw those little open circles)
+        #
+        '''
+        select
+            vta._term_key as _emapa_term_key,
+            ts1.dpcmin,
+            ts2.dpcmax
+        from
+            voc_term_emapa vta,
+            gxd_theilerstage ts1,
+            gxd_theilerstage ts2
+        where
+            vta.startstage = ts1._stage_key
+            and vta.endstage = ts2._stage_key
+        ''',
         ]
 
 # data about files to be written; for each:  (filename prefix, list of field
