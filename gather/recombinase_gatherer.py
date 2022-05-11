@@ -36,6 +36,18 @@ ageBins = [
     { "name": 'p2', "agemin":42.02, "agemax":63.01 },
     { "name": 'p3', "agemin":63.02, "agemax":1846.0 },
 ]
+'''
+ageBins = [
+    { "name": 'e1', "agemin":0,  "agemax":9,    "label":"" },
+    { "name": 'e2', "agemin":9,  "agemax":14,   "label":"" },
+    { "name": 'e3', "agemin":14, "agemax":21,   "label":"" },
+    { "name": 'p1', "agemin":21, "agemax":24,   "label":"" },
+    { "name": 'p2', "agemin":24, "agemax":42,   "label":"" },
+    { "name": 'p3', "agemin":42, "agemax":63,   "label":"" },
+    { "name": 'p4', "agemin":63, "agemax":5000, "label":"" },
+    { "name": 'p5', "agemin":21, "agemax":5000, "label":"" },
+]
+'''
 
 ###--- Functions ---###
 
@@ -78,11 +90,13 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # Why: the ALL_Cre_Cache table contains the recombinase system names but not their
                 # keys, which we need to do rollup of annotation counts.
                 sysLabel2emapaKey = {}
+                emapaKey2sysLabel = {}
                 cols, rows = self.results[7]
                 sysKeyCol = Gatherer.columnNumber (cols, '_emapa_term_key')
                 sysLabelCol = Gatherer.columnNumber (cols, 'label')
                 for row in rows:
                     sysLabel2emapaKey[row[sysLabelCol]] = row[sysKeyCol]
+                    emapaKey2sysLabel[row[sysKeyCol]] = row[sysLabelCol]
 
 
                 #-----------------------------------------------
@@ -213,6 +227,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 hasImageCol = Gatherer.columnNumber (cols, 'hasImage')
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
                 assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
+                resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
 
                 #
                 # alleleData: dictonary of unique allele id:symbol for use in other functions
@@ -311,6 +326,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         assayKey = row[assayKeyCol]
                         ambiguous = strength == "Ambiguous"
                         isSystemRow = emapaKey == systemKey
+                        resultKey = row[resultKeyCol]
 
                         alleleSystemKey = alleleSystemMap[allKey][system]
                         systemCounts = alleleSystemOtherMap[alleleSystemKey]
@@ -320,17 +336,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         else:
                             structureCounts = alleleStructureMap[allKey][system][structure]
 
-                        # Rollup helper function. For all the ancestor rows of the current row, bump the count
-                        # of the specified field (e,g, 'd', or 'ndd') in the specified column
-                        def rollup (binIndex,field) :
-                            ancestorKeys = emaps2ancestors.get(emapsKey, [])
-                            for emapaKey in ancestorKeys:
-                                counts = allele2counts[allKey].get(emapaKey, None)
-                                # not every ancestor is present in the results...
-                                if counts:
-                                    counts[binIndex][field] += 1
-
-                        #
+                        # The same result will appear once for every system the structure belongs to.
+                        # When we tally the counts, only tally for the struture once.
+                        key = (resultKey, structure)
+                        seen = key in tallied
+                        tallied.add(key)
+                        
                         # tally the counts. 
                         # Unfortunately rows in ALL_Cre_Cache do not exactly correspond to expression results.
                         # The same underlying expression result may be represented in multiple rows of the cache table.
@@ -338,28 +349,27 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         # Create composite keys. 
                         # Then, only tally each result once.
                         #
-                        key = (allKey,emapsKey,age,expressed,strength,assayKey)
-                        if not key in tallied:
-                            tallied.add(key)
-                            for binIndex, ageBin in enumerate(ageBins):
+                        # key = (allKey,emapsKey,age,expressed,strength,assayKey)
+                        for binIndex, ageBin in enumerate(ageBins):
                                 ageName = ageBin['name']
                                 ageMinTrans = ageBin['agemin']
                                 ageMaxTrans = ageBin['agemax']
                                 cellData = structureCounts['cellData'][binIndex]
+                                systemCellData = systemCounts['cellData'][binIndex]
                                 
                                 # if result age does not overlap this bin, skip it
                                 if ageMin > ageMaxTrans or ageMax < ageMinTrans:
                                     continue
                                 # Add to cell counts for this structure (rollup happens below)
                                 if ambiguous:
-                                    cellData['amb'] += 1
-                                    rollup(binIndex, 'ndd')
+                                    if not seen: cellData['amb'] += 1
+                                    if not isSystemRow: systemCellData['ndd'] += 1
                                 elif expressed:
-                                    cellData['d'] += 1
-                                    rollup(binIndex, 'd')
+                                    if not seen: cellData['d'] += 1
+                                    if not isSystemRow: systemCellData['d'] += 1
                                 else:
-                                    cellData['nd'] += 1
-                                    rollup(binIndex, 'ndd')
+                                    if not seen: cellData['nd'] += 1
+                                    if not isSystemRow: systemCellData['ndd'] += 1
 
                         #
                         # affected
@@ -392,21 +402,21 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #
                 # write all of the alleleSystemOther information into the output file
                 #
-                for allKey in list(alleleSystemOtherMap.keys()):
-
-                        out.append ( (allKey, alleleSystemOtherMap[allKey]['row'][keyCol],
-                    alleleSystemOtherMap[allKey]['row'][idCol],
-                    alleleSystemOtherMap[allKey]['row'][systemCol],
-                    alleleSystemOtherMap[allKey]['e1'],
-                    alleleSystemOtherMap[allKey]['e2'],
-                    alleleSystemOtherMap[allKey]['e3'],
-                    alleleSystemOtherMap[allKey]['p1'],
-                    alleleSystemOtherMap[allKey]['p2'],
-                    alleleSystemOtherMap[allKey]['p3'],
-                    alleleSystemOtherMap[allKey]['image'],
-                    json.dumps(alleleSystemOtherMap[allKey]['cellData']),
-                    )
-                        )
+                for aSysKey,aSys in alleleSystemOtherMap.items():
+                    out.append ( (
+                        aSysKey,
+                        aSys['row'][keyCol],
+                        aSys['row'][idCol],
+                        aSys['row'][systemCol],
+                        aSys['e1'],
+                        aSys['e2'],
+                        aSys['e3'],
+                        aSys['p1'],
+                        aSys['p2'],
+                        aSys['p3'],
+                        aSys['image'],
+                        json.dumps(aSys['cellData']),
+                    ) )
 
                 columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
                         'system',
@@ -631,6 +641,16 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                 count = 0
                                 for structure in sorted_list:
                                         count += 1
+                                        # if system is embryo-other or mouse-other, "zero out" cells that aren't valid 
+                                        cellData = alleleStructureMap[allele][system][structure]['cellData']
+                                        if system in ['embryo-other', 'mouse-other']:
+                                            # make a deep copy
+                                            cellData = list(map(lambda d: d.copy(), cellData))
+                                            # zero out cells that don't apply
+                                            rng = [0,2] if system == "mouse-other" else [3,5]
+                                            for i in range(rng[0], rng[1]+1):
+                                                cellData[i]['d'] = cellData[i]['nd'] = cellData[i]['ndd'] = cellData[i]['amb']  = 0
+                                        #
                                         sRows.append((alleleStructureMap[allele][system][structure]['alleleSystemKey'],
                                                 alleleStructureMap[allele][system][structure]['printName'],
                                                 count,
@@ -641,7 +661,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                                 alleleStructureMap[allele][system][structure]['p2'],
                                                 alleleStructureMap[allele][system][structure]['p3'],
                                                 alleleStructureMap[allele][system][structure]['image'],
-                                                json.dumps(alleleStructureMap[allele][system][structure]['cellData'])
+                                                json.dumps(cellData)
                                                 ))
 
                 logger.debug ('Found %d recombinase_system_structures' % len(sRows))
@@ -957,11 +977,25 @@ cmds = [
                 c._stage_key, vte._term_key as _emaps_key,
                 c._emapa_term_key, c.emapaterm as structure,
                 c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, c.strength,
-                c.hasImage, c.cresystemlabel, c._assay_key
+                c.hasImage, c.cresystemlabel, c._assay_key, r._result_key, s.specimenlabel
         from all_cre_cache c
                 join voc_term_emaps vte on
                         vte._emapa_term_key = c._emapa_term_key
                         and vte._stage_key = c._stage_key
+                join gxd_assay a on
+                    a._assay_key = c._assay_key
+                join gxd_specimen s on
+                    s._assay_key = a._assay_key
+                    and s.age = c.age
+                join gxd_insituresult r on
+                    r._specimen_key = s._specimen_key
+                join gxd_iSresultstructure rs on
+                    rs._result_key = r._result_key
+                    and rs._emapa_term_key = c._emapa_term_key
+                    and rs._stage_key = c._stage_key
+                join gxd_strength gxs on
+                    gxs._strength_key = r._strength_key
+                    and gxs.strength = c.strength
         where c.cresystemlabel is not null
             and c.ageMin is not null
             and c.ageMax is not null
