@@ -29,25 +29,22 @@ import json
 # ageBins : used to translate an all_cre_cache.age/ageMin/ageMax
 # to the appropriate age/ageMin/ageMax buckets for recombinase display
 ageBins = [
-    { "name": 'e1', "agemin":0.0,   "agemax":8.9 },
-    { "name": 'e2', "agemin":8.91,  "agemax":13.9 },
-    { "name": 'e3', "agemin":14.0,  "agemax":21.0 },
-    { "name": 'p1', "agemin":21.01, "agemax":42.01 },
-    { "name": 'p2', "agemin":42.02, "agemax":63.01 },
-    { "name": 'p3', "agemin":63.02, "agemax":1846.0 },
+    { "index": 0, "name": 'e1', "agemin":0,  "agemax":8.99,    "label":"E0-8.9" },
+    { "index": 1, "name": 'e2', "agemin":9,  "agemax":13.99,   "label":"E9-13.9" },
+    { "index": 2, "name": 'e3', "agemin":14, "agemax":21.0,    "label":"E14-21" }, 
+    { "index": 3, "name": 'p1', "agemin":21.01, "agemax":24.99,"label":"P0-3.9" },
+
+    { "index": 4, "name": 'p2', "agemin":25, "agemax":42.99,   "label":"P4-21.9" },
+    { "index": 5, "name": 'p3', "agemin":43, "agemax":63.99,   "label":"P22-42.9" },
+    { "index": 6, "name": 'p4', "agemin":64, "agemax":1864,    "label":"P >43" },
+    # special-case bin for annotations where age = "postnatal" with no further info
+    { "index": 7, "name": 'p5', "agemin":21.01, "agemax":1864, "label":"Postnatal" },
 ]
-'''
-ageBins = [
-    { "name": 'e1', "agemin":0,  "agemax":9,    "label":"" },
-    { "name": 'e2', "agemin":9,  "agemax":14,   "label":"" },
-    { "name": 'e3', "agemin":14, "agemax":21,   "label":"" },
-    { "name": 'p1', "agemin":21, "agemax":24,   "label":"" },
-    { "name": 'p2', "agemin":24, "agemax":42,   "label":"" },
-    { "name": 'p3', "agemin":42, "agemax":63,   "label":"" },
-    { "name": 'p4', "agemin":63, "agemax":5000, "label":"" },
-    { "name": 'p5', "agemin":21, "agemax":5000, "label":"" },
-]
-'''
+
+# Special case the following ages, assign to specific bins:
+#       postnatal newborn -> 'P0-3.9'
+#       postnatal adult -> 'P >43'
+#       postnatal -> 'Postnatal'
 
 ###--- Functions ---###
 
@@ -343,33 +340,37 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         tallied.add(key)
                         
                         # tally the counts. 
-                        # Unfortunately rows in ALL_Cre_Cache do not exactly correspond to expression results.
-                        # The same underlying expression result may be represented in multiple rows of the cache table.
-                        # The main source of repetition is that a structure may be under ore than one system.
-                        # Create composite keys. 
-                        # Then, only tally each result once.
-                        #
-                        # key = (allKey,emapsKey,age,expressed,strength,assayKey)
-                        for binIndex, ageBin in enumerate(ageBins):
-                                ageName = ageBin['name']
-                                ageMinTrans = ageBin['agemin']
-                                ageMaxTrans = ageBin['agemax']
-                                cellData = structureCounts['cellData'][binIndex]
-                                systemCellData = systemCounts['cellData'][binIndex]
+                        # first decide which bin(s) the result tallies under
+
+                        binIndexes = []
+                        if age == "postnatal":
+                            binIndexes = [7]
+                        elif age == "postnatal newborn":
+                            binIndexes = [3]
+                        elif age == "postnatal adult":
+                            binIndexes = [6]
+                        else:
+                            # check each age bin (except 'Postnatal') for overlap
+                            for binIndex, ageBin in enumerate(ageBins[:-1]):
+                                binMin = ageBin['agemin']
+                                binMax = ageBin['agemax']
+                                if ageMin <= binMax and ageMax >= binMin:
+                                    binIndexes.append(binIndex)
                                 
-                                # if result age does not overlap this bin, skip it
-                                if ageMin > ageMaxTrans or ageMax < ageMinTrans:
-                                    continue
-                                # Add to cell counts for this structure (rollup happens below)
-                                if ambiguous:
-                                    if not seen: cellData['amb'] += 1
-                                    if not isSystemRow: systemCellData['ndd'] += 1
-                                elif expressed:
-                                    if not seen: cellData['d'] += 1
-                                    if not isSystemRow: systemCellData['d'] += 1
-                                else:
-                                    if not seen: cellData['nd'] += 1
-                                    if not isSystemRow: systemCellData['ndd'] += 1
+                        # Now do the tally in each bin
+                        for binIndex in binIndexes:
+                            cellData = structureCounts['cellData'][binIndex]
+                            systemCellData = systemCounts['cellData'][binIndex]
+                            # Add to cell counts for this structure (rollup happens below)
+                            if ambiguous:
+                                if not seen: cellData['amb'] += 1
+                                if not isSystemRow: systemCellData['ndd'] += 1
+                            elif expressed:
+                                if not seen: cellData['d'] += 1
+                                if not isSystemRow: systemCellData['d'] += 1
+                            else:
+                                if not seen: cellData['nd'] += 1
+                                if not isSystemRow: systemCellData['ndd'] += 1
 
                         #
                         # affected
