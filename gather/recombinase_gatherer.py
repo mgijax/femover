@@ -130,17 +130,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 #
                 # alleleSystemOtherMap[allele_system_key] = 
-                #       {'e1': '', 'e2':''..., 'p3':'', 'image':''}
-                # for a given age range (e1...p3), set the value
-                #       '' = null
-                #       0 = not affected/not expressed
-                #       1 = affected/expressed
-                #
-                # for a given image, set the value
-                #       0 = does not have image
-                #       1 = has image
-                #
-                # alleleSystemOtherMap should realy be merged with alleleSystemMap
+                #       {'cellData': ''}
+                # alleleSystemOtherMap should really be merged with alleleSystemMap
                 # however alleleSystemMap has many dependencies
                 # and re-organizing this dictionary will require changes
                 # to other functions.  so, if I have more time..I will do this
@@ -152,10 +143,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # Structure information for a given allele/system
                 #
                 # alleleStructureMap[key][system] = { structure : {
-                #       'e1':'', 'e2':'', 'e3':'',
-                #       'p1':'', 'p2':'', 'p3':'',
+                #       'cellData':'',
                 #       'alleleSystemKey': the allele/system key (see alleleSystemMap)
-                #       'image':0,
                 #       'printName':'',
                 #       'expressed':0,
                 #
@@ -188,8 +177,6 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                     return {
                         'row':row,
                         'cellData':cts,
-                        'e1':'', 'e2':'', 'e3':'',
-                        'p1':'', 'p2':'', 'p3':'',
                         'image':0
                     }
                 # init data for a structure level row
@@ -409,21 +396,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         aSys['row'][keyCol],
                         aSys['row'][idCol],
                         aSys['row'][systemCol],
-                        aSys['e1'],
-                        aSys['e2'],
-                        aSys['e3'],
-                        aSys['p1'],
-                        aSys['p2'],
-                        aSys['p3'],
-                        aSys['image'],
                         json.dumps(aSys['cellData']),
                     ) )
 
-                columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID',
-                        'system',
-                        'age_e1', 'age_e2', 'age_e3',
-                        'age_p1', 'age_p2', 'age_p3',
-                        'has_image', 'cell_data']
+                columns = [ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system', 'cell_data']
 
                 logger.debug ('Found %d allele/system pairs' % alleleSystemKey)
                 logger.debug ('Found %d alleles' % len(alleleData))
@@ -627,10 +603,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #       'recombinase_system_structure' columns/rows
                 # Returns: columns, rows
 
-                sCols = ['alleleSystemKey','structure','structureSeq',
-                         'age_e1', 'age_e2', 'age_e3',
-                         'age_p1', 'age_p2', 'age_p3',
-                         'has_image', 'cell_data']
+                sCols = ['alleleSystemKey','structure','structureSeq', 'cell_data']
 
                 sRows = []
                 count = 0
@@ -655,13 +628,6 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         sRows.append((alleleStructureMap[allele][system][structure]['alleleSystemKey'],
                                                 alleleStructureMap[allele][system][structure]['printName'],
                                                 count,
-                                                alleleStructureMap[allele][system][structure]['e1'],
-                                                alleleStructureMap[allele][system][structure]['e2'],
-                                                alleleStructureMap[allele][system][structure]['e3'],
-                                                alleleStructureMap[allele][system][structure]['p1'],
-                                                alleleStructureMap[allele][system][structure]['p2'],
-                                                alleleStructureMap[allele][system][structure]['p3'],
-                                                alleleStructureMap[allele][system][structure]['image'],
                                                 json.dumps(cellData)
                                                 ))
 
@@ -1174,10 +1140,7 @@ cmds = [
 #       names in order to be written, name of table to be loaded)
 files = [
         ('recombinase_allele_system',
-                [ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system',
-                        'age_e1', 'age_e2', 'age_e3',
-                        'age_p1', 'age_p2', 'age_p3',
-                        'has_image','cell_data'],
+                [ 'alleleSystemKey', 'alleleKey', 'alleleID', 'system', 'cell_data'],
                 'recombinase_allele_system'),
 
         ('recombinase_other_system',
@@ -1224,9 +1187,7 @@ files = [
 
         ('recombinase_system_structure',
                 [ Gatherer.AUTO, 'alleleSystemKey', 'structure','structureSeq',
-                        'age_e1', 'age_e2', 'age_e3',
-                        'age_p1', 'age_p2', 'age_p3',
-                        'has_image', 'cell_data' ],
+                        'cell_data' ],
                 'recombinase_system_structure'),
 
         ]

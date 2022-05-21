@@ -18,13 +18,6 @@ createStatement = '''CREATE TABLE %s  (
         allele_system_key       int             not null,
         structure               text            null,
         structure_seq           int             null,
-        age_e1                  int             null,
-        age_e2                  int             null,
-        age_e3                  int             null,
-        age_p1                  int             null,
-        age_p2                  int             null,
-        age_p3                  int             null,
-        has_image               int             not null,
         cell_data               text            not null,
         PRIMARY KEY(system_structure_key))''' % tableName
 
@@ -47,13 +40,6 @@ comments = {
                 'system_structure_key' : 'unique key for the system_structure pair',
                 'allele_system_key' : 'unique key for the allele/system pair',
                 'structure' : 'name of the anatomical structure',
-                'age_e1' : 'embryonic age 0-8.9',
-                'age_e2' : 'embryonic age 8.91-13.9',
-                'age_e3' : 'embryonic age 14.0-21.0',
-                'age_p1' : 'postnatal age 21.01-42.01',
-                'age_p2' : 'postnatal age 42.02-63.01',
-                'age_p3' : 'postnatal age 63.02-1846',
-                'has_image' : '1 if this allele has at least one displayable image, 0 if not',
                 'cell_data' : 'JSON string encoding list of counts per age bin',
                 },
         Table.INDEX : {
