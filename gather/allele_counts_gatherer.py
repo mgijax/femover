@@ -19,6 +19,7 @@ error = 'allele_counts_gatherer.error'
 MarkerCount = 'markerCount'
 ReferenceCount = 'referenceCount'
 ExpressionCount = 'expressionAssayResultCount'
+RecombinaseResultCount = 'recombinaseResultCount'
 ImageCount = 'imageCount'
 MutationInvolvesCount = 'mutationInvolvesMarkerCount'
 
@@ -51,6 +52,7 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
                         (self.results[2], ReferenceCount, 'refCount'),
                         (self.results[3], ExpressionCount, 'expCount'),
                         (self.results[4], MutationInvolvesCount, 'miCount'),
+                        (self.results[6], RecombinaseResultCount, 'recResCount'),
                         ]
 
                 for (r, countName, colName) in toAdd:
@@ -194,11 +196,18 @@ cmds = [
                 where gag._Genotype_key = ipa._Object_key
                         and ipa._MGIType_key = 12
                         and ipa._ImagePane_key = ip._ImagePane_key''', 
+
+        # 6. Cre cache rows for this allele
+        '''select c._allele_key, count(*) as recResCount
+                from all_cre_cache c
+                where c._emapa_term_key is not null
+                group by c._allele_key''',
+
         ]
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, 
+fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, RecombinaseResultCount,
                 ImageCount, MutationInvolvesCount, ]
 
 # prefix for the filename of the output file

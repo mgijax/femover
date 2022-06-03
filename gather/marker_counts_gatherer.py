@@ -66,6 +66,7 @@ MpAnnotationCount = 'mpAnnotationCount'
 MpAlleleCount = 'mpAlleleCount'
 StrainCount = 'strainCount'
 OtherAnnotCount = 'otherAnnotationCount'
+RecAlleleCount = 'recAlleleCount'
 
 error = 'markerCountsGatherer.error'
 
@@ -166,6 +167,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
                                 'phenoRefCount'),
                         (self.results[26], StrainCount, 'strainCount'),
                         (self.results[27], OtherAnnotCount, 'otherCount'), 
+                        (self.results[28], RecAlleleCount, 'recAlleleCount'), 
 
                         # IMSR count processed separately
                         ]
@@ -188,6 +190,7 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
                                         continue
                                 else:
                                         raise error('Unknown marker key: %d' % mrkKey)
+
                 logger.debug("finished initial count processing")
 
                 # compile the count of IMSR lines/mice associated with each marker and
@@ -241,6 +244,10 @@ class MarkerCountsGatherer (Gatherer.Gatherer):
                                         row.append (0)
 
                         self.finalResults.append (row)
+
+                logger.info("Counts columns: " + str(self.finalColumns))
+                logger.info("First row: " + str(self.finalResults[0]))
+
                 return
 
 ###--- globals ---###
@@ -641,14 +648,58 @@ cmds = [
         '''select m._Marker_key, count(distinct a._Term_key) as otherCount
         from %s m, voc_annot a
         where m._Annot_key = a._Annot_key
-        group by m._Marker_key''' % MarkerUtils.getOtherAnnotationsTable()
+        group by m._Marker_key''' % MarkerUtils.getOtherAnnotationsTable(),
+
+        # 28. recombinase alleles driven by this gene (or by 1-1 ortholog of this gene) and 
+        # having recombinase activity data
+        '''
+        with mouse_to_orth as (
+            select m._marker_key, m2._marker_key as _ortholog_key
+            from MRK_Cluster mc 
+                            join MRK_ClusterMember mcm on mcm._cluster_key = mc._cluster_key
+                    join MRK_Marker m on m._marker_key = mcm._marker_key 
+                    join MRK_ClusterMember mcm2 on (
+                            mcm2._cluster_key = mcm._cluster_key
+                            and mcm2._clustermember_key != mcm._clustermember_key
+                    )
+                    join MRK_Marker m2 on m2._marker_key = mcm2._marker_key
+                            join VOC_Term clustertype on clustertype._term_key = mc._clustertype_key
+                            join VOC_Term source on source._term_key = mc._clustersource_key
+            where clustertype.term = 'homology'
+                and source.term = 'Alliance'
+                and source.abbreviation = 'Alliance Direct'
+                and m._organism_key = 1
+                and m2._organism_key != 1
+        ), 
+        driven_alleles as (
+            select r._object_key_1 as _allele_key, r._object_key_2 as _driver_key
+            from mgi_relationship r
+            where r._category_key = 1006
+            union
+            select r._object_key_1 as _allele_key, mo._marker_key as _driver_key
+            from mgi_relationship r, mouse_to_orth mo
+            where r._category_key = 1006
+            and r._object_key_2 = mo._ortholog_key
+        ),
+        driven_alleles_with_recomb_data as (
+            select *
+            from driven_alleles da
+            where da._allele_key in (
+                select distinct _allele_key
+                from all_cre_cache
+                where _emapa_term_key is not null)
+        )
+        select _driver_key as _marker_key , count(*) as recAlleleCount
+        from driven_alleles_with_recomb_data
+        group by _driver_key
+        '''
         ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', ReferenceCount, DiseaseRelevantReferenceCount,
         GOReferenceCount, PhenotypeReferenceCount,
-        SequenceCount, SequenceRefSeqCount, SequenceUniprotCount, AlleleCount,
+        SequenceCount, SequenceRefSeqCount, SequenceUniprotCount, AlleleCount, RecAlleleCount,
         GOCount, GxdAssayCount, GxdResultCount, GxdLiteratureCount,
         GxdTissueCount, GxdImageCount, OrthologCount, GeneTrapCount,
         MappingCount, CdnaSourceCount, MicroarrayCount,

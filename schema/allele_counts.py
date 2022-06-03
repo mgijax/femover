@@ -15,6 +15,7 @@ createStatement = '''CREATE TABLE %s  (
         marker_count                    int     NULL,
         reference_count                 int     NULL,
         expression_assay_result_count   int     NULL,
+        recombinase_result_count        int     NULL,
         image_count                     int     NULL,
         mutation_involves_marker_count  int     NULL,
         PRIMARY KEY(allele_key))''' % tableName
@@ -37,6 +38,7 @@ comments = {
                 'marker_count' : 'count of markers for the allele',
                 'reference_count' : 'count of references',
                 'expression_assay_result_count' : 'count of expression assays involving this allele',
+                'recombinase_result_count' : 'count of all_cre_cache records for this allele',
                 'image_count' : 'count of images',
                 'mutation_involves_marker_count' : 'count of markers associated via "mutation involves" relationships with this allele',
                 },

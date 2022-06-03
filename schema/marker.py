@@ -16,20 +16,22 @@ tableName = 'marker'
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         marker_key      int     NOT NULL,
-        symbol          text NULL,
-        name            text NULL,
-        marker_type     text NULL,
-        marker_subtype  text NULL,
-        organism        text NULL,
-        primary_id      text NULL,
-        logical_db      text NULL,
-        status          text NULL,
+        symbol          text    NULL,
+        name            text    NULL,
+        marker_type     text    NULL,
+        marker_subtype  text    NULL,
+        organism        text    NULL,
+        primary_id      text    NULL,
+        logical_db      text    NULL,
+        status          text    NULL,
         has_go_graph    int     NOT NULL,
         location_display        text    NULL,
         coordinate_display      text    NULL,
         build_identifier        text    NULL,
-        strain                          text    NULL,
-        strain_id                       text    NULL,
+        strain                  text    NULL,
+        strain_id               text    NULL,
+        mouse_marker_key        int     NULL,
+        mouse_marker_id         text    NULL,
         PRIMARY KEY(marker_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -62,6 +64,8 @@ comments = {
                 'build_identifier' : 'names the genome build to which the coordinates are relative',
                 'strain' : 'name of mouse strain, if this marker has a coordiante location (will always be null of C57BL/6J)',
                 'strain_id' : 'primary ID for the mouse strain (will always be null or ID of C57BL/6J)',
+                'mouse_marker_key' : 'if marker is non-mouse, the key of the Alliance Direct mouse ortholog; if mouse, same as marker_key',
+                'mouse_marker_id' : 'MGI id for mouse_marker_key',
                 },
         Table.INDEX : {
                 'symbol' : 'look up markers by symbol',

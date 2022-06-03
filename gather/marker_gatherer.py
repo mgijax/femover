@@ -154,9 +154,18 @@ class MarkerGatherer (Gatherer.Gatherer):
                 for row in rows:
                         locationLookup[row[keyCol]] = row
 
+                # build mapping from nonmouse key to mouse ortholog key/id
+                (cols, rows) = self.results[4]
+                oKeyCol = Gatherer.columnNumber (cols, '_ortholog_key')
+                mKeyCol = Gatherer.columnNumber (cols, '_marker_key')
+                mIdCol  = Gatherer.columnNumber (cols, 'mgiid')
+                self.nonMouse2Mouse = {}
+                for row in rows:
+                    self.nonMouse2Mouse[row[oKeyCol]] = (row[mKeyCol],row[mIdCol])
+
                 # last query has the bulk of the data
-                self.finalColumns = self.results[-1][0]
-                self.finalResults = self.results[-1][1]
+                self.finalColumns = self.results[3][0]
+                self.finalResults = self.results[3][1]
 
                 logger.debug ('Found %d markers' % len(self.finalResults))
                 return
@@ -193,6 +202,14 @@ class MarkerGatherer (Gatherer.Gatherer):
                                 ldb = None
                                 ldbName = None
 
+                        
+                        # for non-mouse markers, look up the Alliance Direct mouse ortholog, if there is one
+                        if organism != "mouse" and markerKey in self.nonMouse2Mouse:
+                            mouse_marker_key, mouse_marker_id = self.nonMouse2Mouse.get(markerKey, (None,None))
+                        else:
+                            mouse_marker_key, mouse_marker_id = (None,None)
+
+                        #
                         organism = utils.cleanupOrganism(Gatherer.resolve (r[orgCol], 'mgi_organism', '_Organism_key', 'commonName'))
 
                         self.addColumn ('accid', accid, r, self.finalColumns)
@@ -216,6 +233,9 @@ class MarkerGatherer (Gatherer.Gatherer):
                         else:
                                 self.addColumn ('strain', None, r, self.finalColumns)
                                 self.addColumn ('strain_id', None, r, self.finalColumns) 
+
+                        self.addColumn('mouse_marker_key', mouse_marker_key, r, self.finalColumns)
+                        self.addColumn('mouse_marker_id', mouse_marker_id, r, self.finalColumns)
                 return
 
 ###--- globals ---###
@@ -287,13 +307,37 @@ cmds = [
         '''select _Marker_key, symbol, name, _Marker_Type_key, _Organism_key,
                 _Marker_Status_key
         from mrk_marker''',
+
+        # 4. non-mouse genes and their Alliance Direct mouse orthologs
+        '''select m2._marker_key as _ortholog_key, m._marker_key, a.accid as mgiid
+            from MRK_Cluster mc 
+                    join MRK_ClusterMember mcm on mcm._cluster_key = mc._cluster_key
+                    join MRK_Marker m on m._marker_key = mcm._marker_key 
+                    join MRK_ClusterMember mcm2 on (
+                        mcm2._cluster_key = mcm._cluster_key
+                        and mcm2._clustermember_key != mcm._clustermember_key
+                    )
+                    join MRK_Marker m2 on m2._marker_key = mcm2._marker_key
+                    join VOC_Term clustertype on clustertype._term_key = mc._clustertype_key
+                    join VOC_Term source on source._term_key = mc._clustersource_key
+                    join ACC_Accession a on m._marker_key = a._object_key
+                        and a._logicaldb_key = 1
+                        and a._mgitype_key = 2
+                        and preferred = 1
+            where clustertype.term = 'homology'
+                and source.term = 'Alliance'
+                and source.abbreviation = 'Alliance Direct'
+                and m._organism_key = 1
+                and m2._organism_key != 1
+        ''',
         ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Marker_key', 'symbol', 'name', 'markerType', 'subtype',
         'organism', 'accID', 'logicalDB', 'status', 'hasGOGraph',
-        'location_display', 'coordinate_display', 'build_identifier', 'strain', 'strain_id', ]
+        'location_display', 'coordinate_display', 'build_identifier', 'strain', 'strain_id', 
+        'mouse_marker_key', 'mouse_marker_id' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'marker'
