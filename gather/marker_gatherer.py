@@ -163,6 +163,15 @@ class MarkerGatherer (Gatherer.Gatherer):
                 for row in rows:
                     self.nonMouse2Mouse[row[oKeyCol]] = (row[mKeyCol],row[mIdCol])
 
+                # augment mapping by adding symbol-based entries for non-alliance organisms
+                (cols, rows) = self.results[5]
+                nmKeyCol = Gatherer.columnNumber (cols, 'nonmouse_key')
+                mKeyCol = Gatherer.columnNumber (cols, 'mouse_key')
+                mIdCol  = Gatherer.columnNumber (cols, 'mouse_id')
+                for row in rows:
+                    if not row[nmKeyCol] in self.nonMouse2Mouse:
+                        self.nonMouse2Mouse[row[nmKeyCol]] = (row[mKeyCol],row[mIdCol])
+
                 # last query has the bulk of the data
                 self.finalColumns = self.results[3][0]
                 self.finalResults = self.results[3][1]
@@ -202,15 +211,14 @@ class MarkerGatherer (Gatherer.Gatherer):
                                 ldb = None
                                 ldbName = None
 
-                        
-                        # for non-mouse markers, look up the Alliance Direct mouse ortholog, if there is one
-                        if organism != "mouse" and markerKey in self.nonMouse2Mouse:
-                            mouse_marker_key, mouse_marker_id = self.nonMouse2Mouse.get(markerKey, (None,None))
-                        else:
-                            mouse_marker_key, mouse_marker_id = (None,None)
-
                         #
                         organism = utils.cleanupOrganism(Gatherer.resolve (r[orgCol], 'mgi_organism', '_Organism_key', 'commonName'))
+
+                        # for non-mouse markers, look up the Alliance Direct mouse ortholog, if there is one
+                        if organism == "mouse":
+                            mouse_marker_key, mouse_marker_id = markerKey, accid
+                        else:
+                            mouse_marker_key, mouse_marker_id = self.nonMouse2Mouse.get(markerKey, (None,None))
 
                         self.addColumn ('accid', accid, r, self.finalColumns)
                         self.addColumn ('subtype', feature, r, self.finalColumns)
@@ -330,6 +338,26 @@ cmds = [
                 and m._organism_key = 1
                 and m2._organism_key != 1
         ''',
+
+        # 5. Non-mouse genes used as recombinase drivers paired with mouse genes having the same symbol.
+        # This is used to augment the mapping returned by query #4 
+        '''
+        select
+            m._marker_key as mouse_key, a.accid as mouse_id,
+            nm._marker_key as nonmouse_key, nm.symbol as nonmouse_symbol
+        from mrk_marker m, mrk_marker nm, acc_accession a
+        where m._organism_key = 1
+        and nm._organism_key != 1
+        and m.symbol ilike nm.symbol
+        and m._marker_key = a._object_key
+        and a._logicaldb_key = 1
+        and a._mgitype_key = 2
+        and a.preferred = 1
+        and a.private = 0
+        and nm._marker_key in 
+          (select distinct _object_key_2 from mgi_relationship where _category_key = 1006)
+        ''',
+
         ]
 
 # order of fields (from the query results) to be written to the

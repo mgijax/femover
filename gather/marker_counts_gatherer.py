@@ -670,6 +670,19 @@ cmds = [
                 and source.abbreviation = 'Alliance Direct'
                 and m._organism_key = 1
                 and m2._organism_key != 1
+
+            union
+
+            select m._marker_key, nm._marker_key as _ortholog_key
+            from MRK_marker m, MRK_marker nm
+            where m._organism_key = 1
+            and nm._organism_key != 1
+            and m.symbol ilike nm.symbol
+            and nm._marker_key in (
+                select _object_key_2
+                from mgi_relationship
+                where _category_key = 1006
+            )
         ), 
         driven_alleles as (
             select r._object_key_1 as _allele_key, r._object_key_2 as _driver_key
