@@ -41,6 +41,7 @@ createStatement = '''CREATE TABLE %s  (
         has_disease_model       int             null,
         repository              text            null,
         jrs_id                  text            null,
+        has_tumor_data          int            not null,
         PRIMARY KEY(allele_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -93,6 +94,7 @@ comments = {
                 'has_disease_model' : '1 if this allele is a model for at least one human disease, 0 if not',
                 'repository' : 'the repository from which this knockout is available',
                 'jrs_id' : 'the Jax Registry ID (JRS) of the knockout',
+                'has_tumor_data' : 'this allele exists in MMHCdb',
                 },
         Table.INDEX : {
                 'symbol' : 'look up alleles by symbol',

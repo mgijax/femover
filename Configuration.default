@@ -68,6 +68,12 @@ IMSR_STRAIN_URL="http://www.findmice.org/report.txt?query=&states=Any&_states=1&
 export IMSR_STRAIN_URL
 
 #
+# setting for retrieving allele IDs that have data in MMHCdb
+#
+MMHCDB_ALLELE_URL="http://tumor.informatics.jax.org/mtbwi/alleleIDReport.do"
+export MMHCDB_ALLELE_URL
+
+#
 # setting for retrieving MPD strain data
 #
 MPD_STRAIN_URL="https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"

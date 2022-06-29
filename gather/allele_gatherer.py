@@ -6,6 +6,7 @@ import Gatherer
 import re
 import logger
 import StrainUtils
+from MMHCdbData import MMHCdbDatabase
 
 ###--- Constants ---###
 NOT_SPECIFIED="Not Specified"
@@ -31,6 +32,11 @@ class AlleleGatherer (Gatherer.Gatherer):
                 for r in self.results[9][1]:
                         stLookup.setdefault(r[0],[]).append(r[1])
                 return stLookup
+
+        def initTumorDataLookup (self) :
+            mmhcdb = MMHCdbDatabase()
+            alleleIDs = mmhcdb.getAlleleIDs()
+            return set(alleleIDs)
 
         def collateResults (self):
                 # extract driver data from the first query, and cache it
@@ -157,6 +163,7 @@ class AlleleGatherer (Gatherer.Gatherer):
                 # get a lookup of allele_key->chromosome
                 chrLookup=self.initChromosomeLookup()
                 subTypeLookup=self.buildAlleleSubTypes()
+                tumorLookup=self.initTumorDataLookup()
 
                 self.convertFinalResultsToList()
 
@@ -169,6 +176,7 @@ class AlleleGatherer (Gatherer.Gatherer):
                 modeCol = Gatherer.columnNumber (columns, '_Mode_key')
                 transCol = Gatherer.columnNumber(columns, '_Transmission_key')
                 collCol = Gatherer.columnNumber(columns, 'collxn')
+                accIdCol = Gatherer.columnNumber(columns, 'accID')
 
                 # pulls the actual allele symbol out of the combined
                 # marker symbol<allele symbol> field
@@ -178,6 +186,7 @@ class AlleleGatherer (Gatherer.Gatherer):
                         alleleType = Gatherer.resolve (r[typeCol])
 
                         allele = r[keyCol]
+                        accID = r[accIdCol]
 
                         ldb = Gatherer.resolve (r[ldbCol], 'acc_logicaldb',
                                 '_LogicalDB_key', 'name')
@@ -265,6 +274,9 @@ class AlleleGatherer (Gatherer.Gatherer):
                         self.addColumn('companyID', company, r, columns)
                         self.addColumn('repository', repository, r, columns)
                         self.addColumn('jrsID', jrsID, r, columns)
+
+                        has_tumor_data = 1 if accID in tumorLookup else 0
+                        self.addColumn('has_tumor_data', has_tumor_data, r, columns)
 
                         self.addColumn('transmission', Gatherer.resolve (
                                 r[transCol]), r, columns)
@@ -362,7 +374,7 @@ fieldOrder = [
         'isRecombinase', 'isWildType', 'isMixed', 'driver', 'driver_key', 'inducibleNote',
         'molecularDescription', 'strain', 'strainLabel', 'strain_id', 'inheritanceMode',
         'holder', 'companyID', 'transmission', 'transmission_phrase',
-        'imageKey', 'hasDiseaseModel', 'repository', 'jrsID',
+        'imageKey', 'hasDiseaseModel', 'repository', 'jrsID', 'has_tumor_data',
         ]
 
 # prefix for the filename of the output file
