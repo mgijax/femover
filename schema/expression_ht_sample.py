@@ -14,19 +14,20 @@ tableName = 'expression_ht_sample'
 
 # MySQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-        sample_key              int             not null,
-        experiment_key  int             not null,
+        sample_key              int     not null,
+        experiment_key          int     not null,
         name                    text    null,
-        genotype_key    int             not null,
+        genotype_key            int     not null,
         organism                text    null,
-        sex                             text    null,
-        age                             text    null,
+        sex                     text    null,
+        age                     text    null,
         age_min                 float   null,
         age_max                 float   null,
-        emapa_key               int             null,
-        theiler_stage   text    null,
+        emapa_key               int     null,
+        theiler_stage           text    null,
+        celltype_key            int     null,
         relevancy               text    not null,
-        sequence_num    int             not null,
+        sequence_num            int     not null,
         PRIMARY KEY(sample_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -35,6 +36,7 @@ createStatement = '''CREATE TABLE %s  (
 indexes = {
         'genotype_key' : 'create index %s on %s (genotype_key)',
         'emapa_key' : 'create index %s on %s (emapa_key)',
+        'celltype_key' : 'create index %s on %s (celltype_key)',
         }
 
 # column name -> (related table, column in related table)
@@ -42,6 +44,7 @@ keys = {
         'experiment_key' : ('expression_ht_experiment', 'experiment_key'),
         'genotype_key' : ('genotype', 'genotype_key'),
         'emapa_key' : ('term', 'term_key'),
+        'celltype_key' : ('term', 'term_key'),
         }
 
 # index used to cluster data in the table
@@ -62,11 +65,13 @@ comments = {
                 'age_max' : 'maxiumum age of the sample, computed as DPC',
                 'emapa_key' : 'structure of the sample',
                 'theiler_stage' : 'Theiler stage of the sample, if available',
+                'celltype_key' : 'cell type of the sample',
                 'relevancy' : 'is this sample relevant for GXD purposes?',
                 'sequence_num' : 'femover-computed sequence number; used for ordering the samples of each experiment',
                 },
         Table.INDEX : {
                 'emapa_key' : 'identifies the structure of the sample',
+                'celltype_key' : 'identifies the cell type of the sample',
                 'genotype_key' : 'identifies the genotype of the sample',
                 'experiment_key' : 'clustered index, brings together all samples for an experiment for quick access',
                 },

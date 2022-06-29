@@ -177,7 +177,7 @@ class HTSampleGatherer (Gatherer.Gatherer):
 cmds = [
         '''select t._Experiment_key, r.term as relevancy, t._Sample_key, s.name, s._Genotype_key,
                         o.commonName as organism, x.term as sex, s.age, s._Emapa_key, g.stage as theiler_stage,
-                        s.ageMin, s.ageMax
+                        s.ageMin, s.ageMax, s._celltype_term_key
                 from %s t
                 inner join gxd_htsample s on (t._Sample_key = s._Sample_key)
                 inner join voc_term r on (s._Relevance_key = r._Term_key)
@@ -191,7 +191,7 @@ cmds = [
 # output file
 fieldOrder = [
         '_Sample_key', '_Experiment_key', 'name', '_Genotype_key', 'organism', 'sex', 'age',
-        'ageMin', 'ageMax', '_EMAPA_key', 'theiler_stage', 'relevancy', 'sequence_num',
+        'ageMin', 'ageMax', '_EMAPA_key', 'theiler_stage', '_celltype_term_key', 'relevancy', 'sequence_num',
         ]
 
 # prefix for the filename of the output file
