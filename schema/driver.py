@@ -11,9 +11,10 @@ tableName = 'driver'
 
 # SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
-        unique_key              int             not null,
+        driver_key              int             not null,
         driver                  text    null,
-        PRIMARY KEY(unique_key))''' % tableName
+        cluster_key             int    not null,
+        PRIMARY KEY(driver_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
 # statement, the first %s is for the index name, and the second is for the
@@ -29,8 +30,9 @@ clusteredIndex = ('driver', 'create index %s on %s (driver)')
 comments = {
         Table.TABLE : 'table containing recombinase drivers ', 
         Table.COLUMN : {
-                'unique_key' : 'unique key for this record, no other purpose',
-                'driver' : 'driver text'
+                'driver_key' : 'the marker key for this driver',
+                'driver' : 'driver text',
+                'cluster_key' : 'key shared by drivers in the same cluster'
                 },
         Table.INDEX : {},
         }
