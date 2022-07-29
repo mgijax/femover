@@ -1357,9 +1357,9 @@ cmds = [
                 and gag._Allele_key = a._Allele_key
                 and a.isWildType = 0
                 and a._Allele_key = r._Object_key_1
-                and r._Category_key = %d
+                and r._Category_key in (%d,%d)
                 and va._Term_key = t._Term_key
-        order by _Marker_key''' % (DO_GENOTYPE, EXPRESSES_COMPONENT),   
+        order by _Marker_key''' % (DO_GENOTYPE, EXPRESSES_COMPONENT, MUTATION_INVOLVES),   
 
         # 9. Term-to-Ancestor : see termToAncestor, disease_group_row 
         '''select t._Term_key, t.term, tt._Term_key as ancestorKey, tt.term as ancestorTerm
