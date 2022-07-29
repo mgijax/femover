@@ -70,6 +70,7 @@ def groupAnnotations(cols, rows,
         qualifierKeyCol = dbAgnostic.columnNumber (cols, '_qualifier_key')
         evidenceTermKeyCol = dbAgnostic.columnNumber (cols, '_evidenceterm_key')
         inferredfromCol = dbAgnostic.columnNumber (cols, 'inferredfrom')
+        refsKeyCol = dbAgnostic.columnNumber (cols, '_refs_key')
         
         groupMap = {}
         for row in rows:
@@ -80,6 +81,7 @@ def groupAnnotations(cols, rows,
             qualifier = QUALIFIER_LOOKUP.get(row[qualifierKeyCol])
             evidenceCode = EVIDENCE_CODE_LOOKUP.get(row[evidenceTermKeyCol])
             inferredfrom = row[inferredfromCol]
+            refsKey = row[refsKeyCol]
             
             properties = []
             if evidenceKey in propertiesMap:
@@ -100,7 +102,8 @@ def groupAnnotations(cols, rows,
                             qualifier,
                             evidenceCode,
                             inferredfrom,
-                            propKey
+                            #propKey
+                            refsKey,
                             )
                 
             elif annotType == C.OMIM_MARKER_TYPE_NAME:
