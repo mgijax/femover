@@ -263,13 +263,14 @@ def setupGxdCacheTables():
         # simple 0 for absent-ish values (absent, ambiguous, not specified) or
         # a 1 for present-ish values (all the others).
 
-        cmd4 = '''select _Strength_key, case
-                        when _Strength_key <= 1 then 0
-                        when _Strength_key = 3  then 0
+        cmd4 = '''select _Term_key as _Strength_key, case
+                        when term in ('Not Applicable', 'Not Specified') then 0
+                        when term in ('Ambiguous') then 0
                         else 1
                         end as is_present
                 into temporary table gxd_present
-                from gxd_strength'''
+                from voc_term
+                where _vocab_key = 163'''
 
         cmd5 = 'create unique index gp1 on gxd_present(_Strength_key)'
 
@@ -338,10 +339,10 @@ def setupGxdCacheTables():
                         select g._Assay_key, g._Genotype_key, g._GelLane_key,
                                 gs._emapa_term_key, gs._stage_key
                         from gxd_gellane g, gxd_gellanestructure gs,
-                                gxd_assays ga
+                                gxd_assays ga, voc_term t
                         where ga._Assay_key = g._Assay_key
                                 and g._GelLane_key = gs._GelLane_key
-                                and g._GelControl_key = 1
+                                and g._GelControl_key = t._term_key and t.term = 'No'
                         )
                 select g._Assay_key, g._Genotype_key, g._GelLane_key,
                         g._emapa_term_key, g._stage_key, vte._term_key as _emaps_key,

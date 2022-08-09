@@ -641,8 +641,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 alleleComp, strain = self.findGenotypes()
                 assayNotes = self.findAssayNotes()
                 probeIDs, probeNames = self.findNamesIDs (self.results[3])
-                antibodyIDs, antibodyNames = self.findNamesIDs (
-                        self.results[4])
+                antibodyIDs, antibodyNames = self.findNamesIDs (self.results[4])
 
                 # detailed assay results from query 5
 
@@ -654,16 +653,15 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 stageCol = Gatherer.columnNumber (cols, '_stage_key')
                 
                 assayTypeCol = Gatherer.columnNumber (cols, '_AssayType_key')
-                reporterCol = Gatherer.columnNumber (cols,
-                        '_ReporterGene_key')
+                reporterCol = Gatherer.columnNumber (cols, '_ReporterGene_key')
                 assayCol = Gatherer.columnNumber (cols, '_Assay_key')
                 ageCol = Gatherer.columnNumber (cols, 'age')
                 sexCol = Gatherer.columnNumber (cols, 'sex')
                 specimenNoteCol = Gatherer.columnNumber (cols, 'specimenNote')
                 genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
                 resultNoteCol = Gatherer.columnNumber (cols, 'resultNote')
-                strengthCol = Gatherer.columnNumber (cols, '_Strength_key')
-                patternCol = Gatherer.columnNumber (cols, '_Pattern_key')
+                strengthCol = Gatherer.columnNumber (cols, 'strength')
+                patternCol = Gatherer.columnNumber (cols, 'pattern')
                 jnumCol = Gatherer.columnNumber (cols, 'jnumID')
                 pPrepCol = Gatherer.columnNumber (cols, '_ProbePrep_key')
                 aPrepCol = Gatherer.columnNumber (cols, '_AntibodyPrep_key')
@@ -693,8 +691,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         system = r[systemCol]
                         cellType = r[cellTypeCol]
 
-                        alleleSystemKey = \
-                                alleleSystemMap[r[alleleCol]][system]
+                        alleleSystemKey = alleleSystemMap[r[alleleCol]][system]
 
                         i = i + 1
 
@@ -715,13 +712,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         row = [ i, alleleSystemKey, emapsKey, structure,
                                 r[ageCol], r[sexCol], r[jnumCol],
                                 r[resultNoteCol], r[specimenNoteCol], ]
-                        row.append (Gatherer.resolve (r[strengthCol],
-                                'GXD_Strength', '_Strength_key', 'strength'))
-                        row.append (Gatherer.resolve (r[patternCol],
-                                'GXD_Pattern', '_Pattern_key', 'pattern'))
-                        row.append (Gatherer.resolve (r[assayTypeCol],
-                                'GXD_AssayType', '_AssayType_key',
-                                'assayType'))
+                        row.append (Gatherer.resolve (r[assayTypeCol], 'GXD_AssayType', '_AssayType_key', 'assayType'))
                         row.append (Gatherer.resolve (r[reporterCol]))
 
                         pPrep = r[pPrepCol]
@@ -892,20 +883,17 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 # step 2 -- recombinase_other_system table
 
-                columns, rows = self.findOtherSystems (alleleSystemMap,
-                        alleleData, affectedCols, affected)
+                columns, rows = self.findOtherSystems (alleleSystemMap, alleleData, affectedCols, affected)
                 self.output.append ( (columns, rows) )
 
                 # step 3 -- recombinase_other_allele table
 
-                columns, rows = self.findOtherAlleles (alleleSystemMap,
-                        alleleData, affectedCols, affected)
+                columns, rows = self.findOtherAlleles (alleleSystemMap, alleleData, affectedCols, affected)
                 self.output.append ( (columns, rows) )
 
                 # step 4 -- recombinase_assay_result table
 
-                columns, rows, resultMap = \
-                        self.findAssayResults (alleleSystemMap)
+                columns, rows, resultMap = self.findAssayResults (alleleSystemMap)
                 self.output.append ( (columns, rows) )
 
                 # step 5 -- recombinase_assay_result_sequence_num table
@@ -915,8 +903,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 # step 6 - recombinase_assay_result_imagepane and
                 #       recombinase_allele_system_imagepane tables
-                arColumns, arRows, asColumns, asRows = self.findResultImages (
-                        resultMap)
+                arColumns, arRows, asColumns, asRows = self.findResultImages (resultMap)
                 self.output.append ( (asColumns, asRows) )
                 self.output.append ( (arColumns, arRows) )
 
@@ -943,7 +930,7 @@ cmds = [
         '''select c._Allele_key, c.accID,
                 c._stage_key, vte._term_key as _emaps_key,
                 c._emapa_term_key, c.emapaterm as structure,
-                c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, c.strength,
+                c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, gxs.term as strength,
                 c.hasImage, c.cresystemlabel, c._assay_key, r._result_key, s.specimenlabel
         from all_cre_cache c
                 join voc_term_emaps vte on
@@ -960,9 +947,9 @@ cmds = [
                     rs._result_key = r._result_key
                     and rs._emapa_term_key = c._emapa_term_key
                     and rs._stage_key = c._stage_key
-                join gxd_strength gxs on
-                    gxs._strength_key = r._strength_key
-                    and gxs.strength = c.strength
+                join voc_term gxs on
+                    gxs._term_key = r._strength_key
+                    and gxs.term = c.strength
         where c.cresystemlabel is not null
             and c.ageMin is not null
             and c.ageMax is not null
@@ -1046,7 +1033,10 @@ cmds = [
                 a._AssayType_key, a._ReporterGene_key, a._Refs_key,
                 a._Assay_key, a._ProbePrep_key, a._AntibodyPrep_key,
                 s.age, s.sex, s.specimenNote, s._Genotype_key,
-                r.resultNote, r._Strength_key, r._Pattern_key, r._Result_key,
+                r.resultNote, 
+                r._Strength_key, t1.term as strength,
+                r._Pattern_key, t2.term as pattern,
+                r._Result_key,
                 racc.accid as jnumID, c.cresystemlabel, rct.cell_type
         from  all_cre_cache c
         join gxd_assay a on
@@ -1068,6 +1058,10 @@ cmds = [
         join voc_term_emaps vte on
             vte._emapa_term_key = c._emapa_term_key
             and vte._stage_key = c._stage_key
+        join voc_term t1 on
+            r._Strength_key = t1._Term_key
+        join voc_term t2 on
+            r._Pattern_key = t2._Term_key
         left outer join result_cell_types rct on (r._result_key = rct._result_key)
         where c.cresystemlabel is not null
         order by c._Allele_key, r._Result_key, rct.cell_type

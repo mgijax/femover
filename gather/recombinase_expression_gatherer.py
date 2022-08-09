@@ -19,14 +19,14 @@ cmds = [
                         r._Result_key,
                         gag._Allele_key,
                         rel._Object_key_2 as _Driver_key,
-                        case when st.strength = 'Absent' then 'No'
-                                when st.strength in ('Ambiguous', 'Not Specified', 'Not Applicable') then 'Ambiguous'
+                        case when st.term = 'Absent' then 'No'
+                                when st.term in ('Ambiguous', 'Not Specified', 'Not Applicable') then 'Ambiguous'
                                 else 'Yes'
                                 end as detected
                 from gxd_expression e,
                         gxd_specimen sp,
                         gxd_insituresult r,
-                        gxd_strength st,
+                        voc_term st,
                         gxd_allelegenotype gag,
                         mgi_relationship rel,
                         gxd_isresultstructure isr,
@@ -35,7 +35,7 @@ cmds = [
                         and e._Assay_key = sp._Assay_key
                         and e._Specimen_key = sp._Specimen_key
                         and sp._Specimen_key = r._Specimen_key
-                        and r._Strength_key = st._Strength_key
+                        and r._Strength_key = st._Term_key and st._Vocab_key = 163
                         and e._Genotype_key = gag._Genotype_key
                         and r._Result_key = isr._Result_key
                         and isr._Emapa_Term_key = e._Emapa_Term_key

@@ -209,20 +209,21 @@ cmds = [
                 )
     )
         select gs._assay_key,
-                gs._specimen_key,
-                gs.specimenlabel,
+            gs._specimen_key,
+            gs.specimenlabel,
             gs.age,
             gs.agenote,
-            gfm.fixation,
+            gfm.term as fixation,
             gs._genotype_key,
             gg.isconditional conditional_genotype,
             gs.sex,
             gs.specimennote,
-            gem.embeddingmethod,
+            gem.term as embeddingmethod,
             gs.hybridization,
             gir._result_key,
-            str.strength,
-            gp.pattern, gir.resultnote,
+            str.term as strength,
+            gp.term as pattern, 
+            gir.resultnote,
             gir.sequencenum as result_seq,
             gs.sequencenum as specimen_seq,
             giri._imagepane_key,
@@ -230,16 +231,16 @@ cmds = [
             vte._term_key as _emaps_key,
             struct.term as structure
         from gxd_specimen gs, gxd_insituresult gir, gxd_isresultstructure girs, 
-            gxd_strength str, gxd_pattern gp, imagepanes giri,
-            gxd_fixationmethod gfm, gxd_embeddingmethod gem,gxd_genotype gg,
+            voc_term str, voc_term gp, imagepanes giri,
+            voc_term gfm, voc_term gem, gxd_genotype gg,
             voc_term_emaps vte, voc_term struct
         where gs._specimen_key=gir._specimen_key
             and gir._result_key=girs._result_key
-            and gir._strength_key=str._strength_key
-            and gir._pattern_key=gp._pattern_key
+            and gir._strength_key=str._term_key
+            and gir._pattern_key=gp._term_key
             and gir._result_key=giri._result_key
-            and gfm._fixation_key=gs._fixation_key
-            and gem._embedding_key=gs._embedding_key
+            and gfm._term_key=gs._fixation_key
+            and gem._term_key=gs._embedding_key
             and gg._genotype_key=gs._genotype_key
             and vte._emapa_term_key = girs._emapa_term_key
             and vte._stage_key = girs._stage_key
