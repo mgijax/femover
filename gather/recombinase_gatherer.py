@@ -33,7 +33,6 @@ ageBins = [
     { "index": 1, "name": 'e2', "agemin":9,  "agemax":13.99,   "label":"E9-13.9" },
     { "index": 2, "name": 'e3', "agemin":14, "agemax":21.0,    "label":"E14-21" }, 
     { "index": 3, "name": 'p1', "agemin":21.01, "agemax":24.99,"label":"P0-3.9" },
-
     { "index": 4, "name": 'p2', "agemin":25, "agemax":42.99,   "label":"P4-21.9" },
     { "index": 5, "name": 'p3', "agemin":43, "agemax":63.99,   "label":"P22-42.9" },
     { "index": 6, "name": 'p4', "agemin":64, "agemax":1864,    "label":"P >43" },
@@ -458,15 +457,12 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         out.append ( (i, alleleSystemKey,
                                                 alleleID, otherSystem) )
 
-                columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleID',
-                                'system' ]
-
+                columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleID', 'system' ]
                 logger.debug ('Found %d other systems' % i)
 
                 return columns, out
 
-        def findOtherAlleles (self, alleleSystemMap, alleleData,
-                        affectedCols, affected):
+        def findOtherAlleles (self, alleleSystemMap, alleleData, affectedCols, affected):
                 # Purpose: processes 'alleleSystemMap' to find other alleles
                 #       involved with the system for each allele/system pair
                 #       (does not touch query results in self.results)
@@ -485,8 +481,6 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # list the other alleles associated with each system)
 
                 bySystem = {}           # bySystem[system] = list of alleles
-                                        # with expressed = 1 for this system
-
                 alleles = list(alleleSystemMap.keys())
                 for allele in alleles:
                         systems = list(alleleSystemMap[allele].keys())
@@ -511,8 +505,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         alleles = bySystem[system]
 
                         for (allele, otherAlleles) in explode(alleles):
-                                alleleSystemKey = \
-                                        alleleSystemMap[allele][system]
+                                alleleSystemKey = alleleSystemMap[allele][system]
 
                                 for other in otherAlleles:      
                                         i = i + 1
@@ -524,9 +517,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                                 alleleData[other][1]
                                                 ) )
 
-                columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleKey',
-                                'alleleID', 'alleleSymbol', ]
-
+                columns = [ 'uniqueKey', 'alleleSystemKey', 'alleleKey', 'alleleID', 'alleleSymbol', ]
                 logger.debug ('Found %d other alleles' % i)
 
                 return columns, out
@@ -535,11 +526,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # extract allelic composition and background strain from
                 # query 1
 
-                keyCol = Gatherer.columnNumber (self.results[1][0],
-                        '_Genotype_key')
+                keyCol = Gatherer.columnNumber (self.results[1][0], '_Genotype_key')
                 noteCol = Gatherer.columnNumber (self.results[1][0], 'note')
-                strainCol = Gatherer.columnNumber (self.results[1][0],
-                        'strain')
+                strainCol = Gatherer.columnNumber (self.results[1][0], 'strain')
 
                 alleleComp = {}
                 strain = {}
@@ -555,8 +544,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # trim trailing whitespace from allelic composition notes
 
                 for key in list(alleleComp.keys()):
-                        alleleComp[key] = TagConverter.convert (
-                                alleleComp[key].rstrip() )
+                        alleleComp[key] = TagConverter.convert ( alleleComp[key].rstrip() )
 
                 logger.debug ('Found %d genotypes' % len(strain))
                 return alleleComp, strain
@@ -564,10 +552,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
         def findAssayNotes (self):
                 # extract assay note from query 2
 
-                keyCol = Gatherer.columnNumber (self.results[2][0],
-                        '_Assay_key')
-                noteCol = Gatherer.columnNumber (self.results[2][0],
-                        'assayNote')
+                keyCol = Gatherer.columnNumber (self.results[2][0], '_Assay_key')
+                noteCol = Gatherer.columnNumber (self.results[2][0], 'assayNote')
 
                 assayNote = {}
 
@@ -641,8 +627,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 alleleComp, strain = self.findGenotypes()
                 assayNotes = self.findAssayNotes()
                 probeIDs, probeNames = self.findNamesIDs (self.results[3])
-                antibodyIDs, antibodyNames = self.findNamesIDs (
-                        self.results[4])
+                antibodyIDs, antibodyNames = self.findNamesIDs ( self.results[4])
 
                 # detailed assay results from query 5
 
@@ -652,10 +637,8 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
                 structureCol = Gatherer.columnNumber (cols, 'structure')
                 stageCol = Gatherer.columnNumber (cols, '_stage_key')
-                
                 assayTypeCol = Gatherer.columnNumber (cols, '_AssayType_key')
-                reporterCol = Gatherer.columnNumber (cols,
-                        '_ReporterGene_key')
+                reporterCol = Gatherer.columnNumber (cols, '_ReporterGene_key')
                 assayCol = Gatherer.columnNumber (cols, '_Assay_key')
                 ageCol = Gatherer.columnNumber (cols, 'age')
                 sexCol = Gatherer.columnNumber (cols, 'sex')
@@ -692,9 +675,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 for r in self.results[5][1]:
                         system = r[systemCol]
                         cellType = r[cellTypeCol]
-
-                        alleleSystemKey = \
-                                alleleSystemMap[r[alleleCol]][system]
+                        alleleSystemKey = alleleSystemMap[r[alleleCol]][system]
 
                         i = i + 1
 
@@ -712,9 +693,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         emapsKey = r[emapsKeyCol]
                         structure = r[structureCol]
 
-                        row = [ i, alleleSystemKey, emapsKey, structure,
-                                r[ageCol], r[sexCol], r[jnumCol],
-                                r[resultNoteCol], r[specimenNoteCol], ]
+                        row = [ i, alleleSystemKey, emapsKey, structure, r[ageCol], r[sexCol], r[jnumCol], r[resultNoteCol], r[specimenNoteCol], ]
                         row.append (Gatherer.resolve (r[strengthCol], 'VOC_Term', '_Term_key', 'term'))
                         row.append (Gatherer.resolve (r[patternCol], 'VOC_Term', '_Term_key', 'term'))
                         row.append (Gatherer.resolve (r[assayTypeCol], 'GXD_AssayType', '_AssayType_key', 'assayType'))
@@ -785,8 +764,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                 if myVal == None:
                                         nullValued.append (row[keyCol])
                                 else:
-                                        sortable.append ((myVal.lower(),
-                                                row[keyCol]))
+                                        sortable.append ((myVal.lower(), row[keyCol]))
                         sortable.sort()
 
                         i = 1
@@ -819,12 +797,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 imageCol = Gatherer.columnNumber (columns, '_Image_key')
 
                 # columns for assay result image panes
-                arColumns = [ 'uniqueKey', 'resultKey', 'imageKey',
-                        'sequenceNum', 'paneLabel', ]
+                arColumns = [ 'uniqueKey', 'resultKey', 'imageKey', 'sequenceNum', 'paneLabel', ]
 
                 # columns for allele system images
-                asColumns = [ 'uniqueKey', 'alleleSystemKey', 'imageKey',
-                        'sequenceNum', ]
+                asColumns = [ 'uniqueKey', 'alleleSystemKey', 'imageKey', 'sequenceNum', ]
 
                 arRows = []     # rows for assay result image panes
                 asRows = []     # rows for allele system image panes
@@ -842,8 +818,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 for row in rows:
                     if row[resultCol] not in resultMap:
-                        logger.debug ('Unknown result key: %s' % \
-                                row[resultCol])
+                        logger.debug ('Unknown result key: %s' % row[resultCol])
                         continue
                     for (resultKey, alleleSysKey, cellType) in resultMap[row[resultCol]]:
                         imageKey = row[imageCol]
@@ -856,8 +831,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                 lastResultKey = resultKey
 
                         arMax = arMax + 1
-                        arRows.append ( (arMax, resultKey, imageKey, arNum,
-                                label) )
+                        arRows.append ( (arMax, resultKey, imageKey, arNum, label) )
 
                         pair = (alleleSysKey, imageKey)
                         if pair not in done:
@@ -869,8 +843,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                                         lastSystemKey = alleleSysKey
 
                                 asMax = asMax + 1
-                                asRows.append ( (asMax, alleleSysKey,
-                                        imageKey, asNum) )
+                                asRows.append ( (asMax, alleleSysKey, imageKey, asNum) )
                                 done[pair] = 1
 
                 return arColumns, arRows, asColumns, asRows
@@ -887,20 +860,17 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 # step 2 -- recombinase_other_system table
 
-                columns, rows = self.findOtherSystems (alleleSystemMap,
-                        alleleData, affectedCols, affected)
+                columns, rows = self.findOtherSystems (alleleSystemMap, alleleData, affectedCols, affected)
                 self.output.append ( (columns, rows) )
 
                 # step 3 -- recombinase_other_allele table
 
-                columns, rows = self.findOtherAlleles (alleleSystemMap,
-                        alleleData, affectedCols, affected)
+                columns, rows = self.findOtherAlleles (alleleSystemMap, alleleData, affectedCols, affected)
                 self.output.append ( (columns, rows) )
 
                 # step 4 -- recombinase_assay_result table
 
-                columns, rows, resultMap = \
-                        self.findAssayResults (alleleSystemMap)
+                columns, rows, resultMap = self.findAssayResults (alleleSystemMap)
                 self.output.append ( (columns, rows) )
 
                 # step 5 -- recombinase_assay_result_sequence_num table
@@ -910,8 +880,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 # step 6 - recombinase_assay_result_imagepane and
                 #       recombinase_allele_system_imagepane tables
-                arColumns, arRows, asColumns, asRows = self.findResultImages (
-                        resultMap)
+                arColumns, arRows, asColumns, asRows = self.findResultImages ( resultMap)
                 self.output.append ( (asColumns, asRows) )
                 self.output.append ( (arColumns, arRows) )
 
