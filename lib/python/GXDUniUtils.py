@@ -211,7 +211,7 @@ def _assignClassicalKeys():
                         gxd_gellanestructure gs,
                         voc_term_emaps vte,
                         voc_term vtc
-                where g._GelControl_key = vtc._term_key and vtc._vocab_key = 154 and vtc.term = 'No'
+                where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._GelLane_key = gs._GelLane_key
                         and vte._emapa_term_key = gs._emapa_term_key
                         and vte._stage_key = gs._stage_key
@@ -408,7 +408,8 @@ def _getGelLaneTable():
                 where _GelLane_key in (select f._GelLane_key
                         from %s f, gxd_gelband gb, voc_term gs
                         where f._GelLane_key = gb._GelLane_key
-                        and gb._Strength_key = gs._Term_key and gs._Vocab_key = 163 and gs.term in ('Absent', 'Not Applicable')
+                        and gb._Strength_key = gs._Term_key
+                        and gs.term in ('Absent', 'Not Applicable')
                         )''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
 
         dbAgnostic.execute(cmd2)
@@ -420,7 +421,8 @@ def _getGelLaneTable():
                 where _GelLane_key in (select f._GelLane_key
                         from %s f, gxd_gelband gb, voc_term gs
                         where f._GelLane_key = gb._GelLane_key
-                        and gb._Strength_key = gs._Term_key and gs._Vocab_key = 163 and gs.term not in ('Absent', 'Not Applicable', 'Ambiguous', 'Not Specified')
+                        and gb._Strength_key = gs._Term_key
+                        and gs.term not in ('Absent', 'Not Applicable', 'Ambiguous', 'Not Specified')
                         )''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
         
         dbAgnostic.execute(cmd3)
