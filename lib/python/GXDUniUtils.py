@@ -504,7 +504,7 @@ def _buildKeystoneTable():
                         gxd_assay a,
                         gxd_gellanestructure s,
                         %s glk
-                where g._GelControl_key = 1
+                where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._Assay_key = a._Assay_key
                         and g._GelLane_key = s._GelLane_key
                         and exists (select 1 from gxd_expression e where g._GelLane_key = e._GelLane_key and e.isForGXD = 1)
