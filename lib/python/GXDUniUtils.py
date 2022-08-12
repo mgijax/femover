@@ -503,6 +503,7 @@ def _buildKeystoneTable():
                 from gxd_gellane g,
                         gxd_assay a,
                         gxd_gellanestructure s,
+                        voc_term vtc,
                         %s glk
                 where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._Assay_key = a._Assay_key
