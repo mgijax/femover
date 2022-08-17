@@ -536,8 +536,12 @@ def _buildKeystoneTable():
                         referenceTable, structureTable, markerTable, assayTypeTable)
 
         dbAgnostic.execute(cmd1)
+
         classicalRows = _getRowCount(TMP_KEYSTONE)
         logger.info('Added %d classical rows' % classicalRows)
+
+        maxClassicalKey = _getMaxValue(TMP_KEYSTONE, 'uni_key')
+        logger.info('Max classical key=%d' % maxClassicalKey)
 
         cmd1b = '''select count(1) from %s k, gxd_assay a
                 where k.assay_key = a._Assay_key
@@ -598,7 +602,7 @@ def _buildKeystoneTable():
                 where rm._Emapa_key = emapa._Term_key
                         and rm._Experiment_key = expt._Experiment_key
                 order by rm._RNASeqCombined_key, rm.mrkSeqNum''' % (
-                        TMP_KEYSTONE, classicalRows, rnaSeqType, structureTable,
+                        TMP_KEYSTONE, maxClassicalKey, rnaSeqType, structureTable,
                         exptOrderingTable)
         dbAgnostic.execute(cmd5)
 
