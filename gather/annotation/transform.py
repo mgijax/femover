@@ -58,8 +58,8 @@ def groupAnnotations(cols, rows,
         """
         Groups rows of annotation records.  Assumes these fields are present:
             _AnnotEvidence_key, annotType, _Term_key, _Object_key,
-            _Qualifier_key, _EvidenceTerm_key, inferredFrom
-        Other fields can be in the records, too, but those seven must be there.
+            _Qualifier_key, _EvidenceTerm_key, inferredFrom, _refs_key
+        Other fields can be in the records, too, but those eight must be there.
         
         Returns map of {newKey: [grouped rows]}
         """

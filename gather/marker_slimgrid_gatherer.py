@@ -1161,7 +1161,7 @@ cmds = [
         )
         select distinct k._Marker_key as _Object_key, 'GO/Marker' as annotType, k.inferredFrom,
                 k._Qualifier_key, k._EvidenceTerm_key, k._Term_key,
-                e._AnnotEvidence_key, gh._Term_key as header_term_key, k._DAG_key
+                e._AnnotEvidence_key, gh._Term_key as header_term_key, k._DAG_key, k._refs_key
         from go_header_keys gh, go_closure dc, keepers k, markers m, voc_evidence e
         where gh._Term_key = dc._AncestorObject_key
                 and dc._DescendentObject_key = k._Term_key
