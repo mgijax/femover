@@ -82,8 +82,8 @@ cmds = [
         inner join mgi_organism ae on (ab._Organism_key = ae._Organism_key)
         inner join voc_term ac on (
                 ab._AntibodyClass_key = ac._Term_key)
-        inner join gxd_antibodytype ap on (
-                ab._AntibodyType_key = ap._AntibodyType_key)
+        inner join voc_term ap on (
+                ab._AntibodyType_key = ap._Term_key)
         left outer join gxdResults f on (f._Antibody_key = ab._Antibody_key)
         left outer join antibody_aliases b on (
                 ab._Antibody_key = b._Antibody_key)
