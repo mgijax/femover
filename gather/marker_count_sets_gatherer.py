@@ -205,7 +205,10 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
                         elif term == 'cDNA':
                                 byMarker[key][cdna] = ct
                         else:
-                                byMarker[key][other] = ct
+                                if other in byMarker[key]:
+                                    byMarker[key][other] += ct
+                                else:
+                                    byMarker[key][other] = ct
 
                 # free up memory for result set, once we've walked through it
                 self.results[resultIndex] = (columns, [])
