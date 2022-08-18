@@ -68,7 +68,7 @@ cmds = [
                 aa.accID as mgiID,
                 ae.commonName as antibodySpecies,
                 ac.term as class,
-                ap.antibodyType,
+                ap.term as antibodyType,
                 ab.antibodyNote,
                 ab._Antigen_key,
                 b.aliases
