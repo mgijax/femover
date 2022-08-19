@@ -51,7 +51,6 @@ class HTExperimentSequenceNumGatherer (Gatherer.Gatherer):
                 nameCol = Gatherer.columnNumber(cols, 'name')
                 descriptionCol = Gatherer.columnNumber(cols, 'description')
                 studyTypeCol = Gatherer.columnNumber(cols, 'study_type')
-
                 for row in rows:
                         experimentKey = row[keyCol]
                         names.append( (row[nameCol], experimentKey) )
@@ -60,13 +59,21 @@ class HTExperimentSequenceNumGatherer (Gatherer.Gatherer):
                         
                 logger.debug('Collected %d names, descriptions, study types' % len(rows))
 
-                cols, rows = experiments.getExperimentIDs(True)
-                keyCol = Gatherer.columnNumber(cols, '_Experiment_key')
+                cols, rows = experiments.getExperimentIDs(False) # False to get _all_ ids
+                logicalDbCol = Gatherer.columnNumber(cols, 'logical_db')
                 idCol = Gatherer.columnNumber(cols, 'accID')
-                
+                keyCol = Gatherer.columnNumber(cols, '_Experiment_key')
+                # Sort is: everything with a GEO id sorts by that ID. Anything without sorts after
+                idDict0 = {}
                 for row in rows:
-                        ids.append( (row[idCol], row[keyCol]) )
-                        
+                        accid = row[idCol]
+                        ldb = row[logicalDbCol]
+                        exkey = row[keyCol]
+                        if ldb == "GEO Series":
+                            idDict0[exkey] =  accid
+                        elif not exkey in idDict0:
+                            idDict0[exkey] =  "zzz_" + accid
+                ids = [(v,k) for (k,v) in idDict0.items()]
                 logger.debug('Collected %d primary IDs' % len(rows))
                 
                 names.sort(key=lambda a : symbolsort.splitter(a[0]))
