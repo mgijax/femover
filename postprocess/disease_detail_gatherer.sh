@@ -38,7 +38,7 @@ select count(*) from disease where genes_tab_count > 0;
 -- generate counts by unique:
 -- 	disease (disease_key)
 --	genotype (genotype.background_strain) 
---	allele (genotype.combination_1)
+--	allele (genotype.combination_3)
 --
 
 SELECT gr.disease_key, gr.annotated_disease
@@ -52,7 +52,7 @@ WHERE drm.disease_row_key = r.disease_row_key
         AND dm.is_not_model = 0
         AND dm.genotype_key = g.genotype_key
         AND g.is_disease_model = 1
-        GROUP BY gr.disease_key, gr.annotated_disease, g.background_strain, g.combination_1
+        GROUP BY gr.disease_key, gr.annotated_disease, g.background_strain, g.combination_3
 ;
 WITH tmp_models_counts AS (
 SELECT disease_key, count(disease_key) as models_count

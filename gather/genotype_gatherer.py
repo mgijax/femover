@@ -44,7 +44,7 @@ class GenotypeGatherer (Gatherer.Gatherer):
                 #
                 # store which genotypes have primary images
                 #
-                cols, rows = self.results[2]
+                cols, rows = self.results[3]
                 genotypeCol = Gatherer.columnNumber (cols, '_Object_key')
                 hasImage = {}
 
@@ -58,7 +58,7 @@ class GenotypeGatherer (Gatherer.Gatherer):
                 # The two earlier queries get the allele composition strings
                 # that need to be added for each genotype
                 #
-                combos = [ (0, 'combo1'), (1, 'combo2') ]
+                combos = [ (0, 'combo1'), (1, 'combo2'), (2, 'combo3') ]
 
                 for (index, id) in combos:
                         dict = {}               # genotype key -> note
@@ -95,7 +95,7 @@ class GenotypeGatherer (Gatherer.Gatherer):
                 #
                 genoUniqueCellLines = {}
                 genoCellLineStrings = {}
-                cols, rows = self.results[3]
+                cols, rows = self.results[4]
                 keyCol = Gatherer.columnNumber (cols, '_genotype_key')
                 cellLineCol = Gatherer.columnNumber (cols, 'cellline')
                 for row in rows:
@@ -113,7 +113,7 @@ class GenotypeGatherer (Gatherer.Gatherer):
                                 genoUniqueCellLines[key] = uniqueCellLines
 
 
-                cols, rows = self.results[4]
+                cols, rows = self.results[5]
                 keyCol = Gatherer.columnNumber (cols, '_genotype_key')
                 cellLineCol = Gatherer.columnNumber (cols, 'cellline')
                 for row in rows:
@@ -179,31 +179,35 @@ noteCmd = '''select mn._Object_key as _Genotype_key,
                         and mnt.noteType = '%s'
                 order by mn._Object_key'''
 cmds = [
-        # 0. "Combination Type 3" notes for use on allele summary page
-        noteCmd % 'Combination Type 3',
+
+        # 0. "Combination Type 1" notes for use in sorting by allele composition
+        noteCmd % 'Combination Type 1',
 
         # 1. "Combination Type 2" notes for use on allele detail page
         noteCmd % 'Combination Type 2',
 
-        # 2. get which genotypes have primary images associated
+        # 2. "Combination Type 3" notes for use on allele summary page
+        noteCmd % 'Combination Type 3',
+
+        # 3. get which genotypes have primary images associated
         '''select distinct _Object_key
                 from img_imagepane_assoc
                 where _MGIType_key = 12
                 and isPrimary = 1''',
 
-        # 3. cell_line_1 for genotype
+        # 4. cell_line_1 for genotype
         '''select gap._genotype_key, acl.cellline 
                 from gxd_allelepair gap, all_cellline acl
                 where _mutantcellline_key_1 IS NOT NULL
                 and gap._mutantcellline_key_1 = acl._cellline_key''',
 
-        # 4. cell_line_1 for genotype
+        # 5. cell_line_1 for genotype
         '''select gap._genotype_key, acl.cellline 
                 from gxd_allelepair gap, all_cellline acl
                 where _mutantcellline_key_2 IS NOT NULL
                 and gap._mutantcellline_key_2 = acl._cellline_key''',
 
-        # 5. assumes that a genotype has only one ID, that it is from MGI, and
+        # 6. assumes that a genotype has only one ID, that it is from MGI, and
         # that it is both preferred and non-private
         '''select distinct g._Genotype_key, s.strain, a.accID, g.note,
                         g.isConditional, t.term, sid.strain_id
@@ -220,7 +224,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Genotype_key', 'strain', 'strain_id', 'accID', 'isConditional', 'note',
-        'combo1', 'combo2', 'hasImage', 'hasPhenoData', 'hasDiseaseModel',
+        'combo1', 'combo2', 'combo3', 'hasImage', 'hasPhenoData', 'hasDiseaseModel',
         'classification', 'cell_lines', 'term' ]
 
 # prefix for the filename of the output file
