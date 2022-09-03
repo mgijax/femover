@@ -1033,14 +1033,14 @@ cmds = [
                 s._Genotype_key,
                 s.age,
                 r._Strength_key,
-                st.strength,
+                st.term as strength,
                 r._Result_key,
                 vte._term_key as _emaps_key,
                 rs._stage_key,
                 struct.term as structure,
                 s.ageMin,
                 s.ageMax,
-                p.pattern,
+                p.term as pattern,
                 s._specimen_key,
                 struct._Term_key,
                 ck._Assigned_key,
@@ -1048,14 +1048,14 @@ cmds = [
         from gxd_specimen s,
                 %s ck,
                 gxd_insituresult r,
-                gxd_strength st,
+                voc_term st,
                 gxd_isresultstructure rs,
-                gxd_pattern p,
+                voc_term p,
                 voc_term_emaps vte,
                 voc_term struct
         where s._Specimen_key = r._Specimen_key
-                and r._Strength_key = st._Strength_key
-                and r._Pattern_key = p._Pattern_key
+                and r._Strength_key = st._Term_key
+                and r._Pattern_key = p._Term_key
                 and r._Result_key = rs._Result_key
                 and vte._emapa_term_key = rs._emapa_term_key
                 and vte._stage_key = rs._stage_key
@@ -1078,8 +1078,8 @@ cmds = [
         '''select g._Assay_key,
                 g._Genotype_key,
                 g.age,
-                st._Strength_key,
-                st.strength,
+                st._Term_key as _Strength_key,
+                st.term as strength,
                 vte._term_key as _emaps_key,
                 gs._stage_key,
                 struct.term as structure,
@@ -1091,14 +1091,16 @@ cmds = [
                 ck._Assigned_key
         from gxd_gellane g,
                 gxd_gelband b,
-                gxd_strength st,
+                voc_term st,
                 gxd_gellanestructure gs,
                 voc_term_emaps vte,
                 voc_term struct,
+                voc_term glc,
                 %s ck
-        where g._GelControl_key = 1
+        where g._GelControl_key = glc._Term_key
+                and glc.term = 'No'
                 and g._GelLane_key = b._GelLane_key
-                and b._Strength_key = st._Strength_key
+                and b._Strength_key = st._Term_key
                 and g._GelLane_key = gs._GelLane_key
                 and vte._emapa_term_key = gs._emapa_term_key
                 and vte._stage_key = gs._stage_key

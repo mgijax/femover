@@ -209,8 +209,9 @@ def _assignClassicalKeys():
                         %d + row_number() over (order by g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key)
                 from gxd_gellane g,
                         gxd_gellanestructure gs,
-                        voc_term_emaps vte
-                where g._GelControl_key = 1
+                        voc_term_emaps vte,
+                        voc_term vtc
+                where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._GelLane_key = gs._GelLane_key
                         and vte._emapa_term_key = gs._emapa_term_key
                         and vte._stage_key = gs._stage_key
@@ -255,12 +256,12 @@ def _getInSituResultTable():
 
         cmd1 = '''insert into %s
                 select g._Result_key, case
-                        when s.strength in ('Ambiguous', 'Not Specified') then 0
-                        when s.strength in ('Absent', 'Not Applicable') then 1
+                        when s.term in ('Ambiguous', 'Not Specified') then 0
+                        when s.term in ('Absent', 'Not Applicable') then 1
                         else 2
                         end as is_detected
-                from gxd_insituresult g, gxd_strength s
-                where g._Strength_key = s._Strength_key''' % TMP_ISRESULT_DETECTED
+                from gxd_insituresult g, voc_term s
+                where g._Strength_key = s._Term_key''' % TMP_ISRESULT_DETECTED
         
         dbAgnostic.execute(cmd1)
         createIndex(TMP_ISRESULT_DETECTED, '_Result_key')
@@ -405,10 +406,10 @@ def _getGelLaneTable():
         cmd2 = '''update %s
                 set is_detected = 1
                 where _GelLane_key in (select f._GelLane_key
-                        from %s f, gxd_gelband gb, gxd_strength gs
+                        from %s f, gxd_gelband gb, voc_term gs
                         where f._GelLane_key = gb._GelLane_key
-                        and gb._Strength_key = gs._Strength_key
-                        and gs.strength in ('Absent', 'Not Applicable')
+                        and gb._Strength_key = gs._Term_key
+                        and gs.term in ('Absent', 'Not Applicable')
                         )''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
 
         dbAgnostic.execute(cmd2)
@@ -418,10 +419,10 @@ def _getGelLaneTable():
         cmd3 = '''update %s
                 set is_detected = 2
                 where _GelLane_key in (select f._GelLane_key
-                        from %s f, gxd_gelband gb, gxd_strength gs
+                        from %s f, gxd_gelband gb, voc_term gs
                         where f._GelLane_key = gb._GelLane_key
-                        and gb._Strength_key = gs._Strength_key
-                        and gs.strength not in ('Absent', 'Not Applicable', 'Ambiguous', 'Not Specified')
+                        and gb._Strength_key = gs._Term_key
+                        and gs.term not in ('Absent', 'Not Applicable', 'Ambiguous', 'Not Specified')
                         )''' % (TMP_GELLANE_DETECTED, TMP_GELLANE_DETECTED)
         
         dbAgnostic.execute(cmd3)
@@ -502,8 +503,9 @@ def _buildKeystoneTable():
                 from gxd_gellane g,
                         gxd_assay a,
                         gxd_gellanestructure s,
+                        voc_term vtc,
                         %s glk
-                where g._GelControl_key = 1
+                where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._Assay_key = a._Assay_key
                         and g._GelLane_key = s._GelLane_key
                         and exists (select 1 from gxd_expression e where g._GelLane_key = e._GelLane_key and e.isForGXD = 1)

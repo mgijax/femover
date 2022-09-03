@@ -218,34 +218,32 @@ cmds = [
                 gl.age,
                 gl.agenote,
                 gl.lanenote,
-                CASE WHEN gl._gelcontrol_key=1 THEN 0
-                        ELSE 1
-                END is_control,
-                glc.gellanecontent,
-                glrna.rnatype,
+                CASE WHEN glc.term = 'No' THEN 0 ELSE 1 END is_control,
+                glc.term as gellanecontent,
+                glrna.term as rnatype,
                 gr.size,
                 gr.sequencenum row_seq,
                 gr.rownote,
                 gr._gelrow_key,
-                gunits.units,
+                gunits.term as units,
                 gb.bandnote,
                 gb._gelband_key,
-                gstr.strength,
+                gstr.term as strength,
                 gg.isconditional conditional_genotype
         from gxd_gellane gl,
-                gxd_gelcontrol glc,
-                gxd_gelrnatype glrna,
-           gxd_gelband gb,
-           gxd_gelrow gr,
-          gxd_gelunits gunits,
-          gxd_strength gstr,
-                gxd_genotype gg
-        where gl._gelcontrol_key=glc._gelcontrol_key
-                and gl._gelrnatype_key=glrna._gelrnatype_key
-                and gunits._gelunits_key=gr._gelunits_key
+             voc_term glc,
+             voc_term glrna,
+             gxd_gelband gb,
+             gxd_gelrow gr,
+             voc_term gunits,
+             voc_term gstr,
+             gxd_genotype gg
+        where gl._gelcontrol_key=glc._term_key
+                and gl._gelrnatype_key=glrna._term_key
+                and gr._gelunits_key=gunits._term_key
                 and gb._gellane_key=gl._gellane_key
                 and gb._gelrow_key=gr._gelrow_key
-                and gb._strength_key=gstr._strength_key
+                and gb._strength_key=gstr._term_key
                 and gl._genotype_key=gg._genotype_key
                 and exists (select 1 from gxd_expression e where gl._assay_key = e._assay_key)
         ''',

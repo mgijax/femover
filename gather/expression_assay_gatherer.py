@@ -49,9 +49,9 @@ class AssayGatherer (Gatherer.Gatherer):
                 probeCol = Gatherer.columnNumber (cols, '_Probe_key')
                 nameCol = Gatherer.columnNumber (cols, 'probe_name')
                 typeCol = Gatherer.columnNumber (cols, 'type')
-                senseCol = Gatherer.columnNumber (cols, '_Sense_key')
-                labelCol = Gatherer.columnNumber (cols, '_Label_key')
-                visualCol = Gatherer.columnNumber (cols, '_Visualization_key')
+                senseCol = Gatherer.columnNumber (cols, 'sense')
+                labelCol = Gatherer.columnNumber (cols, 'label')
+                visualCol = Gatherer.columnNumber (cols, 'visualization')
 
                 toSkip = [ 'Not Applicable', 'Not Specified' ]
 
@@ -64,26 +64,22 @@ class AssayGatherer (Gatherer.Gatherer):
                         
                         # probe prep data
 
-                        sense = Gatherer.resolve (row[senseCol],
-                                'gxd_probesense', '_Sense_key', 'sense')
-                        label = Gatherer.resolve (row[labelCol],
-                                'gxd_label', '_Label_key', 'label')
+                        sense = row[senseCol]
+                        label = row[labelCol]
 
                         p = []
                         if sense not in toSkip:
                                 p.append(sense)
-                        if row[typeCol] not in toSkip:
-                                p.append(row[typeCol])
                         if label not in toSkip:
                                 p.append('labelled with ' + label)
+                        if row[typeCol] not in toSkip:
+                                p.append(row[typeCol])
                         if p:
                                 prep[assayKey] = ' '.join(p)
 
                         # visualization data
 
-                        visualization = Gatherer.resolve (row[visualCol],
-                                'gxd_visualizationmethod',
-                                '_Visualization_key', 'visualization')
+                        visualization = row[visualCol]
                         if visualization not in toSkip:
                                 visual[assayKey] = visualization
 
@@ -93,8 +89,8 @@ class AssayGatherer (Gatherer.Gatherer):
                 assayCol = Gatherer.columnNumber (cols, '_Assay_key')
                 nameCol = Gatherer.columnNumber (cols, 'antibodyName')
                 antibodyCol = Gatherer.columnNumber (cols, '_Antibody_key')
-                secondaryCol = Gatherer.columnNumber (cols, '_Secondary_key')
-                labelCol = Gatherer.columnNumber (cols, '_Label_key')
+                secondaryCol = Gatherer.columnNumber (cols, 'secondary')
+                labelCol = Gatherer.columnNumber (cols, 'label')
 
                 antibody = {}           # assay key -> antibody name
                 system = {}             # assay key -> detection system string
@@ -105,12 +101,8 @@ class AssayGatherer (Gatherer.Gatherer):
                         if row[nameCol]:
                                 antibody[key] = (row[antibodyCol], row[nameCol])
 
-                                secondary = Gatherer.resolve (
-                                        row[secondaryCol],
-                                        'gxd_secondary', '_Secondary_key',
-                                        'secondary')
-                                label = Gatherer.resolve (row[labelCol],
-                                        'gxd_label', '_Label_key', 'label')
+                                secondary = row[secondaryCol]
+                                label = row[labelCol]
 
                                 detectionSystem = ''
 
@@ -119,11 +111,8 @@ class AssayGatherer (Gatherer.Gatherer):
 
                                 if label not in toSkip:
                                         if detectionSystem:
-                                                detectionSystem = \
-                                                        detectionSystem + \
-                                                        ' coupled to '
-                                        detectionSystem = detectionSystem + \
-                                                label
+                                                detectionSystem = detectionSystem + ' coupled to '
+                                        detectionSystem = detectionSystem + label
 
                                 if detectionSystem:
                                         system[key] = detectionSystem 
@@ -188,23 +177,17 @@ class AssayGatherer (Gatherer.Gatherer):
                         if key in hasImage:
                                 image = 1
 
-                        assayType = Gatherer.resolve (row[typeCol],
-                                'gxd_assaytype', '_AssayType_key',
-                                'assayType')
+                        assayType = Gatherer.resolve (row[typeCol], 'gxd_assaytype', '_AssayType_key', 'assayType')
                         if row[reporterCol]:
                                 reporter = Gatherer.resolve (row[reporterCol])
 
                         self.addColumn ('_Probe_key', probeKey, row, cols)
                         self.addColumn ('probe_name', probeName, row, cols)
-                        self.addColumn ('probe_preparation', probePrep, row,
-                                cols)
-                        self.addColumn ('visualized_with', visualizedWith,
-                                row, cols)
-                        self.addColumn ('is_direct_detection',
-                                isDirectDetection, row, cols)
+                        self.addColumn ('probe_preparation', probePrep, row, cols)
+                        self.addColumn ('visualized_with', visualizedWith, row, cols)
+                        self.addColumn ('is_direct_detection', isDirectDetection, row, cols)
                         self.addColumn ('note', note, row, cols)
-                        self.addColumn ('detection_system', detectionSystem,
-                                row, cols)
+                        self.addColumn ('detection_system', detectionSystem, row, cols)
                         self.addColumn ('_Antibody_key', antibodyKey, row, cols)
                         self.addColumn ('antibody', antibodyName, row, cols)
                         self.addColumn ('assay_type', assayType, row, cols)
@@ -229,27 +212,39 @@ cmds = [
                         p._Probe_key,
                         p.name as probe_name,
                         gpp.type,
-                        gpp._Sense_key,
-                        gpp._Label_key,
-                        gpp._Visualization_key
+                        t1.term as sense,
+                        t2.term as label,
+                        t3.term as visualization
                 from gxd_assay a,
                         gxd_probeprep gpp,
-                        prb_probe p
+                        prb_probe p,
+                        voc_term t1,
+                        voc_term t2,
+                        voc_term t3
                 where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
                 and a._ProbePrep_key = gpp._ProbePrep_key
-                        and gpp._Probe_key = p._Probe_key''',
+                        and gpp._Probe_key = p._Probe_key
+                        and gpp._Sense_key = t1._Term_key
+                        and gpp._Label_key = t2._Term_key
+                        and gpp._Visualization_key = t3._Term_key
+                        ''',
 
         '''select a._Assay_key,
                         b.antibodyName,
                         b._Antibody_key,
-                        p._Secondary_key,
-                        p._Label_key
+                        t1.term as secondary,
+                        t2.term as label
                 from gxd_assay a,
                         gxd_antibodyprep p,
-                        gxd_antibody b
+                        gxd_antibody b,
+                        voc_term t1,
+                        voc_term t2
                 where exists (select 1 from gxd_expression e where a._Assay_key = e._Assay_key)
                 and a._AntibodyPrep_key = p._AntibodyPrep_key
-                        and p._Antibody_key = b._Antibody_key''',
+                        and p._Antibody_key = b._Antibody_key
+                        and p._Secondary_key = t1._Term_key
+                        and p._Label_key = t2._Term_key
+                        ''',
 
         '''select distinct _Assay_key, hasImage
                 from gxd_expression''',

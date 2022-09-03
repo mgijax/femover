@@ -37,8 +37,7 @@ class AntibodyGatherer (Gatherer.Gatherer):
 
 cmds = [
         # 0. collect the counts of expression results
-        '''select gp._Antibody_key,
-                count(distinct _Expression_key) as gxdCount
+        '''select gp._Antibody_key, count(distinct _Expression_key) as gxdCount
         into temporary table gxdResults
         from gxd_antibodyprep gp, gxd_assay ga, gxd_expression ge
         where gp._AntibodyPrep_key = ga._AntibodyPrep_key 
@@ -51,8 +50,7 @@ cmds = [
         'create index gxdResults2 on gxdResults(_Antibody_key)',
 
         # 2. gather the aliases for each antibody as a comma-delimited string
-        '''select _Antibody_key, 
-                array_to_string(array_agg(alias), ', ') as aliases
+        '''select _Antibody_key, array_to_string(array_agg(alias), ', ') as aliases
         into temporary table antibody_aliases
         from gxd_antibodyalias
         group by _Antibody_key
@@ -69,8 +67,8 @@ cmds = [
                 coalesce(f.gxdCount, 0) as gxdCount,
                 aa.accID as mgiID,
                 ae.commonName as antibodySpecies,
-                ac.class,
-                ap.antibodyType,
+                ac.term as class,
+                ap.term as antibodyType,
                 ab.antibodyNote,
                 ab._Antigen_key,
                 b.aliases
@@ -82,10 +80,10 @@ cmds = [
                 and aa.prefixPart = 'MGI:'
                 and aa.preferred = 1)
         inner join mgi_organism ae on (ab._Organism_key = ae._Organism_key)
-        inner join gxd_antibodyclass ac on (
-                ab._AntibodyClass_key = ac._AntibodyClass_key)
-        inner join gxd_antibodytype ap on (
-                ab._AntibodyType_key = ap._AntibodyType_key)
+        inner join voc_term ac on (
+                ab._AntibodyClass_key = ac._Term_key)
+        inner join voc_term ap on (
+                ab._AntibodyType_key = ap._Term_key)
         left outer join gxdResults f on (f._Antibody_key = ab._Antibody_key)
         left outer join antibody_aliases b on (
                 ab._Antibody_key = b._Antibody_key)

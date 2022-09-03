@@ -459,10 +459,10 @@ Queries.extend([
 {       ID:"wildtypeGelLaneCount",
         DESCRIPTION:"non-insitu reporters gel lanes that are wild type",
         SQLSTATEMENT:"""
-        select count(distinct e._assay_key) from tmp_gxdview e, GXD_GelLane g 
+        select count(distinct e._assay_key) from tmp_gxdview e, GXD_GelLane g, VOC_Term t
         where e._assaytype_key != 9 
                 and e._assay_key = g._assay_key 
-                and g._gelcontrol_key = 1 
+                and g._gelcontrol_key = t._term_key and t._vocab_key = 154 and t.term = 'No'
                 and not exists (select 1 from GXD_AlleleGenotype ag where g._Genotype_key = ag._Genotype_key)
         """
 },
