@@ -155,8 +155,10 @@ def __output (
         now = time.time()
         elapsed = now - START_TIME
 
-        LOG.write ('%s : %s : %6.3f sec : %s\n' % (
-                NAME, messageType, elapsed, message))
+        timestamp = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(now))
+
+        LOG.write ('%s : %s : %s : %s\n' % (
+                NAME, messageType, timestamp, message))
         LOG.flush()
         return
 
