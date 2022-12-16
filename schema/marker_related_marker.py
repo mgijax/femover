@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
         related_marker_symbol   text    not null,
         related_marker_id       text    not null,
         relationship_category   text    not null,
+        relationship_term_key   int     not null,
         relationship_term       text    not null,
         qualifier               text    not null,
         evidence_code           text    not null,
@@ -38,6 +39,7 @@ keys = {
         'marker_key' : ('marker', 'marker_key'),
         'related_marker_key' : ('marker', 'marker_key'),
         'reference_key' : ('reference', 'reference_key'),
+        'relationship_term_key' : ('term', 'term_key'),
         }
 
 # index used to cluster data in the table
@@ -54,6 +56,7 @@ comments = {
                 'related_marker_symbol' : 'symbol of the related marker, cached for convenience',
                 'related_marker_id' : 'primary accession ID of the related marker, cached for convenience',
                 'relationship_category' : 'text name for the category of relationship',
+                'relationship_term_key' : 'foreign key to term table, for the relationship_term',
                 'relationship_term' : 'term describing the relationship (drawn from terms in the category)',
                 'qualifier' : 'modifier on the relationship',
                 'evidence_code' : 'type of evidence used to support the relationship',

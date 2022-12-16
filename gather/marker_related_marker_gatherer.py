@@ -285,6 +285,7 @@ cmds = [
                         e.abbreviation as evidence_code,
                         r._Refs_key as reference_key,
                         bc.accID as jnum_id,
+                        r._RelationshipTerm_key as relationship_term_key,
                         s.synonym as relationship_term
                 from mgi_relationship_category c,
                         mgi_relationship r,
@@ -323,7 +324,8 @@ cmds = [
 
         # 1. reversed marker-to-marker relationship data (only for categories
         # with markers for both object types, and only including data for
-        # markers which are current)
+        # markers which are current). Also, inverse is not needed for qtl-qtl interactions
+        # which are represented symmetricly in the database.
         '''select r._Relationship_key,
                         c.name as relationship_category,
                         r._Object_key_2 as marker_key,
@@ -334,6 +336,7 @@ cmds = [
                         e.abbreviation as evidence_code,
                         r._Refs_key as reference_key,
                         bc.accID as jnum_id,
+                        r._RelationshipTerm_key as relationship_term_key,
                         s.synonym as relationship_term
                 from mgi_relationship_category c,
                         mgi_relationship r,
@@ -368,6 +371,7 @@ cmds = [
                         and st._MGIType_key = 13
                         and st.synonymType = 'related participant'
                         and r._Category_key != 1001
+                        and r._Category_key != 1010
                 order by r._Object_key_2''',
 
         # 2. properties (for relationships involving two markers -- except
@@ -425,7 +429,7 @@ files = [
         ('marker_related_marker',
                 [ 'mrm_key', 'marker_key', 'related_marker_key',
                         'related_marker_symbol', 'related_marker_id',
-                        'relationship_category', 'relationship_term',
+                        'relationship_category', 'relationship_term_key', 'relationship_term',
                         'qualifier', 'evidence_code', 'reference_key',
                         'jnum_id', 'sequence_num', ],
                 'marker_related_marker'),
