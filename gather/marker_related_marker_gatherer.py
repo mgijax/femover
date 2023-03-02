@@ -372,6 +372,7 @@ cmds = [
                         and st.synonymType = 'related participant'
                         and r._Category_key != 1001
                         and r._Category_key != 1010
+                        and r._Category_key != 1012
                 order by r._Object_key_2''',
 
         # 2. properties (for relationships involving two markers -- except
