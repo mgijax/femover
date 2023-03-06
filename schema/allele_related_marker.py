@@ -18,7 +18,7 @@ createStatement = '''CREATE TABLE %s  (
         allele_key              int     not null,
         related_marker_key      int     not null,
         related_marker_symbol   text    not null,
-        related_marker_id       text    not null,
+        related_marker_id       text        null,
         relationship_category   text    not null,
         relationship_term       text    not null,
         qualifier               text    not null,

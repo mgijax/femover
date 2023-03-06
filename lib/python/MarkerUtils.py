@@ -120,15 +120,13 @@ def _populateOrganismCache():
         return
 
 def _populateSymbolCache():
-        # populate the global 'symbolCache' with symbols for mouse markers
-        # (and human markers)
+        # populate the global 'symbolCache' with symbols for markers
 
     global symbolCache
 
     cmd = '''select _Marker_key, symbol
                 from mrk_marker
-                where _Organism_key in (1, 2)
-                        and _Marker_Status_key = 1'''
+                where _Marker_Status_key = 1'''
 
     (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -150,7 +148,8 @@ def _populateIDCache():
 
     global idCache
 
-    cmd = '''select m._Marker_key, a.accID
+    cmd = '''
+        select m._Marker_key, a.accID
         from mrk_marker m, acc_accession a
         where m._Organism_key = 1
             and m._Marker_Status_key = 1
@@ -159,7 +158,18 @@ def _populateIDCache():
             and a.private = 0
             and a.preferred = 1
             and a._LogicalDB_key = 1
-            and a.prefixPart = 'MGI:' '''
+            and a.prefixPart = 'MGI:' 
+	union
+        select m._Marker_key, a.accID
+        from mrk_marker m, acc_accession a
+        where m._Organism_key != 1
+            and m._Marker_Status_key = 1
+            and m._Marker_key = a._Object_key
+            and a._MGIType_key = 2
+            and a.private = 0
+            and a.preferred = 1
+            and a._LogicalDB_key = 55
+	'''
 
     (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -209,7 +219,7 @@ def _populateNonMouseEGCache():
     return
 
 def _populateMarkerTypeCache():
-    # caches types for human, mouse, rat markers
+    # caches types for markers
     global markerTypeCache
 
     if len(markerTypeCache) > 0:
@@ -217,8 +227,7 @@ def _populateMarkerTypeCache():
 
     cmd1 = '''select _Marker_key, _Marker_Type_key
         from mrk_marker
-        where _Organism_key in (1, 2, 40)
-            and _Marker_Status_key = 1'''
+        where _Marker_Status_key = 1'''
 
     (cols, rows) = dbAgnostic.execute(cmd1)
 

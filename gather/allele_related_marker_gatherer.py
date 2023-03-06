@@ -25,6 +25,7 @@ import symbolsort
 
 mutationInvolvesKey = 1003      # _Category_key for 'mutation involves'
 expressedComponentKey = 1004    # _Category_key for 'expressed component'
+hasDriverKey = 1006    		# _Category_key for 'has driver'
 
 maxRowCount = 100000    # max number of relationship rows to process in memory
 
@@ -46,6 +47,7 @@ teasers = None          # dictionary of allele keys, referring to a list of
 
 mutationInvolvesCount = 0       # count of 'mutation involves' relationships
 expressedComponentCount = 0     # count of 'expressed component' relationships
+hasDriverCount = 0		# count of 'has driver' relationships
 
 # generator for arm_key values, based on relationship key & reversed flag
 
@@ -67,10 +69,10 @@ def initialize():
 
         cmd2 = '''select max(r._Object_key_1)
                 from mgi_relationship r, mrk_marker m
-                where r._Category_key in (%d, %d)
+                where r._Category_key in (%d, %d, %d)
                 and r._Object_key_2 = m._Marker_key
                 and m._Marker_Status_key = 1''' % (mutationInvolvesKey,
-                        expressedComponentKey)
+                        expressedComponentKey, hasDriverKey)
 
         (cols, rows) = dbAgnostic.execute(cmd2)
         maxAlleleKey = rows[0][0]
@@ -81,11 +83,11 @@ def initialize():
 
         cmd3 = '''select r._Object_key_1, count(1) as ct
                 from mgi_relationship r, mrk_marker m
-                where r._Category_key in (%d, %d)
+                where r._Category_key in (%d, %d, %d)
                 and r._Object_key_2 = m._Marker_key
                 and m._Marker_Status_key = 1
                 group by r._Object_key_1''' % (mutationInvolvesKey,
-                        expressedComponentKey)
+                        expressedComponentKey, hasDriverKey)
 
         (cols, rows) = dbAgnostic.execute(cmd3)
         keyCol = dbAgnostic.columnNumber (cols, '_Object_key_1')
@@ -348,13 +350,13 @@ def getRelationshipRows(startAllele, endAllele):
                         r._Qualifier_key,
                         r._Evidence_key
                 from mgi_relationship r, mrk_marker m
-                where r._Category_key in (%d, %d)
+                where r._Category_key in (%d, %d, %d)
                         and r._Object_key_1 >= %d
                         and r._Object_key_1 <= %d
                         and r._Object_key_2 = m._Marker_key
                         and m._Marker_Status_key = 1
                 order by r._Object_key_1''' % (mutationInvolvesKey,
-                        expressedComponentKey, startAllele, endAllele)
+                        expressedComponentKey, hasDriverKey, startAllele, endAllele)
 
         (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -377,13 +379,13 @@ def getPropertyRows(startAllele, endAllele):
                         mgi_relationship r,
                         mrk_marker m
                 where p._Relationship_key = r._Relationship_key
-                        and r._Category_key in (%d, %d)
+                        and r._Category_key in (%d, %d, %d)
                         and r._Object_key_1 >= %d
                         and r._Object_key_1 <= %d
                         and r._Object_key_2 = m._Marker_key
                         and m._Marker_Status_key = 1
                 order by p._Relationship_key, p.sequenceNum''' % (
-                        mutationInvolvesKey, expressedComponentKey,
+                        mutationInvolvesKey, expressedComponentKey, hasDriverKey,
                         startAllele, endAllele)
 
         (cols1, rows1) = dbAgnostic.execute(cmd1)
@@ -402,7 +404,7 @@ def getPropertyRows(startAllele, endAllele):
                         mgi_note n,
                         mrk_marker m
                 where r._Relationship_key = n._Object_key
-                        and r._Category_key in (%d, %d)
+                        and r._Category_key in (%d, %d, %d)
                         and t._NoteType_key = n._NoteType_key
                         and t._MGIType_key = 40
                         and r._Object_key_1 >= %d
@@ -410,7 +412,7 @@ def getPropertyRows(startAllele, endAllele):
                         and r._Object_key_2 = m._Marker_key
                         and m._Marker_Status_key = 1
                 order by r._Relationship_key, n._Note_key''' % (
-                        mutationInvolvesKey, expressedComponentKey,
+                        mutationInvolvesKey, expressedComponentKey, hasDriverKey,
                         startAllele, endAllele)
 
         (cols2, rows2) = dbAgnostic.execute(cmd2)
@@ -497,7 +499,7 @@ def expandRelationshipRows(iCols, iRows):
         # produce the interaction rows for the data file, given the 'iCols'
         # and 'iRows' as retrieved from getRelationshipRows(). 
 
-        global relationshipRowCount, expressedComponentCount
+        global relationshipRowCount, expressedComponentCount, hasDriverCount
         global mutationInvolvesCount
 
         cols = [ 'arm_key', 'marker_key', 'interacting_marker_key',
@@ -554,6 +556,8 @@ def expandRelationshipRows(iCols, iRows):
 
                 elif categoryKey == expressedComponentKey:
                     expressedComponentCount = 1 + expressedComponentCount
+                elif categoryKey == hasDriverKey:
+                    hasDriverCount = 1 + hasDriverCount
 
                 row = [
                         armGenerator.getKey( iRow[relationshipCol] ),
@@ -696,6 +700,8 @@ def main():
                 mutationInvolvesCount)
         logger.debug('Found %d "expressed component" rows' % \
                 expressedComponentCount)
+        logger.debug('Found %d "has driver" rows' % \
+                hasDriverCount)
 
         # write the info out so that femover knows which output file goes with
         # which database table
