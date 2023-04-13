@@ -246,16 +246,8 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             if accID.startswith('OMIM:'):
                 accID = accID.replace('OMIM:', '')
                 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb',
-                '_LogicalDB_key', 'name')
-
-            # assumes each logical db has only one actual database
-            # and thus one URL (safe assumption for our set of
-            # logical databases here)
-
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb',
-                '_LogicalDB_key', 'url')
-
+            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
+            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
             fullUrl = ldbUrl.replace ('@@@@', accID)
 
             links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
@@ -295,11 +287,9 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 
         seqNum = 0
 
-        logger.debug ('Found %d ID-based mouse homology links' % \
-            len(rows))
+        logger.debug ('Found %d ID-based mouse homology links' % len(rows))
         rows = sortResultSet (rows, ldbKeyCol, markerKeyCol)
-        logger.debug ('Sorted %d ID-based mouse homology links' % \
-            len(rows))
+        logger.debug ('Sorted %d ID-based mouse homology links' % len(rows))
 
         for row in excludeDuplicates (rows, ldbKeyCol, markerKeyCol):
             ldbKey = row[ldbKeyCol]
@@ -307,27 +297,15 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             accID = row[idCol]
             seqNum = seqNum + 1
 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb',
-                '_LogicalDB_key', 'name')
-
-            # assumes each logical db has only one actual database
-            # and thus one URL (safe assumption for our set of
-            # logical databases here)
-
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb',
-                '_LogicalDB_key', 'url')
-
+            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
+            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
             displayID = accID
-
-            ldbKey, ldbName, ldbUrl, displayID = \
-                tweakHomologyValues (ldbKey, ldbName, ldbUrl,
-                    displayID)
-
+            ldbKey, ldbName, ldbUrl, displayID = tweakHomologyValues (ldbKey, ldbName, ldbUrl, displayID)
             fullUrl = ldbUrl.replace ('@@@@', accID)
 
-            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
+            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, 
                 seqNum, displayID,
-                getDisplayText(ldbKey, ldbName, accID),
+                getDisplayText(ldbKey, ldbName, accID), 
                 fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
             
             allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
@@ -344,8 +322,7 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 
         cols, rows = self.results[2]
 
-        logger.debug ('Found %d coord-based mouse homology links' % \
-            len(rows))
+        logger.debug ('Found %d coord-based mouse homology links' % len(rows))
 
         markerKeyCol = Gatherer.columnNumber (cols, '_Marker_key')
         chromCol = Gatherer.columnNumber (cols, 'genomicChromosome')
@@ -379,7 +356,6 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
 #            vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
 #            vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
 #            vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
-
 #            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
 
         logger.debug ('Stored %d mouse homology links' % seqNum)
@@ -416,19 +392,14 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             accID = row[idCol]
             seqNum = seqNum + 1
 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb',
-                '_LogicalDB_key', 'name')
-
-            # assumes each logical db has only one actual database
-            # and thus one URL (safe assumption for our set of
-            # logical databases here)
-
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb',
-                '_LogicalDB_key', 'url')
-
+            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
+            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
             fullUrl = ldbUrl.replace ('@@@@', accID)
 
-            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, accID, getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, 
+                seqNum, accID, 
+                getDisplayText(ldbKey, ldbName, accID), 
+                fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
             
             allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
             if allianceInfo != None:
@@ -506,8 +477,7 @@ cmds = [
         and a._MGIType_key = %d
         and a._LogicalDB_key in (%d, %d, %d)
         and a.private = 0
-        and a.preferred = 1''' % (
-            HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
+        and a.preferred = 1''' % (HUMAN, MARKER, HGNC, ENTREZ_GENE, OMIM),
 
     # 1. mouse markers' IDs
     '''select a._LogicalDB_key,
