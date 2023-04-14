@@ -80,20 +80,6 @@ MPD_STRAIN_URL="https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"
 export MPD_STRAIN_URL
 
 #
-# URL for making coordinate-based links for markers to VISTA-Point
-#
-
-VISTA_POINT_URL="http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
-export VISTA_POINT_URL
-
-#
-# URL for making Ensembl GM-based links for markers to Gene Tree
-#
-
-GENE_TREE_URL="http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g=@@@@"
-export GENE_TREE_URL
-
-#
 # Miscellaneous settings
 #
 CHUNK_SIZE=100000	# for large tables, how many rows to do at once

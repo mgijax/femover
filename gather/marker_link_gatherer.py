@@ -3,7 +3,6 @@
 # 
 # gathers data for the 'marker_link' table in the front-end database
 
-import config
 import Gatherer
 import logger
 import os
@@ -16,9 +15,24 @@ MGI = 1
 OMIM = 15
 ENTREZ_GENE = 55
 ZFIN_GENE = 172
-RGD = 47            # Rat Genome Database
+RGD = 47
 HGNC = 64
 ENSEMBL_GENE_MODEL = 60
+
+ldbLookup = {
+        MGI:['MGI', 'accession_report.cgi?id='],
+        OMIM:['OMIM', 'https://www.omim.org/entry/'],
+        RGD:['Rat Genome Database', 'http://rgd.mcw.edu/generalSearch/RgdSearch.jsp?quickSearch=1&searchKeyword='],
+        ENTREZ_GENE:['Entrez Gene', 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&cmd=Retrieve&dopt=Graphics&list_uids='],
+        ENSEMBL_GENE_MODEL:['Gene Tree', 'http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g='],
+        HGNC:['HGNC', 'https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/'],
+        ZFIN_GENE:['Zebrafish Model Organism Database', 'http://www.zfin.org/action/marker/view/']
+}
+
+# turned off until VISTA-Point comes up to new genome build (Build 39):
+PROCESS_VISTA_POINT = 0
+VISTA_POINT = 'VISTA-Point'
+VISTA_POINT_URL = "http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
 
 # preferred ordering for links, by logical database (add Alliance links later)
 LDB_ORDERING = [ HGNC, MGI, RGD, ZFIN_GENE, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
@@ -55,21 +69,12 @@ HAS_MARKUPS = 1
 NO_NEW_WINDOW = 0
 USE_NEW_WINDOW = 1
 
-VISTA_POINT = 'VISTA-Point'
-GENE_TREE = 'Gene Tree'
-
 ALLIANCE_MARKERS = set()
 
 ###-- links to external gene detail pages ---###
 
 # URL for gene detail pages at Alliance (append HGNC, MGI, RGD, or ZFIN ID)
 ALLIANCE_GENE_URL = 'https://www.alliancegenome.org/gene/'
-
-# URL for gene detail page at RGD (append RGD ID)
-RGD_GENE_URL = 'https://rgd.mcw.edu/rgdweb/report/gene/main.html?id='
-
-# URL for gene detail page at ZFIN (append ZFIN ID)
-ZFIN_GENE_URL = 'https://zfin.org/'
 
 ###--- links to expression data ---###
 
@@ -169,18 +174,6 @@ def getVersionForVistaPoint (version):
 
     return 'mm39'
 
-def tweakHomologyValues (ldbKey, ldbName, url, associatedID):
-    # allow tweaking of logical database-related values to allow overrides
-    # and using some IDs to reach their non-standard sites.  (like using
-    # Ensembl IDs to reach Gene Tree rather than Ensembl.)
-
-    if ldbKey == ENSEMBL_GENE_MODEL:
-        ldbName = GENE_TREE
-        url = config.GENE_TREE_URL
-        associatedID = None
-
-    return ldbKey, ldbName, url, associatedID
-
 ###--- Classes ---###
 
 class MarkerLinkGatherer (Gatherer.Gatherer):
@@ -246,15 +239,13 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             if accID.startswith('OMIM:'):
                 accID = accID.replace('OMIM:', '')
                 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
-            fullUrl = ldbUrl.replace ('@@@@', accID)
+            ldbName = ldbLookup[ldbKey][0]
+            fullUrl = ldbLookup[ldbKey][1] + accID
 
             links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
                 seqNum, accID,
-                getDisplayText(ldbKey, ldbName, accID),
-                fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
-            
+                getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+
             allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
             if allianceInfo != None:
                 name, url = allianceInfo
@@ -297,16 +288,17 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             accID = row[idCol]
             seqNum = seqNum + 1
 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
-            displayID = accID
-            ldbKey, ldbName, ldbUrl, displayID = tweakHomologyValues (ldbKey, ldbName, ldbUrl, displayID)
-            fullUrl = ldbUrl.replace ('@@@@', accID)
+            ldbName = ldbLookup[ldbKey][0]
+            fullUrl = ldbLookup[ldbKey][1] + accID
 
-            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, 
+            if ldbKey == 60:
+                displayID = None
+            else:
+                displayID = accID
+
+            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
                 seqNum, displayID,
-                getDisplayText(ldbKey, ldbName, accID), 
-                fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+                getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
             
             allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
             if allianceInfo != None:
@@ -316,10 +308,12 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
         # build the coordinate-based links next, as they should come
         # last in each marker's list of links
 
-        # short-circuit if no VISTA-Point URL
-        if not config.VISTA_POINT_URL:
-            return links
+        # if not processing VISTA_POINT, return
+        if PROCESS_VISTA_POINT == 0:
+                logger.debug ('Stored %d mouse homology links' % seqNum)
+                return links
 
+        # else, process VISTA_POINT
         cols, rows = self.results[2]
 
         logger.debug ('Found %d coord-based mouse homology links' % len(rows))
@@ -349,14 +343,12 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             endCoord = str(int(row[endCol]))
             version = getVersionForVistaPoint(row[versionCol])
             seqNum = seqNum + 1
-
-# Commented out until VISTA-Point comes up to new genome build (Build 39):
-#            vistaPointUrl = config.VISTA_POINT_URL
-#            vistaPointUrl = vistaPointUrl.replace ( '<version>', version)
-#            vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
-#            vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
-#            vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
-#            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
+            vistaPointUrl = VISTA_POINT_URL
+            vistaPointUrl = vistaPointUrl.replace ( '<version>', version)
+            vistaPointUrl = vistaPointUrl.replace ( '<chromosome>', chromosome)
+            vistaPointUrl = vistaPointUrl.replace ( '<startCoordinate>', startCoord)
+            vistaPointUrl = vistaPointUrl.replace ( '<endCoordinate>', endCoord)
+            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, seqNum, None, VISTA_POINT, vistaPointUrl, NO_MARKUPS, NO_NEW_WINDOW ] ) 
 
         logger.debug ('Stored %d mouse homology links' % seqNum)
         return links
@@ -392,14 +384,12 @@ class MarkerLinkGatherer (Gatherer.Gatherer):
             accID = row[idCol]
             seqNum = seqNum + 1
 
-            ldbName = Gatherer.resolve (ldbKey, 'acc_logicaldb', '_LogicalDB_key', 'name')
-            ldbUrl = Gatherer.resolve (ldbKey, 'acc_actualdb', '_LogicalDB_key', 'url')
-            fullUrl = ldbUrl.replace ('@@@@', accID)
+            ldbName = ldbLookup[ldbKey][0]
+            fullUrl = ldbLookup[ldbKey][1] + accID
 
-            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP, 
-                seqNum, accID, 
-                getDisplayText(ldbKey, ldbName, accID), 
-                fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
+            links.append ( [ markerKey, HOMOLOGY_LINK_GROUP,
+                seqNum, accID,
+                getDisplayText(ldbKey, ldbName, accID), fullUrl, NO_MARKUPS, NO_NEW_WINDOW ] )
             
             allianceInfo = self.getAllianceInfo(markerKey, ldbKey, accID)
             if allianceInfo != None:

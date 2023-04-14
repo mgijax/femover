@@ -100,16 +100,6 @@ if 'BUILDS_IN_SYNC' in os.environ:
 else:
         BUILDS_IN_SYNC = 1
 
-if 'VISTA_POINT_URL' in os.environ:
-        VISTA_POINT_URL = os.environ['VISTA_POINT_URL']
-else:
-        VISTA_POINT_URL = "http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
-
-if 'GENE_TREE_URL' in os.environ:
-        GENE_TREE_URL = os.environ['GENE_TREE_URL']
-else:
-        GENE_TREE_URL = "http://useast.ensembl.org/Mus_musculus/Gene/Summary?db=core;g=@@@@"
-
 ###--- source database connection (read-only) ---###
 
 if 'SOURCE_TYPE' in os.environ:
