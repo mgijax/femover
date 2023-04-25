@@ -298,11 +298,20 @@ class AlleleGatherer (Gatherer.Gatherer):
 
 cmds = [
         # 0. Cre drivers
+	# As of March 2023, any allele can have a driver, and actually can have more than one driver.
+	# HOWEVER, by curatorial policy, recombinase alleles will ONLY be annotated to the ONE recombinase 
+	# driver, even if there are other drivers present. The following query therefore retrieves the one
+	# driver for recombinase (only) alleles.
         '''select a._Allele_key, m._Marker_key, m.symbol as driverNote
-                from mgi_relationship r, all_allele a, mrk_marker m
+                from mgi_relationship r, all_allele a, mrk_marker m, voc_annot va, voc_term vt
                 where r._Category_key = 1006
                 and r._Object_key_1 = a._Allele_key
-                and r._Object_key_2 = m._Marker_key''',
+                and r._Object_key_2 = m._Marker_key
+		and va._object_key = a._allele_key
+        	and va._annottype_key=%s
+		and va._term_key = vt._term_key
+		and vt.term = 'Recombinase'
+		'''%ALLELE_SUBTYPE_ANNOT_KEY,
 
         # 1. marker name for each allele
         '''select a._Allele_key, m.name

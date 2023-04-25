@@ -76,6 +76,9 @@ cmds = [
                 and source.term = 'Alliance' 
                 and source.abbreviation = 'Alliance Direct'
             join MGI_Relationship r on r._object_key_2 = m._marker_key and r._category_key = 1006
+	    join VOC_Annot va on r._object_key_1 = va._object_key and va._annottype_key = 1014
+	    join VOC_Term vt on va._term_key = vt._term_key and vt.term = 'Recombinase'
+
             order by mc._cluster_key
         ''',
         # Query 1: returns all markers used as drivers. For anything not seen in the first group,
@@ -86,6 +89,8 @@ cmds = [
                 m._marker_key, m.symbol, m._organism_key
             from MRK_Marker m
             join MGI_Relationship r on r._object_key_2 = m._marker_key and r._category_key = 1006
+	    join VOC_Annot va on r._object_key_1 = va._object_key and va._annottype_key = 1014
+	    join VOC_Term vt on va._term_key = vt._term_key and vt.term = 'Recombinase'
         ''',
         ]
 

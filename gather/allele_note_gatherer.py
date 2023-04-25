@@ -57,22 +57,6 @@ class AlleleNoteGatherer (Gatherer.Gatherer):
                         else:
                                 m[alleleKey][noteType] = note
 
-                # add in driver notes from query 2
-
-                cols, rows = self.results[2]
-                alleleKeyCol = Gatherer.columnNumber (cols, '_Object_key_1')
-                noteCol = Gatherer.columnNumber (cols, 'symbol')
-                noteType = DRIVER_NOTES
-
-                for row in rows:
-                        alleleKey = row[alleleKeyCol]
-                        note = row[noteCol]
-
-                        if alleleKey not in m:
-                                m[alleleKey] = { noteType : note }
-                        else:
-                                m[alleleKey][noteType] = note
-
                 # boil it down to the final set of results
 
                 self.finalColumns = [ 'alleleKey', 'noteType', 'note' ]
@@ -113,13 +97,6 @@ cmds = [
                 and n._NoteType_key = %d
         order by a._Allele_key, n._Note_key''' % DERIVATION_NOTE_TYPE,
 
-        # 2. add in driver note
-        '''
-        select r._Object_key_1, m.symbol
-        from MGI_Relationship r, MRK_Marker m
-        where r._Category_key = 1006
-        and r._Object_key_2 = m._Marker_key
-        ''',
         ]
 
 # order of fields (from the query results) to be written to the
