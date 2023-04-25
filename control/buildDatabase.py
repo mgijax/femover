@@ -179,8 +179,7 @@ GATHER_PROFILES = []
 
 # lists of strings, each of which is a table to be created for that
 # particular data type:
-ACCESSION = [ 'accession', 'actual_database',
-        ]
+ACCESSION = [ 'accession' ]
 ALLELES = [ 'allele', 'allele_id', 'allele_counts', 'allele_note',
                 'allele_sequence_num', 'allele_to_sequence',
                 'allele_to_reference', 'allele_synonym', 'allele_mutation',
