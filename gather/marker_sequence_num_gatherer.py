@@ -181,10 +181,18 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                 cytoCol = Gatherer.columnNumber (columns, 'cytogeneticOffset')
                 chrCol = Gatherer.columnNumber (columns, 'sequenceNum')
                 symbolCol = Gatherer.columnNumber (columns, 'symbol')
+                genChrCol = Gatherer.columnNumber (columns, 'genomicchromosome')
 
                 def sortKey(a):
                         # return a sort key for 'a' with appropriate handling for None values
-                        chrom, startCoord, cM, cytoband, symbol, markerKey = a
+                        chrom, startCoord, cM, cytoband, symbol, markerKey, genChrCol = a
+
+                        # special handling for PAR markers; 
+                        if (chrom == 22) and (genChrCol == "Y"):
+                                chrom = 21
+                        if (chrom == 22) and (genChrCol == "X"):
+                                chrom = 20
+
 
                         chromSeqNum = utils.intSortKey(chrom)
                         symbol = utils.stringSortKey(symbol)
@@ -199,7 +207,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                                 cmOffset = maxOffset
 
                         locations.append ( (row[chrCol], row[startCol],
-                                cmOffset, row[cytoCol], row[symbolCol].lower(), row[keyCol]) )
+                                cmOffset, row[cytoCol], row[symbolCol].lower(), row[keyCol],row[genChrCol]) )
                 locations.sort(key=sortKey)
 
                 allKeys = {}
@@ -207,7 +215,7 @@ class MarkerSequenceNumGatherer (Gatherer.Gatherer):
                         allKeys[key] = 1
 
                 i = 0
-                for (a,b,c,d,e,markerKey) in locations:
+                for (a,b,c,d,e,markerKey,f) in locations:
                         if markerKey in allKeys:
                                 i = i + 1
                                 del allKeys[markerKey]
@@ -267,7 +275,7 @@ cmds = [
                 order by m._Marker_key, a._LogicalDB_key, a.prefixPart,
                         a.numericPart''',
 
-        '''select c._Marker_key, c.chromosome, c.startCoordinate,
+        '''select c._Marker_key, c.genomicchromosome, c.startCoordinate,
                         c.cmOffset, c.cytogeneticOffset, c.sequenceNum, m.symbol
                 from mrk_location_cache c, mrk_marker m
                 where c._Marker_key = m._Marker_key
