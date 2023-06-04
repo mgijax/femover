@@ -100,7 +100,6 @@ class GenotypeGatherer (Gatherer.Gatherer):
                 cellLineCol = Gatherer.columnNumber (cols, 'cellline')
                 for row in rows:
                         key = row[keyCol]
-                        logger.debug ('-key %d ' % key)
                         if key in genoUniqueCellLines:
                                 cellLine = row[cellLineCol]
                                 uniqueCellLines = genoUniqueCellLines[key]

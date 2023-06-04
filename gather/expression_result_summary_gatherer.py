@@ -405,7 +405,9 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                         if not emapsKey:
                                 continue
 
-                        cellType = TERM_LOOKUP.get(row[cellTypeKeyCol])
+                        cellType = None
+                        if row[cellTypeKeyCol]:
+                            cellType = TERM_LOOKUP.get(row[cellTypeKeyCol])
                         
                         extras.setdefault(assayKey,[]).append( [row[genotypeCol],
                                 row[ageCol], row[strengthCol], row[resultCol],

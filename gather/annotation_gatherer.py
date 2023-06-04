@@ -491,7 +491,9 @@ class AnnotationGatherer (Gatherer.CachingMultiFileGatherer):
                         evidenceKey = repRow[evidenceKeyCol]
                         evidenceTerm = EVIDENCE_TERM_LOOKUP.get(repRow[evidenceTermKeyCol])
                         evidenceCode = EVIDENCE_CODE_LOOKUP.get(repRow[evidenceTermKeyCol])
-                        dagName = DAG_LOOKUP.get(repRow[dagKeyCol])
+                        dagName = None
+                        if repRow[dagKeyCol]:
+                            dagName = DAG_LOOKUP.get(repRow[dagKeyCol])
                         mgitype = MGITYPE_LOOKUP.get(repRow[mgitypeKeyCol])
                         
                         # count references

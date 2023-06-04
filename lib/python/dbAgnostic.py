@@ -8,6 +8,7 @@ import config
 import logger
 import types
 import dbManager
+from io import TextIOWrapper
 
 ###--- Globals ---###
 
@@ -18,8 +19,6 @@ class DbAgnosticError(Exception):
         
 SOURCE_DB = config.SOURCE_TYPE  # either mysql, or postgres
 DBM = None                      # dbManager object for postgres/mysql access
-
-SQL_LOG_FILE = None             # file pointer; where to log SQL commands
 
 # set up our database connectivity
 
@@ -57,24 +56,21 @@ def setConnectionFE():
         logger.debug ('Updated postgresManager to point to FE database')
         return
         
-def setSqlLogFile(filename):
-        global SQL_LOG_FILE
-
-        SQL_LOG_FILE = open(filename, 'w')
-        return
-
-def execute (cmd):
+def execute (cmd, logit=True, truncate=0):
         # Purpose: execute the given SQL 'cmd' against the source database
         # Returns: two-item tuple of (columns, rows)
         #       columns - list of column names
         #       rows - list of rows, where each row is a list of values in the
         #               order corresponding to the column names in 'columns'
+        #
+        # if logit is true (the default) and the current logging level is DEBUG, the
+        # sql will be written to the current gatherer's log. If truncate is > 0,
+        # the only the first <truncate> characters of the sql will be written.
+        # (Useful for batch inserts).
+        #
 
-        if SQL_LOG_FILE:
-                SQL_LOG_FILE.write(cmd)
-                SQL_LOG_FILE.write('\n')
-                SQL_LOG_FILE.write('||\n')
-                SQL_LOG_FILE.flush()
+        if logit:
+            logger.debug("SQL command: " + (cmd[:truncate] if truncate > 0 else cmd))
 
         # if using either postgres or mysql, our dbManager object will handle
         # all necessary database interaction
@@ -210,7 +206,8 @@ def batchInsert(tableName, rows, batchSize = 1000):
 
                 cmd = 'insert into %s values %s' % (tableName,
                         ','.join(map(str, values)) )
-                execute(cmd)
+                # truncate log record to 140 characters
+                execute(cmd, truncate=140)
 
                 start = end     # prepare for next batch
 

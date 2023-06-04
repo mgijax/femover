@@ -324,6 +324,7 @@ def getTeaserMarkers():
         # Now, we have our groups of markers broken down into bite-size chunks
         # we can use in queries.
 
+        logit = True
         for group in groups:
                 markers = ','.join(map(str, group))
 
@@ -343,7 +344,7 @@ def getTeaserMarkers():
                                 and r._Object_key_1 in (%s)''' % (
                                 interactionKey, markers)
 
-                (cols1, rows1) = dbAgnostic.execute(cmd1)
+                (cols1, rows1) = dbAgnostic.execute(cmd1, logit=logit)
 
                 organizerCol = dbAgnostic.columnNumber(cols1, '_Object_key_1')
                 participantCol = dbAgnostic.columnNumber(cols1, '_Object_key_2')
@@ -380,7 +381,8 @@ def getTeaserMarkers():
                         and _Object_key_2 in (%s)''' % (interactionKey,
                                 markers)
 
-                (cols2, rows2) = dbAgnostic.execute(cmd2)
+                (cols2, rows2) = dbAgnostic.execute(cmd2, logit=logit)
+                logit = False
 
                 organizerCol = dbAgnostic.columnNumber(cols2, '_Object_key_1')
                 participantCol = dbAgnostic.columnNumber(cols2, '_Object_key_2')
@@ -445,7 +447,7 @@ def getTeaserMarkers():
         logger.debug('Returning %d teasers for %d markers' % (ct,len(teasers)))
         return teasers
 
-def getInteractionRows(startMarker, endMarker):
+def getInteractionRows(startMarker, endMarker, logit):
         # get the basic interaction rows for organizer markers with keys
         # between 'startMarker' and 'endMarker'
 
@@ -463,13 +465,13 @@ def getInteractionRows(startMarker, endMarker):
                 order by _Object_key_1''' % (interactionKey, startMarker,
                         endMarker)
 
-        (cols, rows) = dbAgnostic.execute(cmd)
+        (cols, rows) = dbAgnostic.execute(cmd, logit=logit)
 
         logger.debug ('Got %d interactions for markers %d-%d' % (
                 len(rows), startMarker, endMarker))
         return cols, rows
 
-def getPropertyRows(startMarker, endMarker):
+def getPropertyRows(startMarker, endMarker, logit):
         # get the property rows for organizer markers with keys between
         # 'startMarker' and 'endMarker'
 
@@ -488,7 +490,7 @@ def getPropertyRows(startMarker, endMarker):
                 order by p._Relationship_key, p.sequenceNum''' % (
                         interactionKey, startMarker, endMarker)
 
-        (cols1, rows1) = dbAgnostic.execute(cmd1)
+        (cols1, rows1) = dbAgnostic.execute(cmd1, logit=logit)
 
         logger.debug('Got %d properties for markers %d-%d' % (
                 len(rows1), startMarker, endMarker))
@@ -511,7 +513,7 @@ def getPropertyRows(startMarker, endMarker):
                 order by r._Relationship_key, n._Note_key''' % (
                         interactionKey, startMarker, endMarker)
 
-        (cols2, rows2) = dbAgnostic.execute(cmd2)
+        (cols2, rows2) = dbAgnostic.execute(cmd2, logit=logit)
 
         keyCol = dbAgnostic.columnNumber (cols2, '_Relationship_key')
         noteCol = dbAgnostic.columnNumber (cols2, 'note')
@@ -731,13 +733,13 @@ def expandPropertyRows (pCols, pRows, reverse = 0):
 #               len(rows), reverse)) 
         return cols, rows
 
-def processMarkers(startMarker, endMarker):
+def processMarkers(startMarker, endMarker, logit):
         # retrieve data and write the rows to the data files for organizer
         # markers with keys between 'startMarker' and 'endMarker'
 
         logger.debug('Beginning with markers %d-%d' % (startMarker, endMarker))
 
-        iCols, iRows = getInteractionRows(startMarker, endMarker)
+        iCols, iRows = getInteractionRows(startMarker, endMarker, logit)
 
         # write forward interaction rows
 
@@ -763,7 +765,7 @@ def processMarkers(startMarker, endMarker):
 
         # write forward property rows
 
-        pCols, pRows = getPropertyRows(startMarker, endMarker)
+        pCols, pRows = getPropertyRows(startMarker, endMarker, logit)
 
         cols, rows = expandPropertyRows (pCols, pRows, 0)
         propertyFile.writeToFile ( [ Gatherer.AUTO ] + cols, cols, rows)
@@ -808,8 +810,10 @@ def main():
 
         startMarker, endMarker, currentMarkers = getMarkerRange()
 
+        logit = True
         while (startMarker != None):
-                processMarkers(startMarker, endMarker)
+                processMarkers(startMarker, endMarker, logit)
+                logit = False
                 doneMarkers = doneMarkers + currentMarkers
 
                 logger.debug('Finished %d of %d markers so far (%0.1f%%)' % (

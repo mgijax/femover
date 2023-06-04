@@ -16,9 +16,9 @@ class ImageGatherer (Gatherer.Gatherer):
         # Does: queries the source database for primary data for images,
         #       collates results, writes tab-delimited text file
 
+        logit = True
         def getElsevierCitation (self, jnum):
                 # look up the citation for the given Elsevier J#
-
                 if jnum in self.elsevier:
                         return self.elsevier[jnum]
 
@@ -29,7 +29,8 @@ class ImageGatherer (Gatherer.Gatherer):
                                 acc_accession a
                         where r._Refs_key = a._Object_key
                                 and a.accID = '%s'
-                                and a._MGIType_key = 1''' % jnum)
+                                and a._MGIType_key = 1''' % jnum, logit=self.logit)
+                self.logit = False
 
                 journalCol = dbAgnostic.columnNumber (cols, 'journal')
                 volCol = dbAgnostic.columnNumber (cols, 'vol')

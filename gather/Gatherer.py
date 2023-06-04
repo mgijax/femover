@@ -92,7 +92,7 @@ def resolve (key,               # integer; key value to look up
 def columnNumber (columns, columnName):
         return dbAgnostic.columnNumber (columns, columnName)
 
-def executeQueries (cmds):
+def executeQueries (cmds, logit = True):
         # Purpose: to issue the queries and collect the results
         # Returns: list of lists, each with (columns, rows) for a query
         # Assumes: nothing
@@ -107,12 +107,12 @@ def executeQueries (cmds):
         i = 0
         results = []
         for cmd in cmds:
-                results.append (dbAgnostic.execute (cmd))
+                results.append (dbAgnostic.execute (cmd, logit))
                 count = 0
                 if results[-1][1]:
                         count = len(results[-1][1])
                 logger.debug ('Finished query %d (%d results)' % (i, count))
-                logger.debug ('RAM used : %s' % myMemory())
+                #logger.debug ('RAM used : %s' % myMemory())
                 i = i + 1
         return results
 
@@ -325,7 +325,8 @@ class ChunkGatherer (Gatherer):
                         self.finalResults = []
 
                         self.preprocessCommandsByChunk (lowKey, highKey)
-                        self.results = executeQueries (self.cmds)
+                        # only log the queries for the first chunk
+                        self.results = executeQueries (self.cmds, (lowKey == minKey))
                         self.collateResults()
                         self.postprocessResults()
                         out.writeToFile (self.fieldOrder, self.finalColumns,
@@ -679,7 +680,8 @@ class CachingMultiFileGatherer:
                                 self.results = []
 
                                 self.preprocessCommandsByChunk(lowKey, highKey)
-                                self.results = executeQueries(self.cmds)
+                                # only log the queries for the first chunk
+                                self.results = executeQueries(self.cmds, (lowKey == self.minKey))
                                 self.collateResults()
                                 self.postprocessResults()
 
