@@ -513,6 +513,7 @@ def dropTables (
 
         if FULL_BUILD:
                 # get the list of all tables from the target database
+                logger.debug("Dropping all tables.")
 
                 if config.TARGET_TYPE == 'mysql':
                         cmd = 'show tables'
@@ -527,6 +528,9 @@ def dropTables (
 
                 dropDispatcher = Dispatcher.Dispatcher(config.CONCURRENT_DROP)
 
+                tables = [row[0] for row in rows]
+                logger.debug("Dropping tables: " + ", ".join(tables))
+
                 for row in rows:
                         dropForeignKeyConstraints(row[0]) 
 
@@ -535,6 +539,8 @@ def dropTables (
                                 'drop table %s cascade' % row[0]))
                         items.append ( (row[0], id) )
         else:
+                logger.debug("Dropping tables: " + ", ".join(tables))
+
                 # specific tables were specified, so just delete them
                 for table in tables:
                         dropForeignKeyConstraints(table) 

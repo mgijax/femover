@@ -8,6 +8,15 @@
 
 . ../Configuration
 
+
+psql -h ${PG_DBSERVER} -U ${PG_DBUSER} -d ${PG_DBNAME} <<EOSQL1
+
+DROP TABLE IF EXISTS uni_keystone;
+
+EOSQL1
+
+##
+
 psql -h ${PG_FE_DBSERVER} -U ${PG_FE_DBUSER} -d ${PG_FE_DBNAME} <<EOSQL
 
 DROP TABLE IF EXISTS uni_all_genes_tissues;

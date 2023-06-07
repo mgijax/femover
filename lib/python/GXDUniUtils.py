@@ -8,6 +8,9 @@ import dbAgnostic
 import logger
 import symbolsort
 import VocabSorter
+import config
+import os
+import FileLock
 
 ###--- Global Variables ---###
 
@@ -15,10 +18,15 @@ import VocabSorter
 # these fields:  _Experiment_key, accID
 EXPT_ID_LIST = None
 
-# This temporary table maps from a classical result key or an RNA-Seq
+# This table maps from a classical result key or an RNA-Seq
 # consolidated measurement key to its corresponding universal key (uni_key)
 # and contains values needed for sorting the results in various ways.
-TMP_KEYSTONE = 'tmp_keystone'
+# This used to be a temporary file and each uni_ gatherer created its own
+# copy. This table is now a regular table computed once and shared by the gatherers.
+UNI_KEYSTONE = 'uni_keystone'
+
+# The name of the file to be created/used as the lock file.
+UNI_KEYSTONE_LOCK = os.path.join(config.LOG_DIR, f"{UNI_KEYSTONE}.lock")
 
 # This temporary table maps from a current mouse marker key to a precomputed
 # integer sequence number (sorted by symbol).
@@ -78,7 +86,7 @@ def setExptIDList(idList):
 
 def getSortedTable(tableName, sortString):
         # Create a sorted table with the given 'tableName', with columns
-        # equivalent to the TMP_KEYSTONE table -- sorted according to the
+        # equivalent to the UNI_KEYSTONE table -- sorted according to the
         # ORDER BY string specified in 'sortString' -- and with sequence
         # assigned in a new column (seqNum).
 
@@ -96,11 +104,25 @@ def setExists(name):
         EXISTING[name] = True
 
 def getKeystoneTable():
-        # get the name of the keystone table, creating it if needed
 
-        if not exists(TMP_KEYSTONE):
+        # acquire flock.
+        lock = FileLock.acquire(UNI_KEYSTONE_LOCK, timeout=20*60)
+        if not lock:
+            raise Exception(f"Timed out trying to get lock on {UNI_KEYSTONE_LOCK}.")
+        # if here, we have the exclusive lock
+
+        # see if the keystone table exists (NOTE: don't use the exists function defined in this file because
+        # that only check a local distionary. Here he need to actually check the database.)
+        cmd = f"select exists(select * from pg_tables where tablename = '{UNI_KEYSTONE}')"
+        cols, rows = dbAgnostic.execute(cmd)
+        if not rows[0][0]:
+                logger.debug(f"Keystone table does not exist. Building {UNI_KEYSTONE}.")
                 _buildKeystoneTable()
-        return TMP_KEYSTONE
+        else:
+                logger.debug(f"Keystone table already exists. Using {UNI_KEYSTONE}.")
+
+        FileLock.release(lock)
+        return UNI_KEYSTONE
 
 def getMarkerSeqnumTable():
         # get the name of the marker sequence number table, creating if needed
@@ -433,7 +455,7 @@ def _getGelLaneTable():
         return TMP_GELLANE_DETECTED
 
 def _buildKeystoneTable():
-        # Build the TMP_KEYSTONE temp table.
+        # Build the UNI_KEYSTONE table.
         #
         # It is vitally important that the result_keys in the keystone table
         # match their corresponding tables for classical and RNA-Seq data.
@@ -459,9 +481,9 @@ def _buildKeystoneTable():
         isResultTable = _getInSituResultTable()
         referenceTable = _getReferenceTable()
 
-        logger.info('Began building: %s' % TMP_KEYSTONE)
+        logger.info('Began building: %s' % UNI_KEYSTONE)
 
-        cmd0 = '''create temporary table %s (
+        cmd0 = '''create table %s (
                 uni_key                 int     not null,
                 is_classical    int     not null,
                 assay_type_key  int     not null,
@@ -479,10 +501,11 @@ def _buildKeystoneTable():
                 by_reference    int     not null,
                 _Genotype_key   int     not null,
                 _CellType_Term_key    int    null
-                )''' % TMP_KEYSTONE
+                )''' % UNI_KEYSTONE
 
         dbAgnostic.execute(cmd0)
-        logger.info('Created temp table: %s' % TMP_KEYSTONE)
+        dbAgnostic.commit()
+        logger.info('Created table: %s' % UNI_KEYSTONE)
 
         cmd1 = '''with results as (
                 select 1 as is_classical, a._AssayType_key, a._Assay_key, r._Result_key,
@@ -534,24 +557,24 @@ def _buildKeystoneTable():
                             ((r._CellType_Term_key is null) and (ck._CellType_Term_key is null))
                             )
                 order by ck._Assigned_key''' % (
-                        isResultTable, gelLaneTable, TMP_KEYSTONE, TMP_CLASSICAL_KEYS,
+                        isResultTable, gelLaneTable, UNI_KEYSTONE, TMP_CLASSICAL_KEYS,
                         referenceTable, structureTable, markerTable, assayTypeTable)
 
         dbAgnostic.execute(cmd1)
 
-        classicalRows = _getRowCount(TMP_KEYSTONE)
+        classicalRows = _getRowCount(UNI_KEYSTONE)
         logger.info('Added %d classical rows' % classicalRows)
 
-        maxClassicalKey = _getMaxValue(TMP_KEYSTONE, 'uni_key')
+        maxClassicalKey = _getMaxValue(UNI_KEYSTONE, 'uni_key')
         logger.info('Max classical key=%d' % maxClassicalKey)
 
         cmd1b = '''select count(1) from %s k, gxd_assay a
                 where k.assay_key = a._Assay_key
                         and a._AssayType_key in (%s)'''
-        cols, rows = dbAgnostic.execute(cmd1b % (TMP_KEYSTONE, '1, 6, 9'))
+        cols, rows = dbAgnostic.execute(cmd1b % (UNI_KEYSTONE, '1, 6, 9'))
         logger.info(' - %d In situ rows' % rows[0][0])
 
-        cols, rows = dbAgnostic.execute(cmd1b % (TMP_KEYSTONE, '2, 3, 4, 5, 8'))
+        cols, rows = dbAgnostic.execute(cmd1b % (UNI_KEYSTONE, '2, 3, 4, 5, 8'))
         logger.info(' - %d Gel rows' % rows[0][0])
 
         # Get to the set of unique sample data for each consolidated sample.
@@ -604,15 +627,17 @@ def _buildKeystoneTable():
                 where rm._Emapa_key = emapa._Term_key
                         and rm._Experiment_key = expt._Experiment_key
                 order by rm._RNASeqCombined_key, rm.mrkSeqNum''' % (
-                        TMP_KEYSTONE, maxClassicalKey, rnaSeqType, structureTable,
+                        UNI_KEYSTONE, maxClassicalKey, rnaSeqType, structureTable,
                         exptOrderingTable)
         dbAgnostic.execute(cmd5)
 
-        rnaseqRows = _getRowCount(TMP_KEYSTONE) - classicalRows
+        rnaseqRows = _getRowCount(UNI_KEYSTONE) - classicalRows
         logger.info('Added %d RNA-Seq rows' % rnaseqRows) 
 
-        setExists(TMP_KEYSTONE)
-        logger.info('Done building: %s' % TMP_KEYSTONE)
+        dbAgnostic.commit()
+
+        setExists(UNI_KEYSTONE)
+        logger.info('Done building: %s' % UNI_KEYSTONE)
         return
 
 def _symbolCompare(a):
