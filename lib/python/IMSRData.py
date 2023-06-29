@@ -151,7 +151,7 @@ class IMSRStrainData:
 
 if __name__=="__main__":
         imsrDB = IMSRDatabase()
-        imsrDB.IMSR_COUNT_URL = "http://www.findmice.org/report/mgiCounts.txt"
+        imsrDB.IMSR_COUNT_URL = "https://www.findmice.org/report/mgiCounts.txt"
         imsrDB.IMSR_COUNT_TIMEOUT=300
         imsrStrains = IMSRStrainData()
         import unittest

@@ -2638,7 +2638,7 @@ displayName=IMSR
 definition=International Mouse Strain Resource. A resource of mouse \
 <A HREF="!FEWI_URL!glossary/strain">strain</a> information contributed by a number of \
 participating institutions world wide and hosted by <A HREF="!FEWI_URL!glossary/mgi">MGI</a> and \
-The Jackson Laboratory. <A HREF="http://www.findmice.org/index.jsp">IMSR</a> offers web-based strain detail pages with information about the biology, stock, and \
+The Jackson Laboratory. <A HREF="https://www.findmice.org/index.jsp">IMSR</a> offers web-based strain detail pages with information about the biology, stock, and \
 availability of strains.
 ]
 
