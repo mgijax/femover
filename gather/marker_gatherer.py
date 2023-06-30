@@ -288,10 +288,23 @@ cmds = [
                 acc_logicaldb ldb
         where m._Marker_key = a._Object_key
                 and a._MGIType_key = 2
-                and m._Organism_key not in (1,2)
+                and m._Organism_key not in (1,2,86,95)
                 and a.preferred = 1
                 and a._LogicalDB_key = ldb._LogicalDB_key
-                and ldb._Organism_key = m._Organism_key''',
+                and ldb._Organism_key = m._Organism_key
+        union
+        select m._Marker_key,
+                a.accID, 
+                a._LogicalDB_key
+        from mrk_marker m,
+                acc_accession a,
+                acc_logicaldb ldb
+        where m._Marker_key = a._Object_key
+                and a._MGIType_key = 2
+                and m._Organism_key in (86,95)
+                and a.preferred = 1
+                and a._LogicalDB_key = ldb._LogicalDB_key
+                and ldb.name = 'XenBase' ''',
 
         # 2. all markers with mrk_location_cache (mouse/human only)
         #    + pick up the non-mouse, non-human organisms 
