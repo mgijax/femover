@@ -264,8 +264,7 @@ def setupGxdCacheTables():
         # a 1 for present-ish values (all the others).
 
         cmd4 = '''select _Term_key as _Strength_key, case
-                        when term in ('Not Applicable', 'Not Specified') then 0
-                        when term in ('Ambiguous') then 0
+                        when term in ('Not Applicable', 'Not Specified','Ambiguous','Absent') then 0
                         else 1
                         end as is_present
                 into temporary table gxd_present
