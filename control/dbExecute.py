@@ -32,11 +32,7 @@ elif cmd[0] == '"' and cmd[-1] == '"':
 
 # get a dbManager to use in executing our SQL
 
-if config.TARGET_TYPE == 'mysql':
-        dbMgr = dbManager.mysqlManager (config.TARGET_HOST,
-                config.TARGET_DATABASE, config.TARGET_USER,
-                config.TARGET_PASSWORD)
-elif config.TARGET_TYPE == 'postgres':
+if config.TARGET_TYPE == 'postgres':
         dbMgr = dbManager.postgresManager (config.TARGET_HOST,
                 config.TARGET_DATABASE, config.TARGET_USER,
                 config.TARGET_PASSWORD)

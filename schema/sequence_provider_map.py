@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'sequence_provider_map'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         logical_db              text    not null,

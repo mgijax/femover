@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'go_evidence_category'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         evidence_code           text    not null,
         evidence_category       text    not null,

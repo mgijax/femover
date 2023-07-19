@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'homology_cluster_organism_to_marker'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         cluster_organism_key    int             not null,

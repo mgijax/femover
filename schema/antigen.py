@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'antigen'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         antigen_key             int             not null,
         primary_id              text            not null,

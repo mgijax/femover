@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'homology_cluster_organism'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         cluster_organism_key    int             not null,
         cluster_key             int             not null,

@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'gelband'
 
-# PgSQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         gelband_key             int             not null,
         gellane_key             int             not null,

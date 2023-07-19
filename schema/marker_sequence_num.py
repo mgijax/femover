@@ -15,7 +15,7 @@ import Table
 # name of this database table
 tableName = 'marker_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         marker_key      int             not null,
         by_symbol       int             not null,

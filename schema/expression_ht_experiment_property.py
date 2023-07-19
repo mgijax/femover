@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_ht_experiment_property'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         property_key            int             not null,
         experiment_key          int             not null,

@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'marker_counts'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         marker_key                              int     NOT NULL,
         reference_count                         int     NULL,

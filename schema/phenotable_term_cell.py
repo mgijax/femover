@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'phenotable_term_cell'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         phenotable_term_cell_key                int             not null,
         phenotable_term_key             int             not null,

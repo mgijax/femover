@@ -48,7 +48,7 @@ class databaseInfoTable (Table.Table):
 # name of this database table
 tableName = 'database_info'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int             not null,
         name            text    not null,

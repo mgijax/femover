@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'strain_marker'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         strain_marker_key               int             not null,
         canonical_marker_key    int             null,

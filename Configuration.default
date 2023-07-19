@@ -84,8 +84,8 @@ export MPD_STRAIN_URL
 #
 CHUNK_SIZE=100000	# for large tables, how many rows to do at once
 BUILDS_IN_SYNC=1	# are dbSNP and MGI coords in sync?  (0/1)
-SOURCE_TYPE=postgres	# build from postgres, mysql
-TARGET_TYPE=postgres	# build into postgres or mysql
+SOURCE_TYPE=postgres	# build from postgres
+TARGET_TYPE=postgres	# build into postgres
 REMOVE_DATA_FILES=1	# remove data fles from prior run?  (0/1)
 RUN_CONTAINS_PRIVATE=1  # determine if the source database still has private data 
 

@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'test_stats'
 
-# PgSQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         test_stats_key          int             not null,
         id                      text            not null,

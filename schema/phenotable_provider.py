@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'phenotable_provider'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key                      int             not null,
         phenotable_genotype_key         int             not null,

@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'universal_expression_result'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         uni_key         integer         not null,
         is_classical    integer         not null,

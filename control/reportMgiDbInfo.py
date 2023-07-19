@@ -22,11 +22,7 @@ cmd = 'select * from MGI_dbInfo'
 
 # get a dbManager to use in executing our SQL
 
-if config.SOURCE_TYPE == 'mysql':
-        dbMgr = dbManager.mysqlManager (config.SOURCE_HOST,
-                config.SOURCE_DATABASE, config.SOURCE_USER,
-                config.SOURCE_PASSWORD)
-elif config.SOURCE_TYPE == 'postgres':
+if config.SOURCE_TYPE == 'postgres':
         dbMgr = dbManager.postgresManager (config.SOURCE_HOST,
                 config.SOURCE_DATABASE, config.SOURCE_USER,
                 config.SOURCE_PASSWORD)

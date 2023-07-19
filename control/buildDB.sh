@@ -4,10 +4,10 @@ cd `dirname $0`; . ./Configuration
 
 usage()
 {
-    echo "Usage: buildDB.sh [postgres | mysql] [flags]"
+    echo "Usage: buildDB.sh [flags]"
     echo "  Optional target database type:"
     echo "    postgres : build into a PostgreSQL database"
-    echo "    mysql : build into a MySQL database"
+    echo "    (Used to support mysql, but no longer.)"
     echo "  If no target database type is specified, we use the one specified"
     echo "  in the Configuration file."
     echo ""
@@ -50,9 +50,6 @@ usage()
 
 if [ "$1" = "postgres" ]; then
     TARGET_TYPE=postgres
-    shift
-elif [ "$1" = "mysql" ]; then
-    TARGET_TYPE=mysql
     shift
 fi
 export TARGET_TYPE

@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'antibody_to_reference'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int     NOT NULL,
         antibody_key    int     NOT NULL,

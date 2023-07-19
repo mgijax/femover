@@ -15,7 +15,7 @@ import Table
 # name of this database table
 tableName = 'genotype'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         genotype_key            int             not null,
         background_strain       text    null,

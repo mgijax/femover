@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'probe_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         probe_key               int             NOT NULL,
         by_name                 int             NOT NULL,

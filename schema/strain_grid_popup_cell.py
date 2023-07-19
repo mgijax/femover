@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'strain_grid_popup_cell'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         cell_key                int             not null,
         row_key                 int             not null,

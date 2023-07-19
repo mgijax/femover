@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_ht_experiment_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         experiment_key          int             not null,
         by_primary_id           int             not null,

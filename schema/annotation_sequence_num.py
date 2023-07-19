@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'annotation_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         annotation_key          int     not null,
         by_dag_structure        int     not null,

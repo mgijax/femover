@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_ht_sample_measurement'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         measurement_key         integer                         not null,
         sample_key                      integer                         not null,

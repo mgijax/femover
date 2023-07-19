@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'marker_flags'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         marker_key                                                      int             not null,
         has_wildtype_expression_data            int             not null,

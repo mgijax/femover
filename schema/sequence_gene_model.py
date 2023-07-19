@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'sequence_gene_model'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         sequence_key            int             NOT NULL,
         marker_type             text    NULL,

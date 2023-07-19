@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'allele_counts'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         allele_key                      int     NOT NULL,
         marker_count                    int     NULL,

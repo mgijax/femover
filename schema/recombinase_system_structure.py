@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'recombinase_system_structure'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         system_structure_key    int             not null,
         allele_system_key       int             not null,

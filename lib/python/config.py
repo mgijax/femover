@@ -110,9 +110,6 @@ else:
 if SOURCE_TYPE == 'postgres':
         prefix = 'PG'
         prefixPW = 'PG'
-elif SOURCE_TYPE == 'mysql':
-        prefix = 'MYSQL'
-        prefixPW = 'MYSQL'
 else:
         raise error('Unknown SOURCE_TYPE (%s)' % SOURCE_TYPE)
 
@@ -129,9 +126,6 @@ TARGET_TYPE = os.environ['TARGET_TYPE'].lower()
 if TARGET_TYPE == 'postgres':
         prefix = 'PG_FE'
         prefixPW = 'PG'
-elif TARGET_TYPE == 'mysql':
-        prefix = 'MYSQL_FE'
-        prefixPW = 'MYSQL'
 else:
         raise error('Unknown TARGET_TYPE (%s)' % TARGET_TYPE)
 

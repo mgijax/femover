@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'queryform_option'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         option_key      int     not null,
         form_name       text    not null,

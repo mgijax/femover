@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'phenotable_center'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         center_key      int             not null,
         name            text    not null,

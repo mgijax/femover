@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_assay'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         assay_key               int             not null,
         assay_type              text    not null,

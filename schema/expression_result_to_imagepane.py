@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'expression_result_to_imagepane'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int     not null,
         result_key      int     not null,

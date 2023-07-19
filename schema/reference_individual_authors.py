@@ -10,7 +10,7 @@ import Table
 # name of this database table
 tableName = 'reference_individual_authors'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int NOT NULL,
         reference_key   int NOT NULL,

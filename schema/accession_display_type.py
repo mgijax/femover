@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'accession_display_type'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         display_type_key        smallint        not null,
         display_type            text    null,

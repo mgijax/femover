@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'uni_by_detected'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         uni_key         int     not null,
         by_detected     int     not null,

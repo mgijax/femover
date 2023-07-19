@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'accession_logical_db'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         logical_db_key          int             not null,
         logical_db              text    not null,

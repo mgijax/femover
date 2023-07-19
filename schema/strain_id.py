@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'strain_id'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int     NOT NULL,
         strain_key              int     NOT NULL,

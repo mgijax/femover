@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_ht_sample_map'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key                              integer         not null,
         consolidated_sample_key integer         not null,

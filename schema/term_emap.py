@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'term_emap'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         term_key                int     not null,
         default_parent_key      int     null,

@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'disease_model'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         disease_model_key       int             not null,
         genotype_key            int             not null,

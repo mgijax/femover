@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'marker_mrm_property'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int     not null,
         mrm_key                 int     not null,

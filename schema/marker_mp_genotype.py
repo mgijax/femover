@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'marker_mp_genotype'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
     mp_genotype_key        int        not null,
     marker_key        int        not null,

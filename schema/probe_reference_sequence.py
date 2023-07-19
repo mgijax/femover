@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'probe_reference_sequence'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key                              int             NOT NULL,
         probe_reference_key             int             NOT NULL,

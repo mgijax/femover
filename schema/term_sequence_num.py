@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'term_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         term_key                int     not null,
         by_default              int     not null,

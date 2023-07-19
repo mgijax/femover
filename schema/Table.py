@@ -38,14 +38,7 @@ USAGE = '''Usage: %s [--dt|--ct|--di|--ci|--dk|--ck|--dt|--ct|--lf <file>]
 # exception raised if things go wrong
 error = 'Table.error'
 
-if config.TARGET_TYPE == 'mysql':
-        #print 'MySQL: (%s, %s, %s, %s)' % (config.TARGET_HOST,
-        #       config.TARGET_DATABASE, config.TARGET_USER,
-        #       config.TARGET_PASSWORD)
-        DBM = dbManager.mysqlManager (config.TARGET_HOST,
-                config.TARGET_DATABASE, config.TARGET_USER,
-                config.TARGET_PASSWORD)
-elif config.TARGET_TYPE == 'postgres':
+if config.TARGET_TYPE == 'postgres':
         #print 'Postgres: (%s, %s, %s, %s)' % (config.TARGET_HOST,
         #       config.TARGET_DATABASE, config.TARGET_USER,
         #       config.TARGET_PASSWORD)
@@ -88,12 +81,7 @@ def loadFile (filename, # string; full path to the data file to load
         if not os.path.exists(filename):
                 bailout ('Cannot find file: %s' % filename, True)
 
-        if config.TARGET_TYPE == 'mysql':
-                stmt = "load data local infile '%s' into table %s columns terminated by '&=&' lines terminated by '#=#\n'" % (filename, myTable.getName())
-                DBM.execute (stmt)
-                DBM.commit()
-
-        elif config.TARGET_TYPE == 'postgres':
+        if config.TARGET_TYPE == 'postgres':
                 pgDispatcher = Dispatcher.Dispatcher()
                 script = os.path.join (config.CONTROL_DIR,
                         'bulkLoadPostgres.sh')
@@ -117,9 +105,7 @@ def loadFile (filename, # string; full path to the data file to load
 
 def optimizeTable (myTable      # Table object upon which to operate
         ):
-        if config.TARGET_TYPE == 'mysql':
-                pass
-        elif config.TARGET_TYPE == 'postgres':
+        if config.TARGET_TYPE == 'postgres':
                 pgDispatcher = Dispatcher.Dispatcher()
                 script = os.path.join (config.CONTROL_DIR,
                         'optimizeTablePostgres.sh')
@@ -146,7 +132,7 @@ def main (
         # Purpose: generic main program for all Table subclasses
         # Returns: nothing
         # Assumes: nothing
-        # Modifies: table keys, indexes, and definition in the MySQL
+        # Modifies: table keys, indexes, and definition in the 
         #       database
         # Throws: propagates any exceptions raised
 
@@ -269,7 +255,7 @@ class Table:
                 return self.name
 
         def dropTable (self):
-                # Purpose: drop this table from the MySQL database
+                # Purpose: drop this table from the database
                 # Returns: nothing
                 # Assumes: nothing
                 # Modifies: see Purpose
@@ -280,9 +266,9 @@ class Table:
                 return
 
         def createTable (self):
-                # Purpose: creates this table in the MySQL database
+                # Purpose: creates this table in the database
                 # Returns: nothing
-                # Assumes: the table does not exist in the MySQL database
+                # Assumes: the table does not exist in the database
                 # Modifies: see Purpose
                 # Throws: propagates any exceptions from the create operation
 

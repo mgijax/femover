@@ -298,11 +298,7 @@ FULL_BUILD = True
 error = 'buildDatabase.error'
 
 # get the correct dbManager, depending on the type of target database
-if config.TARGET_TYPE == 'mysql':
-        DBM = dbManager.mysqlManager (config.TARGET_HOST,
-                config.TARGET_DATABASE, config.TARGET_USER,
-                config.TARGET_PASSWORD)
-elif config.TARGET_TYPE == 'postgres':
+if config.TARGET_TYPE == 'postgres':
         DBM = dbManager.postgresManager (config.TARGET_HOST,
                 config.TARGET_DATABASE, config.TARGET_USER,
                 config.TARGET_PASSWORD)
@@ -515,9 +511,7 @@ def dropTables (
                 # get the list of all tables from the target database
                 logger.debug("Dropping all tables.")
 
-                if config.TARGET_TYPE == 'mysql':
-                        cmd = 'show tables'
-                elif config.TARGET_TYPE == 'postgres':
+                if config.TARGET_TYPE == 'postgres':
                         cmd = "select TABLE_NAME from information_schema.tables where table_type='BASE TABLE' and table_schema='fe'"
                 else:
                         raise Exception('%s: Unknown value for TARGET_TYPE' % error)

@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'term_descendent'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         term_key                int             not null,

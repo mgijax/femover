@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'sequence_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         sequence_key            int             not null,
         by_length               int             not null,

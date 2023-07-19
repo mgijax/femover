@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'image'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         image_key               int             not null,
         reference_key           int             not null,

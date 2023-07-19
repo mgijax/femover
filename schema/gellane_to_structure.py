@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'gellane_to_structure'
 
-# PgSQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         gellane_key             int             not null,

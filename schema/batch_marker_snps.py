@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'batch_marker_snps'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int             not null,
         marker_key      int             not null,

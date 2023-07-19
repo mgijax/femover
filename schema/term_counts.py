@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'term_counts'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         term_key                int     not null,
         child_count             int     not null,

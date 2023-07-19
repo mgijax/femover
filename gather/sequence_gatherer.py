@@ -170,11 +170,7 @@ class SequenceGatherer (Gatherer.ChunkGatherer):
 
 ###--- globals ---###
 
-if config.SOURCE_TYPE == 'mysql':
-        # from MySQL, get: yyyy-mm-dd
-        sd = "date_format(s.sequence_date, '%%Y-%%m-%%d')"
-        srd = "date_format(s.seqrecord_date, '%%Y-%%m-%%d')"
-elif config.SOURCE_TYPE == 'postgres':
+if config.SOURCE_TYPE == 'postgres':
         # from Postgres, get: yyyy-mm-dd
         sd = "to_char(s.sequence_date, 'YYYY-MM-DD')"
         srd = "to_char(s.seqrecord_date, 'YYYY-MM-DD')"

@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'mp_annot'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         mp_annotation_key               int             not null,
         mp_term_key             int             not null,

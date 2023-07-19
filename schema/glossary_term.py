@@ -10,7 +10,7 @@ import Table
 # name of this database table
 tableName = 'glossary_term'
 
-# PgSQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         glossary_key                    text            not null,

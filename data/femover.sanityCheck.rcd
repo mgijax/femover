@@ -8,8 +8,8 @@
 #
 # source database
 
-SOURCE_TYPE = postgres		# mysql, or postgres
-SOURCE_SERVER = cardolan	# MySQL/Postgres host
+SOURCE_TYPE = postgres		# Current only postgres is supported
+SOURCE_SERVER = cardolan	# Postgres host
 SOURCE_NAME = pub		# name of the database
 SOURCE_USER = mgd_public	# database username
 SOURCE_PASSWORD = mgdpub	# database username's password

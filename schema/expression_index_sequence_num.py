@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'expression_index_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         index_key       int     not null,
         by_reference    int     not null,

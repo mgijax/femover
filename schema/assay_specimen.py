@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'assay_specimen'
 
-# PgSQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         specimen_key            int             not null,
         assay_key               int             not null,

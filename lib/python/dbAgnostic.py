@@ -1,8 +1,10 @@
 #!/usr/local/bin/python
 # 
-# provides an execute() method for executing queries against MySQL, or
-#       Postgres as a source database.  Ensures that the caller does not need
-#       to know which is which.
+# provides an execute() method for executing queries against a source database.  
+#       Different implementations can be defined for different database engines.
+#       Currently, only 'postgres' is defined. Originally, there was also a 'mysql'
+#       implementation (so we know the dbAgnostic abstraction layer works) but that
+#       has been removed.
 
 import config
 import logger
@@ -17,8 +19,8 @@ class DbAgnosticError(Exception):
                 dbAgnostic.error
         """
         
-SOURCE_DB = config.SOURCE_TYPE  # either mysql, or postgres
-DBM = None                      # dbManager object for postgres/mysql access
+SOURCE_DB = config.SOURCE_TYPE  # currently only 'postgres' is supported
+DBM = None                      # dbManager object for database access
 
 # set up our database connectivity
 
@@ -31,11 +33,6 @@ if SOURCE_DB == 'postgres':
         db.set_sqlDatabase(config.SOURCE_DATABASE)
         logger.debug ('Created postgresManager')
 
-elif SOURCE_DB == 'mysql':
-        DBM = dbManager.mysqlManager (config.SOURCE_HOST,
-                config.SOURCE_DATABASE, config.SOURCE_USER,
-                config.SOURCE_PASSWORD)
-        logger.debug ('Created mysqlManager')
 else:
         raise DbAgnosticError('Unknown value for config.SOURCE_TYPE : %s' % SOURCE_DB)
 
@@ -72,8 +69,7 @@ def execute (cmd, logit=True, truncate=0):
         if logit:
             logger.debug("SQL command: " + (cmd[:truncate] if truncate > 0 else cmd))
 
-        # if using either postgres or mysql, our dbManager object will handle
-        # all necessary database interaction
+        # our dbManager object will handle all necessary database interaction
 
         if DBM:
                 return DBM.execute(cmd)

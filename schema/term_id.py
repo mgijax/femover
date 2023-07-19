@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'term_id'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int     NOT NULL,
         term_key        int     NOT NULL,

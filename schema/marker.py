@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'marker'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         marker_key      int     NOT NULL,
         symbol          text    NULL,

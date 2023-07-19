@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'strain_grid_heading'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         heading_key             int     not null,
         heading                 text    not null,

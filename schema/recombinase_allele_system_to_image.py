@@ -13,7 +13,7 @@ import Table
 # name of this database table
 tableName = 'recombinase_allele_system_to_image'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int             not null,
         allele_system_key       int             not null,

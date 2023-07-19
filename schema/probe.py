@@ -7,7 +7,7 @@ import Table
 # name of this database table
 tableName = 'probe'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         probe_key       int     NOT NULL,
         name            text NULL,

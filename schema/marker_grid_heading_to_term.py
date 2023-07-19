@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'marker_grid_heading_to_term'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key              int     not null,
         heading_key             int     not null,

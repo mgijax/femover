@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'genotype_sequence_num'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         genotype_key            int     not null,
         by_alleles              int     not null,

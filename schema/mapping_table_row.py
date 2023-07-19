@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'mapping_table_row'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         row_key                         int             not null,
         mapping_table_key       int             not null,

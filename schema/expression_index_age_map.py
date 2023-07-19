@@ -12,7 +12,7 @@ import Table
 # name of this database table
 tableName = 'expression_index_age_map'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         age_string              text    not null,
         min_theiler_stage       int             not null,

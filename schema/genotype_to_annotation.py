@@ -9,7 +9,7 @@ import Table
 # name of this database table
 tableName = 'genotype_to_annotation'
 
-# MySQL statement to create this table
+# SQL statement to create this table
 createStatement = '''CREATE TABLE %s  ( 
         unique_key      int             NOT NULL,
         genotype_key    int             NOT NULL,
