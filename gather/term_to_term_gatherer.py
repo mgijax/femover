@@ -69,6 +69,26 @@ cmds = [
         from mgi_relationship r, voc_term e
         where r._Category_key = 1007
         and r._Evidence_key = e._Term_key
+        union
+        select _object_key_1, _object_key_2, 'MP HP Popup', mrp1.value, mrp2.value
+        from  mgi_relationship mr, 
+          mgi_relationship_property mrp1,
+          mgi_relationship_property mrp2
+        where mr._category_key = 1011
+          and mr._relationship_key = mrp1._relationship_key
+          and mr._relationship_key = mrp2._relationship_key
+          and mrp1._propertyname_key = 109733906
+          and mrp2._propertyname_key = 109733907
+        union
+        select _object_key_2, _object_key_1, 'MP HP Popup', mrp1.value, mrp2.value
+        from  mgi_relationship mr, 
+          mgi_relationship_property mrp1,
+          mgi_relationship_property mrp2
+        where mr._category_key = 1011
+          and mr._relationship_key = mrp1._relationship_key
+          and mr._relationship_key = mrp2._relationship_key
+          and mrp1._propertyname_key = 109733906
+          and mrp2._propertyname_key = 109733907
         ''',
         ]
 
