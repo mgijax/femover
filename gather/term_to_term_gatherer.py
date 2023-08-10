@@ -28,8 +28,21 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                 # slice and dice the query results to produce our set of
                 # final results
 
+                # [0] First Sql in cmds
                 cols, rows = self.results[0]
+                term1 = Gatherer.columnNumber(cols, 'termKey1')
+                term2 = Gatherer.columnNumber(cols, 'termKey2')
+                relType = Gatherer.columnNumber(cols, 'relationship_type')
+                evidence = Gatherer.columnNumber(cols, 'evidence')
+                xref = Gatherer.columnNumber(cols, 'cross_reference')
+                for row in rows:
+                        self.addRow('term_to_term',
+                                [ row[term1], row[term2], row[relType],
+                                        row[evidence], row[xref] ])
+                logger.debug ('Collected %d term relationships: 0' % len(rows))
 
+                # [1] Second Sql in cmds
+                cols, rows = self.results[1]
                 term1 = Gatherer.columnNumber(cols, 'termKey1')
                 term2 = Gatherer.columnNumber(cols, 'termKey2')
                 relType = Gatherer.columnNumber(cols, 'relationship_type')
@@ -40,15 +53,35 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                         self.addRow('term_to_term',
                                 [ row[term1], row[term2], row[relType],
                                         row[evidence], row[xref] ])
+                logger.debug ('Collected %d term relationships: 1' % len(rows))
 
-                logger.debug ('Collected %d term relationships' % len(rows))
+                # [2] Third Sql in cmds
+                cols, rows = self.results[2]
+                term1 = Gatherer.columnNumber(cols, 'termKey1')
+                term2 = Gatherer.columnNumber(cols, 'termKey2')
+                relType = Gatherer.columnNumber(cols, 'relationship_type')
+                evidence = Gatherer.columnNumber(cols, 'evidence')
+                xref = Gatherer.columnNumber(cols, 'cross_reference')
+
+                for row in rows:
+                        self.addRow('term_to_term',
+                                [ row[term1], row[term2], row[relType],
+                                        row[evidence], row[xref] ])
+                        self.addRow('term_to_term',
+                                [ row[term2], row[term1], row[relType],
+                                        row[evidence], row[xref] ])
+                logger.debug ('Collected %d term relationships: 2' % len(rows))
+
+
+
+
                 return
 
 ###--- globals ---###
 
 cmds = [
         # 0. DO terms to their HPO terms (top of union), plus
-        #       MP headers to HPO terms (bottom of union).  Note that the
+        #       MP headers to HPO terms (bottom of union).  Note that some
         #       cross-references are left null, as they are to come later.
         '''select a._Object_key as termKey1, a._Term_key as termKey2,
                 'DO to HPO' as relationship_type,
@@ -69,8 +102,13 @@ cmds = [
         from mgi_relationship r, voc_term e
         where r._Category_key = 1007
         and r._Evidence_key = e._Term_key
-        union
-        select _object_key_1, _object_key_2, 'MP HP Popup', mrp1.value, mrp2.value
+        ''',
+        '''
+        select _object_key_1 as termKey1, 
+          _object_key_2 as termKey2, 
+          'MP HP Popup'as relationship_type,
+          mrp1.value as evidence,
+          mrp2.value as cross_reference
         from  mgi_relationship mr, 
           mgi_relationship_property mrp1,
           mgi_relationship_property mrp2
@@ -90,6 +128,23 @@ cmds = [
           and mrp1._propertyname_key = 109733906
           and mrp2._propertyname_key = 109733907
         ''',
+        '''
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiTermLexicalMatching' as evidence,
+         'exactMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and lower(vt1.term) = lower(vt2.term)
+        '''
+
         ]
 
 # order of fields (from the query results) to be written to the
