@@ -48,7 +48,6 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                 relType = Gatherer.columnNumber(cols, 'relationship_type')
                 evidence = Gatherer.columnNumber(cols, 'evidence')
                 xref = Gatherer.columnNumber(cols, 'cross_reference')
-
                 for row in rows:
                         self.addRow('term_to_term',
                                 [ row[term1], row[term2], row[relType],
@@ -62,7 +61,6 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                 relType = Gatherer.columnNumber(cols, 'relationship_type')
                 evidence = Gatherer.columnNumber(cols, 'evidence')
                 xref = Gatherer.columnNumber(cols, 'cross_reference')
-
                 for row in rows:
                         self.addRow('term_to_term',
                                 [ row[term1], row[term2], row[relType],
@@ -72,9 +70,31 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                                         row[evidence], row[xref] ])
                 logger.debug ('Collected %d term relationships: 2' % len(rows))
 
+                # [3] Fourth Sql in cmds (MP to HP Synonym)
+                cols, rows = self.results[3]
+                term1 = Gatherer.columnNumber(cols, 'termKey1')
+                term2 = Gatherer.columnNumber(cols, 'termKey2')
+                relType = Gatherer.columnNumber(cols, 'relationship_type')
+                evidence = Gatherer.columnNumber(cols, 'evidence')
+                xref = Gatherer.columnNumber(cols, 'cross_reference')
+                for row in rows:
+                        self.addRow('term_to_term',
+                                [ row[term1], row[term2], row[relType],
+                                        row[evidence], row[xref] ])
+                logger.debug ('Collected %d term relationships: 3' % len(rows))
 
-
-
+                # [4] Fifth Sql in cmds (HP to MP Synonym)
+                cols, rows = self.results[3]
+                term1 = Gatherer.columnNumber(cols, 'termKey2') # 2 & 1 are flipped
+                term2 = Gatherer.columnNumber(cols, 'termKey1') #
+                relType = Gatherer.columnNumber(cols, 'relationship_type')
+                evidence = Gatherer.columnNumber(cols, 'evidence')
+                xref = Gatherer.columnNumber(cols, 'cross_reference')
+                for row in rows:
+                        self.addRow('term_to_term',
+                                [ row[term1], row[term2], row[relType],
+                                        row[evidence], row[xref] ])
+                logger.debug ('Collected %d term relationships: 4' % len(rows))
                 return
 
 ###--- globals ---###
@@ -143,6 +163,46 @@ cmds = [
           and vt2._vocab_key = 106
           and vt2.isobsolete = 0
           and lower(vt1.term) = lower(vt2.term)
+        ''',
+        '''
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'exactMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt2._term_key = ms._object_key
+          and lower(vt1.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1017
+        ''',
+        '''
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'exactMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt1._term_key = ms._object_key
+          and lower(vt2.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1017
         '''
 
         ]
