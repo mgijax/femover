@@ -206,17 +206,11 @@ cmds = [
                 group by c._allele_key''',
 
         # 7. GXD HT experiments having samples carrying this allele
-        '''with recombinases as (select distinct va._object_key as _allele_key
-                from voc_annot va, voc_term vt
-                where va._annottype_key = 1014
-                and va._term_key = vt._term_key
-                and vt.term = 'Recombinase'),
-             act as (select distinct ag._allele_key, hts._experiment_key
+        '''with act as (select distinct ag._allele_key, hts._experiment_key
                 from gxd_htsample hts, gxd_allelegenotype ag, all_allele a
                 where hts._genotype_key = ag._genotype_key
                 and ag._allele_key = a._allele_key
-                and a.iswildtype = 0
-                and a._allele_key not in (select _allele_key from recombinases))
+                and a.iswildtype = 0)
             select _allele_key, count(*) as htExperimentCount
             from act
             group by _allele_key''',
