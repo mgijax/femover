@@ -651,7 +651,6 @@ OA_TABLE = None         # name of already-computed table of markers and annot
 
 mpg = 1002        # annotation type key for MP/Genotype
 mpm = 1015        # annotation type for rolled-up MP/Marker annotations
-npa = 293594        # term key for 'no phenotypic analysis'
 mi = 1003        # relationship type for 'mutation involves'
 ec = 1004        # relationship type for 'expresses component'
 
@@ -679,9 +678,7 @@ def getSourceAnnotationTable():
             and va._Annot_key = ve._Annot_key
             and ve._AnnotEvidence_key = vep._AnnotEvidence_key
             and vep._PropertyTerm_key = t._Term_key
-            and va._Term_key != %d
-            and t.term = '_SourceAnnot_key' ''' % (SRC_TABLE,
-                mpm, npa)
+            and t.term = '_SourceAnnot_key' ''' % (SRC_TABLE, mpm)
 
     cmd1 = 'create index sa1 on %s (_Marker_key)' % SRC_TABLE
     cmd2 = 'cluster %s using sa1' % SRC_TABLE
@@ -799,10 +796,8 @@ def getOtherAnnotationsTable():
                                 where va._Annot_key = s._SourceAnnot_key
                                 and s._Marker_key = p._Marker_key
                                 )
-                        and va._Term_key != %s
                         and va._Object_key = gag._Genotype_key
-                        and gag._Allele_key = p._Allele_key''' % (
-                                pairs, mpg, srcAnnot, npa)
+                        and gag._Allele_key = p._Allele_key''' % (pairs, mpg, srcAnnot)
 
     cmd1 = 'create index oa1 on %s (_Marker_key)' % OA_TABLE
     cmd2 = 'cluster %s using oa1' % OA_TABLE

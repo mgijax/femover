@@ -19,8 +19,6 @@ import MarkerUtils
 # notes or not
 BG_TABLE = None 
 
-NO_PHENOTYPIC_ANALYSIS = 293594         # MP vocab term
-
 DPU = DiseasePortalUtils                # module alias for convenience
 
 ###--- Function ---###
@@ -558,13 +556,11 @@ cmds = [
                 or
                 (v._AnnotType_key = %d and v._Qualifier_key != %d))
                 and v._Annot_key = e._Annot_key
-                and v._Term_key != %d
                 and v._Qualifier_key != %d
         group by v._Object_key, v._Term_key, v._Qualifier_key''' % (
                 DPU.MP_GENOTYPE,
                 DPU.DO_GENOTYPE,
                 DPU.NOT_QUALIFIER,
-                NO_PHENOTYPIC_ANALYSIS,
                 DPU.NOT_QUALIFIER),
 
         # 2. distinct genotype/marker pairs which have rolled-up annotations
