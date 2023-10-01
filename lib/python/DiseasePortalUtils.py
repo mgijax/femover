@@ -21,7 +21,7 @@ ALLIANCE_CLUSTERED = 75885740   # cluster source for Alliance Direct homology
 HOMOLOGY = 9272150              # homology cluster type for MRK_Cluster
 DO_HUMAN_MARKER = 1022  # annot type for disease/human marker
 DO_SLIM_SET = 1048
-
+DO_REFERENCE = 1032     # MGI_RefAssocType type key for direct DO-reference associations
 ###-------------------------###
 ###--- utility functions ---###
 ###-------------------------###
@@ -393,9 +393,18 @@ def getReferencesByDiseaseKey():
                 and dc._DescendentObject_key = v._Term_key
                 and v._AnnotType_key = %d 
                 and v._Annot_key = e._Annot_key
+        union
+                select r._object_key as _term_key, r._refs_key
+                from MGI_Reference_Assoc r
+                where r._refassoctype_key = %d
+       union
+                select distinct dc._AncestorObject_key as _term_key, r._refs_key
+                from MGI_Reference_Assoc r, DAG_Closure dc
+                where r._refassoctype_key = %d
+                and r._object_key = dc._DescendentObject_key
         )
         select _Term_key, _Refs_key from term_reference
-              ''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE)
+              ''' % (DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_GENOTYPE, NOT_QUALIFIER, DO_ALLELE, DO_REFERENCE, DO_REFERENCE)
 
         cols, rows = dbAgnostic.execute(cmd)
 
