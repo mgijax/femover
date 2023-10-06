@@ -204,6 +204,16 @@ class QFOptionGatherer (Gatherer.Gatherer):
                 return
 
         def processSnpQueries (self):
+                # preprocess SNP counts by strain
+                cols, rows = self.results[10]
+                strainCol = Gatherer.columnNumber(cols, 'strain')
+                snpCountCol  = Gatherer.columnNumber(cols, 'snpCount')
+                strain2count = {}
+                for row in rows:
+                    strain = row[strainCol]
+                    snpCount = row[snpCountCol]
+                    strain2count[strain] = snpCount
+
                 # process queries 5-8 for SNP QF options
 
                 queries = [ (5, 'strain'), (6, 'chromosome'),
@@ -218,8 +228,12 @@ class QFOptionGatherer (Gatherer.Gatherer):
                         for row in rows:
                                 seqNum = seqNum + 1
                                 term = row[termCol]
+                                helpText = None
+                                if field == 'strain' and term in strain2count:
+                                    helpText = "Strain is associated with %d SNPs in MGI." % strain2count[term]
+                                    
                                 self.finalResults.append ( [ 'snp', field, 
-                                        term, term, None, seqNum, None,
+                                        term, term, helpText, seqNum, None,
                                         None, None, 0 ] )
 
                         logger.debug('Added %d rows for SNPs %s' % (
@@ -404,6 +418,13 @@ cmds = [
         # 9. SNP QF : SNP build version
         '''select snp_data_version as term
         from snp.mgi_dbinfo''',
+
+        # 10. SNP QF : SNP counts by strain
+        '''select s.strain, count(*) as snpCount
+        from snp_consensussnp_strainallele cs, prb_strain s
+        where cs._mgdstrain_key = s._strain_key
+        group by s.strain
+        ''',
         ]
 
 # order of fields (from the query results) to be written to the
