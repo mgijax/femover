@@ -1026,6 +1026,25 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
                 gc.collect()
                 return
 
+        def processGO_nd (self):
+            cols, rows = self.results[3]
+
+            markerCol = dbAgnostic.columnNumber(cols, '_marker_key')
+            dagNameCol = dbAgnostic.columnNumber(cols, 'dag_name')
+            isNdCol = dbAgnostic.columnNumber(cols, 'is_nd')
+
+            ct = 0
+            for row in rows:
+                ct += 1
+                markerKey = row[markerCol]
+                dagName = row[dagNameCol]
+                isNd = row[isNdCol]
+
+                self.addRow("marker_grid_go_nd", [ ct, markerKey, dagName, isNd ])
+
+            logger.debug("Added %d rows to marker_grid_go_nd" % ct)
+
+
         def processAnatomy (self):
                 # process the anatomy results in queries 2 & 3
 
@@ -1106,6 +1125,7 @@ class SlimgridGatherer (Gatherer.CachingMultiFileGatherer):
                 self.cellTable = 'marker_grid_cell'
                 self.processMP()
                 self.processGO()
+                self.processGO_nd()
                 self.processAnatomy()
                 return 
 
@@ -1205,6 +1225,44 @@ cmds = [
                 max(is_wildtype) as some_wildtype
         from annotations
         group by _Marker_key, _Term_key''' % MARKER_CACHE,
+
+        # 3. Markers that have ND (and no other) annotations, by dag.
+        # Each row has _marker_key, dag_name (C, F, or P), and a flag, is_nd, that
+        # is True if the marker only has an ND annotation, and False if it has
+        # any non-ND annotations. If a marker has no annotations at all for a given
+        # dag, there is no record.
+        '''
+        with markers as (
+                select _Marker_key
+                from %s
+                where row_num >= %%d
+                        and row_num < %%d
+        ),
+        nds as (
+          select distinct va._object_key as _marker_key, dv.dagabbrev as dag_name
+          from voc_annot va, dag_node_view dv, markers m
+          where va._annottype_key = 1000
+          and va._term_key in (120, 1098, 6113)
+          and va._term_key = dv._object_key
+          and va._object_key = m._marker_key
+        ),
+        non_nds as (
+          select distinct va._object_key as _marker_key, dv.dagabbrev as dag_name
+          from voc_annot va, dag_node_view dv, markers m
+          where va._annottype_key = 1000
+          and va._term_key not in (120, 1098, 6113)
+          and va._term_key = dv._object_key
+          and va._object_key = m._marker_key
+        ),
+        combined as (
+          select *, true as is_nd from nds 
+          union
+          select *, false as is_nd from non_nds 
+        )
+        select _marker_key, trim(dag_name) as dag_name, bool_and(is_nd) as is_nd
+        from combined
+        group by _marker_key, dag_name
+        ''' % MARKER_CACHE,
         ]
 
 files = [ ('marker_grid_cell',
@@ -1221,6 +1279,10 @@ files = [ ('marker_grid_cell',
         ('marker_grid_heading_to_term',
                 [ 'heading_key', 'term_key', 'term_id' ],
                 [ Gatherer.AUTO, 'heading_key', 'term_key', 'term_id' ],
+                ),
+        ('marker_grid_go_nd',
+                [ 'go_nd_key', 'marker_key', 'dag_name', 'is_nd' ],
+                [ Gatherer.AUTO, 'marker_key', 'dag_name', 'is_nd' ],
                 ),
         ]
 
