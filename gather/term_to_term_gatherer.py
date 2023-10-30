@@ -183,6 +183,63 @@ cmds = [
           and lower(vt1.term) = lower(ms.synonym)
           and ms._mgitype_key = 13
           and ms._synonymtype_key = 1017
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'relatedMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt2._term_key = ms._object_key
+          and lower(vt1.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1018        
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'narrowMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt2._term_key = ms._object_key
+          and lower(vt1.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1019        
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'broadMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt2._term_key = ms._object_key
+          and lower(vt1.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1020        
         ''',
         '''
         select
@@ -203,6 +260,63 @@ cmds = [
           and lower(vt2.term) = lower(ms.synonym)
           and ms._mgitype_key = 13
           and ms._synonymtype_key = 1017
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'relatedMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt1._term_key = ms._object_key
+          and lower(vt2.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1018
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'broadMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt1._term_key = ms._object_key
+          and lower(vt2.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1019
+        union
+        select
+          vt1._term_key as termKey1,
+          vt2._term_key as termKey2,
+         'MP HP Popup' as relationship_type,
+         'mgiSynonymLexicalMatching' as evidence,
+         'narrowMatch' as cross_reference
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt1._term_key = ms._object_key
+          and lower(vt2.term) = lower(ms.synonym)
+          and ms._mgitype_key = 13
+          and ms._synonymtype_key = 1020
         '''
 
         ]
