@@ -84,7 +84,7 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                 logger.debug ('Collected %d term relationships: 3' % len(rows))
 
                 # [4] Fifth Sql in cmds (HP to MP Synonym)
-                cols, rows = self.results[3]
+                cols, rows = self.results[4]
                 term1 = Gatherer.columnNumber(cols, 'termKey2') # 2 & 1 are flipped
                 term2 = Gatherer.columnNumber(cols, 'termKey1') #
                 relType = Gatherer.columnNumber(cols, 'relationship_type')
