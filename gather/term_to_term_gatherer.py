@@ -81,6 +81,9 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                         self.addRow('term_to_term',
                                 [ row[term1], row[term2], row[relType],
                                         row[evidence], row[xref] ])
+                        self.addRow('term_to_term',
+                                [ row[term2], row[term1], row[relType],
+                                        row[evidence], row[xref] ])
                 logger.debug ('Collected %d term relationships: 3' % len(rows))
 
                 # [4] Fifth Sql in cmds (HP to MP Synonym)
@@ -93,6 +96,9 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                 for row in rows:
                         self.addRow('term_to_term',
                                 [ row[term1], row[term2], row[relType],
+                                        row[evidence], row[xref] ])
+                        self.addRow('term_to_term',
+                                [ row[term2], row[term1], row[relType],
                                         row[evidence], row[xref] ])
                 logger.debug ('Collected %d term relationships: 4' % len(rows))
                 return
