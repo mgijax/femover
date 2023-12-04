@@ -648,7 +648,7 @@ class MPHeadingCollection (HeadingCollection):
                                 t.term,
                                 t._Term_key,
                                 a.accID,
-                                t.sequenceNum,
+                                s.sequenceNum,
                                 v.name as slimgrid
                         from mgi_setmember s,
                              voc_term t,
@@ -661,7 +661,7 @@ class MPHeadingCollection (HeadingCollection):
                               and a.private = 0
                               and a.preferred = 1
                               and a._MGIType_key = 13
-                        order by t.sequenceNum'''
+                        order by s.sequenceNum'''
 
                 (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -698,7 +698,7 @@ class GOHeadingCollection (HeadingCollection):
                                 t.term,
                                 t._Term_key,
                                 a.accID,
-                                t.sequenceNum,
+                                s.sequenceNum,
                                 dd.name as slimgrid,
                                 dd.abbreviation as slimgridAbbrev
                         from mgi_setmember s,
@@ -717,7 +717,7 @@ class GOHeadingCollection (HeadingCollection):
                               and a.private = 0
                               and a.preferred = 1
                               and a._MGIType_key = 13
-                        order by t.sequenceNum'''
+                        order by s.sequenceNum'''
 
                 (cols, rows) = dbAgnostic.execute(cmd)
 
@@ -754,7 +754,7 @@ class GxdHeadingCollection (HeadingCollection):
                                 t.term,
                                 t._Term_key,
                                 a.accID,
-                                t.sequenceNum
+                                s.sequenceNum
                         from mgi_setmember s,
                              voc_term t,
                              acc_accession a
@@ -764,7 +764,7 @@ class GxdHeadingCollection (HeadingCollection):
                               and a.private = 0
                               and a.preferred = 1
                               and a._MGIType_key = 13
-                        order by t.sequenceNum'''
+                        order by s.sequenceNum'''
 
                 (cols, rows) = dbAgnostic.execute(cmd)
 
