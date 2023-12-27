@@ -101,6 +101,59 @@ class TermToTermGatherer (Gatherer.CachingMultiFileGatherer):
                                 [ row[term2], row[term1], row[relType],
                                         row[evidence], row[xref] ])
                 logger.debug ('Collected %d term relationships: 4' % len(rows))
+
+                # [5] Fifth Sql in cmds (HP Synonym to MP Synonym)
+                cols, rows = self.results[5]
+                hpTermKey = Gatherer.columnNumber(cols, 'hpTermKey')
+                hpSynType = Gatherer.columnNumber(cols, 'hpSynType')
+                mpTermKey = Gatherer.columnNumber(cols, 'mpTermKey')
+                mpSynType = Gatherer.columnNumber(cols, 'mpSynType')
+
+                # constants
+                keyExact = 1017
+                keyRelated = 1018
+                keyBroad = 1019
+                keyNarrow = 1020
+
+                for row in rows:
+                        thisMatchType = ''
+                        thisHpTermKey = row[hpTermKey]
+                        thisHpSynType = row[hpSynType]
+                        thisMpTermKey = row[mpTermKey]
+                        thisMpSynType = row[mpSynType]
+                        # See rules here:
+                        # https://mgi-jira.atlassian.net/jira/software/c/projects/FL2/boards/28?selectedIssue=FL2-526
+                        if (thisHpSynType == keyExact):
+                                if (thisMpSynType == keyExact):
+                                        thisMatchType = 'exactMatch'
+                                if (thisMpSynType == keyRelated):
+                                        thisMatchType = 'relatedMatch'
+                                if (thisMpSynType == keyBroad):
+                                        thisMatchType = 'broadMatch'
+                                if (thisMpSynType == keyNarrow):
+                                        thisMatchType = 'narrowMatch'
+                        elif (thisHpSynType == keyNarrow):
+                                if (thisMpSynType == keyExact):
+                                        thisMatchType = 'broadMatch'
+                                if (thisMpSynType == keyNarrow):
+                                        thisMatchType = 'broadMatch'
+                        elif (thisHpSynType == keyBroad):
+                                if (thisMpSynType == keyExact):
+                                        thisMatchType = 'narrowMatch'
+                        elif (thisHpSynType == keyRelated):
+                                if (thisMpSynType == keyExact):
+                                        thisMatchType = 'relatedMatch'
+                                if (thisMpSynType == keyNarrow):
+                                        thisMatchType = 'relatedMatch'
+
+                        if (thisMatchType):
+                             self.addRow('term_to_term',
+                                [ thisHpTermKey, thisMpTermKey, 'MP HP Popup', 'mgiSynonymLexicalMatching', thisMatchType ])
+                             self.addRow('term_to_term',
+                                [ thisMpTermKey, thisHpTermKey, 'MP HP Popup', 'mgiSynonymLexicalMatching', thisMatchType ])
+
+                logger.debug ('Collected %d term relationships: 5' % len(rows))
+
                 return
 
 ###--- globals ---###
@@ -323,6 +376,84 @@ cmds = [
           and lower(vt2.term) = lower(ms.synonym)
           and ms._mgitype_key = 13
           and ms._synonymtype_key = 1020
+        ''',
+        '''
+        select
+          vt2._term_key as hpTermKey,
+          ms2._synonymtype_key as hpSynType,
+          vt1._term_key as mpTermKey,
+          ms1._synonymtype_key as mpSynType
+        from 
+          voc_term vt1, 
+          voc_term vt2,
+          mgi_synonym ms1,
+          mgi_synonym ms2
+        where vt1._vocab_key = 5
+          and vt1.isobsolete = 0
+          and vt1._term_key = ms1._object_key
+          and vt2._vocab_key = 106
+          and vt2.isobsolete = 0
+          and vt2._term_key = ms2._object_key
+          and lower(ms1.synonym) = lower(ms2.synonym)
+          and ms1._mgitype_key = 13
+          and ms2._mgitype_key = 13
+          and (vt1._term_key, vt2._term_key)
+            not in (
+                select _object_key_1, _object_key_2
+                from  mgi_relationship mr, 
+                  mgi_relationship_property mrp1,
+                  mgi_relationship_property mrp2
+                where mr._category_key = 1011
+                  and mr._relationship_key = mrp1._relationship_key
+                  and mr._relationship_key = mrp2._relationship_key
+                  and mrp1._propertyname_key = 109733906
+                  and mrp2._propertyname_key = 109733907
+                union
+                select
+                  vt1._term_key,
+                  vt2._term_key
+                from 
+                  voc_term vt1, 
+                  voc_term vt2
+                where vt1._vocab_key = 5
+                  and vt1.isobsolete = 0
+                  and vt2._vocab_key = 106
+                  and vt2.isobsolete = 0
+                  and lower(vt1.term) = lower(vt2.term)
+                union 
+                select
+                  vt1._term_key as termKey1,
+                  vt2._term_key as termKey2
+                from 
+                  voc_term vt1, 
+                  voc_term vt2,
+                  mgi_synonym ms
+                where vt1._vocab_key = 5
+                  and vt1.isobsolete = 0
+                  and vt2._vocab_key = 106
+                  and vt2.isobsolete = 0
+                  and vt2._term_key = ms._object_key
+                  and lower(vt1.term) = lower(ms.synonym)
+                  and ms._mgitype_key = 13
+                  and ms._synonymtype_key in (1020, 1019, 1018, 1017)    
+                union 
+                select
+                  vt1._term_key as termKey1,
+                  vt2._term_key as termKey2
+                from 
+                  voc_term vt1, 
+                  voc_term vt2,
+                  mgi_synonym ms
+                where vt1._vocab_key = 5
+                  and vt1.isobsolete = 0
+                  and vt2._vocab_key = 106
+                  and vt2.isobsolete = 0
+                  and vt1._term_key = ms._object_key
+                  and lower(vt2.term) = lower(ms.synonym)
+                  and ms._mgitype_key = 13
+                  and ms._synonymtype_key in (1020, 1019, 1018, 1017)  
+            )
+        order by ms2._synonymtype_key, ms1._synonymtype_key
         '''
 
         ]
