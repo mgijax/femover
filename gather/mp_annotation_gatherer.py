@@ -36,8 +36,6 @@ BS_NOTETYPE = 1015
 MP_NOTETYPES = ["%s"%GENERAL_NOTETYPE,"%s"%NORMAL_NOTETYPE,"%s"%BS_NOTETYPE]
 # evidence property _property_term_key
 SEX_SPECIFICITY_KEY = "8836535"
-# specific term keys
-NO_PHENOTYPIC_ANALYSIS_KEY=293594
 # the following are display related values
 NORMAL_PHENOTYPE = "normal phenotype"
 SANGER_JNUM = 'J:175295'
@@ -551,9 +549,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                         qualifier = row[qualifierCol]
                         # default call is abnormal
                         call = 1
-                        # Special case to modify "no phenotypic analysis".
                         # Per Janan on 1/11/2013 we are always displaying this term as not a Normal
-                        if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
+                        if qualifier:
                                 call = 0
                         jnum = row[jnumCol]
                         sourceDisplay = self.getSource(evidenceKey, jnum)
@@ -699,9 +696,8 @@ class AnnotationGatherer (Gatherer.MultiFileGatherer):
                                 continue
                         qualifier = row[qualifierCol]
                         call = 1
-                        # Special case to modify "no phenotypic analysis".
                         # Per Janan on 1/11/2013 we are always displaying this term as not a Normal
-                        if qualifier and termKey != NO_PHENOTYPIC_ANALYSIS_KEY:
+                        if qualifier:
                                 call = 0
                         jnum = row[jnumCol]
                         sourceDisplay = self.getSource(row[evidKeyCol], jnum)

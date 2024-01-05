@@ -22,6 +22,7 @@ ExpressionCount = 'expressionAssayResultCount'
 RecombinaseResultCount = 'recombinaseResultCount'
 ImageCount = 'imageCount'
 MutationInvolvesCount = 'mutationInvolvesMarkerCount'
+HtExperimentCount = 'htExperimentCount'
 
 ###--- Classes ---###
 
@@ -53,6 +54,7 @@ class AlleleCountsGatherer (Gatherer.Gatherer):
                         (self.results[3], ExpressionCount, 'expCount'),
                         (self.results[4], MutationInvolvesCount, 'miCount'),
                         (self.results[6], RecombinaseResultCount, 'recResCount'),
+                        (self.results[7], HtExperimentCount, 'htExperimentCount'),
                         ]
 
                 for (r, countName, colName) in toAdd:
@@ -203,12 +205,21 @@ cmds = [
                 where c._emapa_term_key is not null
                 group by c._allele_key''',
 
+        # 7. GXD HT experiments having samples carrying this allele
+        '''with act as (select distinct ag._allele_key, hts._experiment_key
+                from gxd_htsample hts, gxd_allelegenotype ag, all_allele a
+                where hts._genotype_key = ag._genotype_key
+                and ag._allele_key = a._allele_key
+                and a.iswildtype = 0)
+            select _allele_key, count(*) as htExperimentCount
+            from act
+            group by _allele_key''',
         ]
 
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Allele_key', MarkerCount, ReferenceCount, ExpressionCount, RecombinaseResultCount,
-                ImageCount, MutationInvolvesCount, ]
+                ImageCount, MutationInvolvesCount, HtExperimentCount ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'allele_counts'
