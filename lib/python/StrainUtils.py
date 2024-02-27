@@ -70,63 +70,15 @@ def getStrainReferenceTempTable():
     
         # 0. collect (in a temp table) the list of references for each strain.  Largely adapted from
         #       PRB_getStrainReferences() stored procedure in pgmgddbschema product.
-    cmd0 = '''select v._Strain_key, e._Refs_key
+    cmd0 = '''  select v._strain_key, v._refs_key
                 into temp table <<temp>>
-                from mld_expts e, mld_insitu m, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Strain_key = v._Strain_key
+                from prb_strain_reference_view v, %s t
+                where v._strain_key = t._strain_key
                 union
-                select v._Strain_key, e._Refs_key
-                from mld_expts e, mld_fish m, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Strain_key = v._Strain_key
-                union
-                select v._Strain_key, e._Refs_key
-                from mld_expts e, mld_matrix m, crs_cross c, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Cross_key = c._Cross_key
-                        and c._femaleStrain_key = v._Strain_key
-                union
-                select v._Strain_key, e._Refs_key
-                from mld_expts e, mld_matrix m, crs_cross c, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Cross_key = c._Cross_key
-                        and c._maleStrain_key = v._Strain_key
-                union
-                select v._Strain_key, e._Refs_key
-                from mld_expts e, mld_matrix m, crs_cross c, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Cross_key = c._Cross_key
-                        and c._StrainHO_key = v._Strain_key
-                union
-                select v._Strain_key, e._Refs_key
-                from mld_expts e, mld_matrix m, crs_cross c, %s v
-                where e._Expt_key = m._Expt_key
-                        and m._Cross_key = c._Cross_key
-                        and c._StrainHT_key = v._Strain_key
-                union
-                select v._Strain_key, x._Refs_key
-                from gxd_genotype s, gxd_expression x, %s v
-                where s._Strain_key = v._Strain_key
-                        and s._Genotype_key = x._Genotype_key
-                union
-                select t._Strain_key, r._Refs_key
-                from PRB_Reference r, prb_rflv v, prb_allele a, prb_allele_strain s, %s t
-                where r._Reference_key = v._Reference_key
-                        and v._RFLV_key = a._RFLV_key
-                        and a._Allele_key = s._Allele_key
-                        and s._Strain_key = t._Strain_key
-                union
-                select v._Strain_key, r._Refs_key
-                from all_allele a, mgi_reference_assoc r, %s v
-                where a._Allele_key = r._Object_key
-                        and r._MGIType_key = 11
-                        and a._Strain_key = v._Strain_key
-                union
-                select mra._Object_key, mra._Refs_key
+                select mra._object_key as _strain_key, mra._refs_key
                 from mgi_reference_assoc mra, %s t
-                where mra._RefAssocType_key in (1009, 1010, 1031)
-                        and mra._Object_key = t._Strain_key'''
+                where mra._refassoctype_key in (1009, 1010, 1031)
+                        and mra._object_key = t._strain_key'''
             
     cmd0 = cmd0.replace('%s', getStrainTempTable())
     cmd0 = cmd0.replace('<<temp>>', STRAIN_REF_TEMP_TABLE)
