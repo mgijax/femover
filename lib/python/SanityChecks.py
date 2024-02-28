@@ -13,7 +13,7 @@ import logger
 NOT_TABLES = [ 'Table', 'template_table', 'config', 'Configuration', 'python', 'uni_keystone', '__pycache__' ]
 
 # tables where having zero rows is okay
-ZERO_ROWS_OKAY = [ 'marker_mrm_property' ]
+ZERO_ROWS_OKAY = [ 'marker_mrm_property', 'marker_interaction_property' ]
 
 ###--- Classes ---###
 
