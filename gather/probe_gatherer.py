@@ -95,6 +95,7 @@ cmds = [
                 x.term as sex,
                 c.term as cell_line,
                 v.term as vector,
+                p.ampprimer,
                 p.insertSite as insert_site,
                 p.insertSize as insert_size,
                 p.productSize as product_size,
@@ -139,7 +140,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [ '_Probe_key', 'name', 'segmentType', 'primaryID', 'logicalDB', 'cloneID',
-                'organism', 'age', 'sex', 'cell_line', 'vector', 'insert_site', 'insert_size',
+                'organism', 'age', 'sex', 'cell_line', 'vector', 'ampprimer', 'insert_site', 'insert_size',
                 'product_size', 'library', 'library_jnum', 'tissue', 'region_covered', 'strain', 'gxd_count',
         ]
 

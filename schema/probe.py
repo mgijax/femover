@@ -20,6 +20,7 @@ createStatement = '''CREATE TABLE %s  (
         sex                             text NULL,
         cell_line               text NULL,
         vector                  text NULL,
+        ampprimer_key   int NULL,
         insert_site             text NULL,
         insert_size             text NULL,
         product_size    text NULL,
@@ -49,6 +50,7 @@ comments = {
         Table.TABLE : 'central table for the probe flower, containing basic data for probes',
         Table.COLUMN : {
                 'probe_key' : 'unique key for this probe; same as _Probe_key in mgd',
+                'ampprrimer_key' : 'if this probe was generated using a primer, the primer\'s key (else null)',
                 'name' : 'name of the probe',
                 'segment_type' : 'type of segment (genomic, oligo, primer, etc.)',
                 'primary_id' : 'primary accession ID for the probe',
