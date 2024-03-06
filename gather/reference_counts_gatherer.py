@@ -28,6 +28,7 @@ AlleleCount = 'alleleCount'
 SequenceCount = 'sequenceCount'
 GoAnnotCount = 'goAnnotationCount'
 StrainCount = 'strainCount'
+DiseaseModelCount = 'diseaseModelCount'
 
 error = 'referenceCountsGatherer.error'
 
@@ -66,6 +67,7 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
                         (self.results[8], AlleleCount, 'numAlleles'),
                         (self.results[9], SequenceCount, 'numSequences'),
                         (self.results[10], StrainCount, 'numStrains'),
+                        (self.results[11], DiseaseModelCount, 'numModels'),
                         ]
                 for (r, countName, colName) in toAdd:
                         logger.debug ('Processing %s, %d rows' % (countName,
@@ -204,12 +206,19 @@ cmds = [
         '''select _Refs_key, count(distinct _Strain_key) as numStrains
                 from %s
                 group by _Refs_key''' % StrainUtils.getStrainReferenceTempTable(),
+
+        # 11. Count of genotypes annotated as a disease model
+        '''select ve._refs_key , count(distinct va._object_key) as numModels
+            from voc_annot va, voc_evidence ve
+            where va._annottype_key = 1020
+            and ve._annot_key = va._annot_key
+            group by ve._refs_key''',
         ]
 
 # order of fields (from the query results) to be written to the output file
 fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
         GxdIndexCount, GxdResultCount, GxdStructureCount,
-        GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, ]
+        GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, DiseaseModelCount ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'reference_counts'

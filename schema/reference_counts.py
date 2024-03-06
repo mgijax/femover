@@ -23,6 +23,7 @@ createStatement = '''CREATE TABLE %s  (
         sequence_count          int     NULL,
         go_annotation_count     int     NULL,
         strain_count            int     NULL,
+        disease_model_count     int     NULL,
         PRIMARY KEY(reference_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -50,6 +51,7 @@ comments = {
                 'allele_count' : 'count of alleles',
                 'sequence_count' : 'count of sequences',
                 'strain_count' : 'count of mouse strains',
+                'disease_model_count' : 'count of genotypes with disease model annoations',
                 },
         }
 
