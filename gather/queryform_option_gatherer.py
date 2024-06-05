@@ -246,7 +246,6 @@ class QFOptionGatherer (Gatherer.Gatherer):
                 coordRanges = [
                         ('within the gene(s)', 0),
                         ('include 2 kb upstream and downstream of the gene(s)', 2000),
-                        ('include 10 kb upstream and downstream of the gene(s)', 10000),
                         ]
 
                 directions = [
