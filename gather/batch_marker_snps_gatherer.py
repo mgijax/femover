@@ -15,52 +15,95 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
         def collateResults (self):
                 # produce the rows of results for the current batch of SNPs
                 
-                (cols, rows) = self.results[-1]
+                #(cols, rows) = self.results[-1]
+                cols0, snpKeys = self.results[0]
+                keyCol0 = Gatherer.columnNumber(cols0, '_ConsensusSNP_key')
+
+                cols1, snpSingleLoc = self.results[1]
+                keyCol1 = Gatherer.columnNumber(cols1, '_ConsensusSNP_key')
+
+                cols2, snpMarkerKeys = self.results[2]
+                keyCol2 = Gatherer.columnNumber(cols2, '_ConsensusSNP_key')
+                mkeyCol2 = Gatherer.columnNumber(cols2, '_marker_key')
+
+                cols3, snpRsIds = self.results[3]
+                keyCol3 = Gatherer.columnNumber(cols3, '_ConsensusSNP_key')
+                accCol3 = Gatherer.columnNumber(cols3, 'accid')
+
+                rows = []
+                i0 = i1 = i2 = i3 = 0
+                while i0 < len(snpKeys):
+                    csk = snpKeys[i0][keyCol0]
+                    (i1,singleLocs) = self.findK(csk, snpSingleLoc, i1, keyCol1)
+                    (i2,snpMarkers) = self.findK(csk, snpMarkerKeys, i2, keyCol2)
+                    (i3,snpIds) = self.findK(csk, snpRsIds, i3, keyCol3)
+                    snpId = snpIds[0][accCol3]
+                    if len(singleLocs) > 0 and len(snpMarkers) > 0 and len(snpIds) > 0:
+                        for r in snpMarkers:
+                            rows.append([r[mkeyCol2], snpId])
+                    i0 += 1
                 self.addRows('batch_marker_snps', rows)
                 return
 
+        def findK (self, k, recs, i, keyCol) :
+            ans = []
+            while i < len(recs) and recs[i][keyCol] < k:
+                i += 1
+            while i < len(recs) and recs[i][keyCol] == k:
+                ans.append(recs[i])
+                i += 1
+            return (i, ans)
+
 ###--- Setup for Gatherer ---###
 
-tempTable = 'snp_batch'
+#
+# For performance reasons, the queries for this gatherer are unusual in that there are no joins.
+# Instead, simple selection queries are done on each table, the results are ordered by key.
+# Joining is done in the gatherer code which processes the sorted streams in parallel.
+# The performance is dramatically better (45 min vs 14 hours) than the previous queries (or any variants
+# that I could come up with) involving joins
+#
 
 cmds = [
-        # 0 drop any existing temp table
-        'drop table if exists %s' % tempTable,
-        
-        # 1. SNP/marker pairs for the batch that are within the appropriate distance
-        '''select distinct s._ConsensusSNP_key, s._Marker_key
-                into temp table %s
-                from snp_consensussnp_marker s, mrk_marker m
-                where s._ConsensusSNP_key >= %%d
-                        and s._ConsensusSNP_key < %%d
-                        and s.distance_from <= 2000
-                        and s._Marker_key = m._Marker_key
-        ''' % tempTable, 
+    # query 0: consensus snp keys
+    '''select _ConsensusSNP_key
+        from snp.snp_consensussnp
+        where _ConsensusSNP_key >= %d
+        and _ConsensusSNP_key < %d
+        and _VarClass_key = 1878510
+        order by _ConsensusSNP_key
+    ''' ,
 
-        # 2. index the temp table
-        'create index %s_snp_index on %s (_ConsensusSNP_key)' % (tempTable, tempTable),
-        
-        # 3. delete SNPs that have the wrong variation class
-        '''delete from %s
-                using snp_consensussnp t
-                where t._VarClass_key != 1878510
-                        and %s._ConsensusSNP_key = t._ConsensusSNP_key
-        ''' % (tempTable, tempTable),
-        
-        # 4. delete SNPs that have multiple coordinates
-        '''delete from %s
-                using snp_coord_cache s
-                where s.isMultiCoord = 1
-                        and %s._ConsensusSNP_key = s._ConsensusSNP_key
-                ''' % (tempTable, tempTable),
+    # query 1: keys of consensus snp with single locations
+    ''' 
+        select _ConsensusSNP_key
+        from snp.snp_coord_cache
+        where _ConsensusSNP_key >=  %d
+        and _ConsensusSNP_key < %d
+        and isMultiCoord = 0
+        order by _ConsensusSNP_key
+    ''' ,
 
-        # 5. get SNP/marker pairs
-        '''select distinct t._Marker_key, a.accID
-                from %s t, snp_accession a
-                where t._ConsensusSNP_key = a._Object_key
-                        and a._MGIType_key = 30         -- consensus SNP
-                ''' % tempTable,
-        ]
+    # query 2: snp/markers key pairs where distance < 2kb
+    ''' 
+        select _ConsensusSNP_key, _marker_key
+        from snp.snp_consensussnp_marker
+        where _ConsensusSNP_key >=  %d
+        and _ConsensusSNP_key < %d
+        and distance_from <= 2000
+        order by _ConsensusSNP_key
+    ''' ,
+
+    # query 3: rsIDs
+    ''' select _object_key as _ConsensusSNP_key, accid
+        from snp.snp_accession
+        where _object_key >=  %d
+        and _object_key < %d
+        and _mgitype_key = 30
+        order by _object_key
+    ''' ,
+
+    ]
 
 files = [
         ('batch_marker_snps',
