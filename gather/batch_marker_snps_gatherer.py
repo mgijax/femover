@@ -15,7 +15,6 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
         def collateResults (self):
                 # produce the rows of results for the current batch of SNPs
                 
-                #(cols, rows) = self.results[-1]
                 cols0, snpKeys = self.results[0]
                 keyCol0 = Gatherer.columnNumber(cols0, '_ConsensusSNP_key')
 
@@ -37,8 +36,8 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
                     (i1,singleLocs) = self.findK(csk, snpSingleLoc, i1, keyCol1)
                     (i2,snpMarkers) = self.findK(csk, snpMarkerKeys, i2, keyCol2)
                     (i3,snpIds) = self.findK(csk, snpRsIds, i3, keyCol3)
-                    snpId = snpIds[0][accCol3]
                     if len(singleLocs) > 0 and len(snpMarkers) > 0 and len(snpIds) > 0:
+			snpId = snpIds[0][accCol3]
                         for r in snpMarkers:
                             rows.append([r[mkeyCol2], snpId])
                     i0 += 1
@@ -90,7 +89,6 @@ cmds = [
         from snp.snp_consensussnp_marker
         where _ConsensusSNP_key >=  %d
         and _ConsensusSNP_key < %d
-        and distance_from <= 2000
         order by _ConsensusSNP_key
     ''' ,
 
