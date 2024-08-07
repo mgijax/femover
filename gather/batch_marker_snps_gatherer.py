@@ -37,7 +37,7 @@ class BatchMarkerSnpsGatherer (Gatherer.CachingMultiFileGatherer):
                     (i2,snpMarkers) = self.findK(csk, snpMarkerKeys, i2, keyCol2)
                     (i3,snpIds) = self.findK(csk, snpRsIds, i3, keyCol3)
                     if len(singleLocs) > 0 and len(snpMarkers) > 0 and len(snpIds) > 0:
-			snpId = snpIds[0][accCol3]
+                        snpId = snpIds[0][accCol3]
                         for r in snpMarkers:
                             rows.append([r[mkeyCol2], snpId])
                     i0 += 1
