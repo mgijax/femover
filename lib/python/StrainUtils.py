@@ -70,10 +70,14 @@ def getStrainReferenceTempTable():
     
         # 0. collect (in a temp table) the list of references for each strain.  Largely adapted from
         #       PRB_getStrainReferences() stored procedure in pgmgddbschema product.
+        #
+        # WTS2-1466 Exclude allele refs.
+        #
     cmd0 = '''  select v._strain_key, v._refs_key
                 into temp table <<temp>>
                 from prb_strain_reference_view v, %s t
                 where v._strain_key = t._strain_key
+                and v.dataset != 'Allele'
                 union
                 select mra._object_key as _strain_key, mra._refs_key
                 from mgi_reference_assoc mra, %s t
