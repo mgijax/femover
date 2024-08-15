@@ -1,3 +1,3 @@
 # pre-computed statistics, two tab-delimited columns (statistic name\tvalue)
-RefSNPs	15663546
-Strains with SNPs	88
+RefSNPs	66340659
+Strains with SNPs	101
