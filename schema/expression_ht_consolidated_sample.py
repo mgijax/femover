@@ -24,6 +24,7 @@ createStatement = '''CREATE TABLE %s  (
         age_max                 float   null,
         emapa_key               int             null,
         theiler_stage   text    null,
+        is_wild_type            int not null,
         note                    text    null,
         sequence_num    int             not null,
         PRIMARY KEY(consolidated_sample_key))''' % tableName
@@ -60,6 +61,7 @@ comments = {
                 'age_max' : 'maxiumum age of the sample, computed as DPC',
                 'emapa_key' : 'structure of the sample',
                 'theiler_stage' : 'Theiler stage of the sample, if available',
+                'is_wild_type' : 'Is the sample wildtype',
                 'note' : 'note for the sample',
                 'sequence_num' : 'femover-computed sequence number; used for ordering the samples of each experiment',
                 },
