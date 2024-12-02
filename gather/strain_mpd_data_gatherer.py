@@ -28,7 +28,7 @@ def getMpdLines():
         # returns a list of data lines, processed from MPD.  Each line includes:
         #               (strain name, MPD ID, source, source ID, source URL)
 
-        proc = subprocess.run('curl %s' % config.MPD_STRAIN_URL, shell=True, capture_output=True, encoding='utf-8')
+        proc = subprocess.run('curl -L %s' % config.MPD_STRAIN_URL, shell=True, capture_output=True, encoding='utf-8')
         if (proc.returncode != 0):
                 raise Exception('Failed to read from MPD')
         

@@ -93,7 +93,7 @@ else:
 if 'MPD_STRAIN_URL' in os.environ:
         MPD_STRAIN_URL = os.environ['MPD_STRAIN_URL']
 else:
-        MPD_STRAIN_URL = "https://phenomedoc.jax.org/MPD_downloads/straininfo.csv"
+        MPD_STRAIN_URL = "https://phenome.jax.org/phenomedoc?name=MPD_downloads/straininfo.csv"
 
 if 'BUILDS_IN_SYNC' in os.environ:
         BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])
