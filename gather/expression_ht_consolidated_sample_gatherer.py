@@ -17,6 +17,7 @@ AGE_MAX = {}
 SEX = {}
 STAGE = {}
 ORGANISM = {}
+WILDTYPE = {}
 
 ###--- Functions ---###
 
@@ -35,12 +36,23 @@ def initialize():
                 from voc_term t, gxd_htsample h
                 where t._Term_key = h._Sex_key'''
 
+        wildtypeQuery = '''select distinct s._RNASeqSet_key, 1 as is_wild_type
+            from gxd_htsample_rnaseqset s, gxd_genotype g
+            where s._genotype_key = g._genotype_key
+            and not exists (
+              select 1 
+              from mgi_note n 
+              where n._notetype_key = 1016 
+              and n._object_key = g._genotype_key)
+            '''
+
         utils.fillDictionary('age per consolidated sample', ageQuery, AGE, '_RNASeqSet_key', 'age')
         utils.fillDictionary('ageMin per consolidated sample', ageQuery, AGE_MIN, '_RNASeqSet_key', 'ageMin')
         utils.fillDictionary('ageMax per consolidated sample', ageQuery, AGE_MAX, '_RNASeqSet_key', 'ageMax')
         utils.fillDictionary('organisms', organismQuery, ORGANISM, '_Organism_key', 'commonName', utils.cleanupOrganism)
         utils.fillDictionary('Theiler Stages', stageQuery, STAGE, '_Stage_key', 'stage')
         utils.fillDictionary('sexes', sexQuery, SEX, '_Term_key', 'term')
+        utils.fillDictionary('wildtype', wildtypeQuery, WILDTYPE, '_RNASeqSet_key', 'is_wild_type')
 
         # tweak age values to use abbreviations
         itemList = list(AGE.items())
@@ -73,7 +85,9 @@ class EHCSGatherer (Gatherer.CachingMultiFileGatherer):
                         self.addRow('expression_ht_consolidated_sample', [ row[setKeyCol], row[exptKeyCol],
                                 row[genotypeKeyCol], ORGANISM[row[organismKeyCol]], SEX[row[sexKeyCol]],
                                 AGE[row[setKeyCol]], AGE_MIN[row[setKeyCol]], AGE_MAX[row[setKeyCol]],
-                                row[emapaKeyCol], STAGE[row[stageKeyCol]], row[noteCol], row[setKeyCol],
+                                row[emapaKeyCol], STAGE[row[stageKeyCol]], 
+                                WILDTYPE.get(row[setKeyCol], 0),
+                                row[noteCol], row[setKeyCol],
                                 ])
 
                 logger.debug('Processed %d rows' % len(rows))
@@ -95,9 +109,9 @@ cmds = [ '''select distinct m._RNASeqSet_key, s._Experiment_key, s._Organism_key
 files = [
         ('expression_ht_consolidated_sample',
         [ 'consolidated_sample_key', 'experiment_key', 'genotype_key', 'organism', 'sex', 'age',
-                        'age_min', 'age_max', 'emapa_key', 'theiler_stage', 'note', 'sequence_num' ],
+                        'age_min', 'age_max', 'emapa_key', 'theiler_stage', 'is_wild_type', 'note', 'sequence_num' ],
         [ 'consolidated_sample_key', 'experiment_key', 'genotype_key', 'organism', 'sex', 'age',
-                        'age_min', 'age_max', 'emapa_key', 'theiler_stage', 'note', 'sequence_num' ],
+                        'age_min', 'age_max', 'emapa_key', 'theiler_stage', 'is_wild_type', 'note', 'sequence_num' ],
         )
 ]
 
