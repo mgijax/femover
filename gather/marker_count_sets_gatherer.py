@@ -568,7 +568,7 @@ cmds = [
                         from snp_coord_cache
                         where isMultiCoord = 0
                         group by _ConsensusSNP_key),
-                pairs as (select distinct m._Marker_key, m._ConsensusSNP_key
+                pairs as (select m._Marker_key, m._ConsensusSNP_key
                         from snp_consensussnp_marker m, snp_coord_cache c, snp_consensussnp s
                         where m._ConsensusSNP_key = c._ConsensusSNP_key
                         and c.isMultiCoord = 0
