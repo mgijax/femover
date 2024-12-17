@@ -2,6 +2,13 @@
 # 
 # gathers data for the 'marker_count_sets' table in the front-end database
 #
+# 12/17/2024    lec
+#   - wts2-1109/e4g-13/Postgres 17 : Analysis & Scrum databases
+#   "pairs" : 
+#       . removed "distinct"
+#       . added "and c.isMultiCoord = 0"
+#       . removed "and m.distance_from <= 2000"
+#
 # 01/21/2014    lec
 #       - TR11515/allele type changes
 #
@@ -557,18 +564,17 @@ cmds = [
         # variation class of "SNP" for now.  Include join to MRK_Marker just to
         # ensure that we have legitimate marker keys.
         '''with coord_counts as (
-                        select _ConsensusSNP_key,
-                                count(distinct startCoordinate) as coord_count
+                        select _ConsensusSNP_key, count(distinct startCoordinate) as coord_count
                         from snp_coord_cache
                         where isMultiCoord = 0
                         group by _ConsensusSNP_key),
                 pairs as (select distinct m._Marker_key, m._ConsensusSNP_key
-                        from snp_consensussnp_marker m, snp_coord_cache c,
-                                snp_consensussnp s
+                        from snp_consensussnp_marker m, snp_coord_cache c, snp_consensussnp s
                         where m._ConsensusSNP_key = c._ConsensusSNP_key
+                        and c.isMultiCoord = 0
                         and m._ConsensusSNP_key = s._ConsensusSNP_key
                         and s._VarClass_key = 1878510
-                        and m.distance_from <= 2000)
+                        )
         select m._Marker_key, sum(f.coord_count) as snp_count
         from pairs m, coord_counts f, mrk_marker mm
         where m._ConsensusSNP_key = f._ConsensusSNP_key
