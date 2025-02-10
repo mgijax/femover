@@ -28,12 +28,18 @@ def getMpdLines():
         # returns a list of data lines, processed from MPD.  Each line includes:
         #               (strain name, MPD ID, source, source ID, source URL)
 
-        proc = subprocess.run('curl -L %s' % config.MPD_STRAIN_URL, shell=True, capture_output=True, encoding='utf-8')
-        if (proc.returncode != 0):
-                raise Exception('Failed to read from MPD')
+        incMutFileLines = []
+        try:
+            fp = open(config.MPD_STRAIN_FILE,'rU')
+            incMutFileLines = fp.readlines()
+            logger.debug("Opened MPD STRAIN file.\n ")
+            logger.debug(config.MPD_STRAIN_FILE)
+        except:
+            logger.debug("ERROR MPD STRAIN file.\n No data will be loaded")
+
         
         out = []
-        for line in proc.stdout.split('\n'):
+        for line in incMutFileLines:
                 # convert any commas between quotes to something else temporarily
                 inQuote = False
                 revisedLine = ''

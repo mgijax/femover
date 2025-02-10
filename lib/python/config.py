@@ -90,10 +90,10 @@ if 'IMSR_STRAIN_URL' in os.environ:
 else:
         IMSR_STRAIN_URL = "https://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
 
-if 'MPD_STRAIN_URL' in os.environ:
-        MPD_STRAIN_URL = os.environ['MPD_STRAIN_URL']
+if 'MPD_STRAIN_FILE' in os.environ:
+        MPD_STRAIN_FILE = os.environ['MPD_STRAIN_FILE']
 else:
-        MPD_STRAIN_URL = "https://phenome.jax.org/phenomedoc?name=MPD_downloads/straininfo.csv"
+        MPD_STRAIN_FILE = "/data/downloads/phenome.jax.org/phenomedoc?name=MPD_downloads/straininfo.csv"
 
 if 'BUILDS_IN_SYNC' in os.environ:
         BUILDS_IN_SYNC = int(os.environ['BUILDS_IN_SYNC'])

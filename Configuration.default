@@ -76,9 +76,9 @@ export MMHCDB_ALLELE_URL
 #
 # setting for retrieving MPD strain data
 #
-MPD_STRAIN_URL="https://phenome.jax.org/phenomedoc?name=MPD_downloads/straininfo.csv"
-export MPD_STRAIN_URL
-
+MPD_STRAIN_FILE="/data/downloads/phenome.jax.org/phenomedoc?name=MPD_downloads/straininfo.csv"
+export MPD_STRAIN_FILE
+ 
 #
 # Miscellaneous settings
 #
