@@ -22,7 +22,7 @@ ENSEMBL_GENE_MODEL = 60
 ldbLookup = {
         MGI:['MGI', 'accession_report.cgi?id='],
         OMIM:['OMIM', 'https://www.omim.org/entry/'],
-        RGD:['Rat Genome Database', 'http://rgd.mcw.edu/generalSearch/RgdSearch.jsp?quickSearch=1&searchKeyword='],
+        RGD:['Rat Genome Database', 'https://rgd.mcw.edu/rgdweb/report/gene/main.html?id='],
         ENTREZ_GENE:['Entrez Gene', 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&cmd=Retrieve&dopt=Graphics&list_uids='],
         ENSEMBL_GENE_MODEL:['Gene Tree', 'http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g='],
         HGNC:['HGNC', 'https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/'],
