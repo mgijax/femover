@@ -175,13 +175,14 @@ class HTSampleGatherer (Gatherer.Gatherer):
 ###--- globals ---###
 
 cmds = [
-        '''select t._Experiment_key, r.term as relevancy, t._Sample_key, s.name, s._Genotype_key,
+        '''select t._Experiment_key, r.term as relevancy, rt.term as rnaseqType, t._Sample_key, s.name, s._Genotype_key,
                         o.commonName as organism, x.term as sex, s.age, s._Emapa_key, g.stage as theiler_stage,
                         s.ageMin, s.ageMax, s._celltype_term_key
                 from %s t
                 inner join gxd_htsample s on (t._Sample_key = s._Sample_key)
                 inner join voc_term r on (s._Relevance_key = r._Term_key)
                 inner join mgi_organism o on (s._Organism_key = o._Organism_key)
+                inner join voc_term rt on (s._rnaseqType_key = rt._term_key)
                 inner join voc_term x on (s._Sex_key = x._Term_key)
                 left outer join gxd_theilerstage g on (s._Stage_key = g._Stage_key)
                 order by t._Experiment_key, s.name''' % samples.getSampleTempTable()
@@ -190,7 +191,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-        '_Sample_key', '_Experiment_key', 'name', '_Genotype_key', 'organism', 'sex', 'age',
+        '_Sample_key', '_Experiment_key', 'name', 'rnaseqType', '_Genotype_key', 'organism', 'sex', 'age',
         'ageMin', 'ageMax', '_EMAPA_key', 'theiler_stage', '_celltype_term_key', 'relevancy', 'sequence_num',
         ]
 
