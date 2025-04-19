@@ -56,15 +56,14 @@ export LOG_DEBUG LOG_INFO
 #
 # settings for retrieving IMSR counts of strains and cell lines
 #
-IMSR_COUNT_URL="https://www.findmice.org/report/mgiCounts.txt"
-IMSR_COUNT_TIMEOUT=300		# number of seconds before a timeout occurs
+IMSR_COUNT_FILE="/data/downloads/www.findmice.org/report/mgiCounts.txt"
 
-export IMSR_COUNT_URL IMSR_COUNT_TIMEOUT
+export IMSR_COUNT_URL
 
 #
 # setting for retrieving IMSR strain data
 #
-IMSR_STRAIN_URL="https://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
+IMSR_STRAIN_FILE="/data/downloads/www.findmice.org/strains.txt"
 export IMSR_STRAIN_URL
 
 #

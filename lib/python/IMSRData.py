@@ -7,27 +7,19 @@ import config
 import gc
 
 class IMSRDatabase:
-        IMSR_COUNT_URL = 'IMSR_COUNT_URL' in dir(config) and config.IMSR_COUNT_URL or ""
-        IMSR_COUNT_TIMEOUT = 'IMSR_COUNT_TIMEOUT' in dir(config) and config.IMSR_COUNT_TIMEOUT or ""
+        IMSR_COUNT_FILE = 'IMSR_COUNT_FILE' in dir(config) and config.IMSR_COUNT_FILE or ""
 
-        # Issues a Solr query to IMSR_URL to retrieve 
-        # cellLineCount, strainCount, totalCountForMarker
-        #       Return dictionaries keyed by accession ID
         def queryAllCounts (self):
-                logger.debug ('IMSR_COUNT_URL : %s' % self.IMSR_COUNT_URL)
-                logger.debug ('IMSR_COUNT_TIMEOUT : %d' % self.IMSR_COUNT_TIMEOUT)
+                logger.debug ('IMSR_COUNT_FILE : %s' % self.IMSR_COUNT_FILE)
 
                 cellLines = {}
                 strains = {}
                 byMarker = {}
 
-                # TODO (kstone): add timeout when we move past python 2.4
-                #       Not supported in older versions
-                #f = urllib2.urlopen(self.IMSR_COUNT_URL, timeout=self.IMSR_COUNT_TIMEOUT)
                 try:
-                    f = urllib.request.urlopen(self.IMSR_COUNT_URL)
+                    f = open(self.IMSR_COUNT_FILE, 'rb')
                 except:
-                    logger.error ('Failed to open IMSR_COUNT_URL: %s' % self.IMSR_COUNT_URL)
+                    logger.error ('Failed to open IMSR_COUNT_FILE: %s' % self.IMSR_COUNT_FILE)
                     return cellLines, strains, byMarker
 
                 try:
@@ -36,16 +28,16 @@ class IMSRDatabase:
                     f.close()
                 
                 if len(lines) == 0:
-                    logger.error ('Failed to read records from IMSR_COUNT_URL: %s' % self.IMSR_COUNT_URL)
+                    logger.error ('Failed to read records from IMSR_COUNT_FILE: %s' % self.IMSR_COUNT_FILE)
                     return cellLines, strains, byMarker
 
                 if type(lines) == bytes:
-                        lines = 'n'.split(lines.decode())
+                        lines = 'n'.split(lines.decode(errors="replace"))
                 elif type(lines[0]) == bytes:
-                        lines = [x.decode() for x in lines]
+                        lines = [x.decode(errors="replace") for x in lines]
 
                 if not lines:
-                        logger.error ('Error reading from IMSR_COUNT_URL: %s' % err)
+                        logger.error ('Error reading from IMSR_COUNT_FILE: %s' % err)
                         logger.error ('No counts will be stored')
 
                         raise Exception ('Could not retrieve data from IMSR')
@@ -86,7 +78,7 @@ class IMSRDatabase:
                 return cellLines, strains, byMarker
 
 class IMSRStrainData:
-        IMSR_STRAIN_URL = 'IMSR_STRAIN_URL' in dir(config) and config.IMSR_STRAIN_URL or ""
+        IMSR_STRAIN_FILE = 'IMSR_STRAIN_FILE' in dir(config) and config.IMSR_STRAIN_FILE or ""
 
         # Issues a query to the IMSR WI to retrieve a report mapping from mouse strain names to
         # the IDs IMSR recognizes for them (and other data, too).  This report is fairly big (125 MB).
@@ -94,16 +86,16 @@ class IMSRStrainData:
         # Returns: a list of tuples, each including:
         #               (strain name or synonym, approved nomen flag (0/1), IMSR ID, repository, source URL)
         def queryStrains (self):
-                logger.debug ('Getting IMSR strain data from: %s' % self.IMSR_STRAIN_URL)
+                logger.debug ('Getting IMSR strain data from: %s' % self.IMSR_STRAIN_FILE)
 
-                f = urllib.request.urlopen(self.IMSR_STRAIN_URL)
+                f = open(self.IMSR_STRAIN_FILE, 'rb')
                 try:
                     lines = f.readlines()
                 finally:
                     f.close()
                 
                 if type(lines) == bytes:
-                        lines = 'n'.split(lines.decode())
+                        lines = 'n'.split(lines.decode(errors="replace"))
                 if type(lines[0]) == bytes:
                         lines = [ x.decode('utf-8', errors='replace') for x in lines ]
 
@@ -111,7 +103,7 @@ class IMSRStrainData:
                 uniqueSet = set()
 
                 if not lines:
-                        logger.error ('Error reading from IMSR_STRAIN_URL: %s' % err)
+                        logger.error ('Error reading from IMSR_STRAIN_FILE: %s' % err)
                         logger.error ('No IMSR strain data will be stored')
 
                         raise Exception ('Could not retrieve strain data from IMSR')
@@ -151,8 +143,7 @@ class IMSRStrainData:
 
 if __name__=="__main__":
         imsrDB = IMSRDatabase()
-        imsrDB.IMSR_COUNT_URL = "https://www.findmice.org/report/mgiCounts.txt"
-        imsrDB.IMSR_COUNT_TIMEOUT=300
+        imsrDB.IMSR_COUNT_FILE = "https://www.findmice.org/report/mgiCounts.txt"
         imsrStrains = IMSRStrainData()
         import unittest
         class IMSRDBTestCase(unittest.TestCase):

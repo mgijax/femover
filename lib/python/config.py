@@ -75,20 +75,15 @@ if 'CHUNK_SIZE' in os.environ:
 else:
         CHUNK_SIZE = 100000
 
-if 'IMSR_COUNT_TIMEOUT' in os.environ:
-        IMSR_COUNT_TIMEOUT = int(os.environ['IMSR_COUNT_TIMEOUT'])
+if 'IMSR_COUNT_FILE' in os.environ:
+        IMSR_COUNT_FILE = os.environ['IMSR_COUNT_FILE']
 else:
-        IMSR_COUNT_TIMEOUT = 300
+        IMSR_COUNT_FILE = "/data/downloads/www.findmice.org/report/mgiCounts.txt"
 
-if 'IMSR_COUNT_URL' in os.environ:
-        IMSR_COUNT_URL = os.environ['IMSR_COUNT_URL']
+if 'IMSR_STRAIN_FILE' in os.environ:
+        IMSR_STRAIN_FILE = os.environ['IMSR_STRAIN_FILE']
 else:
-        IMSR_COUNT_URL = "https://www.findmice.org/report/mgiCounts.txt"
-
-if 'IMSR_STRAIN_URL' in os.environ:
-        IMSR_STRAIN_URL = os.environ['IMSR_STRAIN_URL']
-else:
-        IMSR_STRAIN_URL = "https://www.findmice.org/report.txt?query=&states=Any&_states=1&types=Any&_types=1&repositories=Any&_repositories=1&_mutations=on&results=500000&startIndex=0&sort=score&dir"
+        IMSR_STRAIN_FILE = "/data/downloads/www.findmice.org/strains.txt"
 
 if 'MPD_STRAIN_FILE' in os.environ:
         MPD_STRAIN_FILE = os.environ['MPD_STRAIN_FILE']
