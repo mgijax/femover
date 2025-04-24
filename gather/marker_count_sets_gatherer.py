@@ -574,9 +574,11 @@ cmds = [
                         and c.isMultiCoord = 0
                         and m._ConsensusSNP_key = s._ConsensusSNP_key
                         and s._VarClass_key = 1878510
-                        )
+                        ),
+                dpairs as (select distinct _Marker_key, _ConsensusSNP_key
+                        from pairs)
         select m._Marker_key, sum(f.coord_count) as snp_count
-        from pairs m, coord_counts f, mrk_marker mm
+        from dpairs m, coord_counts f, mrk_marker mm
         where m._ConsensusSNP_key = f._ConsensusSNP_key
                 and m._Marker_key = mm._Marker_key
         group by m._Marker_key
