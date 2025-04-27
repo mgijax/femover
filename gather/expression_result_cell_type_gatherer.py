@@ -34,7 +34,7 @@ cmds = [
 
 # order of fields (from the query results) to be written to the
 # output file
-fieldOrder = [ Gatherer.AUTO, '_Assigned_key', 'term', 'sequenceNum' ]
+fieldOrder = [ Gatherer.AUTO, '_Assigned_key', 'term', 'accid', 'sequenceNum' ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'expression_result_cell_type'
