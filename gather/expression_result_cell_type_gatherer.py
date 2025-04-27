@@ -19,12 +19,16 @@ ExpressionResultCellTypeGatherer = Gatherer.Gatherer
 ###--- globals ---###
 
 cmds = [
-    '''select ck._Assigned_key, vt.term,
+    '''select ck._Assigned_key, vt.term, a.accid,
             row_number() over (order by ck._Assigned_key, vt.term) as sequenceNum
-        from %s ck, gxd_isresultcelltype ct, voc_term vt
+        from %s ck, gxd_isresultcelltype ct, voc_term vt, acc_accession a
         where ck._Result_key = ct._Result_key
             and ck._CellType_Term_key = ct._CelLType_Term_key
             and ct._CellType_Term_key = vt._Term_key
+            and vt._Term_key = a._object_key
+            and a._logicaldb_key = 173
+            and a._mgitype_key = 13
+            and a.preferred = 1
         order by 1, 2''' % CLASSICAL_KEY_TABLE,
         ]
 

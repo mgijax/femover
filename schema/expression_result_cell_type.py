@@ -18,6 +18,7 @@ createStatement = '''CREATE TABLE %s  (
         unique_key              int     not null,
         result_key              int     not null,
         cell_type               text    not null,
+        cell_type_id            text    not null,
         sequence_num            int     not null,
         PRIMARY KEY(unique_key))''' % tableName
 
@@ -39,6 +40,7 @@ comments = {
                 'unique_key' : 'uniquely identifies a record',
                 'result_key' : 'key for the expression result',
                 'cell_type' : 'one of the cell types for this expression result',
+                'cell_type_id' : 'primary accession ID of the cell type',
                 'sequence_num' : 'for ordering the cell types of each result'
                 },
         Table.INDEX : {
