@@ -455,7 +455,7 @@ class MarkerCountSetsGatherer (Gatherer.Gatherer):
                 self.collateResultsByAssayType(2)
 
                 self.collateReagents(3)
-                self.collatePolymorphisms(4, 5)
+                self.collatePolymorphisms(4, 11)
                 self.collateMarkerInteractions()
                 self.collateAlleleCounts()
 
@@ -558,25 +558,46 @@ cmds = [
                         where m._Marker_key = rflv._Marker_key)
         group by rflv._Marker_key, t.term''',
 
-        # 5. counts of SNPs per marker (really, SNP locations.  A SNP that is
+        # 5-11. counts of SNPs per marker (really, SNP locations.  A SNP that is
         # within 2kb of a marker will have all of its locations counted, even
         # if some are not within 2 kb of that marker.)  Only count SNPs with a
         # variation class of "SNP" for now.  Include join to MRK_Marker just to
         # ensure that we have legitimate marker keys.
-        '''with coord_counts as (
-                        select _ConsensusSNP_key, count(distinct startCoordinate) as coord_count
-                        from snp_coord_cache
-                        where isMultiCoord = 0
-                        group by _ConsensusSNP_key),
-                pairs as (select m._Marker_key, m._ConsensusSNP_key
+
+        # 5
+        '''select _ConsensusSNP_key, count(distinct startCoordinate) as coord_count
+                       into temp coord_counts
+                       from snp_coord_cache
+                       where isMultiCoord = 0
+                       group by _ConsensusSNP_key
+        ''',
+        # 6
+        '''
+            create index idx0 on coord_counts(_ConsensusSNP_key)
+        ''',
+        # 7
+        '''select m._Marker_key, m._ConsensusSNP_key
+into temp pairs
                         from snp_consensussnp_marker m, snp_coord_cache c, snp_consensussnp s
                         where m._ConsensusSNP_key = c._ConsensusSNP_key
                         and c.isMultiCoord = 0
                         and m._ConsensusSNP_key = s._ConsensusSNP_key
                         and s._VarClass_key = 1878510
-                        ),
-                dpairs as (select distinct _Marker_key, _ConsensusSNP_key
-                        from pairs)
+        ''',
+        # 8
+        '''
+            create index idx1 on pairs(_Marker_key)
+        ''',
+        # 9
+        '''
+            create index idx2  on pairs(_ConsensusSNP_key)
+        ''',
+        # 10
+        '''
+            select distinct _Marker_key, _ConsensusSNP_key into temp table dpairs from pairs
+        ''',
+        # 11
+        '''
         select m._Marker_key, sum(f.coord_count) as snp_count
         from dpairs m, coord_counts f, mrk_marker mm
         where m._ConsensusSNP_key = f._ConsensusSNP_key
