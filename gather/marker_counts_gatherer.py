@@ -394,8 +394,8 @@ cmds = [
                         count(distinct vte._term_key) as tissueCount
                 from gxd_expression e
                         join voc_term_emaps vte on
-                                vte._emapa_term_key = e._emapa_term_key
-                                and vte._stage_key = e._stage_key
+                                e._emapa_term_key = vte._emapa_term_key
+                                and e._stage_key = vte._stage_key
                 where e.isForGXD = 1
                 group by e._Marker_key''',
 
