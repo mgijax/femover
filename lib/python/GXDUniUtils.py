@@ -235,8 +235,8 @@ def _assignClassicalKeys():
                         voc_term vtc
                 where g._GelControl_key = vtc._term_key and vtc.term = 'No'
                         and g._GelLane_key = gs._GelLane_key
-                        and vte._emapa_term_key = gs._emapa_term_key
-                        and vte._stage_key = gs._stage_key
+                        and gs._emapa_term_key = vte._emapa_term_key
+                        and gs._stage_key = vte._stage_key
                 order by g._Assay_key, g._GelLane_key, gs._Stage_key, gs._Emapa_Term_key''' % (TMP_CLASSICAL_KEYS, maxKey)
         dbAgnostic.execute(cmd3)
         
