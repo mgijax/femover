@@ -255,10 +255,10 @@ cmds = [
                 gs._stage_key
         from GXD_GelLaneStructure gs
                 join voc_term_emaps vte on
-                        vte._emapa_term_key = gs._emapa_term_key
-                        and vte._stage_key = gs._stage_key
+                        gs._emapa_term_key = vte._emapa_term_key
+                        and gs._stage_key = vte._stage_key
                 join voc_term struct on
-                        struct._term_key = vte._term_key
+                        vte._term_key = struct._term_key
         where exists (select 1 from GXD_GelBand gb where gs._gellane_key = gb._gellane_key)
         ''',
         ]

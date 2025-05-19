@@ -157,8 +157,7 @@ def __output (
 
         timestamp = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(now))
 
-        LOG.write ('%s : %s : %s : %s\n' % (
-                NAME, messageType, timestamp, message))
+        LOG.write ('%s : %s : %s : %s\n' % ( NAME, messageType, timestamp, message))
         LOG.flush()
         return
 
