@@ -1060,7 +1060,7 @@ cmds = [
                 and r._Pattern_key = p._Term_key
                 and r._Result_key = rs._Result_key
                 and rs._emapa_term_key = vte._emapa_term_key
-                and rs._stage_key = = vte._stage_key
+                and rs._stage_key = vte._stage_key
                 and vte._term_key = struct._term_key
                 and s._Assay_key = ck._Assay_key
                 and r._Result_key = ck._Result_key
