@@ -248,6 +248,7 @@ def _assignClassicalKeys():
         createIndex(TMP_CLASSICAL_KEYS, '_Stage_key')
         createIndex(TMP_CLASSICAL_KEYS, '_Emapa_Term_key')
         createIndex(TMP_CLASSICAL_KEYS, '_CellType_Term_key')
+        createIndex(TMP_CLASSICAL_KEYS, '_Assigned_key')
         logger.info(' - added indexes')
 
         logger.info('Done building: %s' % TMP_CLASSICAL_KEYS)

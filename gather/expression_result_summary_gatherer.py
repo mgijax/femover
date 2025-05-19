@@ -1097,16 +1097,14 @@ cmds = [
                 gxd_gellanestructure gs,
                 voc_term_emaps vte,
                 voc_term struct,
-                voc_term glc,
                 %s ck
-        where g._GelControl_key = glc._Term_key
-                and glc.term = 'No'
+        where g._GelControl_key = 107080580
                 and g._GelLane_key = b._GelLane_key
                 and b._Strength_key = st._Term_key
                 and g._GelLane_key = gs._GelLane_key
-                and vte._emapa_term_key = gs._emapa_term_key
-                and vte._stage_key = gs._stage_key
-                and struct._term_key = vte._term_key
+                and gs._emapa_term_key = vte._emapa_term_key
+                and gs._stage_key = vte._stage_key
+                and vte._term_key = struct._term_key
                 and g._Assay_key = ck._Assay_key
                 and g._GelLane_key = ck._Result_key
                 and gs._Stage_key = ck._Stage_key
