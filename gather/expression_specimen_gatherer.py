@@ -239,12 +239,12 @@ cmds = [
             and gir._strength_key=str._term_key
             and gir._pattern_key=gp._term_key
             and gir._result_key=giri._result_key
-            and gfm._term_key=gs._fixation_key
-            and gem._term_key=gs._embedding_key
-            and gg._genotype_key=gs._genotype_key
-            and vte._emapa_term_key = girs._emapa_term_key
-            and vte._stage_key = girs._stage_key
-            and struct._term_key = vte._term_key
+            and gs._fixation_key = gfm._term_key
+            and gs._embedding_key = gem._term_key
+            and gs._genotype_key = gg._genotype_key
+            and girs._emapa_term_key = vte._emapa_term_key
+            and girs._stage_key = vte._stage_key
+            and vte._term_key = struct._term_key
             and gs._Specimen_key >= %d
             and gs._Specimen_key < %d
         ''',
@@ -262,8 +262,8 @@ cmds = [
         where gir._result_key = rct._result_key
             and rct._celltype_term_key = ct._Term_key
             and gir._result_key=girs._result_key
-            and vte._emapa_term_key = girs._emapa_term_key
-            and vte._stage_key = girs._stage_key
+            and girs._emapa_term_key = vte._emapa_term_key
+            and girs._stage_key = vte._stage_key
             and gir._Specimen_key >= %d
             and gir._Specimen_key < %d
         order by 1, 2

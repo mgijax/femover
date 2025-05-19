@@ -174,8 +174,8 @@ cmds = [
         '''select _Refs_key, count(distinct vte._term_key) as numStructures
                 from gxd_expression e
                 join voc_term_emaps vte on
-                        vte._emapa_term_key = e._emapa_term_key
-                        and vte._stage_key = e._stage_key
+                        e._emapa_term_key = vte._emapa_term_key
+                        and e._stage_key = vte._stage_key
                 where isForGXD = 1
                 group by _Refs_key''',
 

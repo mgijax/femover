@@ -911,22 +911,22 @@ cmds = [
                 c.hasImage, c.cresystemlabel, c._assay_key, r._result_key, s.specimenlabel
         from all_cre_cache c
                 join voc_term_emaps vte on
-                        vte._emapa_term_key = c._emapa_term_key
-                        and vte._stage_key = c._stage_key
+                        c._emapa_term_key = vte._emapa_term_key
+                        and c._stage_key = vte._stage_key
                 join gxd_assay a on
-                    a._assay_key = c._assay_key
+                    c._assay_key = a._assay_key
                 join gxd_specimen s on
-                    s._assay_key = a._assay_key
+                    a._assay_key = s._assay_key
                     and s.age = c.age
                 join gxd_insituresult r on
-                    r._specimen_key = s._specimen_key
+                    s._specimen_key = r._specimen_key
                 join gxd_iSresultstructure rs on
-                    rs._result_key = r._result_key
+                    r._result_key = rs._result_key
                     and rs._emapa_term_key = c._emapa_term_key
                     and rs._stage_key = c._stage_key
                 join voc_term gxs on
-                    gxs._term_key = r._strength_key
-                    and gxs.term = c.strength
+                    r._strength_key = gxs._term_key
+                    and c.strength = gxs.term
         where c.cresystemlabel is not null
             and c.ageMin is not null
             and c.ageMax is not null
@@ -1030,8 +1030,8 @@ cmds = [
             and racc.preferred = 1
             and prefixpart = 'J:'
         join voc_term_emaps vte on
-            vte._emapa_term_key = c._emapa_term_key
-            and vte._stage_key = c._stage_key
+            c._emapa_term_key = vte._emapa_term_key
+            and c._stage_key = vte._stage_key
         left outer join result_cell_types rct on (r._result_key = rct._result_key)
         where c.cresystemlabel is not null
         order by c._Allele_key, r._Result_key, rct.cell_type

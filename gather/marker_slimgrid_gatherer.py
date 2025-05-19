@@ -315,8 +315,8 @@ def setupGxdCacheTables():
                 voc_term_emaps vte
                 where s._Specimen_key = r._Specimen_key
                 and r._Strength_key = p._Strength_key
-                and vte._emapa_term_key = r._emapa_term_key
-                and vte._stage_key = r._stage_key
+                and r._emapa_term_key = vte._emapa_term_key 
+                and r._stage_key = vte._stage_key
                 '''
 
         cmd7 = 'create index isr1 on gxd_insitu_results (_emaps_key)'
@@ -351,8 +351,8 @@ def setupGxdCacheTables():
                         voc_term_emaps vte
                 where g._GelLane_key = b._GelLane_key
                         and b._Strength_key = p._Strength_key
-                        and vte._emapa_term_key = g._emapa_term_key
-                        and vte._stage_key = g._stage_key
+                        and g._emapa_term_key = vte._emapa_term_key 
+                        and g._stage_key = vte._stage_key
                 group by 1, 2, 3, 4, 5, 6'''
 
         cmd10 = 'create index gg1 on gxd_gel_results (_emaps_key)'

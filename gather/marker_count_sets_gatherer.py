@@ -504,8 +504,8 @@ cmds = [
                 gxd_assaytype gat,
                 voc_term_emaps vte
         where ge._AssayType_key = gat._AssayType_key
-                and vte._emapa_term_key = ge._emapa_term_key
-                and vte._stage_key = ge._stage_key
+                and ge._emapa_term_key = vte._emapa_term_key
+                and ge._stage_key = vte._stage_key
                 and ge.isForGXD = 1
                 and exists (select 1 from mrk_marker m
                         where m._Marker_key = ge._Marker_key)
@@ -521,8 +521,8 @@ cmds = [
                 gxd_assaytype gat,
                 voc_term_emaps vte
         where ge._AssayType_key = gat._AssayType_key
-                and vte._emapa_term_key = ge._emapa_term_key
-                and vte._stage_key = ge._stage_key
+                and ge._emapa_term_key = vte._emapa_term_key
+                and ge._stage_key = vte._stage_key
                 and ge.isForGXD = 1
                 and exists (select 1 from mrk_marker m
                         where m._Marker_key = ge._Marker_key)
