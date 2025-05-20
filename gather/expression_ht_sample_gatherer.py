@@ -30,8 +30,14 @@ def cleanOrganism(organism):
         
         if not organism:
                 return organism
+        
         pieces = [x.strip() for x in organism.split(',')]
-        return ' '.join(pieces)
+        if len(pieces) == 2:
+                clean_organism = f"{pieces[1]} {pieces[0]}"
+        else:
+                clean_organism = organism
+
+        return clean_organism
         
 def cacheColumns(cols):
         # populate the global variables for which columns are where in the final results
