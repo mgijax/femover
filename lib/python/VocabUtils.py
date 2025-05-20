@@ -139,7 +139,7 @@ def getSynonym(termKey, synonymType):
 HEADER_TEMP_TABLE = None                        # name of header temp table
 
 def getHeaderTermTempTable():
-        # Purpose: build a temp table containing header keys for the DO, GO, MP, and EMAPA vocabularies.
+        # Purpose: build a temp table containing header keys for the CL, DO, GO, MP, and EMAPA vocabularies.
         # Returns: string; name of the temp table
         
         global HEADER_TEMP_TABLE
@@ -152,7 +152,7 @@ def getHeaderTermTempTable():
         cmd0 = '''with headers as (
                         select distinct _Object_key, label
                         from mgi_setmember
-                        where _Set_key in (1054, 1049, 1050, 1051)
+                        where _Set_key in (1054, 1049, 1050, 1051, 1060)
                         )
                 select v._Vocab_key, t._Term_key, v.name, t.term, t.abbreviation, h.label
                 into temporary table %s
