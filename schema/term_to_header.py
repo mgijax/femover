@@ -17,6 +17,9 @@ createStatement = '''CREATE TABLE %s  (
         unique_key      int     not null,
         term_key        int     not null,
         header_term_key int     not null,
+        label           text    not null,
+        sequencenum     int     not null,
+        accid           text    not null,
         PRIMARY KEY(unique_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -42,6 +45,9 @@ comments = {
                 'unique_key' : 'uniquely identifies one row in this table',
                 'term_key' : 'key of the annotated term',
                 'header_term_key' : 'key of one of the slim terms (ancestor of the annotated term)',
+                'label' : 'label to use for header term (may override term.term field)',
+                'sequencenum' : 'preferred ordering of header terms',
+                'accid' : 'header term accession id'
                 },
         Table.INDEX : {
                 'term_key' : 'quick access to headers for a term',

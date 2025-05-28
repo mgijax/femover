@@ -150,11 +150,24 @@ def getHeaderTermTempTable():
         HEADER_TEMP_TABLE = 'term_headers'
 
         cmd0 = '''with headers as (
-                        select distinct _Object_key, label
-                        from mgi_setmember
-                        where _Set_key in (1054, 1049, 1050, 1051, 1060)
+                        select distinct
+                            sm._Object_key, 
+                            case when sm.label is not null
+                                then sm.label
+                                else t.term
+                            end as label, 
+                            sm.sequencenum,
+                            a.accid
+                        from mgi_setmember sm, voc_term t, acc_accession a
+                        where sm._Set_key in (1054, 1049, 1050, 1051, 1060)
+                        and sm._object_key = t._term_key
+                        and t._term_key = a._object_key
+                        and a._mgitype_key = 13
+                        and a.preferred = 1
+                        and a.private = 0
+                        and a._logicaldb_key in (31,34,169,173,191)
                         )
-                select v._Vocab_key, t._Term_key, v.name, t.term, t.abbreviation, h.label
+                select v._Vocab_key, t._Term_key, v.name, t.term, t.abbreviation, h.label, h.sequencenum, h.accid
                 into temporary table %s
                 from headers h, voc_term t, voc_vocab v
                 where h._Object_key = t._Term_key

@@ -26,11 +26,15 @@ cmds = [
         # 0. union includes all header terms as a self-descendent to include
         # any annotations to the header itself (top of union), plus all the
         # descendent terms which are reachable via the DAG (bottom of union)
-        '''select _Term_key as header_term_key,
-                _Term_key as term_key
+        '''select
+                _Term_key as term_key,
+                _Term_key as header_term_key,
+                label,
+                sequencenum,
+                accid
         from %s
         union
-        select h._Term_key as header_term_key, t._Term_key as term_key
+        select t._Term_key as term_key, h._Term_key as header_term_key, h.label, h.sequencenum, h.accid
         from %s h, dag_closure dc, voc_term t
         where h._Term_key = dc._AncestorObject_key
                 and dc._DescendentObject_key = t._Term_key''' % (headersTempTable, headersTempTable)
@@ -39,7 +43,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-        Gatherer.AUTO, 'term_key', 'header_term_key'
+        Gatherer.AUTO, 'term_key', 'header_term_key', 'label', 'sequencenum', 'accid'
         ]
 
 # prefix for the filename of the output file
