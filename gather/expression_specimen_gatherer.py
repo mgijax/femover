@@ -178,6 +178,7 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
             resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
             emapsKeyCol = Gatherer.columnNumber (cols, '_emaps_key')
             cellTypeCol = Gatherer.columnNumber (cols, 'cell_type')
+            cellTypeIdCol = Gatherer.columnNumber (cols, 'cell_type_id')
 
             for row in rows:
                 # Look up the result key used for the front-end database, based on result key and EMAPS key
@@ -189,7 +190,7 @@ class SpecimenGatherer (Gatherer.CachingMultiFileGatherer):
 
                 feResultKey = uniqueResultKeys[resultGenKey]
                 ctSeqNum = ctSeqNum + 1
-                self.addRow('specimen_result_cell_type', (ctSeqNum, feResultKey, row[cellTypeCol], ctSeqNum))
+                self.addRow('specimen_result_cell_type', (ctSeqNum, feResultKey, row[cellTypeCol], row[cellTypeIdCol], ctSeqNum))
             return 
         
         def postprocessResults(self):
@@ -255,15 +256,21 @@ cmds = [
         '''
         select distinct gir._result_key,
             vte._term_key as _emaps_key,
-            ct.term as cell_type
+            ct.term as cell_type,
+            a.accid as cell_type_id
         from gxd_insituresult gir,
-            gxd_isresultcelltype rct, voc_term ct,
+            gxd_isresultcelltype rct, voc_term ct, acc_accession a,
             gxd_isresultstructure girs, voc_term_emaps vte
         where gir._result_key = rct._result_key
             and rct._celltype_term_key = ct._Term_key
             and gir._result_key=girs._result_key
             and girs._emapa_term_key = vte._emapa_term_key
             and girs._stage_key = vte._stage_key
+            and a._Object_key = ct._Term_key
+            and a._Logicaldb_key = 173
+            and a._MGIType_key = 13
+            and a.preferred = 1
+            and a.private = 0
             and gir._Specimen_key >= %d
             and gir._Specimen_key < %d
         order by 1, 2
@@ -300,8 +307,8 @@ files = [
                         'imagepane_key', 'imagepane_seq'] ),
         
         ('specimen_result_cell_type',
-            [ 'unique_key', 'specimen_result_key', 'cell_type', 'sequence_num', ],
-            [ 'unique_key', 'specimen_result_key', 'cell_type', 'sequence_num', ]
+            [ 'unique_key', 'specimen_result_key', 'cell_type', 'cell_type_id', 'sequence_num', ],
+            [ 'unique_key', 'specimen_result_key', 'cell_type', 'cell_type_id', 'sequence_num', ]
             ),
         ]
 
