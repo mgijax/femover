@@ -1488,7 +1488,7 @@ def getLastRuntime(gatherer):
                         lines = fp.readlines()
                         fp.close()
 
-                        r = re.compile(': +([0-9]+\.[0-9]{3}) sec :')   
+                        r = re.compile(r': +([0-9]+\.[0-9]{3}) sec :')   
 
                         match = r.search(lines[-1])
                         if match:

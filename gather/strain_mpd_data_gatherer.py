@@ -30,7 +30,7 @@ def getMpdLines():
 
         incMutFileLines = []
         try:
-            fp = open(config.MPD_STRAIN_FILE,'rU')
+            fp = open(config.MPD_STRAIN_FILE,'r')
             incMutFileLines = fp.readlines()
             logger.debug("Opened MPD STRAIN file.\n ")
             logger.debug(config.MPD_STRAIN_FILE)
