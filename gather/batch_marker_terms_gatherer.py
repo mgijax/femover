@@ -114,7 +114,7 @@ def createOtherIDTable():
                 from acc_accession
                 where _MGIType_key = 2
                         and private = 0
-                        and _LogicalDB_key not in (9, 13, 27, 41)''' % otherIDTable
+                        and _LogicalDB_key not in (9, 13, 27, 41, 234)''' % otherIDTable
         
         cmd1 = 'create index aoiIndex1 on %s (_Marker_key)' % otherIDTable
         
