@@ -9,7 +9,7 @@ import re
 
 ###--- Globals ---###
 
-EXCLUDE_FROM_OTHER_DBS = [ 1, 19 ]
+EXCLUDE_FROM_OTHER_DBS = [ 1, 19, 163 ]
 LDB_ORDER = [ 159, 105 ]
 
 ###--- Functions ---###
