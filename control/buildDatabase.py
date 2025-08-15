@@ -211,7 +211,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
         ]
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
         'expression_ht_experiment_note', 'expression_ht_experiment_property',
-        'expression_ht_experiment_variable', 'expression_ht_sample_note',
+        'expression_ht_experiment_variable', 'expression_ht_sample_note', 'expression_ht_experiment_to_reference',
         'expression_ht_experiment_sequence_num', 'expression_ht_sample',
         'expression_ht_consolidated_sample', 'expression_ht_consolidated_sample_measurement',
         'expression_ht_sample_map', 'expression_ht_sample_measurement',
