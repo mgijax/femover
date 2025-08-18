@@ -8,6 +8,7 @@ from . import constants as C
 ###--- Globals ---###
 
 experimentTable = None
+experimentReferenceTable = None
 
 ###--- Private Functions ---###
 
@@ -58,6 +59,36 @@ def getExperimentTempTable():
     dbAgnostic.execute(cmd3)
     logger.debug('Populated %s with %d rows' % (experimentTable, getRowCount(experimentTable)))
     return experimentTable
+
+# Create a temp table joining GXD HT experiments and their references. Uses the experiments' PubMed ID properties to find the
+# references (_refs_keys). The temp table has these columns:
+#   _Experiment_key - key of an HT experiment (that occurs in the experiment temp table, above).
+#   pubmedID - the pubmed id property value
+#   _Refs_key       - key of the reference with that pubmed id
+#   jnumID          - jnum for the reference (for convenience)
+#
+def getExperimentReferenceTempTable () :
+    global experimentReferenceTable
+    
+    if experimentReferenceTable:             # already built the table?  If so, just return the name.
+        return experimentReferenceTable
+    
+    experimentReferenceTable = 'gxdht_experiments_to_references'
+
+    cmd0 = '''
+        select p._object_key as _Experiment_key, c._Refs_key, p.value as pubmedID, c.jnumid as jnumID
+        into temp table %s
+        from MGI_Property p, BIB_Citation_Cache c, VOC_Term t, %s h
+        where p._propertyterm_key = t._term_key
+        and t.term = 'PubMed ID'
+        and p.value = c.pubmedid
+        and c.jnumid is not null
+        and p._object_key = h._experiment_key
+        ''' % (experimentReferenceTable, getExperimentTempTable())
+    dbAgnostic.execute(cmd0)
+    logger.debug('Created temp table %s' % experimentReferenceTable)
+    logger.debug('Populated %s with %d rows' % (experimentReferenceTable, getRowCount(experimentReferenceTable)))
+    return experimentReferenceTable
 
 def getExperimentIDs(onlyPrimaryIDs = False):
     # Get a tuple of (columns, rows) -- as returned by dbAgnostic.execute() -- for the accession IDs

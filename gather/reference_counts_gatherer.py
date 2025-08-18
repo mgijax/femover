@@ -14,6 +14,7 @@ import Gatherer
 import logger
 import GOFilter
 import StrainUtils
+from expression_ht import experiments
 
 ###--- Globals ---###
 
@@ -24,6 +25,7 @@ GxdIndexCount = 'gxdIndexCount'
 GxdResultCount = 'gxdResultCount'
 GxdStructureCount = 'gxdStructureCount'
 GxdAssayCount = 'gxdAssayCount'
+GxdHtExpCount = 'gxdHtExpCount'
 AlleleCount = 'alleleCount'
 SequenceCount = 'sequenceCount'
 GoAnnotCount = 'goAnnotationCount'
@@ -64,10 +66,11 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
                         (self.results[5], GxdResultCount, 'numResults'),
                         (self.results[6], GxdStructureCount, 'numStructures'),
                         (self.results[7], GxdAssayCount, 'numAssays'),
-                        (self.results[8], AlleleCount, 'numAlleles'),
-                        (self.results[9], SequenceCount, 'numSequences'),
-                        (self.results[10], StrainCount, 'numStrains'),
-                        (self.results[11], DiseaseModelCount, 'numModels'),
+                        (self.results[8], GxdHtExpCount, 'numHtExpts'),
+                        (self.results[9], AlleleCount, 'numAlleles'),
+                        (self.results[10], SequenceCount, 'numSequences'),
+                        (self.results[11], StrainCount, 'numStrains'),
+                        (self.results[12], DiseaseModelCount, 'numModels'),
                         ]
                 for (r, countName, colName) in toAdd:
                         logger.debug ('Processing %s, %d rows' % (countName,
@@ -186,7 +189,14 @@ cmds = [
                         and e.isForGXD = 1
                 group by a._Refs_key''',
 
-        # 8. count of alleles
+        # 8. count of high throughput expression experiments
+        '''
+                select _Refs_key, count(_Experiment_key) as numHtExpts
+                from %s
+                group by _Refs_key
+                ''' % experiments.getExperimentReferenceTempTable(),
+
+        # 9. count of alleles
         '''select r._Refs_key as _Refs_key,
                         count(distinct a._Allele_key) as numAlleles
                 from mgi_reference_assoc r, all_allele a
@@ -195,19 +205,19 @@ cmds = [
                         and a.isWildType != 1
                 group by r._Refs_key''',
 
-        # 9. count of sequences
+        # 10. count of sequences
         '''select _Refs_key as _Refs_key,
                         count(distinct _Object_key) as numSequences
                 from mgi_reference_assoc
                 where _MGIType_key = 19
                 group by _Refs_key''',
                 
-        # 10. count of mouse strains per reference
+        # 11. count of mouse strains per reference
         '''select _Refs_key, count(distinct _Strain_key) as numStrains
                 from %s
                 group by _Refs_key''' % StrainUtils.getStrainReferenceTempTable(),
 
-        # 11. Count of genotypes annotated as a disease model
+        # 12. Count of genotypes annotated as a disease model
         '''select ve._refs_key , count(distinct va._object_key) as numModels
             from voc_annot va, voc_evidence ve
             where va._annottype_key = 1020
@@ -218,7 +228,7 @@ cmds = [
 # order of fields (from the query results) to be written to the output file
 fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
         GxdIndexCount, GxdResultCount, GxdStructureCount,
-        GxdAssayCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, DiseaseModelCount ]
+        GxdAssayCount, GxdHtExpCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, DiseaseModelCount ]
 
 # prefix for the filename of the output file
 filenamePrefix = 'reference_counts'

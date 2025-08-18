@@ -17,15 +17,9 @@ ExpressionHtExperimentToReferenceGatherer = Gatherer.Gatherer
 
 cmds = [
         '''
-        select p._object_key as _Experiment_key, c._Refs_key, null as qualifier
-        from MGI_Property p, BIB_Citation_Cache c, VOC_Term t, %s h
-        where p._propertyterm_key = t._term_key
-        and t.term = 'PubMed ID'
-        and p.value = c.pubmedid
-        and c.jnumid is not null
-        and p._object_key = h._experiment_key
-        ''' % experiments.getExperimentTempTable() ,
-
+        select _Experiment_key, _Refs_key, null as qualifier
+        from %s
+        ''' % experiments.getExperimentReferenceTempTable() ,
         ]
 
 # order of fields (from the query results) to be written to the
