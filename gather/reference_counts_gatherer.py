@@ -56,6 +56,15 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
                 for row in self.results[0][1]:
                         d[row[0]] = {}
 
+                # Combine classical and HT result counts
+                rd = dict(self.results[5][1])
+                for r in self.results[13][1]:
+                    if r[0] in rd:
+                        rd[r[0]] = rd[r[0]] + r[1]
+                    else:
+                        rd[r[0]] = r[1]
+                self.results[5] = (self.results[5][0],list(rd.items()))
+
                 # counts to add in this order, with each tuple being:
                 #       (set of results, count constant, count column)
 
@@ -166,12 +175,11 @@ cmds = [
                 from gxd_index
                 group by _Refs_key''',
 
-        # 5. count of expression results
-        '''select a._Refs_key, count(distinct e._Expression_key) as numResults
-                from gxd_assay a, gxd_expression e
-                where a._Assay_key = e._Assay_key
-                        and e.isForGXD = 1
-                group by a._Refs_key''',
+        # 5. count of classical expression results
+        '''select _Refs_key, count(*) as numResults
+                from gxd_expression e
+                where isForGXD = 1
+                group by _Refs_key''',
 
         # 6. count of structures with expression results
         '''select _Refs_key, count(distinct vte._term_key) as numStructures
@@ -223,6 +231,21 @@ cmds = [
             where va._annottype_key = 1020
             and ve._annot_key = va._annot_key
             group by ve._refs_key''',
+
+        # 13. Count of HT expression results 
+        '''with count_by_experiment as (
+            select r._experiment_key, count(*) as numResults
+            from gxd_htsample_rnaseqset_cache rc, gxd_htsample_rnaseqset r, gxd_htsample_rnaseqcombined m, mrk_marker mm
+            where rc._rnaseqset_key = r._rnaseqset_key
+            and rc._rnaseqcombined_key = m._rnaseqcombined_key
+            and m._marker_key = mm._marker_key
+            and mm._marker_status_key = 1
+            group by r._experiment_key
+            )
+            select er._refs_key, ce.numResults
+            from count_by_experiment ce, %s er
+            where ce._experiment_key = er._experiment_key
+            ''' % experiments.getExperimentReferenceTempTable(),
         ]
 
 # order of fields (from the query results) to be written to the output file
