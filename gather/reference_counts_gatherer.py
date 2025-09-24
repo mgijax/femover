@@ -168,6 +168,7 @@ cmds = [
         # 3. count of mapping experiments
         '''select _Refs_key, count(1) as numExperiments
                 from mld_expts
+                where exptType != 'CONTIG'
                 group by _Refs_key''',
 
         # 4. count of GXD literature index entries
