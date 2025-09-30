@@ -24,15 +24,15 @@ ldbLookup = {
         OMIM:['OMIM', 'https://www.omim.org/entry/'],
         RGD:['Rat Genome Database', 'https://rgd.mcw.edu/rgdweb/report/gene/main.html?id='],
         ENTREZ_GENE:['Entrez Gene', 'https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=gene&cmd=Retrieve&dopt=Graphics&list_uids='],
-        ENSEMBL_GENE_MODEL:['Gene Tree', 'http://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g='],
+        ENSEMBL_GENE_MODEL:['Gene Tree', 'https:://useast.ensembl.org/Mus_musculus/Gene/Compara_Tree?db=core;g='],
         HGNC:['HGNC', 'https://www.genenames.org/data/gene-symbol-report/#!/hgnc_id/'],
-        ZFIN_GENE:['Zebrafish Model Organism Database', 'http://www.zfin.org/action/marker/view/']
+        ZFIN_GENE:['Zebrafish Model Organism Database', 'https:://www.zfin.org/action/marker/view/']
 }
 
 # turned off until VISTA-Point comes up to new genome build (Build 39):
 PROCESS_VISTA_POINT = 0
 VISTA_POINT = 'VISTA-Point'
-VISTA_POINT_URL = "http://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
+VISTA_POINT_URL = "https:://pipeline.lbl.gov/tbrowser/tbrowser/?pos=chr<chromosome>:<startCoordinate>-<endCoordinate>&base=<version>&run=21507#&base=2730&run=21507&genes=refseq&indx=0&cutoff=50"
 
 # preferred ordering for links, by logical database (add Alliance links later)
 LDB_ORDERING = [ HGNC, MGI, RGD, ZFIN_GENE, ENTREZ_GENE, OMIM, ENSEMBL_GENE_MODEL ]
@@ -83,10 +83,10 @@ zfin_exp_url = 'https://zfin.org/action/marker/%s/expression'
 
 # URL to expression data at geisha; substitute in an NCBI ID for a chicken
 # marker
-geisha_exp_url = 'http://geisha.arizona.edu/geisha/search.jsp?search=NCBI+ID&text=%s'
+geisha_exp_url = 'https:://geisha.arizona.edu/geisha/search.jsp?search=NCBI+ID&text=%s'
 
 # URL to expression data at xenbase; substiture in an ID
-xenbase_exp_url = 'http://xenbase.org/gene/expression.do?method=displayGenePageExpression&entrezId=%s&tabId=1'
+xenbase_exp_url = 'https:://xenbase.org/gene/expression.do?method=displayGenePageExpression&entrezId=%s&tabId=1'
 
 ###--- Functions ---###
 

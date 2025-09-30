@@ -19,10 +19,10 @@
 # Linking to other products # URL to the WI, mgihome, and mblast_wi installs 
 # USAGE: <A HREF="${WI_URL}searches/MP_form.shtml">MP Form</A>
 
-USERDOCS_URL = http://www.informatics.jax.org/userdocs/
-WI_URL = http://www.informatics.jax.org/
-MGIHOME_URL = http://www.informatics.jax.org/mgihome/
-MBLAST_URL = http://mouseblast.informatics.jax.org/
+USERDOCS_URL = https://www.informatics.jax.org/userdocs/
+WI_URL = https://www.informatics.jax.org/
+MGIHOME_URL = https://www.informatics.jax.org/mgihome/
+MBLAST_URL = https://mouseblast.informatics.jax.org/
 
 [
 key=_3_prime
@@ -115,7 +115,7 @@ key=adult_ma_dictionary
 displayName=Adult Mouse Anatomical Dictionary
 definition=A <A HREF="!FEWI_URL!glossary/controlled_vocabulary">controlled vocabulary</A> \
 providing standardized nomenclature for anatomical structures in the postnatal mouse (Theiler stage 28). See the \ 
-<A HREF="http://obo.sourceforge.net/">Open Biological Ontologies (OBO)</A> site for \
+<A HREF="https://obo.sourceforge.net/">Open Biological Ontologies (OBO)</A> site for \
 further information about structured, shared vocabularies for use within genomic and proteomic domains. 
 ]
 
@@ -127,7 +127,7 @@ definition=A characteristic of the coat color of \
 in which an individual hair has black pigment (eumelanin) at the tip and the base, and a band \ 
 of yellow pigment (phaeomelanin) in the middle. This coloration has the effect of softening the \
 visual outline of a mammal in the wild, making it harder to see than an animal of solid color. See \ 
-<A HREF="http://www.informatics.jax.org/wksilvers/frames/frame2-1.shtml">The Coat Colors of Mice</A> \
+<A HREF="https://www.informatics.jax.org/wksilvers/frames/frame2-1.shtml">The Coat Colors of Mice</A> \
 for more information and pictures. 
 ]
 
@@ -369,7 +369,7 @@ The Institute's mission is to enhance both the global competitiveness of U.S. \
 business and the U.S. quality of life by promoting and facilitating voluntary \
 consensus standards and conformity assessment systems, and safeguarding their integrity. \
 For further information, see the web site for \ 
-<A HREF="http://www.ansi.org/">ANSI</A>. 
+<A HREF="https://www.ansi.org/">ANSI</A>. 
 ]
 
 [ 
@@ -379,7 +379,7 @@ definition=A \
 <A HREF="!FEWI_URL!glossary/protein">protein</A> produced by \
 cells of the immune system that binds to an \ 
 <A HREF="!FEWI_URL!glossary/antigen">antigen</A>. See the \
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/antibody.cfm?key=antibody">Figure</A> at \ 
+<A HREF="https://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/antibody.cfm?key=antibody">Figure</A> at \ 
 <A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>.\ 
 <BR>See also \ 
 <A HREF="!FEWI_URL!glossary/monoclonal">Monoclonal Antibody</A>.
@@ -514,8 +514,8 @@ definition=Numerical values defining a sequence interval along a \
 between the start position of the first <A HREF="!FEWI_URL!glossary/exon">exon</A> \
 and the end position of the last exon of a <A HREF="!FEWI_URL!glossary/gene">gene</A> \
 as annotated by NCBI Gene or Ensembl. See \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI Gene Model</A> and \
-<A HREF="http://www.ensembl.org/Mus_musculus/">Ensembl Gene Model</A> for further information. 
+<A HREF="https://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI Gene Model</A> and \
+<A HREF="https://www.ensembl.org/Mus_musculus/">Ensembl Gene Model</A> for further information. 
 ]
 
 [ 
@@ -527,15 +527,15 @@ in the mouse genome assembly. In  <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, \
 assembly sequences are defined as the interval between the start position of the first \ 
 <A HREF="!FEWI_URL!glossary/exon">exon</A> and the end position of the last exon of a \
 <A HREF="!FEWI_URL!glossary/gene">gene</A> as annotated by the NCBI or Ensembl gene models. See \
-<A HREF="http://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI Gene Model</A> and \
-<A HREF="http://www.ensembl.org/Mus_musculus/">Ensembl Gene Model</A> for further information. 
+<A HREF="https://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI Gene Model</A> and \
+<A HREF="https://www.ensembl.org/Mus_musculus/">Ensembl Gene Model</A> for further information. 
 ]
 
 [ 
 key=atcc 
 displayName=ATCC 
 definition=American Type Culture Collection. A large collection of microbial stocks, including microbes \
-containing mammalian DNA segments. See the <A HREF="http://www.atcc.org/">ATCC Home Page</A> for further information. 
+containing mammalian DNA segments. See the <A HREF="https://www.atcc.org/">ATCC Home Page</A> for further information. 
 ]
 
 
@@ -688,7 +688,7 @@ Examples of biological processes included in this category are cell growth and m
 <A HREF="!FEWI_URL!glossary/camp">cAMP</A> \ 
 <A HREF="!FEWI_URL!glossary/biosynthesis">biosynthesis</A>. \
 In the GO Project vocabularies, Biological Process is a primary class of terms. See the \ 
-<A HREF="http://www.geneontology.org/">GO Consortium</A> site for further information. 
+<A HREF="https://www.geneontology.org/">GO Consortium</A> site for further information. 
 ]
 
 [ 
@@ -734,9 +734,9 @@ displayName=Blastocyst
 definition=A preimplantation mouse embryo consisting of 16-40 cells with a clearly apparent inner cell mass \
 (<A HREF="!FEWI_URL!glossary/theiler">Theiler Stage</A> 3-4). See \
 the Edinburgh Mouse Atlas for a \ 
-<A HREF="http://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagecriteria.html">table</A> of \
+<A HREF="https://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagecriteria.html">table</A> of \
 staging criteria in mouse development, or for \ 
-<A HREF="http://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/ts05definition.html">images</A> of the stages. 
+<A HREF="https://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/ts05definition.html">images</A> of the stages. 
 ]
 
 [ 
@@ -814,7 +814,7 @@ definition=Refers to subcellular structures, locations, and macromolecular compl
 <A HREF="!FEWI_URL!glossary/nucleus">nucleus</A>, \ 
 <A HREF="!FEWI_URL!glossary/telomere">telomere</A> and <B>origin recognition complex</B>. \
 In the GO Project vocabularies, Cellular Component is a primary class of terms. See the \
-<A HREF="http://www.geneontology.org/">GO Consortium</A> site for further information. 
+<A HREF="https://www.geneontology.org/">GO Consortium</A> site for further information. 
 ]
 
 [ 
@@ -860,7 +860,7 @@ organized. See the <A HREF="https://en.wikipedia.org/wiki/Centromere">Figure</A>
 Wikipedia. Mouse chromosomes \
 have centromeres close to one end and have essentially no short arm. See the \
 <A HREF="!FEWI_URL!glossary/idiogram">idiogram</A> of the \
-<A HREF="http://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A> at the \
+<A HREF="https://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A> at the \
 Department of Pathology at the University of Washington. 
 ]
 
@@ -1067,7 +1067,7 @@ is said to be codominant with respect to the wild-type allele "A" if the A/a \
 <A HREF="!FEWI_URL!glossary/heterozygote">heterozygote</A> fully expresses both of the \
 <A HREF="!FEWI_URL!glossary/phenotype">phenotypes</A> associated with the a/a and A/A \
 <A HREF="!FEWI_URL!glossary/homozygote">homozygotes</A>. An example of codominance is the \
-<A HREF="http://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=110300">ABO</A> blood type \
+<A HREF="https://www.ncbi.nlm.nih.gov/entrez/dispomim.cgi?id=110300">ABO</A> blood type \
 <A HREF="!FEWI_URL!glossary/antigen">antigens</A> in humans, where AA individuals are \
 type A, BB individuals are type B, and AB individuals are type AB. \
 <BR>\
@@ -1209,7 +1209,7 @@ from another strain, but which is otherwise identical to the original inbred str
 are derived by backcrossing to a parental inbred strain for at least ten generations while selecting for \
 <A HREF="!FEWI_URL!glossary/heterozygous">heterozygosity</A> at a particular \ 
 <A HREF="!FEWI_URL!glossary/locus">locus</A>. \
-<A HREF="http://jaxmice.jax.org/jaxmice-cgi/jaxmicedb.cgi?objtype=pricedetail&stock=000140">A.BY-H2<SUP>b</SUP>\
+<A HREF="https://jaxmice.jax.org/jaxmice-cgi/jaxmicedb.cgi?objtype=pricedetail&stock=000140">A.BY-H2<SUP>b</SUP>\
 H2-T18b/SnJ</A> is a congenic strain. <BR>See also the \
 <A HREF="${MGIHOME_URL}nomen/strains.shtml">Rules for Nomenclature of Mouse and Rat Strains</A>. 
 ]
@@ -1415,7 +1415,7 @@ Wikipedia.
 key=dag 
 displayName=DAG 
 definition=Directed Acyclic Graph. See \ 
-<A HREF="http://www.nist.gov/dads/HTML/directAcycGraph.html">Dictionary of Algorithms and Data Structures</A>. 
+<A HREF="https://www.nist.gov/dads/HTML/directAcycGraph.html">Dictionary of Algorithms and Data Structures</A>. 
 ] 
 
 [
@@ -1456,7 +1456,7 @@ definition=Database Management System. <BR>See also \
 [ 
 key=ddbj 
 displayName=DDBJ 
-definition= <A HREF="http://www.ddbj.nig.ac.jp/">DNA Data Bank of Japan</A>. 
+definition= <A HREF="https://www.ddbj.nig.ac.jp/">DNA Data Bank of Japan</A>. 
 ]
 
 [ 
@@ -1536,7 +1536,7 @@ such as <A HREF="!FEWI_URL!glossary/fluorescence">fluorescence</A> or using an e
 key=directed_acyclic 
 displayName=Directed Acyclic Graph (DAG) 
 definition=A directed graph where no path starts and ends at the same vertex. See \ 
-<A HREF="http://www.nist.gov/dads/HTML/directAcycGraph.html">Dictionary of Algorithms and Data Structures</A>. 
+<A HREF="https://www.nist.gov/dads/HTML/directAcycGraph.html">Dictionary of Algorithms and Data Structures</A>. 
 ]
 
 [ 
@@ -1692,7 +1692,7 @@ displayName=EC Number
 definition=A number assigned to a type of <A HREF="!FEWI_URL!glossary/enzyme">enzyme</A> according to \
 a scheme of standardized enzyme nomenclature developed by the Enzyme Commission of the Nomenclature Committee of the \
 International Union of Biochemistry and Molecular Biology (IUBMB). EC numbers may be found in ENZYME, the Enzyme nomenclature \ 
-database, maintained at the <A HREF="http://www.expasy.org/enzyme/">ExPASy</A> molecular biology server of the Geneva University \
+database, maintained at the <A HREF="https://www.expasy.org/enzyme/">ExPASy</A> molecular biology server of the Geneva University \
 Hospital and the University of Geneva, Switzerland. 
 ]
 
@@ -1716,7 +1716,7 @@ definition=The use of strong, brief pulses of electric current to create tempora
 [ 
 key=embl 
 displayName=EMBL 
-definition= <A HREF="http://www.ebi.ac.uk/embl/">European Molecular Biology Laboratory Nucleotide Sequence Database</A>. 
+definition= <A HREF="https://www.ebi.ac.uk/embl/">European Molecular Biology Laboratory Nucleotide Sequence Database</A>. 
 ]
 
 [ 
@@ -1784,7 +1784,7 @@ reporter gene. The reporter gene is therefore expressed in the cells and develop
 key=ensembl 
 displayName=Ensembl Gene Model 
 definition=A description of a gene associated with the mouse genome assembly from the \
-<A HREF="http://www.ensembl.org/Mus_musculus/">Mouse Genome Sequencing Consortium</A> (MGSC). The gene model includes the \ 
+<A HREF="https://www.ensembl.org/Mus_musculus/">Mouse Genome Sequencing Consortium</A> (MGSC). The gene model includes the \ 
 <A HREF="!FEWI_URL!glossary/assembly_coordinates">coordinates</A> of each \ 
 <A HREF="!FEWI_URL!glossary/intron">intron</A> and <A HREF="!FEWI_URL!glossary/exon">exon</A>, \
 as well as the beginning and end of the transcript. 
@@ -1954,7 +1954,7 @@ See <A HREF="${MBLAST_URL}user_docs/mblast_seq_formats.shtml">MouseBLAST Help - 
 key=feature_type
 displayName=Feature Type
 definition=An attribute of a portion of a genomic sequence. The MGI Feature Types are all defined \
-<A HREF="http://www.informatics.jax.org/userhelp/GENE_feature_types_help.shtml">here</A>.
+<A HREF="https://www.informatics.jax.org/userhelp/GENE_feature_types_help.shtml">here</A>.
 ]
 
 [
@@ -2082,7 +2082,7 @@ definition=A data format for <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic a
 key=genbank 
 displayName=GenBank 
 definition=The database of <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic acid</A> sequences at \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/Genbank/index.html">NCBI</A>. 
+<A HREF="https://www.ncbi.nlm.nih.gov/Genbank/index.html">NCBI</A>. 
 ]
 
 [ 
@@ -2186,7 +2186,7 @@ key=gene_ontology
 displayName=Gene Ontology (GO)
 definition=A set of <A HREF="!FEWI_URL!glossary/controlled_vocabulary">controlled vocabularies</A> used to \
 describe biological features within a specified domain of biological knowledge. See the \ 
-<A HREF="http://www.geneontology.org/">GO Consortium</A> site for further information.
+<A HREF="https://www.geneontology.org/">GO Consortium</A> site for further information.
 ]
 
 [
@@ -2577,7 +2577,7 @@ percentage. <BR>See also <A HREF="!FEWI_URL!glossary/similarity">Similarity</A>.
 key=idiogram 
 displayName=Idiogram 
 definition=An idealized drawing. See the idiogram of the \ 
-<A HREF="http://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A>\ 
+<A HREF="https://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A>\ 
 at the Department of Pathology at the University of Washington. 
 ]
 
@@ -2586,7 +2586,7 @@ key=image
 displayName=IMAGE Consortium 
 definition=Integrated Molecular Analysis of Genome Expression Consortium. A collection of a large number of \
 partially sequenced <A HREF="!FEWI_URL!glossary/cdna">cDNAs</A>. See the homepage of the \
-<A HREF="http://www.imageconsortium.org">IMAGE Consortium</A> for further information. 
+<A HREF="https://www.imageconsortium.org">IMAGE Consortium</A> for further information. 
 ]
 
 [ 
@@ -2770,7 +2770,7 @@ displayName=InterPro domain
 definition=One of a collection of <A HREF="!FEWI_URL!glossary/amino_acid">amino acid</A> \ 
 <A HREF="!FEWI_URL!glossary/sequence">sequences</A> of identifiable features in known \ 
 <A HREF="!FEWI_URL!glossary/protein">proteins</A> that can be compared to unknown protein sequences. See \ 
-<A HREF="http://www.ebi.ac.uk/interpro/">InterPro</A> at EMBL/EBI. 
+<A HREF="https://www.ebi.ac.uk/interpro/">InterPro</A> at EMBL/EBI. 
 ]
 
 [ 
@@ -2838,7 +2838,7 @@ displayName=Karyotype
 definition=A description of the condensed <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A> of a \
 eukaryote as they are seen at metaphase. Additional details are revealed by a variety of staining techniques that produce \
 banded chromosomes. See the <A HREF="!FEWI_URL!glossary/idiogram">idiogram</A> of the \ 
-<A HREF="http://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A> at the Department of \
+<A HREF="https://www.pathology.washington.edu/research/cytopages/idiograms/mouse/">mouse karyotype</A> at the Department of \
 Pathology at the University of Washington. 
 ]
 
@@ -3014,7 +3014,7 @@ displayName=Mammalian Phenotype Ontology
 definition=A <A HREF="!FEWI_URL!glossary/controlled_vocabulary">controlled vocabulary</A> that provides \
 standardized terms for describing phenotypic characteristics of mammalian systems. See the \ 
 <A HREF="${WI_URL}searches/MP_form.shtml">Mammalian Phenotype Browser</A> for more information, and see the \ 
-<A HREF="http://obo.sourceforge.net/">Open Biological Ontologies (OBO)</A> site for further information about other \
+<A HREF="https://obo.sourceforge.net/">Open Biological Ontologies (OBO)</A> site for further information about other \
 structured, shared vocabularies for use within biological domains. 
 ]
 
@@ -3111,7 +3111,7 @@ key=mgi
 displayName=MGI 
 definition=<A HREF="${WI_URL}">Mouse Genome Informatics</A>. The collection of bioinformatics projects at The Jackson \
 Laboratory including <A HREF="${MGIHOME_URL}projects/aboutmgi.shtml">MGD</A>, <A HREF="${MGIHOME_URL}GXD/aboutGXD.shtml">GXD</A>, and \
-<A HREF="http://tumor.informatics.jax.org/FMPro?-db=TumorInstance&-format=mtdp.html&-view">MTB</A>. 
+<A HREF="https://tumor.informatics.jax.org/FMPro?-db=TumorInstance&-format=mtdp.html&-view">MTB</A>. 
 ]
 
 [ 
@@ -3211,7 +3211,7 @@ displayName=Mitosis
 definition=The division of the replicated <A HREF="!FEWI_URL!glossary/chromosome">chromosomes</A> of a \
 eukaryotic cell into two daughter <A HREF="!FEWI_URL!glossary/nucleus">nuclei</A> that are genetically \ 
 identical to that of the original cell. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/metaphase.cfm?key=metaphase">Figure</A> at \ 
+<A HREF="https://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/metaphase.cfm?key=metaphase">Figure</A> at \ 
 <A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
 ]
 
@@ -3240,7 +3240,7 @@ definition=Refers to the tasks or activities characteristic of particular \
 <A HREF="!FEWI_URL!glossary/gene">gene</A> products. For example, <B>transcription factor</B> refers to \
 one of a number of <A HREF="!FEWI_URL!glossary/protein">proteins</A> performing similar tasks. In the \
 GO Project vocabularies, Molecular Function is a primary class of terms. See the \
-<A HREF="http://www.geneontology.org/">GO Consortium</A> site for further information. 
+<A HREF="https://www.geneontology.org/">GO Consortium</A> site for further information. 
 ]
 
 [ 
@@ -3311,7 +3311,7 @@ definition=Messenger RNA. An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule t
 <A HREF="!FEWI_URL!glossary/polyadenylation">polyadenylated</A>, that can be \ 
 <A HREF="!FEWI_URL!glossary/translation">translated</A> into a \ 
 <A HREF="!FEWI_URL!glossary/protein">protein</A> product. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/mrna.cfm?key=messenger%20RNA%20%28mRNA%29">Figure</A> at \ 
+<A HREF="https://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/mrna.cfm?key=messenger%20RNA%20%28mRNA%29">Figure</A> at \ 
 <A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. <BR>See also \
 <A HREF="!FEWI_URL!glossary/central_dogma">Central Dogma</A>. 
 ]
@@ -3319,7 +3319,7 @@ definition=Messenger RNA. An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule t
 [ 
 key=mtb 
 displayName=MTB 
-definition=<A HREF="http://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>, the original name for the \
+definition=<A HREF="https://tumor.informatics.jax.org/mtbwi/index.do">Mouse Tumor Biology Database</A>, the original name for the \
 Mouse Models of Human Cancer database (MMHCdb). One of several databases at <A HREF="!FEWI_URL!glossary/mgi">MGI</A>, containing data on \
 the mouse tumor biology.
 ]
@@ -3379,7 +3379,7 @@ uniquely identifies a particular allele of a gene. The allele name has an abbrev
 [ 
 key=ncbi 
 displayName=NCBI 
-definition=<A HREF="http://www.ncbi.nlm.nih.gov/">National Center for Biotechnology Information</A>. 
+definition=<A HREF="https://www.ncbi.nlm.nih.gov/">National Center for Biotechnology Information</A>. 
 ]
 
 [ 
@@ -3387,7 +3387,7 @@ key=ncbi_gene_model
 displayName=NCBI Gene Model 
 definition=A description of a gene associated with the mouse genome assembly from \ 
 <A HREF="!FEWI_URL!glossary/ncbi">NCBI</A>. The \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI gene model</A> includes the \ 
+<A HREF="https://www.ncbi.nlm.nih.gov/genome/guide/mouse/">NCBI gene model</A> includes the \ 
 <A HREF="!FEWI_URL!glossary/assembly_coordinates"> coordinates</A> of each \ 
 <A HREF="!FEWI_URL!glossary/intron">intron</A> and \
 <A HREF="!FEWI_URL!glossary/exon">exon</A>, as well as the beginning and end of the transcript. 
@@ -3430,7 +3430,7 @@ definition=An <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule that functions s
 (see <A HREF="!FEWI_URL!glossary/ribozyme">ribozyme</A>) without being \ 
 <A HREF="!FEWI_URL!glossary/translation">translated</A>. Noncoding RNAs lack conserved \ 
 <A HREF="!FEWI_URL!glossary/open_reading_frame">open reading frames</A>. One example is \ 
-<A HREF="http://www.informatics.jax.org/marker/MGI:98974">Xist</A>. 
+<A HREF="https://www.informatics.jax.org/marker/MGI:98974">Xist</A>. 
 ]
 
 [ 
@@ -3568,7 +3568,7 @@ definition=A short length of <A HREF="!FEWI_URL!glossary/nucleic_acid">nucleic a
 [ 
 key=omim 
 displayName=OMIM 
-definition=<A HREF="http://www.omim.org">Online Mendelian Inheritance in Man</A>. \ 
+definition=<A HREF="https://www.omim.org">Online Mendelian Inheritance in Man</A>. \ 
 A database of human inherited diseases and genes. 
 ]
 
@@ -3936,7 +3936,7 @@ definition=One of the necessary <A HREF="!FEWI_URL!glossary/regulatory_element">
 key=protein 
 displayName=Protein 
 definition=A polymer of <A HREF="!FEWI_URL!glossary/amino_acid">amino acids</A>. See the \ 
-<A HREF="http://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/protein.cfm?key=protein">Figure</A> at \ 
+<A HREF="https://www.genome.gov/Pages/Hyperion/DIR/VIP/Glossary/Illustration/protein.cfm?key=protein">Figure</A> at \ 
 <A HREF="!FEWI_URL!glossary/nhgri">NHGRI</A>. 
 ]
 
@@ -4084,7 +4084,7 @@ contiguous cloned DNA segments. The method consists of fusing \
 a different species. A panel of hybrid cells is then tested for the occurrence of pairs of \
 <A HREF="!FEWI_URL!glossary/marker">markers</A>. The closer two markers are to each other, the more likely \
 that both are present in an individual hybrid cell. Radiation hybrid mapping data for the mouse are available at \ 
-<A HREF="http://www.jax.org/resources/documents/cmdata/rhmap/">The Jackson Laboratory Mouse Radiation Hybrid Database</A> and at \ 
+<A HREF="https://www.jax.org/resources/documents/cmdata/rhmap/">The Jackson Laboratory Mouse Radiation Hybrid Database</A> and at \ 
 <A HREF="!FEWI_URL!glossary/mgi">MGI</A>. 
 ]
 
@@ -4179,7 +4179,7 @@ definition=The collection of integrated, non-redundant sequences including \
 <A HREF="!FEWI_URL!glossary/transcript">transcript</A> \
 (<A HREF="!FEWI_URL!glossary/rna">RNA</A>), and \
 <A HREF="!FEWI_URL!glossary/protein">protein products</A> at \
-<A HREF="http://www.ncbi.nlm.nih.gov/RefSeq/">NCBI</A>. 
+<A HREF="https://www.ncbi.nlm.nih.gov/RefSeq/">NCBI</A>. 
 ]
 
 [ 
@@ -4853,7 +4853,7 @@ definition=A molecule acted upon by an <A HREF="!FEWI_URL!glossary/enzyme">enzym
 [
 key=swissprot 
 displayName=SWISS-PROT
-definition=A curated protein sequence database. See the <A HREF="http://us.expasy.org/sprot/">SWISS-PROT</A> site for more \
+definition=A curated protein sequence database. See the <A HREF="https://us.expasy.org/sprot/">SWISS-PROT</A> site for more \
 details. 
 ]
 
@@ -4999,7 +4999,7 @@ New York: Springer-Verlag, 1989).  This staging scheme is used because embryos \
 at the same gestational age can have developed at different rates and therefore \
 exhibit different morphological characteristics.  Theiler stages may in some \
 cases correspond to a single gestation age, but more often cover a range of ages. \
-<i><a href="http://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagedefinition.html">More details</a></i>.
+<i><a href="https://www.emouseatlas.org/emap/ema/theiler_stages/StageDefinition/stagedefinition.html">More details</a></i>.
 ]
 
 [ 
@@ -5138,7 +5138,7 @@ displayName=TrEMBL
 definition=A protein sequence database that contains all the \
 <A HREF="!FEWI_URL!glossary/translation">translations</A> of \
 <A HREF="!FEWI_URL!glossary/embl">EMBL</A> nucleotide sequences. See the \ 
-<A HREF="http://us.expasy.org/sprot/">TrEMBL</A> site for more details. 
+<A HREF="https://us.expasy.org/sprot/">TrEMBL</A> site for more details. 
 ]
 
 [ 
@@ -5162,7 +5162,7 @@ definition=Transfer RNA. Small <A HREF="!FEWI_URL!glossary/rna">RNA</A> molecule
 [ 
 key=ucsc_genome_browser 
 displayName=UCSC Genome Browser 
-definition=The genome browser at the <A HREF="http://genome.ucsc.edu/">University of California at Santa Cruz</A>. 
+definition=The genome browser at the <A HREF="https://genome.ucsc.edu/">University of California at Santa Cruz</A>. 
 ]
 
 [ 
@@ -5173,7 +5173,7 @@ definition=An experimental system for automatically partitioning \
 sequences into a non-redundant set of gene-oriented clusters. Each UniGene cluster contains sequences that represent a unique \ 
 <A HREF="!FEWI_URL!glossary/gene">gene</A>, as well as related information such as the tissue types in which \
 the gene has been <A HREF="!FEWI_URL!glossary/gene_expression">expressed</A> and map location. See the \ 
-<A HREF="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=unigene">UniGene</A> page at NCBI. 
+<A HREF="https://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=unigene">UniGene</A> page at NCBI. 
 ]
 
 [ 
@@ -5186,7 +5186,7 @@ bearing no copy of that chromosome, or from the union of a gamete bearing two co
 followed by the loss of one chromosome through an error in <A HREF="!FEWI_URL!glossary/mitosis">mitosis</A>. \
 Because of <A HREF="!FEWI_URL!glossary/imprinting">imprinting</A>, uniparental disomy can have \
 <A HREF="!FEWI_URL!glossary/phenotype">phenotypic</A> consequences in mammals. See, for example, \
-<A HREF="http://omim.org/entry/176270">Prader-Willi Syndrome</A>. 
+<A HREF="https://omim.org/entry/176270">Prader-Willi Syndrome</A>. 
 ]
 
 [ 
@@ -5225,9 +5225,9 @@ definition=A <A HREF="!FEWI_URL!glossary/pyrimidine">pyrimidine</A> \
 key=url 
 displayName=URL 
 definition=Uniform Resource Locator. An Internet address giving the protocol to be used for obtaining resources on the Internet \
-such as "ftp:" for an <A HREF="!FEWI_URL!glossary/ftp">FTP</A> site or "http:" for a World Wide Web page. \
+such as "ftp:" for an <A HREF="!FEWI_URL!glossary/ftp">FTP</A> site or "https:" for a World Wide Web page. \
 It also includes the server name and sometimes the path to the resource. The URL for \
-<A HREF="!FEWI_URL!glossary/mgi">MGI</A> is "http://www.informatics.jax.org". 
+<A HREF="!FEWI_URL!glossary/mgi">MGI</A> is "https://www.informatics.jax.org". 
 ]
 
 [ 
@@ -5255,7 +5255,7 @@ displayName=VISTA
 definition=A suite of programs and databases for comparative analysis of genomic \
 sequences. Users can  either submit sequences and alignments for analysis or \
 examine precomputed whole-genome alignments  of different species. See \
-<a href="http://genome.lbl.gov/vista/index.shtml">http://genome.lbl.gov/vista/index.shtml</a>.
+<a href="https://genome.lbl.gov/vista/index.shtml">https://genome.lbl.gov/vista/index.shtml</a>.
 ]
 
 [ 

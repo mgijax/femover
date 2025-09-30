@@ -48,6 +48,8 @@ CONTROL_DIR = os.path.join(INSTALL_DIR, 'control/')
 LIB_DIR = os.path.join(INSTALL_DIR, 'lib/python/')
 LOG_DIR = os.environ['LOG_DIR']
 
+MMHCDB_ALLELE_URL = os.environ['MMHCDB_ALLELE_URL']
+
 # if we don't specify a GO_GRAPH_PATH, then just default to the standard one
 if 'GO_GRAPH_PATH' in os.environ:
         GO_GRAPH_PATH = os.environ['GO_GRAPH_PATH']

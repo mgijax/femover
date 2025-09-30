@@ -6,7 +6,7 @@ import Gatherer
 
 ###--- Globals ---###
 
-JAXRH_URL = 'http://www.informatics.jax.org/downloads/datasets/rhmap/RHpanelMGIReport.txt'
+JAXRH_URL = 'https://www.informatics.jax.org/downloads/datasets/rhmap/RHpanelMGIReport.txt'
 
 ###--- Classes ---###
 

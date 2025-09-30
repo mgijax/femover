@@ -69,7 +69,7 @@ export IMSR_STRAIN_URL
 #
 # setting for retrieving allele IDs that have data in MMHCdb
 #
-MMHCDB_ALLELE_URL="http://tumor.informatics.jax.org/mtbwi/alleleIDReport.do"
+MMHCDB_ALLELE_URL="https://tumor.informatics.jax.org/mtbwi/alleleIDReport.do"
 export MMHCDB_ALLELE_URL
 
 #
