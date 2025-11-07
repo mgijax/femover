@@ -32,7 +32,8 @@ createStatement = '''CREATE TABLE %s  (
         probe_name              text    null,
         antibody_id             text    null,
         antibody_name           text    null,
-        cell_types              text    null,
+        cell_type               text    null,
+        cell_type_key           int     null,
         PRIMARY KEY(result_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -40,11 +41,13 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
         'structure_key' : 'create index %s on %s (structure_key)',
+        'cell_type_key' : 'create index %s on %s (cell_type_key)',
         }
 
 keys = {
         'allele_system_key' : ('recombinase_allele_system', 'allele_system_key'),
         'structure_key' : ('term', 'term_key'),
+        'cell_type_key' : ('term', 'term_key'),
         }
 
 # index used to cluster data in the table
@@ -76,7 +79,8 @@ comments = {
                 'probe_name' : 'name of the probe',
                 'antibody_id' : 'primary ID of the antibody',
                 'antibody_name' : 'name of the antibody',
-                'cell_types' : 'comma-separated list of cell types',
+                'cell_type' : 'cell type name',
+                'cell_type_key' : 'cell type key',
                 },
         Table.INDEX : {
                 'allele_system_key' : 'clusters data so all results for an allele/system pair are stored on disk together, to aid efficiency',
