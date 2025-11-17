@@ -80,6 +80,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 # Returns: alleleSystemMap, alleleStructureMap, \
                 #       alleleData, columns, out, \
                 #       affectedCols, affected, unaffectedCols, unaffected
+                #       affectedCellTypeCols, affectedCellTypes
 
                 #-----------------------------------------------
                 # Load a lookup table of recombinase system labels and their EMAPA term keys
@@ -120,6 +121,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 def existsAt (emapaKey, ageMin, ageMax):
                     existsMin, existsMax = emapaKey2ages[emapaKey]
                     return ageMax >= existsMin and ageMin <= existsMax
+
+                #-----------------------------------------------
+                # Cell type to celltype headers
+                cellType2Headers = self.getCellTypeHeaderLookup()
 
                 #-----------------------------------------------
                 #
@@ -211,6 +216,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 systemCol = Gatherer.columnNumber (cols, 'cresystemlabel')
                 assayKeyCol = Gatherer.columnNumber (cols, '_assay_key')
                 resultKeyCol = Gatherer.columnNumber (cols, '_result_key')
+                cellTypeKeyCol = Gatherer.columnNumber (cols, '_celltype_term_key')
 
                 #
                 # alleleData: dictonary of unique allele id:symbol for use in other functions
@@ -225,8 +231,10 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 #
                 affectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
                 unaffectedCols = [ 'alleleKey', 'alleleSystemKey', 'system' ]
+                affectedCellTypeCols  = [ 'alleleKey', 'cellTypeHeaderKey', 'cellTypeHeader' ]
                 affected = []
                 unaffected = []
+                affectedCellTypes = []
 
                 #
                 # out: dictionary of output data
@@ -257,6 +265,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         emapaKey = row[emapaKeyCol]   # EMAPA key corresp to the EMAPS key
                         system = row[systemCol]       # name of cre system for the annotated structure
                         systemKey = sysLabel2emapaKey[system] # emapa key of the system
+                        cellTypeKey = row[cellTypeKeyCol] # cell type term key (may be null)
 
                         # emapaDpcMin, emapaDpcMax = emapaKey2ages[emapaKey]
                         # ageMinTrans <= emapaDpcMax and ageMaxTrans >= emapaDpcMin
@@ -299,6 +308,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         emapaKey = row[emapaKeyCol]   # EMAPA key corresp to the EMAPS key
                         system = row[systemCol]       # name of cre system for the annotated structure
                         systemKey = sysLabel2emapaKey[system] # emapa key of the system
+                        cellTypeKey = row[cellTypeKeyCol]
                         age = row[ageCol]
                         ageMin = row[ageMinCol]
                         ageMax = row[ageMaxCol]
@@ -376,6 +386,15 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                         else:
                                 if not triple in affected:
                                         affected.append (triple)
+
+                        #
+                        # affectCellType
+                        if cellTypeKey and expressed == 1:
+                            headers = cellType2Headers.get(cellTypeKey, [])
+                            for h in headers:
+                                triple = (allKey, h[0], h[1])
+                                if not triple in affectedCellTypes:
+                                    affectedCellTypes.append(triple)
                                         
                         #
                         # alleleData: maps allele key to allele (accID, symbol) 
@@ -410,7 +429,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 return alleleSystemMap, alleleStructureMap, \
                         alleleData, columns, out, \
-                        affectedCols, affected, unaffectedCols, unaffected
+                        affectedCols, affected, unaffectedCols, unaffected, affectedCellTypeCols, affectedCellTypes
 
         def findOtherSystems (self, alleleSystemMap, alleleData,
                         affectedCols, affected):
@@ -619,6 +638,16 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
 
                 logger.debug ('Found %d recombinase_system_structures' % len(sRows))
                 return sCols,sRows 
+
+        def getCellTypeHeaderLookup (self) :
+                cols,rows = self.results[10]
+                kCol = Gatherer.columnNumber (cols, '_cell_type_key')
+                hkCol = Gatherer.columnNumber (cols, '_header_key')
+                hCol = Gatherer.columnNumber (cols, 'header_label')
+                headers = {}
+                for r in rows:
+                    headers.setdefault(r[kCol],[]).append((r[hkCol],r[hCol]))
+                return headers
 
         def findAssayResults (self, alleleSystemMap):
 
@@ -858,6 +887,7 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 alleleSystemMap, alleleStructureMap, \
                         alleleData, columns, rows, \
                         affectedCols, affected, unaffectedCols, unaffected, \
+                        affectedCellTypeCols, affectedCellTypes, \
                          = self.findAlleleSystemPairs()
                 self.output.append ( (columns, rows) )
 
@@ -897,6 +927,9 @@ class RecombinaseGatherer (Gatherer.MultiFileGatherer):
                 columns, rows = self.findDistinctStructures(alleleStructureMap)
                 self.output.append((columns,rows))
 
+                # step 9 - cell type header terms for alleles
+                self.output.append ( (affectedCellTypeCols, affectedCellTypes) )
+
                 return
 
 ###--- globals ---###
@@ -911,7 +944,8 @@ cmds = [
                 c._stage_key, vte._term_key as _emaps_key,
                 c._emapa_term_key, c.emapaterm as structure,
                 c.symbol, c.age, c.ageMin, c.ageMax, c.expressed, c.strength,
-                c.hasImage, c.cresystemlabel, c._assay_key, r._result_key, s.specimenlabel
+                c.hasImage, c.cresystemlabel, c._assay_key, r._result_key, s.specimenlabel, 
+                c._celltype_term_key
         from all_cre_cache c
                 join voc_term_emaps vte on
                         c._emapa_term_key = vte._emapa_term_key
@@ -1101,6 +1135,38 @@ cmds = [
             vta.startstage = ts1._stage_key
             and vta.endstage = ts2._stage_key
         ''',
+
+        # 10
+        # Need a lookup of _term_keys to labels for cell type header terms (Cell Type Slim)
+        #
+        '''
+        with headers as (
+            select
+                sm._object_key as _term_key,
+                case when sm.label is not null then sm.label else ct.term end as label
+            from
+                mgi_setmember sm,
+                voc_term ct
+            where sm._set_key = 1060
+            and sm._object_key = ct._term_key
+        ),
+        closure as (
+            select c._ancestorObject_key as _ancestor_key, c._descendentobject_key as _descendent_key
+            from dag_closure c
+            where c._dag_key = 52
+            UNION
+            select _term_key as _ancestor_key, _term_key as _descendent_key
+            from voc_term t
+            where t._vocab_key = 102
+            and t.isobsolete = 0
+        )
+        select c._descendent_key as _cell_type_key, h._term_key as _header_key, h.label as header_label
+        from closure c, voc_term d, headers h
+        where c._descendent_key = d._term_key
+        and c._ancestor_key = h._term_key
+        and h.label != 'all cell types'
+        ''',
+
         ]
 
 # data about files to be written; for each:  (filename prefix, list of field
@@ -1156,6 +1222,10 @@ files = [
                 [ Gatherer.AUTO, 'alleleSystemKey', 'structure','structureSeq',
                         'cell_data' ],
                 'recombinase_system_structure'),
+
+        ('recombinase_affected_cell_types',
+                [ Gatherer.AUTO, 'alleleKey', 'cellTypeHeaderKey', 'cellTypeHeader' ],
+                'recombinase_affected_cell_types'),
 
         ]
 
