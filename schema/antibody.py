@@ -21,9 +21,19 @@ createStatement = '''CREATE TABLE %s  (
         antibody_type           text    not null,
         antibody_class          text    not null,
         expression_result_count int     not null,
-        antigen_key             int     not null,
         synonyms                text    null,
         note                    text    null,
+
+        ag_region_covered       text    null,
+        ag_note                 text    null,
+        ag_species              text    not null,
+        ag_strain               text    not null,
+        ag_sex                  text    not null,
+        ag_age                  text    not null,
+        ag_tissue               text    not null,
+        ag_cell_line            text    not null,
+        ag_tissue_description   text    null,
+
         PRIMARY KEY(antibody_key))''' % tableName
 
 # Maps from index suffix to create statement for that index.  In each
@@ -31,12 +41,10 @@ createStatement = '''CREATE TABLE %s  (
 # table name.
 indexes = {
         'primary_id' : 'create index %s on %s (primary_id)',
-        'antigen_key' : 'create index %s on %s (antigen_key)',
         }
 
 # column name -> (related table, column in related table)
-keys = { 'antigen_key' : ('antigen', 'antigen_key'),
-        }
+keys = { }
 
 # index used to cluster data in the table
 clusteredIndex = None
@@ -52,13 +60,20 @@ comments = {
                 'antibody_type' : 'type of antibody',
                 'antibody_class' : 'class of antibody',
                 'expression_result_count' : 'number of expression results citing this antibody',
-                'antigen_key' : 'database key of the antigen associated with this antibody',
                 'synonyms' : 'comma-separated list of synonyms for this antibody',
                 'note' : 'additional notes',
+                'ag_region_covered' : 'region of antigen covered by antibody',
+                'ag_note' : 'general note about the antigen',
+                'ag_species' : 'species in which the antigen originated',
+                'ag_strain' : 'mouse strain for the antigen',
+                'ag_sex' : 'gender of the antigen source',
+                'ag_age' : 'age of the antigen source',
+                'ag_tissue' : 'tissue of the antigen source',
+                'ag_cell_line' : 'cell line of the antigen source',
+                'ag_tissue_description' : 'textual description of the antigen source tissue',
                 },
         Table.INDEX : {
                 'primary_id' : 'quick lookup by accession ID',
-                'antigen_key' : 'quick lookup of all antibodies for an antigen',
                 },
         }
 

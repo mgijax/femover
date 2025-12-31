@@ -207,7 +207,7 @@ EXPRESSION = [ 'expression_index', 'expression_index_stages',
                 'marker_to_expression_assay', 'expression_assay_sequence_num',
                 'expression_result_summary', 'antibody_to_reference',
                 'expression_specimen','expression_gellane', 'antibody',
-                'antigen', 'marker_to_antibody', 'expression_result_cell_type',
+                'marker_to_antibody', 'expression_result_cell_type',
         ]
 HT_EXPRESSION = [ 'expression_ht_experiment', 'expression_ht_experiment_id',
         'expression_ht_experiment_note', 'expression_ht_experiment_property',

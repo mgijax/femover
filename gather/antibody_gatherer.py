@@ -69,9 +69,17 @@ cmds = [
                 ae.commonName as antibodySpecies,
                 ac.term as class,
                 ap.term as antibodyType,
-                ab.antibodyNote,
-                ab._Antigen_key,
-                b.aliases
+                ab.antibodynote,
+                b.aliases,
+                ab.regionCovered as ag_region_covered,
+                ab.antigenNote as ag_note,
+                ago.commonName as ag_species,
+                ags.strain as ag_strain,
+                agx.term as ag_sex,
+                s.age as ag_age,
+                agt.tissue as ag_tissue,
+                agc.term as ag_cell_line,
+                s.description as ag_tissue_description
         from gxd_antibody ab
         inner join acc_accession aa on (
                 ab._Antibody_key = aa._Object_key
@@ -84,6 +92,20 @@ cmds = [
                 ab._AntibodyClass_key = ac._Term_key)
         inner join voc_term ap on (
                 ab._AntibodyType_key = ap._Term_key)
+        inner join prb_source s on (
+                ab._source_key = s._source_key)
+        inner join mgi_organism ago on (
+                s._organism_key = ago._organism_key )
+        inner join prb_strain ags on (
+                s._strain_key = ags._strain_key )
+        inner join voc_term agx on (
+                s._gender_key = agx._term_key )
+        inner join prb_tissue agt on (
+                s._tissue_key = agt._tissue_key )
+                
+        inner join voc_term agc on (
+                s._cellline_key = agc._term_key )
+                
         left outer join gxdResults f on (f._Antibody_key = ab._Antibody_key)
         left outer join antibody_aliases b on (
                 ab._Antibody_key = b._Antibody_key)
@@ -94,8 +116,10 @@ cmds = [
 # output file
 fieldOrder = [
         '_Antibody_key', 'antibodyName', 'mgiID', 'antibodySpecies',
-        'antibodyType', 'class', 'gxdCount', '_Antigen_key', 'aliases',
-        'antibodyNote'
+        'antibodyType', 'class', 'gxdCount', 'aliases',
+        'antibodyNote', 'ag_region_covered', 'ag_note',
+        'ag_species', 'ag_strain', 'ag_sex', 'ag_age', 'ag_tissue',
+        'ag_cell_line', 'ag_tissue_description',
         ]
 
 # prefix for the filename of the output file
