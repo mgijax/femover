@@ -20,6 +20,7 @@ from expression_ht import experiments
 
 MarkerCount = 'markerCount'
 ProbeCount = 'probeCount'
+AntibodyCount = 'antibodyCount'
 MappingCount = 'mappingCount'
 GxdIndexCount = 'gxdIndexCount'
 GxdResultCount = 'gxdResultCount'
@@ -80,6 +81,7 @@ class ReferenceCountsGatherer (Gatherer.Gatherer):
                         (self.results[10], SequenceCount, 'numSequences'),
                         (self.results[11], StrainCount, 'numStrains'),
                         (self.results[12], DiseaseModelCount, 'numModels'),
+                        (self.results[14], AntibodyCount, 'numAntibodies'),
                         ]
                 for (r, countName, colName) in toAdd:
                         logger.debug ('Processing %s, %d rows' % (countName,
@@ -247,10 +249,19 @@ cmds = [
             from count_by_experiment ce, %s er
             where ce._experiment_key = er._experiment_key
             ''' % experiments.getExperimentReferenceTempTable(),
+
+        # 14. Count of antibodies
+        '''
+        select r._Refs_key, count(distinct r._object_key) as numAntibodies
+        from mgi_reference_assoc r, mgi_refassoctype t
+        where r._MGIType_key = 6
+        and r._RefAssocType_key = t._RefAssocType_key
+        group by r._Refs_key
+        '''
         ]
 
 # order of fields (from the query results) to be written to the output file
-fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, MappingCount,
+fieldOrder = [ '_Refs_key', MarkerCount, ProbeCount, AntibodyCount, MappingCount,
         GxdIndexCount, GxdResultCount, GxdStructureCount,
         GxdAssayCount, GxdHtExpCount, AlleleCount, SequenceCount, GoAnnotCount, StrainCount, DiseaseModelCount ]
 
