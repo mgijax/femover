@@ -386,6 +386,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                 assayCol = Gatherer.columnNumber (cols, '_Assay_key')
                 genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
                 ageCol = Gatherer.columnNumber (cols, 'age')
+                sexCol = Gatherer.columnNumber (cols, 'sex')
                 strengthCol = Gatherer.columnNumber (cols, 'strength')
                 resultCol = Gatherer.columnNumber (cols, '_Result_key')
                 emapsKeyCol = Gatherer.columnNumber (cols,'_emaps_key')
@@ -410,7 +411,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                             cellType = TERM_LOOKUP.get(row[cellTypeKeyCol])
                         
                         extras.setdefault(assayKey,[]).append( [row[genotypeCol],
-                                row[ageCol], row[strengthCol], row[resultCol],
+                                row[sexCol], row[ageCol], row[strengthCol], row[resultCol],
                                 emapsKey, row[ageMinCol],
                                 row[ageMaxCol], row[patternCol],row[specimenKeyCol],
                                 row[stageCol], row[structureCol], cellType,
@@ -435,6 +436,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                 assayCol = Gatherer.columnNumber (cols, '_Assay_key')
                 genotypeCol = Gatherer.columnNumber (cols, '_Genotype_key')
                 ageCol = Gatherer.columnNumber (cols, 'age')
+                sexCol = Gatherer.columnNumber (cols, 'sex')
                 strengthCol = Gatherer.columnNumber (cols, 'strength')
                 emapsKeyCol = Gatherer.columnNumber (cols,'_emaps_key')
                 stageCol = Gatherer.columnNumber (cols,'_stage_key')
@@ -496,13 +498,13 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
                     if assayKey in extras:
                         extras[row[assayCol]].append( [ row[genotypeCol],
-                                row[ageCol], strength,
+                                row[sexCol], row[ageCol], strength,
                                 emapsKey, row[ageMinCol],
                                 row[ageMaxCol],
                                 row[stageCol], row[structureCol], row[assignedKeyCol] ] )
                     else:
                         extras[row[assayCol]] = [ [ row[genotypeCol],
-                                row[ageCol], strength,
+                                row[sexCol], row[ageCol], strength,
                                 emapsKey, row[ageMinCol],
                                 row[ageMaxCol],
                                 row[stageCol], row[structureCol], row[assignedKeyCol] ] ]
@@ -593,7 +595,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
 
                 ersCols = [ 'result_key', '_Assay_key', 'assayType',
                         'assayID', '_Marker_key', 'symbol', 'stage',
-                        'age', 'ageAbbreviation', 'age_min', 'age_max',
+                        'sex', 'age', 'ageAbbreviation', 'age_min', 'age_max',
                         'structure', 'printname', 'structureKey',
                         'detectionLevel', 'isExpressed', '_Refs_key',
                         'jnumID', 'hasImage', '_Genotype_key', 'is_wild_type',
@@ -655,7 +657,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                         panes = []      # image panes for this result
 
                         if isGel:
-                            [ genotypeKey, age, strength,
+                            [ genotypeKey, sex, age, strength,
                                 emapsKey, ageMin, ageMax,
                                 stage, structure, assignedKey ] = items
 
@@ -668,7 +670,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                                 if imagepaneKey in displayablePanes:
                                     hasImage = 1
                         else:
-                            [ genotypeKey, age, strength, resultKey,
+                            [ genotypeKey, sex, age, strength, resultKey,
                                 emapsKey, ageMin, ageMax,
                                 pattern,specimenKey,
                                 stage, structure, cellType, assignedKey ] = items
@@ -692,6 +694,7 @@ class ExpressionResultSummaryGatherer (Gatherer.MultiFileGatherer):
                             markerKey,
                             symbols[markerKey],
                             stage,
+                            sex,
                             age,
                             abbreviate(age),
                             ageMin,
@@ -1033,6 +1036,7 @@ cmds = [
         # structures per result key)
         '''select s._Assay_key,
                 s._Genotype_key,
+                s.sex,
                 s.age,
                 r._Strength_key,
                 st.term as strength,
@@ -1079,6 +1083,7 @@ cmds = [
         # the lane as a whole.
         '''select g._Assay_key,
                 g._Genotype_key,
+                g.sex,
                 g.age,
                 st._Term_key as _Strength_key,
                 st.term as strength,
@@ -1129,7 +1134,7 @@ cmds = [
 files = [
         ('expression_result_summary',
                 [ 'result_key', '_Assay_key', 'assayType', 'assayID',
-                '_Marker_key', 'symbol', 'stage', 'age',
+                '_Marker_key', 'symbol', 'stage', 'sex', 'age',
                 'ageAbbreviation', 'age_min', 'age_max',
                 'structure', 'printname', 'structureKey', 'detectionLevel',
                 'isExpressed', '_Refs_key', 'jnumID', 'hasImage',
