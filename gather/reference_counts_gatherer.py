@@ -142,8 +142,10 @@ cmds = [
                         where isWildType = 0
                         union
                         select r._Object_key_2 as _Marker_key, r._Object_key_1 as _Allele_key
-                        from mgi_relationship r
+                        from mgi_relationship r, mrk_marker m
                         where r._Category_key in (1003,1004)
+                        and r._Object_key_2 = m._marker_key
+                        and m._organism_key = 1
                         ),
                 marker_refs as (
                         select r._Marker_key, r._Refs_key
