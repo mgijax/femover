@@ -143,6 +143,7 @@ class TermSiblingGatherer (Gatherer.ChunkGatherer):
 
                         seqNum = maxSeqNum + 1
                         for term in toSort:
+                                #logger.debug(str(term))
                                 for pos in positions[term]:
                                         self.finalResults[pos][snCol] = seqNum
                                         seqNum = seqNum + 1
@@ -169,7 +170,8 @@ cmds = [
         # 3 : identify terms that are leaves (having no descendants) in this chunk
         '''select t._Term_key, 1 as is_leaf
                 from voc_term t, selected_vocabs v
-                where t._Vocab_key = v._Vocab_key
+                where t.isobsolete = 0
+                    and t._Vocab_key = v._Vocab_key
                         and not exists (select 1
                                 from dag_node dn, dag_edge de
                                 where t._Term_Key = dn._Object_key
@@ -177,7 +179,7 @@ cmds = [
 
         # 4 : return other term data for this chunk
         '''select t._Term_key, a.accID, t.term, t.sequenceNum
-                from voc_term t
+                from voc_term t 
                 inner join selected_vocabs v on (t._Vocab_key = v._Vocab_key)
                 left outer join acc_accession a on (
                     t._Term_key = a._Object_key
@@ -189,12 +191,15 @@ cmds = [
                         where b._MGIType_key = 13
                             and b.preferred = 1
                             and b.private = 0
-                            and a._Object_key = b._Object_key) )''',
+                            and a._Object_key = b._Object_key) )
+                where t.isobsolete = 0
+                ''',
                                         
         # 5. get the edges among those terms (for the vocabs in this chunk)
         '''select p._Object_key as parentKey, c._Object_key as childKey, l.label
             from dag_node p, dag_edge e, dag_label l, dag_node c, voc_term t, selected_vocabs v
             where v._Vocab_key = t._Vocab_key
+                and t.isobsolete = 0
                 and t._Term_key = p._Object_key
                 and p._Node_key = e._Parent_key
                 and c._Node_key = e._Child_key
