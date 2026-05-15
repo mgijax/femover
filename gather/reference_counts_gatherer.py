@@ -240,9 +240,8 @@ cmds = [
         # 13. Count of HT expression results 
         '''with count_by_experiment as (
             select r._experiment_key, count(*) as numResults
-            from gxd_htsample_rnaseqset_cache rc, gxd_htsample_rnaseqset r, gxd_htsample_rnaseqcombined m, mrk_marker mm
-            where rc._rnaseqset_key = r._rnaseqset_key
-            and rc._rnaseqcombined_key = m._rnaseqcombined_key
+            from gxd_htsample_rnaseqset r, gxd_htsample_rnaseqcombined m, mrk_marker mm
+            where m._rnaseqset_key = r._rnaseqset_key
             and m._marker_key = mm._marker_key
             and mm._marker_status_key = 1
             group by r._experiment_key
