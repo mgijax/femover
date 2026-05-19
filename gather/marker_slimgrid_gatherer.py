@@ -550,7 +550,7 @@ def setupMarkerCacheTable():
                                 or exists (select 1 from voc_annot go
                                         where m._Marker_key = go._Object_key
                                         and go._AnnotType_key = 1000)
-                                or exists (select 1 from gxd_htsample_rnaseq r
+                                or exists (select 1 from gxd_htsample_rnaseqcombined r
                                         where m._Marker_key = r._Marker_key)
                                 or exists (select 1 from %s gxd
                                         where m._Marker_key = gxd._Marker_key)
