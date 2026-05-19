@@ -210,12 +210,12 @@ def setupGxdRnaSeqTables():
                 with wildtype_flag as (
                         select s._Genotype_key, 1 as isWildtype
                         from gxd_htsample s
-                        where exists (select 1 from gxd_htsample_rnaseq r where s._Sample_key = r._Sample_key)
+                        where exists (select 1 from gxd_htsample_rnaseqsetmember r where s._Sample_key = r._Sample_key)
                                 and not exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
                         union
                         select s._Genotype_key, 0 as isWildtype
                         from gxd_htsample s
-                        where exists (select 1 from gxd_htsample_rnaseq r where s._Sample_key = r._Sample_key)
+                        where exists (select 1 from gxd_htsample_rnaseqsetmember r where s._Sample_key = r._Sample_key)
                                 and exists (select 1 from gxd_allelepair p where s._Genotype_key = p._Genotype_key)
                 )
                 select mrk._Marker_key,
