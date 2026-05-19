@@ -147,10 +147,11 @@ cmds = [
                 group by _Object_key''',
 
         # 3. count of expression assay results for each allele, now including RNA-Seq data
-        '''with rnaseq as (select gag._Allele_key, count(distinct r._RnaSeqCombined_key) as expCount
-                        from gxd_htsample s, gxd_allelegenotype gag, gxd_htsample_rnaseq r
+        '''with rnaseq as (select gag._Allele_key, count(distinct rc._RnaSeqCombined_key) as expCount
+                        from gxd_htsample s, gxd_allelegenotype gag, gxd_htsample_rnaseqsetmember r, gxd_htsample_rnaseqcombined rc
                         where s._Genotype_key = gag._Genotype_key
                                 and s._Sample_key = r._Sample_key
+                                and r._rnaseqset_key = rc._rnaseqset_key
                                 group by 1
                 ),
         classical as (select gag._Allele_key, count(distinct _Expression_key) as expCount
