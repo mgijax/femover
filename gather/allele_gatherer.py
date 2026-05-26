@@ -11,6 +11,8 @@ from MMHCdbData import MMHCdbDatabase
 ###--- Constants ---###
 NOT_SPECIFIED="Not Specified"
 ALLELE_SUBTYPE_ANNOT_KEY=1014
+MOLECULAR_NOTETYPE_KEY=1021
+MOLECULAR_IMPC_NOTETYPE_KEY=1053
 
 ###--- Classes ---###
 
@@ -94,22 +96,24 @@ class AlleleGatherer (Gatherer.Gatherer):
                 keyCol = Gatherer.columnNumber (self.results[3][0],
                         '_Object_key')
                 noteCol = Gatherer.columnNumber (self.results[3][0], 'note')
+                noteTypeCol = Gatherer.columnNumber (self.results[3][0], '_notetype_key')
 
                 self.molNote = {}
+                self.impcNote = {}
                 for row in self.results[3][1]:
                         key = row[keyCol]
-                        if key in self.molNote:
-                                self.molNote[key] = self.molNote[key] + \
-                                        row[noteCol]
+                        note = row[noteCol].rstrip()
+                        noteType = row[noteTypeCol]
+                        #
+                        if noteType == MOLECULAR_NOTETYPE_KEY:
+                            self.molNote[key] = note
+                        elif noteType == MOLECULAR_IMPC_NOTETYPE_KEY:
+                            self.impcNote[key] = note
                         else:
-                                self.molNote[key] = row[noteCol]
-
-                # trim trailing whitespace
-
-                for key in self.molNote:
-                        self.molNote[key] = self.molNote[key].rstrip()
+                            raise RuntimeError("Invalid note type: " + str(noteType))
 
                 logger.debug('Found %d molecular notes' % len(self.molNote))
+                logger.debug('Found %d IMPC molecular notes' % len(self.impcNote))
 
                 # extract the holder and company ID for deltagen/lexicon
                 # knockouts, and cache them for postprocessResults()
@@ -238,6 +242,11 @@ class AlleleGatherer (Gatherer.Gatherer):
                         else:
                                 molNote = None
 
+                        if allele in self.impcNote:
+                                impcNote = self.impcNote[allele]
+                        else:
+                                impcNote = None
+
                         if allele in self.diseaseModels:
                                 diseaseModel = 1
                         else:
@@ -251,6 +260,8 @@ class AlleleGatherer (Gatherer.Gatherer):
                         self.addColumn('inducibleNote', inducibleNote, r,
                                 columns)
                         self.addColumn('molecularDescription', molNote, r,
+                                columns)
+                        self.addColumn('molecularIMPCDescription', impcNote, r,
                                 columns)
 
                         if alleleType == 'QTL':
@@ -323,10 +334,11 @@ cmds = [
         from mgi_note n
         where n._NoteType_key = 1032''',
 
-        # 3. Molecular allele notes
-        '''select n._Object_key, n.note
+        # 3. Molecular allele notes, curated (1021) and/or IMPC (1053).
+        # An allele will have 0 or 1 of each of these.
+        '''select n._Object_key, n._NoteType_key, n.note
         from mgi_note n
-        where n._NoteType_key = 1021''',
+        where n._NoteType_key in (1021,1053)''',
 
         # 4. Deltagen/Lexicon Knockout data
         'select _Allele_key, holder, companyID, repository, jrsID from ALL_Knockout_Cache',
@@ -381,7 +393,7 @@ fieldOrder = [
         '_Allele_key', 'symbol', 'name', 'onlyAlleleSymbol', 'geneName',
         'accID', 'logicalDB', 'alleleType', 'alleleSubType','chromosome','collection',
         'isRecombinase', 'isWildType', 'isMixed', 'driver', 'driver_key', 'inducibleNote',
-        'molecularDescription', 'strain', 'strainLabel', 'strain_id', 'inheritanceMode',
+        'molecularDescription', 'molecularIMPCDescription', 'strain', 'strainLabel', 'strain_id', 'inheritanceMode',
         'holder', 'companyID', 'transmission', 'transmission_phrase',
         'imageKey', 'hasDiseaseModel', 'repository', 'jrsID', 'has_tumor_data',
         ]
