@@ -321,9 +321,9 @@ cmds = [
                         0 as classical,
                         count(distinct s._Experiment_key) as rnaseq
                 from gxd_htsample_rnaseqcombined sc,
-                        gxd_htsample_rnaseq r,
+                        gxd_htsample_rnaseqsetmember r,
                         gxd_htsample s
-                where sc._RNASeqCombined_key = r._RNASeqCombined_key
+                where sc._rnaseqset_key = r._rnaseqset_key
                         and r._Sample_key = s._Sample_key
                 group by sc._Marker_key
                 )
@@ -334,7 +334,7 @@ cmds = [
         # 6. count of orthologs for each marker
         '''
         select m._Marker_key, count(distinct m2._marker_key) as numOrtho
-    from MRK_Cluster mc 
+                from MRK_Cluster mc 
                         join MRK_ClusterMember mcm on mcm._cluster_key = mc._cluster_key
                 join MRK_Marker m on m._marker_key = mcm._marker_key 
                 join MRK_ClusterMember mcm2 on (

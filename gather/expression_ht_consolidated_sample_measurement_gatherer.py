@@ -57,12 +57,11 @@ class EHCSMGatherer (Gatherer.CachingMultiFileGatherer):
 cmds = [
                 # 0. impose ordering in the query so combined samples will ordered on disk (making joins
                 # more efficient in the postprocessing script)
-                '''select distinct c._RNASeqCombined_key, m._RNASeqSet_key, r._Marker_key, c._Level_key,
-                                c.numberOfBiologicalReplicates, c.averageQuantileNormalizedTPM
-                from gxd_htsample_rnaseqcombined c, gxd_htsample_rnaseq r, gxd_htsample_rnaseqsetmember m
-                where c._RNASeqCombined_key = r._RNASeqCombined_key
-                        and r._Sample_key = m._Sample_key
-                        and c._RNASeqCombined_key >= %d
+                '''
+                select distinct c._RNASeqCombined_key, c._RNASeqSet_key, c._Marker_key, 
+                        c._Level_key, c.numberOfBiologicalReplicates, c.averageQuantileNormalizedTPM
+                from gxd_htsample_rnaseqcombined c
+                where c._RNASeqCombined_key >= %d
                         and c._RNASeqCombined_key < %d
                 order by 1
                 '''

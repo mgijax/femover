@@ -105,9 +105,10 @@ cmds = [
                 from mrk_marker m
                 where m._Organism_key = 1
                         and exists (select 1
-                                from gxd_htsample_rnaseq r, wildtype_samples s
+                                from gxd_htsample_rnaseqcombined r, gxd_htsample_rnaseqsetmember sm, wildtype_samples s
                                 where m._Marker_key = r._Marker_key
-                                and r._Sample_key = s._Sample_key)''',
+                                and r._rnaseqset_key = sm._rnaseqset_key
+                                and sm._Sample_key = s._Sample_key)''',
 
         # 3. all markers (ensuring that our new marker_flags table also has all markers)
         '''select m._Marker_key

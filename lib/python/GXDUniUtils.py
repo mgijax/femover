@@ -579,23 +579,26 @@ def _buildKeystoneTable():
         logger.info(' - %d Gel rows' % rows[0][0])
 
         # Get to the set of unique sample data for each consolidated sample.
-        cmd2 = '''select distinct rsc._RNASeqCombined_key, s._Emapa_key,
-                        s._Stage_key,
-                        mrk.seqNum as mrkSeqNum,
-                        s.ageMin, s.ageMax,
-                        case 
-                        when level.term = 'Below Cutoff' then 1
-                        else 2
-                        end as is_detected,
-                        s._Experiment_key,
-                        s._Genotype_key
-                into temporary table rscmap
-                from gxd_htsample_rnaseq rsc, gxd_htsample s, %s mrk,
-                        gxd_htsample_rnaseqcombined c, voc_term level
-                where rsc._Sample_key = s._Sample_key
-                        and rsc._RNASeqCombined_key = c._RNASeqCombined_key
-                        and c._Level_key = level._Term_key
-                        and rsc._Marker_key = mrk._Marker_key'''
+        cmd2 = '''
+            select distinct c._RNASeqCombined_key, s._Emapa_key,
+                s._Stage_key, mrk.seqNum as mrkSeqNum,
+                s.ageMin, s.ageMax,
+                case 
+                when level.term = 'Below Cutoff' then 1
+                else 2
+                end as is_detected,
+                s._Experiment_key, s._Genotype_key
+            into temporary table rscmap
+            from gxd_htsample s, 
+                 %s mrk,
+                 gxd_htsample_rnaseqcombined c, 
+                 voc_term level,
+                 gxd_htsample_rnaseqsetmember sm
+            where c._rnaseqset_key = sm._rnaseqset_key
+            and sm._Sample_key = s._Sample_key
+            and c._Level_key = level._Term_key
+            and c._Marker_key = mrk._Marker_key 
+        '''
 
         dbAgnostic.execute(cmd2 % markerTable)
         logger.info('Added %d rows to rscmap table' % _getRowCount('rscmap'))
