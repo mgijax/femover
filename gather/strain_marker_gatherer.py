@@ -182,7 +182,7 @@ cmds = [
                         s.sequence_num, a_seq._LogicalDB_key
                 from mrk_strainmarker msm
                 inner join %s s on (msm._Strain_key = s._Strain_key)
-                inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44)
+                inner join acc_accession a on (msm._StrainMarker_key = a._Object_key and a._MGIType_key = 44 and a.preferred = 1)
                 left outer join mrk_marker m on (m._Marker_key = msm._Marker_key)
                 left outer join acc_accession cm on (msm._Marker_key = cm._Object_key and cm._MGIType_key = 2
                         and cm._LogicalDB_key = 1 and cm.preferred = 1)
