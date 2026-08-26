@@ -566,6 +566,7 @@ cmds = [
                         and t._Marker_key = msm._Marker_key
                         and msm._StrainMarker_key = a._Object_key
                         and a._MGIType_key = 44
+                        and a.preferred = 1
                 order by 1''' % mouseMarkerTable,
         ]
 
