@@ -15,6 +15,8 @@ def cleanupOrganism (organism):
 
 	if organism == 'mouse, laboratory':
 		return 'mouse'
+	if organism == 'rat, generic':
+		return 'rat'
 	if organism == 'dog, domestic':
 		return 'dog'
 	return organism

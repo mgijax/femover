@@ -25,11 +25,12 @@ class AntibodyGatherer (Gatherer.Gatherer):
                 # does customization of organism names
 
                 self.convertFinalResultsToList()
-                orgCol = Gatherer.columnNumber(self.finalColumns,
-                        'antibodySpecies')
+                hostCol = Gatherer.columnNumber(self.finalColumns, 'host')
+                agSpeciesCol = Gatherer.columnNumber(self.finalColumns, 'ag_species')
 
                 for row in self.finalResults:
-                        row[orgCol] = utils.cleanupOrganism(row[orgCol])
+                        row[hostCol] = utils.cleanupOrganism(row[hostCol])
+                        row[agSpeciesCol] = utils.cleanupOrganism(row[agSpeciesCol])
                 return
 
 
@@ -66,7 +67,7 @@ cmds = [
                 ab.antibodyName,
                 coalesce(f.gxdCount, 0) as gxdCount,
                 aa.accID as mgiID,
-                ae.commonName as antibodySpecies,
+                ae.commonName as host,
                 ac.term as class,
                 ap.term as antibodyType,
                 ab.antibodynote,
@@ -115,7 +116,7 @@ cmds = [
 # order of fields (from the query results) to be written to the
 # output file
 fieldOrder = [
-        '_Antibody_key', 'antibodyName', 'mgiID', 'antibodySpecies',
+        '_Antibody_key', 'antibodyName', 'mgiID', 'host',
         'antibodyType', 'class', 'gxdCount', 'aliases',
         'antibodyNote', 'ag_region_covered', 'ag_note',
         'ag_species', 'ag_strain', 'ag_sex', 'ag_age', 'ag_tissue',
