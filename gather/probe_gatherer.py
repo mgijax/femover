@@ -4,6 +4,7 @@
 
 import Gatherer
 import logger
+import utils
 
 ###--- Classes ---###
 
@@ -62,8 +63,11 @@ class ProbeGatherer (Gatherer.Gatherer):
                         '_Probe_key') 
                 ldbCol = Gatherer.columnNumber (self.finalColumns,
                         '_LogicalDB_key')
+                orgCol = Gatherer.columnNumber (self.finalColumns,
+                        'organism')
 
                 for r in self.finalResults:
+                        r[orgCol] = utils.cleanupOrganism(r[orgCol])
                         self.addColumn ('logicalDB', Gatherer.resolve (
                                 r[ldbCol], 'acc_logicaldb', '_LogicalDB_key',
                                 'name'), r, self.finalColumns)
